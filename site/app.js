@@ -949,39 +949,36 @@ async function storyPage(slug, scene) {
 async function homePage() {
   const hero = el(`<section class="hero"><div class="chart"></div><div class="over"><h1>${t("title")}</h1><p class="lede">${t("intro")}</p></div></section>`);
   const chosen = el(`<p class="controls"></p>`), posters = el(`<section class="wall"><h2>${t("wall_title")}</h2><p class="sub">${t("years_about")}</p></section>`);
-  view.replaceChildren(hero, chosen,
+  const note = el(`<p class="sub"></p>`);
+  view.replaceChildren(hero, chosen, note,
     el(`<section><h2>${t("nav_stories")}</h2>${storyDoors()}</section>`),
     el(`<section><h2>${t("nav_play")}</h2>${playDoors()}</section>`),
     posters,
     el(`<section><h2>${t("try")}</h2><ul class="words">${FEATURED.map((w) => `<li>${link(w)}</li>`).join("")}</ul></section>`),
     el(`<section>${t("caveats")}</section>`));
-  let own = false;
   const sail = async (figure, word) => {
     await figure.set([word]);
     if (!figure.node.isConnected) return;
     figure.chart.time(0, 0);
-    chosen.innerHTML = `${t("sailing", link(word))} <a href="${href("peta", MAIN, word)}">${t("rival_ask")}</a>`;
+    note.innerHTML = `${t("sailing", link(word))} <a href="${href("peta", MAIN, word)}">${t("rival_ask")}</a>`;
     const last = figure.labels.length - 1;
     setTimeout(() => figure.node.isConnected && figure.chart.time(last, still() ? 0 : 520 * last), 1200);
   };
-  const figure = await chartFigure(MAIN, [], (word) => ((own = true), sail(figure, word)), "min(78vh, 720px)").catch(() => null);
+  const figure = await chartFigure(MAIN, [], (word) => sail(figure, word), "min(78vh, 720px)").catch(() => null);
   if (!figure || !hero.isConnected) return;
   hero.firstElementChild.replaceWith(figure.node);
   const lens = await lensNamed(MAIN);
   if (!hero.isConnected) return;
   hero.querySelector(".over").append(suggest(lens, t("hero_ask"), t("hero_go"), (word) => {
     if (!lens.isEntry(lens.index.get(word))) return (location.hash = href("kata", word));
-    own = true;
     sail(figure, word);
   }));
-  let k = 0;
-  const next = () => {
-    if (own || !figure.node.isConnected) return;
-    sail(figure, SHOWCASE[k++ % SHOWCASE.length]);
-    setTimeout(next, 1200 + 520 * lens.periods.length + 2600);
-  };
-  if (!still()) next();
-  else sail(figure, SHOWCASE[0]);
+  // Nothing sails until the reader asks: the first route lies drawn, and each name below sets its ship off.
+  await figure.set([SHOWCASE[0]]);
+  if (!hero.isConnected) return;
+  figure.chart.time(figure.labels.length - 1, 0);
+  chosen.innerHTML = `${t("sail_one")} ${SHOWCASE.map((w) => `<button type="button">${w}</button>`).join("")}`;
+  chosen.addEventListener("click", (e) => e.target.matches("button") && sail(figure, e.target.textContent));
   wall(lens).then((node) => posters.append(node), () => {});
 }
 

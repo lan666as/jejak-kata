@@ -382,7 +382,7 @@ export const NOTES = Object.fromEntries(
 
 export const TEXT = {
   id: {
-    nav_stories: "Cerita", nav_play: "Mainan", loading: "Memuat…", more_stories: "Cerita lain", next: "Berikutnya", again: "Main lagi",
+    sail_one: "Berlayarkan:", nav_stories: "Cerita", nav_play: "Mainan", loading: "Memuat…", more_stories: "Cerita lain", next: "Berikutnya", again: "Main lagi",
     stories_lede: "Tiap cerita berangkat dari pertanyaan yang diperdebatkan orang, berbelok pada sesuatu yang ditemukan hitungan, dan berakhir pada apa yang tidak dapat dikatakan data. Semua angka adalah hitungan halaman yang dapat diperiksa.",
     play_lede: "Data yang sama, untuk dimainkan. Tidak satu pun dipilih dengan tangan.",
     chart_keys: "Peta kata. Panah untuk bergeser, plus dan minus untuk memperbesar, nol untuk melihat semua, Enter untuk memilih pulau yang dilingkari.",
@@ -584,7 +584,7 @@ export const TEXT = {
       <p>Cara ini diuji dengan menanam perubahan buatan pada data nyata, dan dengan daftar kata yang perubahannya sudah dituliskan sebelum hasilnya dilihat. Rincian, kode, dan hasil ujinya ada di repositori.</p>`,
   },
   en: {
-    nav_stories: "Stories", nav_play: "Play", loading: "Loading…", more_stories: "More stories", next: "Next", again: "Play again",
+    sail_one: "Set sail:", nav_stories: "Stories", nav_play: "Play", loading: "Loading…", more_stories: "More stories", next: "Next", again: "Play again",
     stories_lede: "Each story starts from a question people argue about, turns on something the counting found, and ends on what the data cannot tell. Every number is a count of pages that can be checked.",
     play_lede: "The same data, to play with. Nothing is chosen by hand.",
     chart_keys: "Chart of words. Arrows to move, plus and minus to zoom, zero to see everything, Enter to choose the ringed island.",
