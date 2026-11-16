@@ -1,0 +1,13 @@
+[
+ {"lens": "id-web-news-kompas", "word": "prabowo", "with": ["capres", "menteri pertahanan", "gerindra", "jokowi", "oposisi", "mengkritik", "koalisi", "kabinet"]},
+ {"lens": "id-web-news-kompas", "word": "gibran", "with": ["putra", "solo", "wali kota", "cawapres", "mk", "prabowo", "jokowi", "wakil presiden", "pengusaha", "usia"]},
+ {"lens": "id-web-news-kompas", "word": "kpk", "with": ["tersangka", "menetapkan", "memeriksa", "menahan", "revisi", "pegawai", "penindakan", "etik"]},
+ {"lens": "id-web-news-kompas", "word": "dpr", "with": ["korupsi", "tersangka", "revisi", "mahasiswa"]},
+ {"lens": "id-web-news-kompas", "word": "ahok", "with": ["gubernur", "sidang", "pilkada", "pertamina", "komisaris"]},
+ {"lens": "id-web-eras-kompas", "word": "prabowo", "with": ["capres", "menteri pertahanan", "oposisi", "mengkritik"]},
+ {"lens": "id-web-eras-tempo", "word": "prabowo", "with": ["capres", "menteri pertahanan", "oposisi", "mengkritik"]},
+ {"lens": "id-web-eras-tribun", "word": "prabowo", "with": ["capres", "menteri pertahanan", "oposisi", "mengkritik"]},
+ {"lens": "id-web-eras-kompas", "word": "kpk", "with": ["tersangka", "menetapkan", "memeriksa"]},
+ {"lens": "id-web-eras-tempo", "word": "kpk", "with": ["tersangka", "menetapkan", "memeriksa"]},
+ {"lens": "id-web-eras-tribun", "word": "kpk", "with": ["tersangka", "menetapkan", "memeriksa"]}
+]

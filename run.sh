@@ -12,9 +12,6 @@ LENSES="
 id-books:2000-2004:2005-2009
 jv-books:1970-1989:1990-2019
 su-books:1980-1989:1990-2019
-id-news:2018:2019
-id-news-tribun:2018:2019
-id-news-okezone:2018:2019
 id-abstracts:2017-2018:2019-2020
 id-web-news:2018:2019
 id-web-news-kompas:2018:2019
@@ -23,16 +20,15 @@ id-web-eras-tempo:2015-2019:2020-2024
 id-web-eras-tribun:2015-2019:2020-2024
 id-web-blogs:2013-2014:2015-2016
 "
-EXPECTED="id-books id-news id-news-tribun id-news-okezone id-web-news id-web-news-kompas id-web-eras-kompas id-web-eras-tempo id-web-eras-tribun"  # lenses that validation/expected.tsv covers
+EXPECTED="id-books id-web-news id-web-news-kompas id-web-eras-kompas id-web-eras-tempo id-web-eras-tribun"  # lenses that validation/expected.tsv covers
 
 each() { for entry in $LENSES; do python -m "idhist.$1" "${entry%%:*}"; done; }
 
 stage_fetch() {
-  for source in hathitrust ccnews openalex wikipedia hplt; do python -m idhist.sources.$source fetch; done
+  for source in hathitrust openalex wikipedia hplt; do python -m idhist.sources.$source fetch; done
 }
 stage_units() {
   python -m idhist.sources.hathitrust units
-  python -m idhist.sources.ccnews furniture && python -m idhist.sources.ccnews units
   python -m idhist.sources.openalex units
   python -m idhist.sources.wikipedia titles
   for step in furniture phrases units; do python -m idhist.sources.hplt $step; done
@@ -43,7 +39,7 @@ stage_validate() {
   for entry in $LENSES; do python -m idhist.planted ${entry//:/ }; done
   for lens in $EXPECTED; do python -m idhist.expected "$lens"; done
 }
-stage_export()   { each export; each highlights; }
+stage_export()   { each export; each highlights; python -m idhist.together; }
 stage_deploy()   {  # publish site/ (with its data) as the gh-pages branch; not part of a plain ./run.sh
   local tree; tree=$(mktemp -d)
   cp -r site/. "$tree" && touch "$tree/.nojekyll"

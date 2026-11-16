@@ -1,9 +1,8 @@
 import json
 from collections import Counter
-from datetime import date
 
 from idhist import text, web
-from idhist.sources import ccnews, hathitrust, openalex
+from idhist.sources import hathitrust, openalex
 
 
 def test_words_and_reduplication():
@@ -98,13 +97,9 @@ def test_language_needs_a_clear_winner():
     assert text.language(Counter({"tabel": 40, "dan": 2})) is None  # too little to tell
 
 
-def test_news_publisher_and_date():
+def test_publisher_is_the_registered_domain():
     assert web.publisher("https://pontianak.tribunnews.com/2019/01/02/x") == "tribunnews.com"
     assert web.publisher("https://www.pikiran-rakyat.co.id/a") == "pikiran-rakyat.co.id"
-    crawled = date(2019, 1, 5)
-    assert ccnews.published("https://x.com/2019/01/02/a", crawled) == date(2019, 1, 2)
-    assert ccnews.published("https://x.com/2031/01/02/a", crawled) == crawled  # a date after the crawl is not a date
-    assert ccnews.published("https://x.com/a", crawled) == crawled
 
 
 def test_hathitrust_path():

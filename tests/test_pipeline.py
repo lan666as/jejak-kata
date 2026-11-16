@@ -7,7 +7,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
-from idhist import counts, export, highlights, measure, planted, units
+from idhist import counts, export, highlights, measure, planted, together, units
 from idhist.lenses import Lens, bins
 from idhist.sources import wikipedia
 
@@ -118,8 +118,11 @@ def test_highlights_chart_every_entry_and_its_route(measures, tmp_path, monkeypa
     out = export.ROOT / LENS.name
     found = json.loads((out / "highlights.json").read_text())
     assert len(found["peaks"]) == 3 and c.row["warga"] not in {w for period in found["peaks"] for w in period}
-    traits = json.loads((out / "traits.json").read_text())
-    assert traits == {"adjectives": {str(c.row["tokoh"]): [[], [], []]}}  # the toy corpus has no adjectives
+    tokoh = c.row["tokoh"]
+    said = next(
+        p for p in json.loads((out / "paths" / f"{tokoh // export.BUCKET}.json").read_text()) if p["word"] == tokoh
+    )
+    assert said["adjectives"] == [[], [], []]  # a name carries its adjectives; the toy corpus has none
     assert found["swaps"] == [] and found["arrivals"] == {"went": [], "stayed": []}  # three periods are no series
 
     chart = json.loads((out / "chart.json").read_text())
@@ -144,3 +147,23 @@ def test_highlights_chart_every_entry_and_its_route(measures, tmp_path, monkeypa
         path["route"][0], "t1", islands
     )  # the same on the chart
     assert distance(path["route"][2], "t1", islands) < distance(path["route"][2], "t0", islands)
+
+
+def test_a_repeated_line_is_told_from_a_case_by_its_names():
+    rng = np.random.default_rng(1)
+    line, case, other = rng.standard_normal(64), rng.standard_normal(64), rng.standard_normal((4, 64))
+    sketch = np.vstack([np.tile(line, (6, 1)), np.tile(case, (6, 1)), other])  # words 0-5 one line, 6-11 one case
+    is_name = np.zeros(16, dtype=bool)
+    is_name[6:10] = True  # four of the six words of the case are names
+    assert highlights._lines(sketch, list(range(16)), is_name) == set(range(6))
+
+
+def test_together_counts_pages_that_have_both(measures, monkeypatch):
+    c, _ = measures
+    monkeypatch.setitem(together.LENSES, "toy", LENS)
+    together.ASKED.parent.mkdir(parents=True, exist_ok=True)
+    together.ASKED.write_text(json.dumps([{"lens": "toy", "word": "mover", "with": ["t0w1", "t1w1", "kuno"]}]))
+    together.together()
+    found = json.loads(together.OUT.read_text())["toy/mover"]
+    assert found["pages"] == c.df.sum(1)[:, c.row["mover"]].tolist() and "kuno" not in found["with"]
+    assert found["with"]["t0w1"][0] > found["with"]["t1w1"][0] and found["with"]["t1w1"][2] > found["with"]["t0w1"][2]

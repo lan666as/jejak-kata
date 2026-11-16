@@ -104,149 +104,52 @@ id-books	rumah	seen				inspected before registration
 id-books	yang	seen				inspected before registration
 id-books	jalan	seen				inspected before registration
 id-books	cinta	seen				inspected before registration
-id-news	klaster	change	2019	2021	penularan, perkantoran, keluarga (was: industri, perumahan)	documented-changes S1
-id-news	terpapar	change	2019	2021	virus, covid (was: radikalisme, asap)	documented-changes
-id-news	gelombang	change	2019	2021	kedua, ketiga, kasus (was: laut, tinggi)	documented-changes
-id-news	positif	change	2019	2020	covid, kasus, pasien	documented-changes S1
-id-news	negatif	change	2019	2020	hasil, swab, tes	documented-changes S1
-id-news	varian	change	2019	2021	delta, omicron, virus (was: mobil, produk)	documented-changes
-id-news	delta	change	2019	2021	varian	common
-id-news	isolasi	change	2019	2020	mandiri, pasien	documented-changes S1
-id-news	karantina	change	2019	2020	orang, hotel (was: pertanian, ikan)	documented-changes S1
-id-news	protokol	change	2019	2020	kesehatan	documented-changes S1
-id-news	masker	change	2019	2020	medis, wajib (was: wajah, kecantikan)	common
-id-news	zona	change	2019	2020	merah, hijau, risiko (was: degradasi, zonasi)	documented-changes S1
-id-news	merah	change	2019	2020	zona	documented-changes S1
-id-news	hijau	change	2019	2020	zona	documented-changes S1
-id-news	kurva	change	2019	2020	kasus, melandai	common
-id-news	landai	change	2019	2021	kasus, kurva	common
-id-news	vaksin	change	2019	2021	covid, dosis, sinovac (was: MR, imunisasi anak)	common
-id-news	dosis	change	2019	2021	vaksin, pertama, kedua	common
-id-news	booster	change	2019	2022	vaksin	common
-id-news	kerumunan	change	2019	2020	protokol, melanggar	common
-id-news	tatap	change	2019	2020	muka, pembelajaran	common
-id-news	virtual	change	2019	2020	rapat, pertemuan, zoom	common
-id-news	zoom	change	2019	2020	rapat, aplikasi (was: kamera)	common
-id-news	penyintas	change	2019	2021	covid, plasma (was: bencana, kanker)	documented-changes S9
-id-news	kontak	change	2019	2020	erat, pelacakan (was: senjata, tembak)	documented-changes S1
-id-news	erat	change	2019	2020	kontak	documented-changes S1
-id-news	konfirmasi	change	2019	2020	kasus, positif	documented-changes S1
-id-news	level	change	2019	2021	PPKM	common
-id-news	relaksasi	change	2019	2020	kredit, restrukturisasi	common
-id-news	tabung	change	2019	2021	oksigen (was: gas, elpiji)	common
-id-news	oksigen	change	2019	2021	tabung, pasien, langka	common
-id-news	darurat	change	2019	2021	PPKM	common
-id-news	mandiri	change	2019	2020	isolasi	common
-id-news	cipta	change	2018	2020	kerja, omnibus, undang-undang (was: hak cipta, lagu)	event 2020
-id-news	omnibus	change	2018	2020	law, cipta kerja	event 2020
-id-news	nusantara	change	2019	2022	ibu kota, IKN	event 2022
-id-news	merdeka	change	2018	2021	belajar, kampus	event 2020
-id-news	kudeta	change	2019	2021	Myanmar, Demokrat	event 2021
-id-news	invasi	change	2019	2022	Rusia, Ukraina	event 2022
-id-news	goreng	change	2020	2022	minyak, langka, harga	event 2022
-id-news	odol	change	2017	2022	truk, over dimension (was: pasta gigi)	common
-id-news	cebong	change	2018	2021	political label fades after 2019	common
-id-news	kampret	change	2018	2021	political label fades after 2019	common
-id-news	cuan	change	2018	2021	saham, investor	documented-changes S22
-id-news	sultan	change	2018	2021	kaya, mewah (beside Yogyakarta)	documented-changes
-id-news	ambyar	change	2018	2020	Didi Kempot, patah hati	documented-changes
-id-news	sungai	stable				everyday and stable news beats
-id-news	pohon	stable				everyday and stable news beats
-id-news	meja	stable				everyday and stable news beats
-id-news	kursi	stable				everyday and stable news beats
-id-news	kunci	stable				everyday and stable news beats
-id-news	sepatu	stable				everyday and stable news beats
-id-news	gigi	stable				everyday and stable news beats
-id-news	rambut	stable				everyday and stable news beats
-id-news	kopi	stable				everyday and stable news beats
-id-news	teh	stable				everyday and stable news beats
-id-news	garam	stable				everyday and stable news beats
-id-news	telur	stable				everyday and stable news beats
-id-news	ikan	stable				everyday and stable news beats
-id-news	ayam	stable				everyday and stable news beats
-id-news	kucing	stable				everyday and stable news beats
-id-news	bunga	stable				everyday and stable news beats
-id-news	hujan	stable				everyday and stable news beats
-id-news	angin	stable				everyday and stable news beats
-id-news	pagi	stable				everyday and stable news beats
-id-news	malam	stable				everyday and stable news beats
-id-news	lagu	stable				everyday and stable news beats
-id-news	film	stable				everyday and stable news beats
-id-news	buku	stable				everyday and stable news beats
-id-news	petani	stable				everyday and stable news beats
-id-news	nelayan	stable				everyday and stable news beats
-id-news	sawah	stable				everyday and stable news beats
-id-news	jembatan	stable				everyday and stable news beats
-id-news	kapal	stable				everyday and stable news beats
-id-news	gol	stable				everyday and stable news beats
-id-news	pelatih	stable				everyday and stable news beats
-id-news	wasit	stable				everyday and stable news beats
-id-news	kiper	stable				everyday and stable news beats
-id-news	motor	stable				everyday and stable news beats
-id-news	mesin	stable				everyday and stable news beats
-id-news	resep	stable				everyday and stable news beats
-id-news	bumbu	stable				everyday and stable news beats
-id-news	sambal	stable				everyday and stable news beats
-id-news	hakim	stable				everyday and stable news beats
-id-news	jaksa	stable				everyday and stable news beats
-id-news	terdakwa	stable				everyday and stable news beats
-id-news	gempa	stable				everyday and stable news beats
-id-news	banjir	stable				everyday and stable news beats
-id-news	longsor	stable				everyday and stable news beats
-id-news	daring	seen				inspected before registration
-id-news	viral	seen				inspected before registration
-id-news	healing	seen				inspected before registration
-id-news	unggah	seen				inspected before registration
-id-news	hijrah	seen				inspected before registration
-id-news	rumah	seen				inspected before registration
-id-news	corona	seen				inspected before registration
-id-news	luring	seen				inspected before registration
-id-web-news	klaster	change	2019	2021	penularan, perkantoran, keluarga (was: industri, perumahan)	the id-news row, repeated on other text
-id-web-news	terpapar	change	2019	2021	virus, covid (was: radikalisme, asap)	the id-news row, repeated on other text
-id-web-news	gelombang	change	2019	2021	kedua, ketiga, kasus (was: laut, tinggi)	the id-news row, repeated on other text
-id-web-news	positif	change	2019	2020	covid, kasus, pasien	the id-news row, repeated on other text
-id-web-news	negatif	change	2019	2020	hasil, swab, tes	the id-news row, repeated on other text
-id-web-news	varian	change	2019	2021	delta, omicron, virus (was: mobil, produk)	the id-news row, repeated on other text
-id-web-news	delta	change	2019	2021	varian	the id-news row, repeated on other text
-id-web-news	isolasi	change	2019	2020	mandiri, pasien	the id-news row, repeated on other text
-id-web-news	karantina	change	2019	2020	orang, hotel (was: pertanian, ikan)	the id-news row, repeated on other text
-id-web-news	protokol	change	2019	2020	kesehatan	the id-news row, repeated on other text
-id-web-news	masker	change	2019	2020	medis, wajib (was: wajah, kecantikan)	the id-news row, repeated on other text
-id-web-news	zona	change	2019	2020	merah, hijau, risiko (was: degradasi, zonasi)	the id-news row, repeated on other text
-id-web-news	merah	change	2019	2020	zona	the id-news row, repeated on other text
-id-web-news	hijau	change	2019	2020	zona	the id-news row, repeated on other text
-id-web-news	kurva	change	2019	2020	kasus, melandai	the id-news row, repeated on other text
-id-web-news	landai	change	2019	2021	kasus, kurva	the id-news row, repeated on other text
-id-web-news	vaksin	change	2019	2021	covid, dosis, sinovac (was: MR, imunisasi anak)	the id-news row, repeated on other text
-id-web-news	dosis	change	2019	2021	vaksin, pertama, kedua	the id-news row, repeated on other text
-id-web-news	booster	change	2019	2022	vaksin	the id-news row, repeated on other text
-id-web-news	kerumunan	change	2019	2020	protokol, melanggar	the id-news row, repeated on other text
-id-web-news	tatap	change	2019	2020	muka, pembelajaran	the id-news row, repeated on other text
-id-web-news	virtual	change	2019	2020	rapat, pertemuan, zoom	the id-news row, repeated on other text
-id-web-news	zoom	change	2019	2020	rapat, aplikasi (was: kamera)	the id-news row, repeated on other text
-id-web-news	penyintas	change	2019	2021	covid, plasma (was: bencana, kanker)	the id-news row, repeated on other text
-id-web-news	kontak	change	2019	2020	erat, pelacakan (was: senjata, tembak)	the id-news row, repeated on other text
-id-web-news	erat	change	2019	2020	kontak	the id-news row, repeated on other text
-id-web-news	konfirmasi	change	2019	2020	kasus, positif	the id-news row, repeated on other text
-id-web-news	level	change	2019	2021	PPKM	the id-news row, repeated on other text
-id-web-news	relaksasi	change	2019	2020	kredit, restrukturisasi	the id-news row, repeated on other text
-id-web-news	tabung	change	2019	2021	oksigen (was: gas, elpiji)	the id-news row, repeated on other text
-id-web-news	oksigen	change	2019	2021	tabung, pasien, langka	the id-news row, repeated on other text
-id-web-news	darurat	change	2019	2021	PPKM	the id-news row, repeated on other text
-id-web-news	mandiri	change	2019	2020	isolasi	the id-news row, repeated on other text
-id-web-news	cipta	change	2018	2020	kerja, omnibus, undang-undang (was: hak cipta, lagu)	the id-news row, repeated on other text
-id-web-news	omnibus	change	2018	2020	law, cipta kerja	the id-news row, repeated on other text
-id-web-news	nusantara	change	2019	2022	ibu kota, IKN	the id-news row, repeated on other text
-id-web-news	merdeka	change	2018	2021	belajar, kampus	the id-news row, repeated on other text
-id-web-news	kudeta	change	2019	2021	Myanmar, Demokrat	the id-news row, repeated on other text
-id-web-news	invasi	change	2019	2022	Rusia, Ukraina	the id-news row, repeated on other text
-id-web-news	goreng	change	2020	2022	minyak, langka, harga	the id-news row, repeated on other text
-id-web-news	odol	change	2017	2022	truk, over dimension (was: pasta gigi)	the id-news row, repeated on other text
-id-web-news	cebong	change	2018	2021	political label fades after 2019	the id-news row, repeated on other text
-id-web-news	kampret	change	2018	2021	political label fades after 2019	the id-news row, repeated on other text
-id-web-news	cuan	change	2018	2021	saham, investor	the id-news row, repeated on other text
-id-web-news	sultan	change	2018	2021	kaya, mewah (beside Yogyakarta)	the id-news row, repeated on other text
-id-web-news	ambyar	change	2018	2020	Didi Kempot, patah hati	the id-news row, repeated on other text
+id-web-news	klaster	change	2019	2021	penularan, perkantoran, keluarga (was: industri, perumahan)	event
+id-web-news	terpapar	change	2019	2021	virus, covid (was: radikalisme, asap)	event
+id-web-news	gelombang	change	2019	2021	kedua, ketiga, kasus (was: laut, tinggi)	event
+id-web-news	positif	change	2019	2020	covid, kasus, pasien	event
+id-web-news	negatif	change	2019	2020	hasil, swab, tes	event
+id-web-news	varian	change	2019	2021	delta, omicron, virus (was: mobil, produk)	event
+id-web-news	delta	change	2019	2021	varian	event
+id-web-news	isolasi	change	2019	2020	mandiri, pasien	event
+id-web-news	karantina	change	2019	2020	orang, hotel (was: pertanian, ikan)	event
+id-web-news	protokol	change	2019	2020	kesehatan	event
+id-web-news	masker	change	2019	2020	medis, wajib (was: wajah, kecantikan)	event
+id-web-news	zona	change	2019	2020	merah, hijau, risiko (was: degradasi, zonasi)	event
+id-web-news	merah	change	2019	2020	zona	event
+id-web-news	hijau	change	2019	2020	zona	event
+id-web-news	kurva	change	2019	2020	kasus, melandai	event
+id-web-news	landai	change	2019	2021	kasus, kurva	event
+id-web-news	vaksin	change	2019	2021	covid, dosis, sinovac (was: MR, imunisasi anak)	event
+id-web-news	dosis	change	2019	2021	vaksin, pertama, kedua	event
+id-web-news	booster	change	2019	2022	vaksin	event
+id-web-news	kerumunan	change	2019	2020	protokol, melanggar	event
+id-web-news	tatap	change	2019	2020	muka, pembelajaran	event
+id-web-news	virtual	change	2019	2020	rapat, pertemuan, zoom	event
+id-web-news	zoom	change	2019	2020	rapat, aplikasi (was: kamera)	event
+id-web-news	penyintas	change	2019	2021	covid, plasma (was: bencana, kanker)	event
+id-web-news	kontak	change	2019	2020	erat, pelacakan (was: senjata, tembak)	event
+id-web-news	erat	change	2019	2020	kontak	event
+id-web-news	konfirmasi	change	2019	2020	kasus, positif	event
+id-web-news	level	change	2019	2021	PPKM	event
+id-web-news	relaksasi	change	2019	2020	kredit, restrukturisasi	event
+id-web-news	tabung	change	2019	2021	oksigen (was: gas, elpiji)	event
+id-web-news	oksigen	change	2019	2021	tabung, pasien, langka	event
+id-web-news	darurat	change	2019	2021	PPKM	event
+id-web-news	mandiri	change	2019	2020	isolasi	event
+id-web-news	cipta	change	2018	2020	kerja, omnibus, undang-undang (was: hak cipta, lagu)	event
+id-web-news	omnibus	change	2018	2020	law, cipta kerja	event
+id-web-news	nusantara	change	2019	2022	ibu kota, IKN	event
+id-web-news	merdeka	change	2018	2021	belajar, kampus	event
+id-web-news	kudeta	change	2019	2021	Myanmar, Demokrat	event
+id-web-news	invasi	change	2019	2022	Rusia, Ukraina	event
+id-web-news	goreng	change	2020	2022	minyak, langka, harga	event
+id-web-news	odol	change	2017	2022	truk, over dimension (was: pasta gigi)	event
+id-web-news	cebong	change	2018	2021	political label fades after 2019	event
+id-web-news	kampret	change	2018	2021	political label fades after 2019	event
+id-web-news	cuan	change	2018	2021	saham, investor	event
+id-web-news	sultan	change	2018	2021	kaya, mewah (beside Yogyakarta)	event
+id-web-news	ambyar	change	2018	2020	Didi Kempot, patah hati	event
 id-web-news	sungai	stable				everyday and stable news beats
 id-web-news	pohon	stable				everyday and stable news beats
 id-web-news	meja	stable				everyday and stable news beats

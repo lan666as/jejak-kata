@@ -23,7 +23,7 @@ from idhist.expected import LIST
 from idhist.export import MOVER_LETTERS, ROOT
 
 OUT = Path("data/judge")
-LENSES = ("id-books", "id-news-tribun", "id-abstracts")
+LENSES = ("id-books", "id-web-news-kompas", "id-abstracts")
 # (lowest shift, highest shift, items per lens): well clear of the flag, just over it, under it, unmoved.
 STRATA = ((6, 1e9, 12), (4, 6, 8), (2, 4, 6), (-1e9, 1, 10))
 MIN_COMPANY = 6  # an item needs this many collocates in both periods to be judged at all

@@ -7,11 +7,10 @@ Writes site/data/<lens>/:
     highlights.json    peaks      per period, the words that belong to it more than to any other
                        arrivals   words that came and went, and words that came and stayed
                        swaps      pairs where one word took over the company the other used to keep
-    traits.json        per name and period, the adjectives and the verbs that keep it company,
-                       each with how strongly
     chart.json         every entry on one plane, with how far it moved at most
     paths/<n>.json     for the entries of words/<n>.json: where the entry stood on the chart in each
-                       period (`route`), and its path among its own first and last neighbours
+                       period (`route`), its path among its own first and last neighbours, and for a
+                       name the adjectives and the verbs that keep it company, each with how strongly
 
 None of this is a claim about change of meaning; only the shift is. A chart flattens 4,000
 measurements to two, so it shows neighbourhoods, not distances.
@@ -45,6 +44,7 @@ BORN, GONE, STAYED = (
     0.5,
 )  # of a word's peak share: at most this at the start; at the end, for a word that went, that stayed
 ROSE, ALIKE = 3.0, 0.5  # a swap needs both words to change by this factor, and their company to be this alike
+SAME, LINE = 0.9, 5  # words that are this alike, this many together, are a repeated line (see _lines)
 LANDMARKS, CLOSEST = 6_000, 8  # a route is placed among the closest of the most frequent entries
 CHART = 1_000  # the chart runs from -CHART to CHART
 LEXICONS = {"adjectives": Path("manifests/adjectives-id.txt"), "verbs": Path("manifests/verbs-id.txt")}
@@ -79,13 +79,42 @@ def _mean(sketch: np.ndarray, known: np.ndarray, periods: slice = slice(None)) -
         return _unit((sketch[periods] * seen[:, :, None]).sum(0) / seen.sum(0)[:, None])
 
 
-def _peaks(share: np.ndarray, listable: np.ndarray) -> list[list[int]]:
-    peaks = []
+def _lines(sketch: np.ndarray, words: list[int], is_name: np.ndarray) -> set[int]:
+    """Of the given words, those that are one repeated line rather than vocabulary.
+
+    A line pasted on thousands of pages (an invitation to install an app, say) makes its words keep exactly
+    the same company. So: LINE or more words whose company in a period is one and the same (alike by SAME),
+    fewer than half of them names. Names are what tells a line from a case: the words of a trial are as
+    alike as that, and most of them are names.
+    """
+    alike = np.nan_to_num(_unit(sketch[words]) @ _unit(sketch[words]).T) >= SAME
+    out, seen = set(), set()
+    for start in range(len(words)):
+        group, todo = [], [start]
+        while todo:
+            k = todo.pop()
+            if k not in seen:
+                seen.add(k)
+                group.append(k)
+                todo += np.flatnonzero(alike[k]).tolist()
+        if len(group) >= LINE and 2 * sum(is_name[words[k]] for k in group) < len(group):
+            out |= {words[k] for k in group}
+    return out
+
+
+def _peaks(
+    share: np.ndarray, sketch: np.ndarray, listable: np.ndarray, is_name: np.ndarray
+) -> tuple[list[list[int]], set[int]]:
+    """Per period, the words that belong to it more than to any other; and the words dropped as repeated lines."""
+    peaks, lines = [], set()
     for p in range(len(share)):
         elsewhere = np.delete(share, p, axis=0).mean(0)
         score = np.where(listable & (share[p] >= PEAK_SHARE), share[p] / (elsewhere + PEAK_SHARE), 0)
-        peaks.append([int(w) for w in np.argsort(-score)[:PEAKS] if score[w] > 1])
-    return peaks
+        top = [int(w) for w in np.argsort(-score)[: 3 * PEAKS] if score[w] > 1]
+        line = _lines(sketch[p], top, is_name)
+        lines |= line
+        peaks.append([w for w in top if w not in line][:PEAKS])
+    return peaks, lines
 
 
 def _arrivals(share: np.ndarray, listable: np.ndarray) -> dict[str, list[list[int]]]:
@@ -117,7 +146,9 @@ def _swaps(share: np.ndarray, sketch: np.ndarray, known: np.ndarray, listable: n
     return swaps
 
 
-def _chart(sketch: np.ndarray, known: np.ndarray, entries: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def _chart(
+    sketch: np.ndarray, known: np.ndarray, entries: np.ndarray, kept: np.ndarray | None
+) -> tuple[np.ndarray, np.ndarray]:
     """Where every entry lies on the chart (by its average direction), and where it stood in each period.
 
     The lay-out is t-SNE, which keeps neighbours together and promises nothing about distances. A route is
@@ -125,8 +156,10 @@ def _chart(sketch: np.ndarray, known: np.ndarray, entries: np.ndarray) -> tuple[
     nearer to those it is more like. Entries are in order of frequency, so the first are the landmarks.
     """
     home = np.nan_to_num(_mean(sketch, known)[entries])
-    flat = TSNE(n_components=2, init="pca", perplexity=30, random_state=0, n_jobs=1).fit_transform(home)
-    flat = np.round((flat - flat.mean(0)) / np.abs(flat - flat.mean(0)).max() * CHART).astype(int)
+    flat = kept  # the lay-out of an earlier run is kept while the entries are the same, so places stay where they were
+    if flat is None:
+        flat = TSNE(n_components=2, init="pca", perplexity=30, random_state=0, n_jobs=1).fit_transform(home)
+        flat = np.round((flat - flat.mean(0)) / np.abs(flat - flat.mean(0)).max() * CHART).astype(int)
     marks, at = home[:LANDMARKS], flat[:LANDMARKS].astype(np.float32)
     routes = np.zeros((len(sketch), len(entries), 2), dtype=int)
     for p in range(len(sketch)):
@@ -187,16 +220,21 @@ def highlights(lens: Lens) -> None:
                 for p in periods
             ]
     series = len(lens.periods) >= SERIES
+    is_name = np.zeros(len(counts.words), dtype=bool)
+    is_name[names] = True
+    peaks, lines = _peaks(share, sketch, listable, is_name)
+    listable[list(lines)] = False  # a repeated line did not come and go, and replaced nothing
     summary = {
-        "peaks": _peaks(share, listable),
+        "peaks": peaks,
         "arrivals": _arrivals(share, listable) if series else {"went": [], "stayed": []},
         "swaps": _swaps(share, sketch, known, listable) if series else [],
     }
     (out / "highlights.json").write_text(json.dumps(summary, separators=(",", ":")))
-    (out / "traits.json").write_text(json.dumps(traits, separators=(",", ":")))
 
     entries = np.flatnonzero(~hidden & known.any(0))
-    flat, routes = _chart(sketch, known, entries)
+    drawn = json.loads((out / "chart.json").read_text()) if (out / "chart.json").exists() else {}
+    kept = np.array([drawn["x"], drawn["y"]]).T if drawn.get("words") == entries.tolist() else None
+    flat, routes = _chart(sketch, known, entries, kept)
     measures = Measures.load(lens)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)  # an entry scored in no pair of periods has moved nan
@@ -218,9 +256,12 @@ def highlights(lens: Lens) -> None:
             first, last = entry["like"][times[0]][:NEAR], entry["like"][times[-1]][:NEAR]
             near = list(dict.fromkeys(first + last))
             path = _path(sketch, known, word, near) if len(times) >= 2 and len(near) >= 3 else None
-            paths.append({"word": word, "route": route} | (path | {"early": len(first)} if path else {}))
+            said = {lexicon: traits[lexicon][word] for lexicon in traits if word in traits[lexicon]}
+            paths.append({"word": word, "route": route} | (path | {"early": len(first)} if path else {}) | said)
         (out / "paths" / bucket.name).write_text(json.dumps(paths, separators=(",", ":")))
-    print(f"{lens.name}: {len(entries)} entries charted; {len(summary['swaps'])} swaps; traits for {len(names)} names")
+    print(
+        f"{lens.name}: {len(entries)} entries charted; {len(summary['swaps'])} swaps; {len(lines)} words of repeated lines left out"
+    )
 
 
 if __name__ == "__main__":

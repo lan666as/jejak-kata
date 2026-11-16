@@ -52,7 +52,9 @@ def release(tmp_path, monkeypatch):
     docs = [
         doc(
             f"https://daerah{i}.koran.co.id/{2019 + i % 2}/03/0{1 + i % 9}/berita-{i}",
-            f"Menu Olahraga Politik\nBaca juga: Gosip artis\n{story} unik{chr(97 + i)}. Kata Joko Widodo, ibu kota pindah.",
+            f"Menu Olahraga Politik\nBaca juga: Gosip artis\n{story} unik{chr(97 + i)}. Kata Joko Widodo, ibu kota pindah.\n"
+            f"(Penulis: Wartawan{chr(97 + i)} | Editor: Redaktur{chr(97 + i)})\nArtikel ini telah tayang di Koran dengan judul Kabar{chr(97 + i)}\n"
+            f"Jakarta: {story} lagi{chr(97 + i)} sumber https://koran.co.id/berita-{i}",
         )
         for i in range(30)
     ]
@@ -91,6 +93,17 @@ def test_from_the_release_to_units(release):
     words = set().union(*(u.counts for u in found))
     assert {"kataaa", "unikh", "joko widodo", "ibu kota"} <= words
     assert not words & {"menu", "olahraga", "gosip", "tangkapan", "joko", "kota"}
+    assert not words & {
+        "penulis",
+        "editor",
+        "wartawana",
+        "artikel",
+        "judul",
+        "kabara",
+        "https",
+        "koran",
+    }  # labels, notices, addresses
+    assert "jakarta" in words  # a long line that opens with a word and a colon is text
     assert all(u.caps["joko widodo"] == 1 and u.caps["ibu kota"] == 0 for u in found if "joko widodo" in u.counts)
     assert {u.source for u in found} == {"koran.co.id"}
     assert min(u.group for u in found) == "koran.co.id/2019-03-01"

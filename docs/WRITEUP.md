@@ -5,12 +5,11 @@ replaces the first report of the same day; what changed is the web.
 
 ## What was built
 
-Thirteen dated series of text ("lenses"), each measured on its own:
+Ten dated series of text ("lenses"), each measured on its own:
 
 | Lens | Span | Size |
 |---|---|---|
 | Indonesian books (HathiTrust) | 1950–2019, five-year periods | 8.5 million pages |
-| Indonesian online news (CC-NEWS), and Tribunnews and Okezone alone | 2017–2022, by year | 4.8 million articles |
 | News pages of the open web (HPLT 3.0), and Kompas alone | 2010–2024, by year | 37.3 million pages; Kompas 1.1 million |
 | Kompas, Tempo and Tribunnews by presidential term | 2010–14, 2015–19, 2020–24 | 1.1, 0.4 and 2.6 million pages |
 | Blog posts of the open web (HPLT 3.0) | 2007–2024, two-year periods | 8.8 million pages |
@@ -71,9 +70,8 @@ untouched words are flagged as well, and 7% in blogs.
 **Expected changes.** Before results were looked at, words were written down
 with the window in which they were expected to change, beside words expected to
 stay put. In every Indonesian lens that was kept, the expected words rank above
-the stable ones (AUC 0.92 to 0.99). The 2020 vocabulary registered for CC-NEWS
-was asked again of the open-web pages, which are independent text: Kompas alone
-flags 23 of 31 and none of the stable words.
+the stable ones (AUC 0.92 to 0.99). Of the 2020 vocabulary registered for the
+news pages, Kompas alone flags 23 of 31 and none of the stable words.
 
 **One lens failed this test and was dropped.** All publishers together, by
 presidential term, gave an AUC of 0.37 on the expectations about the Jokowi

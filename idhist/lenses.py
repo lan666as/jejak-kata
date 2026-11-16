@@ -38,7 +38,6 @@ def bins(first: int, last: int, width: int) -> tuple[tuple[int, int], ...]:
     return tuple((y, y + width - 1) for y in range(first, last + 1, width))
 
 
-NEWS = bins(2017, 2022, 1)
 WEB = bins(2010, 2024, 1)
 ERAS = ((2010, 2014), (2015, 2019), (2020, 2024))  # presidential terms: Yudhoyono's second, Joko Widodo's two
 ABSTRACTS = (*bins(2000, 2009, 5), (2010, 2012), *bins(2013, 2026, 2))
@@ -48,13 +47,8 @@ LENSES = {
     lens.name: lens
     for lens in [
         Lens("id-books", "id-books", bins(1950, 2019, 5)),
-        # All of CC-NEWS: large, but its mix of publishers changes from year to year.
-        Lens("id-news", "id-news", NEWS),
-        # The two publishers present in every year, each on its own: smaller, but one voice throughout.
-        Lens("id-news-tribun", "id-news", NEWS, sources=frozenset({"tribunnews.com"})),
-        Lens("id-news-okezone", "id-news", NEWS, sources=frozenset({"okezone.com"})),
-        # News pages of the open web: a longer span than CC-NEWS and independent of it, with a publisher mix
-        # that changes even more. Kompas is the one publisher with pages from every year.
+        # News pages of the open web, with a mix of publishers that changes from year to year.
+        # Kompas is the one publisher with pages from every year.
         Lens("id-web-news", "id-web-news", WEB),
         Lens("id-web-news-kompas", "id-web-news", WEB[1:], sources=frozenset({"kompas.com"})),
         # The same pages by presidential term, one publisher at a time. All publishers together fail the test of

@@ -1,9 +1,10 @@
 // Jejak Kata: a static reader for the files written by `python -m idhist.export` and `idhist.highlights`.
 // No build step and no dependencies.
-// Routes: #/  #/kata/<word>  #/peta/<lens>/<word>...  #/balap/<lens>/<word>...  #/tahun  #/temuan
-//         #/bergeser  #/entitas  #/cerita/<slug>  #/metode
+// Routes: #/  #/kata/<word>[/<lens>]  #/potret/<name>  #/peta/<lens>/<word>...  #/balap/<lens>/<word>...
+//         #/cerita/<slug>[/<scene>]  #/kuis  #/tahun  #/temuan  #/bergeser  #/entitas  #/metode
 
 import { seaChart } from "./chart.js";
+import { plate, plates, savePlate } from "./plate.js";
 import { TEXT, LENS_TEXT, NOTES, FEATURED, SHOWCASE, STORIES } from "./text.js";
 
 const DATA = "data";
@@ -30,27 +31,29 @@ const json = (path) => {
   return cache.get(path);
 };
 
-/** Every lens with its meta, a word -> index map, and which entries are entities (index -> Wikipedia article). */
-const lenses = json("lenses.json").then((names) =>
-  Promise.all(
-    names.map(async (name) => {
-      const meta = await json(`${name}/meta.json`);
+/** A lens with its meta, a word -> index map, and which entries are entities (index -> Wikipedia article). */
+const loaded = new Map();
+const lensNamed = (name) => {
+  if (!loaded.has(name))
+    loaded.set(name, json(`${name}/meta.json`).then((meta) => {
       const hidden = new Set(meta.names);
       const index = new Map(meta.words.map((w, i) => [w, i]));
       const articles = new Map(Object.entries(meta.entities).map(([i, article]) => [+i, article]));
       const kind = (i) => meta.kinds[i] || "other";
       return { ...meta, index, articles, kind, isEntry: (i) => i !== undefined && !hidden.has(i) };
-    }),
-  ),
-);
-const lensNamed = async (name) => (await lenses).find((lens) => lens.lens === name);
+    }).catch(() => undefined));
+  return loaded.get(name);
+};
+/** Every lens. The first page needs only one, so nothing waits for this unless it asks. */
+const allLenses = () => json("lenses.json").then((names) => Promise.all(names.map(lensNamed)));
 const bucket = (lens, folder, i) => json(`${lens.lens}/${folder}/${Math.floor(i / lens.bucket)}.json`);
 const entry = async (lens, i) => (await bucket(lens, "words", i)).find((e) => e.word === i);
 const entryOf = (lens, word) => (lens.isEntry(lens.index.get(word)) ? entry(lens, lens.index.get(word)) : null);
 const entriesOf = async (lens, list) => (await Promise.all(list.map((w) => entryOf(lens, w)))).filter(Boolean);
 const pathOf = async (lens, i) => (await bucket(lens, "paths", i).catch(() => [])).find((p) => p.word === i);
 const highlights = (lens) => json(`${lens.lens}/highlights.json`);
-const traitsOf = (lens) => json(`${lens.lens}/traits.json`);
+/** The adjectives or verbs that keep a name company, per period: [[word, strength], ...] or nothing. */
+const saidOf = async (lens, word, lexicon) => (await pathOf(lens, lens.index.get(word)))?.[lexicon];
 
 // ---- small helpers --------------------------------------------------------
 
@@ -150,13 +153,13 @@ function scrolly(figure, steps) {
         if (!s.isIntersecting) continue;
         nodes.forEach((n) => n.classList.toggle("on", n === s.target));
         const i = figure.labels.indexOf(s.target.dataset.at);
-        if (i >= 0) figure.show(i);
+        if (i >= 0) figure.show(i, steps[nodes.indexOf(s.target)].focus);
       }
     },
     { rootMargin: "-45% 0px -45% 0px" },
   );
   nodes.forEach((n) => watch.observe(n));
-  figure.show(Math.max(0, figure.labels.indexOf(steps[0].at)));
+  figure.show(Math.max(0, figure.labels.indexOf(steps[0].at)), steps[0].focus);
   return box;
 }
 
@@ -369,7 +372,7 @@ function race(lens, entries, focus, rows = 10) {
 
 /** The adjectives or the verbs that keep a name company, as bars, period by period. */
 async function traitBars(lens, word, lexicon) {
-  const lists = (await traitsOf(lens))[lexicon]?.[lens.index.get(word)];
+  const lists = await saidOf(lens, word, lexicon);
   const periods = (lists || []).map((list, p) => (list.length ? p : -1)).filter((p) => p >= 0);
   if (!periods.length) return null;
   const node = el(`<div class="bars"></div>`);
@@ -382,8 +385,7 @@ async function traitBars(lens, word, lexicon) {
 
 /** Two names head to head: the adjectives or verbs that keep one of them company much more than the other. */
 async function duel(lens, first, second, lexicon) {
-  const all = (await traitsOf(lens))[lexicon] || {};
-  const [a, b] = [first, second].map((w) => all[lens.index.get(w)]);
+  const [a, b] = await Promise.all([first, second].map((w) => saidOf(lens, w, lexicon)));
   if (!a || !b) return null;
   const periods = lens.periods.map((_, p) => p).filter((p) => a[p].length && b[p].length);
   if (!periods.length) return null;
@@ -551,23 +553,44 @@ async function perLens(found, label, section, first = 0) {
   view.append(switcher(await Promise.all(found.map(label)), (i) => section(found[i]), first));
 }
 
+/** A field that offers the words of a lens as one types; `chosen(word)` gets the one picked. */
+function suggest(lens, placeholder, button, chosen) {
+  const form = el(`<form class="controls suggest" autocomplete="off"><span><input type="search" placeholder="${placeholder}" aria-label="${placeholder}"><ul class="offers" hidden></ul></span><button>${button}</button></form>`);
+  const [input, offers] = [form.querySelector("input"), form.querySelector("ul")];
+  const take = (word) => {
+    offers.hidden = true;
+    input.value = "";
+    chosen(word);
+  };
+  input.addEventListener("input", () => {
+    const q = input.value.trim().toLowerCase(), hits = [];
+    if (q) for (const [w, i] of lens.index) if (w.startsWith(q) && lens.isEntry(i) && hits.push(w) === 8) break; // in order of frequency
+    offers.innerHTML = hits.map((w) => `<li><button type="button">${w}</button></li>`).join("");
+    offers.hidden = !hits.length;
+    offers.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => take(b.textContent)));
+  });
+  form.addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const word = offers.querySelector("button")?.textContent || input.value.trim().toLowerCase();
+    if (word) take(word);
+  });
+  return form;
+}
+
 /** A text field that adds a word to `list` if `lens` has it, and chips to take words out again. */
 function picker(lens, list, changed, most = 12) {
-  const box = el(`<div><ul class="picked"></ul><form class="controls"><input type="search" placeholder="${t("add_word")}" list="known-words"><button>${t("add")}</button></form></div>`);
+  const box = el(`<div><ul class="picked"></ul></div>`);
   const draw = () => {
     box.firstElementChild.innerHTML = list.map((w, k) => `<li class="k${k}">${w}<button type="button" data-k="${k}" aria-label="${t("remove")}">×</button></li>`).join("");
     box.querySelectorAll("li button").forEach((b) => b.addEventListener("click", () => (list.splice(+b.dataset.k, 1), draw(), changed())));
   };
-  box.querySelector("form").addEventListener("submit", (ev) => {
-    ev.preventDefault();
-    const input = box.querySelector("input"), word = input.value.trim().toLowerCase();
-    input.value = "";
-    if (!lens.isEntry(lens.index.get(word)) || list.includes(word)) return (input.placeholder = t("not_in_lens"));
+  box.append(suggest(lens, t("add_word"), t("add"), (word) => {
+    if (!lens.isEntry(lens.index.get(word)) || list.includes(word)) return;
     if (list.length >= most) list.shift();
     list.push(word);
     draw();
     changed();
-  });
+  }));
   draw();
   box.redraw = draw;
   return box;
@@ -575,8 +598,8 @@ function picker(lens, list, changed, most = 12) {
 
 // ---- pages ----------------------------------------------------------------
 
-async function wordPage(word) {
-  const all = await lenses;
+async function wordPage(word, opened) {
+  const all = await allLenses();
   const found = all.filter((lens) => lens.isEntry(lens.index.get(word)));
   view.replaceChildren(el(`<h1>${escape(word)}</h1>`));
   if (!found.length) return view.append(el(`<p>${t(all.some((lens) => lens.index.has(word)) ? "is_name" : "not_found")}</p>`));
@@ -596,7 +619,7 @@ async function wordPage(word) {
 
   const entries = new Map(await Promise.all(found.map(async (lens) => [lens, await entryOf(lens, word)])));
   // Open on the lens of the first page when the word is there: one publisher, year by year.
-  const most = Math.max(0, found.findIndex((lens) => lens.lens === MAIN));
+  const most = Math.max(0, found.findIndex((lens) => lens.lens === (opened || MAIN)));
   await perLens(
     found,
     (lens) => `${lensText(lens).short || lensText(lens).title} <b>${Number.isFinite(largest(entries.get(lens).shift)) ? number(largest(entries.get(lens).shift)) : "–"}</b>`,
@@ -604,14 +627,14 @@ async function wordPage(word) {
     most,
   );
   const lens = found[most];
-  view.append(el(`<p class="controls"><a href="${href("peta", lens.lens, word)}">${t("rival_ask")}</a> <a href="${href("balap", lens.lens, word)}">${t("race_ask")}</a></p>`));
+  view.append(el(`<p class="controls">${named ? `<a href="${href("potret", word)}">${t("portrait_ask")}</a>` : ""} <a href="${href("peta", lens.lens, word)}">${t("rival_ask")}</a> <a href="${href("balap", lens.lens, word)}">${t("race_ask")}</a></p>`), tools(href("kata", word, lens.lens), {}));
 }
 
 /** The chart of a lens, with up to four words of the reader's choosing sailing across it; two of them are compared below. */
 async function chartPage(name = MAIN, ...list) {
   const lens = (await lensNamed(name)) || (await lensNamed(MAIN));
   list = list.filter((w) => lens.isEntry(lens.index.get(w))).slice(0, 4);
-  const all = await lenses;
+  const all = await allLenses();
   const select = el(`<select aria-label="${t("lens")}">${all.map((l) => `<option value="${l.lens}" ${l === lens ? "selected" : ""}>${lensText(l).title}</option>`).join("")}</select>`);
   select.addEventListener("change", () => (location.hash = href("peta", select.value, ...list)));
   const below = el("<div></div>");
@@ -624,6 +647,7 @@ async function chartPage(name = MAIN, ...list) {
   const update = async () => {
     history.replaceState(null, "", href("peta", lens.lens, ...list));
     pick.redraw();
+    address();
     await figure.set(list);
     await rivalry();
   };
@@ -641,7 +665,10 @@ async function chartPage(name = MAIN, ...list) {
   };
   const controls = el(`<div class="controls"></div>`);
   controls.append(select);
-  view.replaceChildren(el(`<h1>${t("nav_chart")}</h1>`), el(`<p class="lede">${t("chart_lede")}</p>`), controls, pick, explained(figure, t("chart_about")), el(legendMoved()), below);
+  const share = el("<div></div>");
+  const address = () => share.replaceChildren(tools(href("peta", lens.lens, ...list), { check: list }));
+  address();
+  view.replaceChildren(el(`<h1>${t("nav_chart")}</h1>`), el(`<p class="lede">${t("chart_lede")}</p>`), controls, pick, explained(figure, t("chart_about")), el(legendMoved()), share, below);
   await rivalry();
 }
 const legendMoved = () => `<div class="legend"><span>${t("moved")}</span>${[0, 1, 2, 3, 4, 5].map((i) => `<span><i class="s${i}"></i>${i === 0 ? `< ${STEPS[0]}` : i === 5 ? `≥ ${STEPS[4]}` : `${STEPS[i - 1]}–${STEPS[i]}`}</span>`).join("")}</div>`;
@@ -651,14 +678,14 @@ async function racePage(name = MAIN, ...list) {
   const lens = (await lensNamed(name)) || (await lensNamed(MAIN));
   list = list.filter((w) => lens.isEntry(lens.index.get(w)));
   if (!list.length) list = (lens.lens === MAIN ? ["jokowi", "prabowo", "ahok", "anies baswedan", "gibran", "megawati"] : FEATURED).filter((w) => lens.isEntry(lens.index.get(w)));
-  const all = (await lenses).filter((l) => l.periods.length >= 4);
+  const all = (await allLenses()).filter((l) => l.periods.length >= 4);
   const select = el(`<select aria-label="${t("lens")}">${all.map((l) => `<option value="${l.lens}" ${l === lens ? "selected" : ""}>${lensText(l).title}</option>`).join("")}</select>`);
   select.addEventListener("change", () => (location.hash = href("balap", select.value, ...list)));
   const holder = el("<div></div>");
   const draw = async () => {
     history.replaceState(null, "", href("balap", lens.lens, ...list));
     const entries = await entriesOf(lens, list);
-    holder.replaceChildren(...(entries.length ? [played(race(lens, entries, null, 12), 0), el(`<h3>${t("frequency")}</h3>`), frequencyChart(lens, entries)] : [el(`<p class="sub">${t("race_empty")}</p>`)]));
+    holder.replaceChildren(...(entries.length ? [played(race(lens, entries, null, 12), 0), el(`<h3>${t("frequency")}</h3>`), frequencyChart(lens, entries), tools(href("balap", lens.lens, ...list), { check: list })] : [el(`<p class="sub">${t("race_empty")}</p>`)]));
   };
   const controls = el(`<div class="controls"></div>`);
   controls.append(select);
@@ -668,7 +695,7 @@ async function racePage(name = MAIN, ...list) {
 
 /** Each period in its own words: a wall of posters, lens by lens. */
 async function yearsPage() {
-  const found = await lenses;
+  const found = await allLenses();
   view.replaceChildren(el(`<h1>${t("nav_years")}</h1>`), el(`<p class="lede">${t("years_about")}</p>`));
   view.append(switcher(found.map((lens) => lensText(lens).short || lensText(lens).title), (i) => wall(found[i]), Math.max(0, found.findIndex((lens) => lens.lens === MAIN))));
 }
@@ -676,7 +703,7 @@ async function yearsPage() {
 /** What the counting turned up by itself: who took whose place, what came and went, what came and stayed. */
 async function findingsPage() {
   const found = [];
-  for (const lens of await lenses) if ((await highlights(lens).catch(() => ({}))).swaps?.length) found.push(lens);
+  for (const lens of await allLenses()) if ((await highlights(lens).catch(() => ({}))).swaps?.length) found.push(lens);
   view.replaceChildren(el(`<h1>${t("nav_findings")}</h1>`), el(`<p class="lede">${t("findings_lede")}</p>`));
   const section = async (lens) => {
     const { swaps, arrivals } = await highlights(lens);
@@ -695,7 +722,7 @@ async function findingsPage() {
 
 /** Lists per lens; a word also flagged between the same periods in another lens is marked. */
 async function moversPage() {
-  const all = await Promise.all((await lenses).map(async (lens) => ({ lens, movers: await json(`${lens.lens}/movers.json`) })));
+  const all = await Promise.all((await allLenses()).map(async (lens) => ({ lens, movers: await json(`${lens.lens}/movers.json`) })));
   const key = (lens, m) => `${lens.periods[m.a]}>${lens.periods[m.b]}`;
   const elsewhere = (lens, m, word) =>
     all.filter((o) => o.lens !== lens && o.movers.some((x) => key(o.lens, x) === key(lens, m) && x.words.some(([w]) => o.lens.words[w] === word)));
@@ -730,7 +757,7 @@ async function moversPage() {
 
 /** The entities of each lens by kind, most frequent first, the names of one article together. */
 async function entitiesPage() {
-  const found = (await lenses).filter((lens) => lens.articles.size);
+  const found = (await allLenses()).filter((lens) => lens.articles.size);
   const kinds = ["person", "organisation", "place", "other"];
   view.replaceChildren(el(`<h1>${t("nav_entities")}</h1>`), el(`<p class="note">${t("entities_about")}</p>`));
   const section = (lens) => {
@@ -761,7 +788,31 @@ async function entitiesPage() {
 }
 
 /** The figures a story can show. Each takes a scene's settings and returns a figure, or a plain node. */
+const plateWidth = () => (innerWidth > 760 ? Math.min(view.clientWidth * 0.58, 640) : view.clientWidth - 8);
 const SCENES = {
+  /** How often each word is on a page of the lens, period by period. */
+  lines: async (scene, l) => {
+    const entries = await entriesOf(l, scene.words);
+    return plate({ title: scene[language].plate, note: t("plate_note", t("of_units", l)), periods: l.periods, series: entries.map((e) => ({ label: l.words[e.word], values: e.share })) }, plateWidth());
+  },
+  /** Of the pages naming one word, the share that also contain each of the others (see idhist/together.py). */
+  together: async (scene, l) => {
+    const found = (await json("together.json"))[`${scene.lens}/${scene.word}`];
+    return plate({ title: scene[language].plate, note: t("plate_note_together"), periods: l.periods, series: scene.with.filter((w) => found.with[w]).map((w) => ({ label: w, values: found.with[w] })) }, plateWidth());
+  },
+  /** One word in several lenses that have the same periods: a plate per word. */
+  publishers: async (scene) => {
+    const chosen = await Promise.all(scene.lenses.map(lensNamed));
+    const rows = await Promise.all(scene.words.map((w) => Promise.all(chosen.map((l) => entryOf(l, w)))));
+    return plates(scene.words, (i) => plate({ title: scene[language].plate(scene.words[i]), note: t("plate_note", t("of_units", chosen[0])), periods: chosen[0].periods,
+      series: chosen.map((l, k) => ({ label: lensText(l).short, values: rows[i][k] ? rows[i][k].share : chosen[0].periods.map(() => null) })) }, plateWidth()));
+  },
+  /** Two words against each other: a plate per pair. */
+  pairs: async (scene, l) => {
+    const rows = await Promise.all(scene.pairs.map((pair) => entriesOf(l, pair)));
+    return plates(scene.pairs.map((pair) => pair.join(" / ")), (i) => plate({ title: scene[language].plate(...scene.pairs[i]), note: t("plate_note", t("of_units", l)), periods: l.periods,
+      series: rows[i].map((e) => ({ label: l.words[e.word], values: e.share })) }, plateWidth()));
+  },
   race: async ({ lens, words: list, focus }, l) => race(l, await entriesOf(l, list), focus),
   chart: async ({ words: list }, l) => chartFigure(l, list, undefined, "min(72vh, 600px)"),
   path: async ({ word }, l) => pathFigure(l, await pathOf(l, l.index.get(word))),
@@ -792,18 +843,40 @@ const SCENES = {
   },
 };
 
-/** A story: scenes down one page. A scene with steps pins its figure while its captions scroll past. */
-async function storyPage(slug) {
+/** Buttons under a figure: save it as an image (a plate), copy its address, and where to check it. */
+function tools(address, { image, check = [], data } = {}) {
+  const row = el(`<p class="controls tools"></p>`);
+  if (image) {
+    const save = el(`<button type="button">${t("save_image")}</button>`);
+    save.addEventListener("click", () => savePlate(image, "jejak-kata"));
+    row.append(save);
+  }
+  const copy = el(`<button type="button">${t("copy_link")}</button>`);
+  copy.addEventListener("click", async () => {
+    await navigator.clipboard?.writeText(new URL(address, location.href).href);
+    copy.textContent = t("copied");
+  });
+  row.append(copy);
+  if (check.length || data) row.append(el(`<span>${t("check")} ${check.map(link).join(", ")}${data ? `${check.length ? ", " : ""}<a href="${DATA}/${data}">${t("check_data")}</a>` : ""}</span>`));
+  return row;
+}
+
+/** A story: a question, scenes with pinned figures, and an ending that says what the data cannot tell. */
+async function storyPage(slug, scene) {
   const story = STORIES.find((s) => s.slug === slug);
   view.replaceChildren(el(`<h1>${story[language].title}</h1>`), el(`<p class="lede">${story[language].intro}</p>`));
-  for (const scene of story.scenes) {
-    const section = el(`<section><h2>${scene[language].title}</h2><div>${scene[language].text || ""}</div></section>`);
+  for (const [k, part] of story.scenes.entries()) {
+    const section = el(`<section id="scene-${k}"><h2>${part[language].title}</h2><div>${part[language].text || ""}</div></section>`);
     view.append(section);
-    const shown = await SCENES[scene.type](scene, scene.lens && (await lensNamed(scene.lens))).catch(() => null);
+    const shown = await SCENES[part.type](part, part.lens && (await lensNamed(part.lens))).catch(() => null);
     if (!shown) section.append(el(`<p class="sub">${t("no_data")}</p>`));
-    else if (scene.steps) section.append(scrolly(shown, scene.steps));
-    else section.append(shown.show ? played(shown, scene.start ?? shown.labels.length - 1) : shown);
+    else if (part.steps) section.append(scrolly(shown, part.steps));
+    else section.append(shown.show ? played(shown, part.start ?? shown.labels.length - 1) : shown);
+    const isPlate = ["lines", "together", "publishers", "pairs"].includes(part.type);
+    section.append(tools(href("cerita", slug, String(k)), { image: isPlate && shown ? section : null, check: part.check, data: part.type === "together" ? "together.json" : null }));
   }
+  view.append(el(`<section class="limits"><h2>${t("limits_title")}</h2>${story[language].limits}</section>`));
+  if (scene) document.getElementById(`scene-${scene}`)?.scrollIntoView();
 }
 
 /** The first page: the chart, with one word after another sailing its route until the reader takes over. */
@@ -823,10 +896,7 @@ async function homePage() {
   const figure = await chartFigure(lens, [], (word) => ((own = true), sail(figure, word)), "min(78vh, 720px)").catch(() => null);
   if (figure) {
     hero.prepend(figure.node);
-    const form = el(`<form class="controls"><input type="search" placeholder="${t("hero_ask")}" aria-label="${t("hero_ask")}"><button>${t("hero_go")}</button></form>`);
-    form.addEventListener("submit", (ev) => {
-      ev.preventDefault();
-      const word = form.querySelector("input").value.trim().toLowerCase();
+    const form = suggest(lens, t("hero_ask"), t("hero_go"), (word) => {
       if (!lens.isEntry(lens.index.get(word))) return (location.hash = href("kata", word));
       own = true;
       sail(figure, word);
@@ -857,10 +927,84 @@ async function homePage() {
   );
 }
 
+/** One screen about a name: when it peaked, its voyage, what the news had it doing, and who keeps company like it. */
+async function portraitPage(word) {
+  const lens = await lensNamed(MAIN), e = lens && (await entryOf(lens, word));
+  if (!e) return wordPage(word);
+  const peak = e.share.indexOf(Math.max(...e.share)), last = known(e).at(-1), path = await pathOf(lens, e.word);
+  const said = async (lexicon) => ((await saidOf(lens, word, lexicon))?.findLast((list) => list.length) || []).slice(0, 8).map(([id]) => id);
+  const [verbs, adjectives] = await Promise.all([said("verbs"), said("adjectives")]);
+  view.replaceChildren(
+    el(`<h1>${escape(word)}</h1>`),
+    el(`<p class="lede">${t("peak_year", lens.periods[peak], percent(e.share[peak]))}</p>`),
+    frequencyChart(lens, [e], [peak]),
+    el(`<div class="pair"><div><h3>${t("verbs")}</h3>${words(lens, verbs)}</div><div><h3>${t("adjectives")}</h3>${words(lens, adjectives)}</div></div>`),
+    el(`<h3>${t("most_alike")} (${lens.periods[last]})</h3>`),
+    el(words(lens, e.like[last])),
+  );
+  if (path?.path) view.append(el(`<h3>${t("path")}</h3>`), played(pathFigure(lens, path)));
+  view.append(el(`<p class="sub">${lensText(lens).title}. ${t("traits_about")}</p>`), tools(href("potret", word), { check: [word] }));
+}
+
+/** Two games: name the year from its own words; name the person or institution from its verbs and adjectives. */
+async function quizPage() {
+  const lens = await lensNamed(MAIN), { peaks } = await highlights(lens), ROUNDS = 8;
+  const pick = (list, n) => [...list].sort(() => Math.random() - 0.5).slice(0, n);
+  const names = ["jokowi", "prabowo", "ahok", "anies baswedan", "megawati", "sby", "ganjar pranowo", "sri mulyani", "luhut", "ridwan kamil", "kpk", "polri", "dpr", "mahfud md", "erick thohir", "setya novanto"].filter((w) => lens.isEntry(lens.index.get(w)));
+  const games = {
+    year: async () => {
+      const p = pick(lens.periods.map((_, i) => i).filter((i) => peaks[i].length >= 8), 1)[0];
+      return { ask: t("quiz_year_ask"), clue: words(lens, peaks[p].slice(0, 10).map((w) => w), null, "").replace(/<a [^>]*>|<\/a>/g, ""),
+        answer: lens.periods[p], choices: pick([lens.periods[p], ...pick(lens.periods.filter((x, i) => Math.abs(i - p) > 1), 3)], 4).sort() };
+    },
+    who: async () => {
+      for (;;) {
+        const name = pick(names, 1)[0], verbs = await saidOf(lens, name, "verbs"), adjectives = await saidOf(lens, name, "adjectives");
+        const periods = (verbs || []).map((list, i) => (list.length >= 5 ? i : -1)).filter((i) => i >= 0);
+        if (!periods.length) continue;
+        const p = pick(periods, 1)[0], ids = [...verbs[p].slice(0, 7), ...(adjectives?.[p] || []).slice(0, 4)].map(([id]) => id);
+        return { ask: t("quiz_who_ask", lens.periods[p]), clue: words(lens, ids, null, "").replace(/<a [^>]*>|<\/a>/g, ""), answer: name, choices: pick([name, ...pick(names.filter((n) => n !== name), 3)], 4) };
+      }
+    },
+  };
+  view.replaceChildren(el(`<h1>${t("nav_quiz")}</h1>`), el(`<p class="lede">${t("quiz_lede")}</p>`));
+  const play = (kind) => {
+    const box = el(`<div class="quiz"></div>`);
+    let right = 0, round = 0;
+    const next = async () => {
+      if (round === ROUNDS) {
+        box.innerHTML = `<p class="score">${t("quiz_score", right, ROUNDS)}</p>`;
+        const again = el(`<button type="button">${t("quiz_again")}</button>`), share = el(`<button type="button">${t("copy_link")}</button>`);
+        again.addEventListener("click", () => ((right = round = 0), next()));
+        share.addEventListener("click", async () => {
+          await navigator.clipboard?.writeText(`${t("quiz_share", right, ROUNDS)} ${new URL(href("kuis"), location.href).href}`);
+          share.textContent = t("copied");
+        });
+        return box.append(again, share);
+      }
+      const q = await games[kind]();
+      round++;
+      box.innerHTML = `<p class="sub">${round} / ${ROUNDS}</p><p>${q.ask}</p>${q.clue}<p class="choices">${q.choices.map((c) => `<button type="button">${c}</button>`).join("")}</p><p class="verdict" role="status"></p>`;
+      box.querySelectorAll(".choices button").forEach((b) =>
+        b.addEventListener("click", () => {
+          const ok = b.textContent === q.answer;
+          right += ok;
+          box.querySelectorAll(".choices button").forEach((x) => ((x.disabled = true), x.classList.toggle("right", x.textContent === q.answer)));
+          box.querySelector(".verdict").innerHTML = `${ok ? t("quiz_right") : t("quiz_wrong", q.answer)} <button type="button">${t("quiz_next")}</button>`;
+          box.querySelector(".verdict button").addEventListener("click", next);
+        }),
+      );
+    };
+    next();
+    return box;
+  };
+  view.append(switcher([t("quiz_year"), t("quiz_who")], (i) => play(i ? "who" : "year")));
+}
+
 /** How it works, and what the planted-change test found each lens can see. */
 async function methodPage() {
   view.replaceChildren(el(`<article>${t("method")}</article>`));
-  const tested = (await lenses).filter((lens) => lens.sensitivity);
+  const tested = (await allLenses()).filter((lens) => lens.sensitivity);
   const found = (lens, share) => percent(lens.sensitivity.found[share]);
   view.append(
     el(`<h2>${t("tests_title")}</h2>`),
@@ -882,7 +1026,7 @@ function route() {
   document.querySelectorAll("nav a").forEach((a) => (a.getAttribute("href") === `#/${page}` ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
   document.getElementById("language").textContent = language === "id" ? "English" : "Bahasa Indonesia";
   document.getElementById("query").placeholder = t("search");
-  const pages = { kata: wordPage, peta: chartPage, balap: racePage, tahun: yearsPage, temuan: findingsPage, bergeser: moversPage, entitas: entitiesPage, cerita: storyPage, metode: methodPage };
+  const pages = { kata: wordPage, potret: portraitPage, kuis: quizPage, peta: chartPage, balap: racePage, tahun: yearsPage, temuan: findingsPage, bergeser: moversPage, entitas: entitiesPage, cerita: storyPage, metode: methodPage };
   scrollTo(0, 0);
   Promise.resolve((pages[page] || homePage)(...args)).catch(() => view.replaceChildren(el(`<p>${t("no_data")}</p>`)));
 }
@@ -898,7 +1042,7 @@ function search() {
   query.addEventListener("input", async () => {
     const q = query.value.trim().toLowerCase();
     const seen = new Set();
-    if (q) for (const lens of await lenses) for (const [w, i] of lens.index) if (w.startsWith(q) && lens.isEntry(i)) seen.add(w);
+    if (q) for (const lens of await allLenses()) for (const [w, i] of lens.index) if (w.startsWith(q) && lens.isEntry(i)) seen.add(w);
     const hits = [...seen].sort((a, b) => a.length - b.length || a.localeCompare(b)).slice(0, 8);
     list.innerHTML = hits.map((w) => `<li>${link(w)}</li>`).join("");
     list.hidden = !hits.length;

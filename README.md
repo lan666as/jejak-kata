@@ -11,8 +11,6 @@ Data: <https://huggingface.co/datasets/lan666as/jejak-kata>.
 | Lens | Text | Units |
 |---|---|---|
 | `id-books` | Indonesian books (HathiTrust), 1950–2019, five-year periods | 8.51M pages |
-| `id-news` | Indonesian online news (CC-NEWS), 2017–2022, by year | 4.80M articles |
-| `id-news-tribun`, `id-news-okezone` | the same, one publisher each | 2.19M, 0.73M |
 | `id-web-news` | news pages of the open web (HPLT 3.0), 2010–2024, by year | 37.3M pages |
 | `id-web-news-kompas` | the same, Kompas only, 2011–2024 | 1.13M |
 | `id-web-eras-kompas`, `-tempo`, `-tribun` | the same by presidential term (2010–14, 2015–19, 2020–24), one publisher each | 1.13M, 0.37M, 2.57M |
@@ -53,9 +51,6 @@ untouched words reach it too.
 | Lens (periods tested) | 20% replaced | 40% replaced | 80% replaced | untouched words flagged |
 |---|---|---|---|---|
 | `id-books` (2000–04 → 2005–09) | 13% | 63% | 95% | 3.5% |
-| `id-news` (2018 → 2019) | 6% | 30% | 83% | 3.2% |
-| `id-news-tribun` | 12% | 25% | 79% | 2.6% |
-| `id-news-okezone` | 6% | 28% | 77% | 1.5% |
 | `id-web-news` (2018 → 2019) | 15% | 35% | 92% | 5.0% |
 | `id-web-news-kompas` | 10% | 30% | 89% | 2.3% |
 | `id-web-eras-kompas` (2015–19 → 2020–24) | 3% | 21% | 81% | 3.5% |
@@ -80,11 +75,8 @@ them for the news and web lenses).
 | Lens | AUC, change vs stable | expected changes flagged | stable words flagged | too rare to score |
 |---|---|---|---|---|
 | `id-books` | 0.97 | 11 of 33 | 2% | 5 |
-| `id-news` | 0.98 | 30 of 39 | 4% | 7 |
-| `id-news-tribun` | 0.97 | 31 of 36 | 5% | 10 |
-| `id-news-okezone` | 0.97 | 18 of 27 | 0% | 19 |
-| `id-web-news` (replication) | 0.92 | 28 of 41 | 3% | 5 |
-| `id-web-news-kompas` (replication) | 0.99 | 23 of 31 | 0% | 15 |
+| `id-web-news` | 0.92 | 28 of 41 | 3% | 5 |
+| `id-web-news-kompas` | 0.99 | 23 of 31 | 0% | 15 |
 | `id-web-eras-kompas` | 0.94 | 7 of 26 | 0% | 18 |
 | `id-web-eras-tempo` | 0.94 | 8 of 23 | 0% | 21 |
 | `id-web-eras-tribun` | 0.94 | 4 of 23 | 0% | 21 |
@@ -93,8 +85,7 @@ The expected words rank above the stable ones nearly always. In books two
 thirds of them still stay under the flag: *artis*, *aplikasi*, *radikal*,
 *preman*, *seksi*, *virus* and others gained a sense without losing the old
 one, which is the kind of change test 1 says is missed. The news words are
-mostly the vocabulary of 2020, where the change was wholesale; the two
-`id-web-news` rows ask the same words of independent text and find them again.
+mostly the vocabulary of 2020, where the change was wholesale.
 
 **A lens that failed, and why it matters.** All publishers together, cut by
 presidential term, scored an AUC of 0.37 on the 44 expectations about the
@@ -145,7 +136,12 @@ For any word or name, in each lens that has it:
   Leskovec and Jurafsky, 2016; here no alignment is needed, because every period uses the same contexts);
 - **its company**, period by period, with what arrived and what left;
 - **the numbers**: frequency, the shift between every two periods, two periods side by side;
-- for a name, **the adjectives** that keep it company, from a hand-made list without accusations.
+- for a name, **the verbs and adjectives** that keep it company, from two hand-made lists that hold
+  praise and blame alike (`manifests/`). They say how the news wrote, not what someone is.
+
+The stories on the site rest on one more number, the plainest there is: of the units that contain one
+word, the share that also contain another (`idhist/together.py`), so that a sentence like "of the pages
+naming him in 2021, 43% also say *menteri pertahanan*" can be checked against the counts.
 
 And across words: each period in its own words (those that belong to it more than to any other, counted
 and not chosen), the most shifted, names by kind, two words compared, and three stories built from these
@@ -161,7 +157,6 @@ idhist/
   web.py                what web pages need: page furniture out, phrases in
   units.py              the one format every source is converted to
   sources/hathitrust.py books: HathiTrust Extracted Features, by rsync
-  sources/ccnews.py     news: CC-NEWS via acul3/KoPI-CC_News
   sources/hplt.py       the open web: HPLT 3.0, dated pages only, news and blogs
   sources/openalex.py   abstracts: the OpenAlex snapshot, Indonesian works only
   sources/wikipedia.py  titles of Indonesian Wikipedia, and what kind of thing each is
@@ -170,11 +165,13 @@ idhist/
   measure.py            counts -> distance between every two periods, per word
   planted.py            test 1: can it find changes we planted?
   expected.py           test 2: do the pre-registered words stand out?
-  export.py             everything the site shows, as small static files
+  export.py             the entries of the site: frequency, shift, company
+  highlights.py         the chart, routes, each period's own words, arrivals, successions, verbs
+  together.py           of the pages with one word, the share with another: the stories' numbers
 site/                   the static site (no build step, no dependencies)
 validation/             the pre-registered word lists and their protocol
 manifests/              which HathiTrust volumes (pinned: the catalogue dump changes monthly);
-                        the adjectives looked for around names
+                        the adjectives and verbs looked for around names
 tests/                  the whole path on a toy corpus with one planted change
 docs/                   the report, and how the measure was chosen (instrument.md)
 run.sh                  rebuild everything, in order
@@ -218,7 +215,6 @@ replaced monthly (hence `manifests/`).
 | Source | What is used | Terms |
 |---|---|---|
 | [HathiTrust Extracted Features 2.5](https://analytics.hathitrust.org/datasets) | per-page word counts of 59,237 volumes catalogued as Indonesian, 2,004 as Javanese and 788 as Sundanese | CC BY 4.0; fetched by HTRC's rsync service |
-| [CC-NEWS](https://commoncrawl.org/news-crawl), via [acul3/KoPI-CC_News](https://huggingface.co/datasets/acul3/KoPI-CC_News) | 4.8 million articles, 2017–2022 | Common Crawl terms of use; the article text is the publishers' |
 | [HPLT 3.0](https://hplt-project.org/datasets/v3.0) monolingual Indonesian (Common Crawl and Internet Archive crawls of 2012–2024) | of 176 million documents, the 66 million distinct pages that carry a date and are not machine translation; 46 million of them are news or blog pages long enough to use | packaging CC0; the text is the publishers' |
 | [OpenAlex](https://docs.openalex.org/download-all-data/openalex-snapshot) snapshot of 2026-10-14 | abstracts of 3.6 million works labelled Indonesian, of which 2.6 million pass our own language check | CC0; abstracts come as word-position indexes |
 | [Indonesian Wikipedia](https://dumps.wikimedia.org/idwiki/) dump of 2026-10-01 and [Wikidata](https://www.wikidata.org/) | 1.17 million titles with their redirects; for the articles that names lead to, whether Wikidata calls it a person, a place or an organisation | CC BY-SA 4.0 and CC0 |
@@ -266,8 +262,7 @@ for it (see `idhist/export.py`).
   index and pages alike, and its operators say partial downloads cannot be
   retried around that. HPLT had already read the same crawls; what is lost is
   the page metadata that would have dated the 57% left out.
-- **Anything after 2024.** HPLT 3.0 ends there; CC-NEWS as packaged ends in
-  mid-2022. Abstracts reach 2026.
+- **Anything after 2024.** HPLT 3.0 ends there. Abstracts reach 2026.
 - **Regional languages on the web.** The same release holds Javanese and
   Sundanese, but half of it is machine translation; what is left and dated is
   about 20,000 pages each, mostly blogs, and smaller still for Minangkabau,

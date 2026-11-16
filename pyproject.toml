@@ -9,7 +9,6 @@ dependencies = [
     "pyarrow",
     "zarr>=3",
     "zstandard",
-    "huggingface_hub",
     "requests",
     "scikit-learn",
 ]
