@@ -1,0 +1,17 @@
+# Indonesian adjectives that describe a person's or an institution's manner, character or mood in news.
+# Chosen by hand. Words that accuse someone of a crime or insult them are left out on purpose: the site shows
+# these next to names. Revised once, after a first look at the output, to drop words that are in every
+# political story and describe nobody (politik, publik, sosial, resmi, besar, ...).
+tegas keras lembut santun sopan ramah sabar tenang kalem santai serius sederhana merakyat populer
+terkenal ternama kontroversial kritis vokal lantang berani nekat hati-hati waspada cermat teliti cepat lambat
+sigap tanggap lamban gesit lincah kuat lemah tangguh rapuh kokoh solid stabil labil mapan
+matang dewasa muda tua senior junior modern tradisional kuno klasik unik khas istimewa aneh
+langka mendesak darurat genting krusial vital kaya miskin mewah hemat boros makmur sejahtera rumit
+bersih kotor rapi kumuh indah cantik tampan gagah anggun elegan menarik menawan cerdas pintar
+pandai bijak bijaksana arif cerdik kreatif inovatif produktif efektif efisien profesional kompeten ahli handal
+andal piawai terampil rajin tekun ulet gigih disiplin malas jujur terbuka transparan adil netral
+independen mandiri objektif setia loyal konsisten optimistis optimis pesimistis pesimis yakin ragu percaya bangga
+senang gembira bahagia puas kecewa sedih marah kesal geram prihatin khawatir cemas takut tegang
+kaget terkejut heran bingung lega hangat dingin akrab mesra harmonis rukun kompak damai aman
+nyaman tertib kondusif rawan bagus jelek hebat luar-biasa demokratis otoriter moderat konservatif liberal nasionalis
+religius sekuler progresif reformis bugar lelah sibuk agresif defensif ofensif ambisius rendah-hati

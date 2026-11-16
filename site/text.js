@@ -6,77 +6,147 @@ const unit = {
 };
 const unitOf = (language, lens) => unit[language][lens.lens.split("-")[1]];
 
-// Stories: chosen words between two periods of one or more lenses. A word that a lens does not have shows a dash.
+// Stories. Each is a row of scenes; a scene names what to show (see SCENES in app.js) and says a few words about it.
+const JOKOWI_TABLE = [
+  { id: "Tokoh", en: "People", words: ["jokowi", "joko widodo", "ahok", "basuki tjahaja purnama", "anies", "prabowo", "ganjar", "gibran"] },
+  { id: "Lembaga dan tempat", en: "Institutions and places", words: ["kpk", "nusantara", "ibu kota", "kalimantan timur"] },
+  { id: "Politik", en: "Politics", words: ["relawan", "blusukan", "dinasti", "alumni", "radikalisme", "penistaan", "hoax"] },
+  { id: "Ekonomi dan teknologi", en: "Economy and technology", words: ["nikel", "baterai", "konten", "ojek", "mitra", "token", "kartu", "subsidi", "amnesti"] },
+  { id: "Pandemi", en: "The pandemic", words: ["positif", "masker", "protokol", "isolasi", "vaksin", "mudik"] },
+];
+
 export const STORIES = [
   {
     slug: "masa-jokowi",
-    lenses: ["id-web-eras-kompas", "id-web-eras-tempo", "id-web-eras-tribun"],
-    periods: ["2010-2014", "2020-2024"],
     id: {
-      title: "Masa Jokowi: 2010–2014 dibanding 2020–2024",
-      intro: `<p>Joko Widodo menjabat presiden dari Oktober 2014 sampai Oktober 2024. Halaman ini membandingkan berita lima tahun sebelum masa itu dengan berita lima tahun terakhirnya, di tiga penerbit yang masing-masing diukur sendiri: Kompas, Tempo, dan Tribunnews. Sebuah pergeseran lebih layak dipercaya bila tampak di lebih dari satu penerbit.</p>
-        <p>Kata-kata di bawah ini dituliskan <b>sebelum</b> hasilnya dilihat, sebagai dugaan. Yang meleset tetap ditampilkan.</p>`,
-      outro: `<h2>Yang terlihat, dan yang tidak</h2>
-        <p>Angka 4 ke atas berarti menonjol. <b>Menonjol di sedikitnya dua dari tiga penerbit:</b> <i>jokowi</i>, <i>ahok</i>, <i>basuki tjahaja purnama</i> (nama-nama yang berganti jabatan), serta <i>positif</i> dan <i>masker</i> (pandemi). <b>Hanya di satu penerbit:</b> <i>joko widodo</i>, <i>anies</i>, <i>protokol</i>, <i>ibu kota</i>, <i>nusantara</i>, <i>kalimantan timur</i>, <i>konten</i>. <b>Tidak di mana pun:</b> <i>kpk</i>, <i>prabowo</i>, <i>relawan</i>, <i>blusukan</i>, <i>ojek</i>, <i>mitra</i>, <i>subsidi</i>, <i>kartu</i>; sebagian dugaan itu memang keliru, sebagian lagi adalah makna tambahan yang tidak tertangkap oleh ukuran ini.</p>
-        <p>Tanda “–” berarti kata itu terlalu jarang pada 2010–2014 untuk diukur. Itu menimpa justru kata-kata yang paling khas dasawarsa ini (<i>gibran</i>, <i>hoax</i>, <i>dinasti</i>, <i>hilirisasi</i>): perbandingan sebelum dan sesudah tidak dapat melihat kata yang belum punya “sebelum”. Buka katanya untuk melihat kapan ia mulai sering dipakai.</p>
-        <p>Catatan: bila semua penerbit digabung, perbandingan sejauh ini gagal dalam uji kami, sebab susunan media di web berubah lebih besar daripada kata mana pun. Karena itu tiap penerbit diukur sendiri.</p>`,
+      title: "Masa Jokowi",
+      teaser: "Sepuluh tahun dalam nama, kata baru, dan teman yang berganti: siapa yang dibicarakan, kata apa yang lahir, dan apa yang benar-benar bergeser.",
+      intro: "Joko Widodo menjabat presiden dari Oktober 2014 sampai Oktober 2024. Inilah dasawarsa itu sebagaimana terekam di halaman berita Kompas: tanpa tafsir, hanya hitungan kata. Tekan ▶ pada tiap gambar.",
     },
     en: {
-      title: "The Jokowi years: 2010–2014 against 2020–2024",
-      intro: `<p>Joko Widodo was president from October 2014 to October 2024. This page compares the news of the five years before with the news of his last five, in three publishers measured separately: Kompas, Tempo and Tribunnews. A shift deserves more trust when more than one publisher shows it.</p>
-        <p>The words below were written down <b>before</b> the results were seen, as guesses. The misses are shown too.</p>`,
-      outro: `<h2>What shows, and what does not</h2>
-        <p>A number of 4 or more stands out. <b>Standing out in at least two of the three publishers:</b> <i>jokowi</i>, <i>ahok</i>, <i>basuki tjahaja purnama</i> (names that changed office), and <i>positif</i> and <i>masker</i> (the pandemic). <b>In one only:</b> <i>joko widodo</i>, <i>anies</i>, <i>protokol</i>, <i>ibu kota</i>, <i>nusantara</i>, <i>kalimantan timur</i>, <i>konten</i>. <b>Nowhere:</b> <i>kpk</i>, <i>prabowo</i>, <i>relawan</i>, <i>blusukan</i>, <i>ojek</i>, <i>mitra</i>, <i>subsidi</i>, <i>kartu</i>; some of those guesses were wrong, others are added senses, which this measure misses.</p>
-        <p>A dash means the word was too rare in 2010–2014 to measure. That happens to exactly the words most typical of the decade (<i>gibran</i>, <i>hoax</i>, <i>dinasti</i>, <i>hilirisasi</i>): a before-and-after comparison cannot see a word that had no before. Open the word to see when it took off.</p>
-        <p>Note: with all publishers pooled, a comparison over this distance failed our test, because the mix of publishers on the web changes more than any word does. That is why each publisher is measured alone.</p>`,
+      title: "The Jokowi years",
+      teaser: "Ten years in names, new words and changing company: who was talked about, which words were born, and what really shifted.",
+      intro: "Joko Widodo was president from October 2014 to October 2024. This is that decade as Kompas news pages recorded it: no interpretation, only counts of words. Press ▶ on each figure.",
     },
-    groups: [
-      { id: "Tokoh", en: "People", words: ["jokowi", "joko widodo", "ahok", "basuki tjahaja purnama", "anies", "prabowo", "ganjar", "gibran"] },
-      { id: "Lembaga dan tempat", en: "Institutions and places", words: ["kpk", "nusantara", "ibu kota", "kalimantan timur"] },
-      { id: "Politik", en: "Politics", words: ["relawan", "blusukan", "dinasti", "alumni", "radikalisme", "penistaan", "hoax"] },
-      { id: "Ekonomi dan teknologi", en: "Economy and technology", words: ["nikel", "baterai", "konten", "ojek", "mitra", "token", "kartu", "subsidi", "amnesti"] },
-      { id: "Pandemi", en: "The pandemic", words: ["positif", "masker", "protokol", "isolasi", "vaksin", "mudik"] },
+    scenes: [
+      {
+        type: "race", lens: "id-web-news-kompas", focus: "jokowi",
+        words: ["jokowi", "prabowo", "ahok", "anies baswedan", "ganjar pranowo", "gibran", "sby", "megawati", "jusuf kalla", "sandiaga uno", "ridwan kamil", "sri mulyani", "luhut", "mahfud md", "erick thohir", "airlangga hartarto", "boediono"],
+        id: { title: "Siapa yang dibicarakan", text: "<p>Bagian halaman berita yang menyebut tiap nama, tahun demi tahun. Perhatikan <i>ahok</i> pada 2016, <i>prabowo</i> tiap tahun pemilu, dan <i>sby</i> yang surut setelah 2014.</p>" },
+        en: { title: "Who was talked about", text: "<p>The share of news pages that mention each name, year by year. Watch <i>ahok</i> in 2016, <i>prabowo</i> in every election year, and <i>sby</i> fading after 2014.</p>" },
+      },
+      {
+        type: "path", lens: "id-web-news-kompas", word: "jokowi",
+        id: { title: "Dari Balai Kota ke Istana", text: "<p>Titik-titik abu-abu adalah kata yang paling mirip pergaulannya dengan <i>jokowi</i> pada 2012; yang jingga, pada 2024. Kata-kata itu diam di tempat; <i>jokowi</i>-lah yang berjalan di antaranya.</p>" },
+        en: { title: "From City Hall to the Palace", text: "<p>The grey dots are the words that kept company most like <i>jokowi</i> in 2012; the orange ones, in 2024. Those words stay put; it is <i>jokowi</i> that walks among them.</p>" },
+      },
+      {
+        type: "orbit", lens: "id-web-news-kompas", word: "jokowi",
+        id: { title: "Teman yang berganti", text: "<p>Lingkar dalam: kata yang paling sering muncul sehalaman dengan <i>jokowi</i>. Tiap tahun sebagian bertahan, sebagian pergi, dan yang baru (jingga) masuk: <i>pilkada</i>, <i>capres</i>, <i>istana</i>, <i>pilpres</i>, <i>sekretariat</i>.</p>" },
+        en: { title: "Company that changes", text: "<p>Inner ring: the words that most often share a page with <i>jokowi</i>. Each year some stay, some leave, and new ones (orange) arrive: <i>pilkada</i>, <i>capres</i>, <i>istana</i>, <i>pilpres</i>, <i>sekretariat</i>.</p>" },
+      },
+      {
+        type: "sparks", lens: "id-web-news-kompas",
+        words: ["blusukan", "revolusi mental", "tol laut", "tax amnesty", "hoaks", "milenial", "warganet", "viral", "ojek online", "fintech", "unicorn", "omnibus law", "new normal", "psbb", "ppkm", "kartu prakerja", "pinjol", "kripto", "tiktok", "stunting", "hilirisasi", "ikn", "mobil listrik", "bansos"],
+        id: { title: "Kata-kata yang lahir", text: "<p>Kata yang paling khas sebuah dasawarsa sering tidak punya masa lalu untuk dibandingkan. Yang dapat dilihat adalah kapan ia datang, dan kapan ia pergi. Tiap kotak punya skalanya sendiri.</p>" },
+        en: { title: "Words that were born", text: "<p>The words most typical of a decade often have no past to compare with. What can be seen is when they arrived, and when they left. Each box has its own scale.</p>" },
+      },
+      {
+        type: "traits", lens: "id-web-eras-kompas", words: ["jokowi", "prabowo", "ahok", "anies baswedan", "megawati", "sby", "kpk"],
+        id: { title: "Kata sifat di sekitar nama", text: "<p>Kata sifat yang lebih sering daripada kebetulan muncul di halaman yang menyebut sebuah nama, per masa jabatan presiden. Ini cermin pemberitaan, bukan penilaian atas orangnya; daftar kata sifatnya disusun dengan tangan dan sengaja tidak memuat tuduhan.</p>" },
+        en: { title: "Adjectives around a name", text: "<p>The adjectives that appear on pages mentioning a name more often than chance, by presidential term. This mirrors coverage; it is not a judgement of the person. The list of adjectives was made by hand and leaves out accusations on purpose.</p>" },
+      },
+      {
+        type: "years", lens: "id-web-news-kompas",
+        id: { title: "Tiap tahun dalam katanya sendiri", text: "<p>Kata dan nama yang lebih menjadi milik satu tahun daripada tahun mana pun lainnya. Tidak ada yang dipilih dengan tangan.</p>" },
+        en: { title: "Each year in its own words", text: "<p>The words and names that belong to one year more than to any other. Nothing here was picked by hand.</p>" },
+      },
+      {
+        type: "table", lenses: ["id-web-eras-kompas", "id-web-eras-tempo", "id-web-eras-tribun"], periods: ["2010-2014", "2020-2024"], groups: JOKOWI_TABLE,
+        id: {
+          title: "Uji: apa yang benar-benar bergeser",
+          text: `<p>Kata-kata ini dituliskan <b>sebelum</b> hasilnya dilihat, lalu diukur di tiga penerbit secara terpisah: 2010–2014 dibanding 2020–2024. Angka 4 ke atas berarti menonjol.</p>
+            <p><b>Menonjol di sedikitnya dua dari tiga penerbit:</b> <i>jokowi</i>, <i>ahok</i>, <i>basuki tjahaja purnama</i>, <i>positif</i>, <i>masker</i>. <b>Hanya di satu:</b> <i>joko widodo</i>, <i>anies</i>, <i>protokol</i>, <i>ibu kota</i>, <i>nusantara</i>, <i>kalimantan timur</i>, <i>konten</i>. <b>Tidak di mana pun:</b> <i>kpk</i>, <i>prabowo</i>, <i>relawan</i>, <i>blusukan</i>, <i>ojek</i>, <i>mitra</i>, <i>subsidi</i>, <i>kartu</i>. Tanda “–” berarti terlalu jarang pada 2010–2014 untuk diukur.</p>
+            <p>Bila semua penerbit digabung, perbandingan sejauh ini gagal dalam uji kami: susunan media di web berubah lebih besar daripada kata mana pun. Karena itu tiap penerbit diukur sendiri.</p>`,
+        },
+        en: {
+          title: "The test: what really shifted",
+          text: `<p>These words were written down <b>before</b> the results were seen, then measured in three publishers separately: 2010–2014 against 2020–2024. A number of 4 or more stands out.</p>
+            <p><b>Standing out in at least two of three publishers:</b> <i>jokowi</i>, <i>ahok</i>, <i>basuki tjahaja purnama</i>, <i>positif</i>, <i>masker</i>. <b>In one only:</b> <i>joko widodo</i>, <i>anies</i>, <i>protokol</i>, <i>ibu kota</i>, <i>nusantara</i>, <i>kalimantan timur</i>, <i>konten</i>. <b>Nowhere:</b> <i>kpk</i>, <i>prabowo</i>, <i>relawan</i>, <i>blusukan</i>, <i>ojek</i>, <i>mitra</i>, <i>subsidi</i>, <i>kartu</i>. A dash means too rare in 2010–2014 to measure.</p>
+            <p>With all publishers pooled, a comparison over this distance failed our test: the mix of publishers on the web changes more than any word does. That is why each publisher is measured alone.</p>`,
+        },
+      },
     ],
   },
   {
     slug: "kosakata-2020",
-    lenses: ["id-news", "id-news-tribun", "id-news-okezone", "id-web-news-kompas"],
-    periods: ["2019", "2020"],
-    id: {
-      title: "Kosakata 2020",
-      intro: `<p>Pada 2020 banyak kata lama mendadak berganti teman: <i>positif</i> tidak lagi soal dampak dan narkoba, <i>jarak</i> tidak lagi soal tempuh. Pergeseran ini tampak di empat sumber berita yang diukur sendiri-sendiri. Apakah <i>makna</i> kata-kata itu berubah, atau hanya peristiwanya, tidak dapat dijawab oleh angka; lihat teman-temannya.</p>`,
-      outro: "",
-    },
-    en: {
-      title: "The vocabulary of 2020",
-      intro: `<p>In 2020 many old words changed company overnight: <i>positif</i> was no longer about impact and drug tests, <i>jarak</i> no longer about travel. The shift shows in four news sources measured separately. Whether the <i>meaning</i> of these words changed, or only the events, the number cannot say; look at the company.</p>`,
-      outro: "",
-    },
-    groups: [
-      { id: "Kata lama, teman baru", en: "Old words, new company", words: ["positif", "negatif", "kontak", "jarak", "zona", "mandiri", "kerumunan", "gelombang", "klaster", "protokol", "reaktif", "sembuh"] },
-      { id: "Hidup dari rumah", en: "Life from home", words: ["daring", "tatap", "virtual", "zoom"] },
-      { id: "Pembanding: kata sehari-hari", en: "For comparison: everyday words", words: ["rumah", "makan", "sungai", "pohon"] },
+    id: { title: "Kosakata 2020", teaser: "Tahun ketika kata-kata lama mendadak berganti teman, dan selusin kata baru datang sekaligus.", intro: "Pada 2020 <i>positif</i> tidak lagi soal dampak dan narkoba, dan <i>jarak</i> tidak lagi soal tempuh. Apakah maknanya berubah, atau hanya peristiwanya, tidak dapat dijawab oleh angka; lihat teman-temannya." },
+    en: { title: "The vocabulary of 2020", teaser: "The year old words changed company overnight, and a dozen new ones arrived at once.", intro: "In 2020 <i>positif</i> was no longer about impact and drug tests, and <i>jarak</i> no longer about travel. Whether the meaning changed or only the events, the number cannot say; look at the company." },
+    scenes: [
+      {
+        type: "sparks", lens: "id-web-news-kompas", words: ["covid", "pandemi", "psbb", "new normal", "lockdown", "ppkm", "vaksinasi", "daring", "luring", "kartu prakerja", "bansos", "omnibus law"],
+        id: { title: "Datang sekaligus", text: "<p>Bagian halaman berita Kompas yang memuat tiap kata, 2011–2024.</p>" },
+        en: { title: "All at once", text: "<p>The share of Kompas news pages containing each word, 2011–2024.</p>" },
+      },
+      {
+        type: "path", lens: "id-web-news-kompas", word: "positif",
+        id: { title: "Perjalanan kata <i>positif</i>", text: "<p>Dari <i>negatif</i>, <i>dampak</i>, dan <i>respons</i> menuju <i>terkonfirmasi</i> dan <i>pasien</i>, lalu perlahan pulang.</p>" },
+        en: { title: "The journey of <i>positif</i>", text: "<p>From <i>negatif</i>, <i>dampak</i> and <i>respons</i> towards <i>terkonfirmasi</i> and <i>pasien</i>, and then slowly home.</p>" },
+      },
+      {
+        type: "orbit", lens: "id-web-news-kompas", word: "jarak",
+        id: { title: "<i>jarak</i> dan teman-temannya", text: "<p>Tekan ▶ dan lihat 2020 tiba.</p>" },
+        en: { title: "<i>jarak</i> and its company", text: "<p>Press ▶ and watch 2020 arrive.</p>" },
+      },
+      {
+        type: "table", lenses: ["id-news", "id-news-tribun", "id-news-okezone", "id-web-news-kompas"], periods: ["2019", "2020"],
+        groups: [
+          { id: "Kata lama, teman baru", en: "Old words, new company", words: ["positif", "negatif", "kontak", "jarak", "zona", "mandiri", "kerumunan", "gelombang", "klaster", "protokol", "reaktif", "sembuh"] },
+          { id: "Hidup dari rumah", en: "Life from home", words: ["daring", "tatap", "virtual", "zoom"] },
+          { id: "Pembanding: kata sehari-hari", en: "For comparison: everyday words", words: ["rumah", "makan", "sungai", "pohon"] },
+        ],
+        id: { title: "Di empat sumber sekaligus", text: "<p>Pergeseran 2019 → 2020 di empat sumber berita yang diukur sendiri-sendiri.</p>" },
+        en: { title: "In four sources at once", text: "<p>The shift from 2019 to 2020 in four news sources measured separately.</p>" },
+      },
     ],
   },
   {
     slug: "reformasi",
-    lenses: ["id-books"],
-    periods: ["1990-1994", "2000-2004"],
-    id: {
-      title: "Reformasi dalam buku",
-      intro: `<p>Buku-buku 1990–1994 dibanding buku-buku 2000–2004, sebelum dan sesudah 1998. Buku lebih lambat daripada berita, dan hanya satu sumber yang tersedia untuk masa ini, jadi tidak ada pembanding.</p>`,
-      outro: "",
-    },
-    en: {
-      title: "Reformasi in books",
-      intro: `<p>The books of 1990–1994 against the books of 2000–2004, before and after 1998. Books are slower than news, and only one source exists for these years, so there is nothing to check it against.</p>`,
-      outro: "",
-    },
-    groups: [
-      { id: "Kata-kata 1998", en: "The words of 1998", words: ["reformasi", "lengser", "krisis", "moneter", "kolusi", "nepotisme", "korupsi"] },
-      { id: "Sesudahnya", en: "Afterwards", words: ["otonomi", "pemekaran", "amandemen", "wacana", "transparan", "ham", "demokrasi"] },
+    id: { title: "Reformasi dalam buku", teaser: "Sebelum dan sesudah 1998, dilihat dari jutaan halaman buku: kata yang tiba, dan kata yang pindah tempat.", intro: "Buku lebih lambat daripada berita, dan hanya satu sumber yang tersedia untuk masa ini, jadi tidak ada pembanding. Tetapi jejaknya jelas." },
+    en: { title: "Reformasi in books", teaser: "Before and after 1998, seen in millions of book pages: words that arrived, and words that moved.", intro: "Books are slower than news, and only one source exists for these years, so there is nothing to check it against. But the trace is plain." },
+    scenes: [
+      {
+        type: "sparks", lens: "id-books", words: ["reformasi", "lengser", "krisis", "moneter", "kolusi", "nepotisme", "otonomi", "pemekaran", "amandemen", "transparan", "ham", "mantan"],
+        id: { title: "Kata-kata 1998 dan sesudahnya", text: "<p>Bagian halaman buku yang memuat tiap kata, 1950–2019, per lima tahun.</p>" },
+        en: { title: "The words of 1998 and after", text: "<p>The share of book pages containing each word, 1950–2019, in five-year periods.</p>" },
+      },
+      {
+        type: "path", lens: "id-books", word: "transparan",
+        id: { title: "<i>transparan</i>: dari cat ke anggaran", text: "<p>Pada 1980-an kata ini bergaul dengan <i>warna</i> dan <i>cahaya</i>; pada 2010-an dengan <i>akuntabel</i> dan <i>publik</i>.</p>" },
+        en: { title: "<i>transparan</i>: from paint to budgets", text: "<p>In the 1980s this word kept company with <i>warna</i> and <i>cahaya</i>; in the 2010s with <i>akuntabel</i> and <i>publik</i>.</p>" },
+      },
+      {
+        type: "orbit", lens: "id-books", word: "reformasi",
+        id: { title: "<i>reformasi</i> dan teman-temannya", text: "<p>Sebelum 1998 kata ini sudah ada, dengan teman yang lain.</p>" },
+        en: { title: "<i>reformasi</i> and its company", text: "<p>The word existed before 1998, in other company.</p>" },
+      },
+      {
+        type: "table", lenses: ["id-books"], periods: ["1990-1994", "2000-2004"],
+        groups: [
+          { id: "Kata-kata 1998", en: "The words of 1998", words: ["reformasi", "lengser", "krisis", "moneter", "kolusi", "nepotisme", "korupsi"] },
+          { id: "Sesudahnya", en: "Afterwards", words: ["otonomi", "pemekaran", "amandemen", "wacana", "transparan", "ham", "demokrasi"] },
+        ],
+        id: { title: "Angkanya", text: "<p>Buku 1990–1994 dibanding buku 2000–2004.</p>" },
+        en: { title: "The numbers", text: "<p>The books of 1990–1994 against those of 2000–2004.</p>" },
+      },
     ],
   },
+];
+
+// Words shown one after another on the first page, each in the lens where its story is told best.
+export const SHOWCASE = [
+  ["transparan", "id-books"], ["jokowi", "id-web-news-kompas"], ["situs", "id-books"], ["positif", "id-web-news-kompas"],
+  ["ibu kota", "id-web-news-kompas"], ["mantan", "id-books"], ["konten", "id-web-news-kompas"], ["nusantara", "id-web-news-kompas"],
 ];
 
 export const FEATURED = ["transparan", "mantan", "situs", "lengser", "positif", "daring", "goreng", "jokowi", "ibu kota", "kpk", "nusantara", "rumah"];
@@ -147,12 +217,12 @@ export const NOTES = Object.fromEntries(
 
 export const TEXT = {
   id: {
-    title: "Jejak Kata",
-    search: "Cari kata…",
+    title: "Kata dikenal dari temannya.",
+    search: "Cari kata atau nama…",
     nav_movers: "Paling bergeser",
     nav_method: "Cara kerja",
     footer: "Data: HathiTrust Extracted Features (CC BY 4.0), CC-NEWS, HPLT 3.0 (dari Common Crawl dan Internet Archive), OpenAlex (CC0), serta judul artikel Wikipedia bahasa Indonesia dan Wikidata. Angka-angka di sini adalah ukuran statistik atas teks, bukan kamus.",
-    intro: "Kata dikenal dari temannya. Situs ini menunjukkan kata-kata apa yang sering muncul bersama sebuah kata bahasa Indonesia pada tiap masa, dan seberapa jauh pergaulan itu berubah.",
+    intro: "Jejak Kata menunjukkan kata-kata apa yang muncul bersama sebuah kata bahasa Indonesia pada tiap masa, dan seberapa jauh pergaulan itu berubah, dalam buku, berita, blog, dan abstrak ilmiah.",
     caveats: `<h2>Sebelum membaca angkanya</h2><ul>
       <li><b>Yang diukur adalah pemakaian dalam teks tertentu</b>, yaitu buku di perpustakaan, berita dan blog di web, serta abstrak ilmiah; bukan bahasa lisan dan bukan makna kamus.</li>
       <li><b>Sumber-sumber tidak digabung.</b> Tiap sumber diukur sendiri; perubahan yang tampak di lebih dari satu sumber lebih layak dipercaya.</li>
@@ -211,6 +281,28 @@ export const TEXT = {
     lens: "Sumber",
     units: "Satuan teks",
     false_alarms: "tak disentuh",
+    kicker: "Bahasa Indonesia, 1910–2026",
+    nav_years: "Tahun dalam kata",
+    years_about: "Kata dan nama yang lebih menjadi milik satu masa daripada masa mana pun lainnya di sumber itu. Dihitung, bukan dipilih. Tekan ▶.",
+    play: "Putar",
+    path: "Jejak",
+    orbit: "Teman",
+    numbers: "Angka",
+    traits: "Kata sifat",
+    name: "Nama",
+    traits_about: "Kata sifat yang lebih sering daripada kebetulan muncul bersama nama ini, per masa. Ini cermin pemberitaan, bukan penilaian; daftar kata sifatnya disusun dengan tangan dan tidak memuat tuduhan.",
+    orbit_about: "Lingkar dalam: kata yang paling sering muncul bersama. Lingkar luar, bergaris putus: kata yang pergaulannya paling mirip. Yang jingga baru masuk pada masa itu.",
+    path_about: "Kata-kata di sekitar tidak bergerak: masing-masing ditaruh di tempat rata-ratanya, pada bidang yang paling memisahkan mereka. Yang bergerak adalah kata ini, ditaruh di antara mereka sekali untuk tiap masa. Bila masanya banyak, tiap langkah dirata-ratakan dengan langkah di sebelahnya, sebab dari tahun ke tahun kata lebih banyak bergoyang daripada berpindah. Gambar ini ringkasan kasar dari 4.000 ukuran, direntangkan agar memenuhi bingkai: arah lebih dapat dipercaya daripada jarak.",
+    near_early: (p) => `paling mirip pada ${p}`,
+    near_late: (p) => `paling mirip pada ${p}`,
+    peak: (period, share) => `puncak ${period}: ${share}`,
+    random: "Kata acak ↻",
+    million: "juta",
+    stat_units: "halaman, artikel, dan abstrak",
+    stat_lenses: "sumber, diukur sendiri-sendiri",
+    stat_names: "nama dengan artikel Wikipedia",
+    stat_span: "rentang waktu",
+    kind_one_person: "orang", kind_one_organisation: "lembaga", kind_one_place: "tempat", kind_one_other: "nama",
     not_found: "Kata ini tidak termasuk kata-kata tersering di sumber mana pun.",
     is_name: "Kata ini hampir selalu ditulis dengan huruf kapital dan tidak punya artikel di Wikipedia bahasa Indonesia, jadi dianggap nama diri yang bukan milik umum dan tidak ditampilkan.",
     no_data: "Data belum tersedia.",
@@ -222,12 +314,12 @@ export const TEXT = {
       <p>Cara ini diuji dengan menanam perubahan buatan pada data nyata, dan dengan daftar kata yang perubahannya sudah dituliskan sebelum hasilnya dilihat. Rincian, kode, dan hasil ujinya ada di repositori.</p>`,
   },
   en: {
-    title: "Jejak Kata: word traces",
-    search: "Look up a word…",
+    title: "You know a word by the company it keeps.",
+    search: "Look up a word or a name…",
     nav_movers: "Most shifted",
     nav_method: "How it works",
     footer: "Data: HathiTrust Extracted Features (CC BY 4.0), CC-NEWS, HPLT 3.0 (from Common Crawl and the Internet Archive), OpenAlex (CC0), and the article titles of Indonesian Wikipedia with Wikidata. The numbers here are statistics over text, not a dictionary.",
-    intro: "You know a word by the company it keeps. This site shows which words appeared alongside an Indonesian word in each period, and how far that company changed.",
+    intro: "Jejak Kata (word traces) shows which words appeared alongside an Indonesian word in each period, and how far that company changed, in books, news, blogs and academic abstracts.",
     caveats: `<h2>Before reading the numbers</h2><ul>
       <li><b>What is measured is usage in particular texts</b>: library books, news and blogs on the web, and academic abstracts. Not speech, and not dictionary meaning.</li>
       <li><b>Sources are never merged.</b> Each is measured on its own; a change seen in more than one deserves more trust.</li>
@@ -286,6 +378,28 @@ export const TEXT = {
     lens: "Source",
     units: "Units of text",
     false_alarms: "untouched",
+    kicker: "Indonesian, 1910–2026",
+    nav_years: "The year in words",
+    years_about: "The words and names that belong to one period more than to any other in that source. Counted, not chosen. Press ▶.",
+    play: "Play",
+    path: "Path",
+    orbit: "Company",
+    numbers: "Numbers",
+    traits: "Adjectives",
+    name: "Name",
+    traits_about: "The adjectives that appear with this name more often than chance, by period. This mirrors coverage; it is not a judgement. The list of adjectives was made by hand and leaves out accusations.",
+    orbit_about: "Inner ring: the words it most often appears with. Outer ring, dashed: the words whose company is most like its own. Orange ones are new in that period.",
+    path_about: "The surrounding words do not move: each is put at its average place, on the plane that spreads them most. What moves is this word, placed among them once for each period. With many periods, each step is averaged with the steps next to it, because from year to year a word jitters more than it moves. The picture is a rough summary of 4,000 measurements, stretched to fill the frame: trust the direction more than the distance.",
+    near_early: (p) => `most alike in ${p}`,
+    near_late: (p) => `most alike in ${p}`,
+    peak: (period, share) => `peak ${period}: ${share}`,
+    random: "A random word ↻",
+    million: "million",
+    stat_units: "pages, articles and abstracts",
+    stat_lenses: "sources, each measured alone",
+    stat_names: "names with a Wikipedia article",
+    stat_span: "time span",
+    kind_one_person: "person", kind_one_organisation: "organisation", kind_one_place: "place", kind_one_other: "name",
     not_found: "This word is not among the most common words of any source.",
     is_name: "This word is almost always capitalised and has no article on Indonesian Wikipedia, so it is treated as a private name and not shown.",
     no_data: "The data is not available yet.",

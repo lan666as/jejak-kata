@@ -108,3 +108,24 @@ def test_a_name_is_an_entry_only_if_wikipedia_knows_it(measures):
     assert meta["kinds"] == {str(c.row["tokoh"]): "person"}
     entries = {e["word"] for path in (out / "words").glob("*.json") for e in json.loads(path.read_text())}
     assert c.row["tokoh"] in entries and c.row["warga"] not in entries
+
+
+def test_highlights_name_a_periods_own_words(measures, tmp_path, monkeypatch):
+    c, _ = measures
+    monkeypatch.setattr(export, "ADJECTIVES", tmp_path / "adjectives.txt")
+    export.ADJECTIVES.write_text("# none of these occur\nbagus tegas\n")
+    export.highlights(LENS)
+    found = json.loads((export.ROOT / LENS.name / "highlights.json").read_text())
+    assert len(found["peaks"]) == 3 and c.row["warga"] not in {w for period in found["peaks"] for w in period}
+    assert found["traits"] == {str(c.row["tokoh"]): [[], [], []]}  # the toy corpus has no adjectives
+    mover = c.row["mover"]
+    path = next(
+        p
+        for p in json.loads((export.ROOT / LENS.name / "paths" / f"{mover // export.BUCKET}.json").read_text())
+        if p["word"] == mover
+    )
+    near = [c.words[i][:2] for i in path["near"]]
+    assert near[: path["early"]] == ["t0"] * path["early"] and set(near[path["early"] :]) == {"t1"}
+    distance = lambda at, group: min(np.hypot(*np.subtract(at, xy)) for xy, n in zip(path["at"], near) if n == group)
+    assert distance(path["path"][0], "t0") < distance(path["path"][0], "t1")  # it starts among its old neighbours
+    assert distance(path["path"][2], "t1") < distance(path["path"][2], "t0")  # and ends among its new ones

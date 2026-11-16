@@ -136,6 +136,22 @@ in 1980–84, with *publik, akuntabel, kinerja, korupsi* in 2010–14 (shift 11.
 *mantan* arrives in 1985–89 (19.5), *lengser* in 1995–99 (24.5), *situs* turns
 from archaeology to the web by 2000–04 (22.9).
 
+## What the site shows
+
+For any word or name, in each lens that has it:
+
+- **its path**: the words most like it in the first and the last period are laid out on a plane and stay
+  put, and the word is drawn where it stands among them in each period (after the figure in Hamilton,
+  Leskovec and Jurafsky, 2016; here no alignment is needed, because every period uses the same contexts);
+- **its company**, period by period, with what arrived and what left;
+- **the numbers**: frequency, the shift between every two periods, two periods side by side;
+- for a name, **the adjectives** that keep it company, from a hand-made list without accusations.
+
+And across words: each period in its own words (those that belong to it more than to any other, counted
+and not chosen), the most shifted, names by kind, two words compared, and three stories built from these
+pieces. The path, the company and each period's own words measure no change and need no test; only the
+shift is a claim about change.
+
 ## Layout
 
 ```
@@ -157,7 +173,8 @@ idhist/
   export.py             everything the site shows, as small static files
 site/                   the static site (no build step, no dependencies)
 validation/             the pre-registered word lists and their protocol
-manifests/              which HathiTrust volumes (pinned: the catalogue dump changes monthly)
+manifests/              which HathiTrust volumes (pinned: the catalogue dump changes monthly);
+                        the adjectives looked for around names
 tests/                  the whole path on a toy corpus with one planted change
 docs/                   the report, and how the measure was chosen (instrument.md)
 run.sh                  rebuild everything, in order
