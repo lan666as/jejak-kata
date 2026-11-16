@@ -24,7 +24,7 @@ packages = ["idhist", "idhist.sources"]
 
 [tool.ruff]
 line-length = 120
-extend-exclude = ["research"]
+extend-exclude = ["docs/instrument", "internal"]  # docs/instrument holds the scripts of a finished experiment, kept as a record
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
