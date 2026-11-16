@@ -7,7 +7,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
-from idhist import counts, export, measure, planted, units
+from idhist import counts, export, highlights, measure, planted, units
 from idhist.lenses import Lens, bins
 from idhist.sources import wikipedia
 
@@ -110,22 +110,37 @@ def test_a_name_is_an_entry_only_if_wikipedia_knows_it(measures):
     assert c.row["tokoh"] in entries and c.row["warga"] not in entries
 
 
-def test_highlights_name_a_periods_own_words(measures, tmp_path, monkeypatch):
+def test_highlights_chart_every_entry_and_its_route(measures, tmp_path, monkeypatch):
     c, _ = measures
-    monkeypatch.setattr(export, "ADJECTIVES", tmp_path / "adjectives.txt")
-    export.ADJECTIVES.write_text("# none of these occur\nbagus tegas\n")
-    export.highlights(LENS)
-    found = json.loads((export.ROOT / LENS.name / "highlights.json").read_text())
+    (tmp_path / "words.txt").write_text("# none of these occur\nbagus tegas\n")
+    monkeypatch.setattr(highlights, "LEXICONS", {"adjectives": tmp_path / "words.txt"})
+    highlights.highlights(LENS)
+    out = export.ROOT / LENS.name
+    found = json.loads((out / "highlights.json").read_text())
     assert len(found["peaks"]) == 3 and c.row["warga"] not in {w for period in found["peaks"] for w in period}
-    assert found["traits"] == {str(c.row["tokoh"]): [[], [], []]}  # the toy corpus has no adjectives
+    traits = json.loads((out / "traits.json").read_text())
+    assert traits == {"adjectives": {str(c.row["tokoh"]): [[], [], []]}}  # the toy corpus has no adjectives
+    assert found["swaps"] == [] and found["arrivals"] == {"went": [], "stayed": []}  # three periods are no series
+
+    chart = json.loads((out / "chart.json").read_text())
+    assert c.row["warga"] not in chart["words"] and len(chart["x"]) == len(chart["words"]) == len(chart["moved"])
+    at = {c.words[w]: (x, y) for w, x, y in zip(chart["words"], chart["x"], chart["y"])}
     mover = c.row["mover"]
     path = next(
-        p
-        for p in json.loads((export.ROOT / LENS.name / "paths" / f"{mover // export.BUCKET}.json").read_text())
-        if p["word"] == mover
+        p for p in json.loads((out / "paths" / f"{mover // export.BUCKET}.json").read_text()) if p["word"] == mover
     )
     near = [c.words[i][:2] for i in path["near"]]
     assert near[: path["early"]] == ["t0"] * path["early"] and set(near[path["early"] :]) == {"t1"}
-    distance = lambda at, group: min(np.hypot(*np.subtract(at, xy)) for xy, n in zip(path["at"], near) if n == group)
-    assert distance(path["path"][0], "t0") < distance(path["path"][0], "t1")  # it starts among its old neighbours
-    assert distance(path["path"][2], "t1") < distance(path["path"][2], "t0")  # and ends among its new ones
+    distance = lambda xy, group, places: min(np.hypot(*np.subtract(xy, place)) for place, n in places if n == group)
+    among = list(zip(path["at"], near))
+    assert distance(path["path"][0], "t0", among) < distance(
+        path["path"][0], "t1", among
+    )  # it starts among its old neighbours
+    assert distance(path["path"][2], "t1", among) < distance(
+        path["path"][2], "t0", among
+    )  # and ends among its new ones
+    islands = [(xy, word[:2]) for word, xy in at.items() if word[0] == "t"]
+    assert distance(path["route"][0], "t0", islands) < distance(
+        path["route"][0], "t1", islands
+    )  # the same on the chart
+    assert distance(path["route"][2], "t1", islands) < distance(path["route"][2], "t0", islands)

@@ -43,7 +43,7 @@ stage_validate() {
   for entry in $LENSES; do python -m idhist.planted ${entry//:/ }; done
   for lens in $EXPECTED; do python -m idhist.expected "$lens"; done
 }
-stage_export()   { each export; }
+stage_export()   { each export; each highlights; }
 stage_deploy()   {  # publish site/ (with its data) as the gh-pages branch; not part of a plain ./run.sh
   local tree; tree=$(mktemp -d)
   cp -r site/. "$tree" && touch "$tree/.nojekyll"

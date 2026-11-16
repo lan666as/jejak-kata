@@ -1,0 +1,16 @@
+# Indonesian verbs for what a person or an institution is reported as doing or saying in news.
+# Chosen by hand, once, before any result was seen. Verbs that amount to an accusation of a crime
+# (membunuh, mencuri, memperkosa, menyuap ...) are left out on purpose: the site shows these next to names.
+mengatakan menegaskan menyatakan menyebut menjelaskan menyampaikan mengungkapkan menuturkan mengaku mengakui
+membantah menolak menepis menampik mengkritik mengecam menyindir menuding menuduh menyesalkan menyayangkan
+memuji mengapresiasi mendukung membela menyambut menyetujui merestui mengizinkan melarang
+meminta mengimbau mengajak mendesak menuntut memerintahkan menginstruksikan mengingatkan memperingatkan
+berjanji memastikan menjamin menargetkan berharap optimistis berencana mempertimbangkan memutuskan menetapkan
+meresmikan meninjau mengunjungi menghadiri membuka menutup melantik menunjuk mengangkat mencopot memecat mengganti
+menandatangani menerbitkan mengeluarkan mengesahkan merevisi mencabut membatalkan menunda mempercepat
+membangun memperbaiki meningkatkan mengembangkan menyalurkan membagikan memberikan menyerahkan menerima
+memimpin memenangkan mengalahkan mencalonkan mendaftar mendeklarasikan mengusung berkampanye berdebat bertemu
+menemui berbincang bersalaman memeluk tertawa tersenyum menangis marah emosi bercanda blusukan
+memeriksa menyelidiki menahan menangkap menggeledah menyita menjerat memanggil mengusut menindak
+mengundurkan mundur maju bertahan pindah kembali pulang berangkat tiba mendarat
+menggusur menertibkan merelokasi menata melawan menggugat melaporkan mengadu memprotes berunjuk
