@@ -5,7 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Jejak Kata</title>
 <meta name="description" content="Bagaimana kata-kata bahasa Indonesia berganti teman dari masa ke masa. How Indonesian words changed the company they keep.">
+<link rel="preload" href="bricolage.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
+<link rel="modulepreload" href="app.js">
+<link rel="modulepreload" href="chart.js">
+<link rel="modulepreload" href="plate.js">
+<link rel="modulepreload" href="text.js">
+<link rel="preload" href="data/id-web-news-kompas/first.json" as="fetch" crossorigin>
 </head>
 <body>
 <header>
@@ -15,18 +21,15 @@
     <ul id="suggestions" hidden></ul>
   </form>
   <nav>
-    <a href="#/peta" data-t="nav_chart"></a>
-    <a href="#/balap" data-t="nav_race"></a>
-    <a href="#/tahun" data-t="nav_years"></a>
-    <a href="#/temuan" data-t="nav_findings"></a>
-    <a href="#/kuis" data-t="nav_quiz"></a>
-    <a href="#/bergeser" data-t="nav_movers"></a>
-    <a href="#/entitas" data-t="nav_entities"></a>
-    <a href="#/metode" data-t="nav_method"></a>
-    <button id="language" type="button"></button>
+    <a href="#/cerita" data-t="nav_stories">Cerita</a>
+    <a href="#/main" data-t="nav_play">Mainan</a>
+    <a href="#/peta" data-t="nav_chart">Peta</a>
+    <a href="#/temuan" data-t="nav_findings">Temuan</a>
+    <a href="#/metode" data-t="nav_method">Cara</a>
+    <button id="language" type="button">English</button>
   </nav>
 </header>
-<main id="view"></main>
+<main id="view"><p class="loading">Memuat peta kata…</p></main>
 <footer data-t="footer"></footer>
 <div id="tip" role="status" hidden></div>
 <script type="module" src="app.js"></script>

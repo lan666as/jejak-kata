@@ -1,13 +1,941 @@
-[
- {"lens": "id-web-news-kompas", "word": "prabowo", "with": ["capres", "menteri pertahanan", "gerindra", "jokowi", "oposisi", "mengkritik", "koalisi", "kabinet"]},
- {"lens": "id-web-news-kompas", "word": "gibran", "with": ["putra", "solo", "wali kota", "cawapres", "mk", "prabowo", "jokowi", "wakil presiden", "pengusaha", "usia"]},
- {"lens": "id-web-news-kompas", "word": "kpk", "with": ["tersangka", "menetapkan", "memeriksa", "menahan", "revisi", "pegawai", "penindakan", "etik"]},
- {"lens": "id-web-news-kompas", "word": "dpr", "with": ["korupsi", "tersangka", "revisi", "mahasiswa"]},
- {"lens": "id-web-news-kompas", "word": "ahok", "with": ["gubernur", "sidang", "pilkada", "pertamina", "komisaris"]},
- {"lens": "id-web-eras-kompas", "word": "prabowo", "with": ["capres", "menteri pertahanan", "oposisi", "mengkritik"]},
- {"lens": "id-web-eras-tempo", "word": "prabowo", "with": ["capres", "menteri pertahanan", "oposisi", "mengkritik"]},
- {"lens": "id-web-eras-tribun", "word": "prabowo", "with": ["capres", "menteri pertahanan", "oposisi", "mengkritik"]},
- {"lens": "id-web-eras-kompas", "word": "kpk", "with": ["tersangka", "menetapkan", "memeriksa"]},
- {"lens": "id-web-eras-tempo", "word": "kpk", "with": ["tersangka", "menetapkan", "memeriksa"]},
- {"lens": "id-web-eras-tribun", "word": "kpk", "with": ["tersangka", "menetapkan", "memeriksa"]}
-]
+{
+ "together": [
+  {
+   "lens": "id-web-news-kompas",
+   "word": "prabowo",
+   "with": [
+    "capres",
+    "menteri pertahanan",
+    "gerindra",
+    "jokowi",
+    "oposisi",
+    "mengkritik",
+    "koalisi",
+    "kabinet"
+   ]
+  },
+  {
+   "lens": "id-web-news-kompas",
+   "word": "gibran",
+   "with": [
+    "putra",
+    "solo",
+    "wali kota",
+    "cawapres",
+    "mk",
+    "prabowo",
+    "jokowi",
+    "wakil presiden",
+    "pengusaha",
+    "usia"
+   ]
+  },
+  {
+   "lens": "id-web-news-kompas",
+   "word": "kpk",
+   "with": [
+    "tersangka",
+    "menetapkan",
+    "memeriksa",
+    "menahan",
+    "revisi",
+    "pegawai",
+    "penindakan",
+    "etik",
+    "viral",
+    "video",
+    "maaf",
+    "oknum"
+   ]
+  },
+  {
+   "lens": "id-web-news-kompas",
+   "word": "dpr",
+   "with": [
+    "korupsi",
+    "tersangka",
+    "revisi",
+    "mahasiswa",
+    "viral",
+    "video",
+    "maaf",
+    "oknum"
+   ]
+  },
+  {
+   "lens": "id-web-news-kompas",
+   "word": "ahok",
+   "with": [
+    "gubernur",
+    "sidang",
+    "pilkada",
+    "pertamina",
+    "komisaris"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "prabowo",
+   "with": [
+    "capres",
+    "menteri pertahanan",
+    "oposisi",
+    "mengkritik"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "prabowo",
+   "with": [
+    "capres",
+    "menteri pertahanan",
+    "oposisi",
+    "mengkritik"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "prabowo",
+   "with": [
+    "capres",
+    "menteri pertahanan",
+    "oposisi",
+    "mengkritik"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "kpk",
+   "with": [
+    "tersangka",
+    "menetapkan",
+    "memeriksa",
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "kpk",
+   "with": [
+    "tersangka",
+    "menetapkan",
+    "memeriksa",
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "kpk",
+   "with": [
+    "tersangka",
+    "menetapkan",
+    "memeriksa",
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-news-kompas",
+   "word": "polisi",
+   "with": [
+    "viral",
+    "video",
+    "maaf",
+    "oknum"
+   ]
+  },
+  {
+   "lens": "id-web-news-kompas",
+   "word": "polri",
+   "with": [
+    "viral",
+    "video",
+    "maaf",
+    "oknum"
+   ]
+  },
+  {
+   "lens": "id-web-news-kompas",
+   "word": "tni",
+   "with": [
+    "viral",
+    "video",
+    "maaf",
+    "oknum"
+   ]
+  },
+  {
+   "lens": "id-web-news-kompas",
+   "word": "guru",
+   "with": [
+    "viral",
+    "video",
+    "maaf",
+    "oknum"
+   ]
+  },
+  {
+   "lens": "id-web-news-kompas",
+   "word": "propam",
+   "with": [
+    "viral",
+    "video",
+    "maaf",
+    "oknum"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "polisi",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "dpr",
+   "with": [
+    "viral",
+    "video",
+    "maaf",
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "tni",
+   "with": [
+    "viral",
+    "video",
+    "maaf",
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "menteri",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "guru",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "propam",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "jaksa",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "hakim",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "polisi",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "dpr",
+   "with": [
+    "viral",
+    "video",
+    "maaf",
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "tni",
+   "with": [
+    "viral",
+    "video",
+    "maaf",
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "menteri",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "guru",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "propam",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "jaksa",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "hakim",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "polisi",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "dpr",
+   "with": [
+    "viral",
+    "video",
+    "maaf",
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "tni",
+   "with": [
+    "viral",
+    "video",
+    "maaf",
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "menteri",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "guru",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "propam",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "jaksa",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "hakim",
+   "with": [
+    "viral",
+    "video",
+    "maaf"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "demokrat",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "pdip",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "golkar",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "pks",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "gerindra",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "nasdem",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "pkb",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "polri",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "mk",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "kementerian agama",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "kejaksaan agung",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "mahkamah agung",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "bumn",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "demokrat",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "pdip",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "golkar",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "pks",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "gerindra",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "nasdem",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "pkb",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "polri",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "mk",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "kementerian agama",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "kejaksaan agung",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "mahkamah agung",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "bumn",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "demokrat",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "pdip",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "golkar",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "pks",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "gerindra",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "nasdem",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "pkb",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "polri",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "mk",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "kementerian agama",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "kejaksaan agung",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "mahkamah agung",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "bumn",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "gibran",
+   "with": [
+    "putra",
+    "dinasti",
+    "mk"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "gibran",
+   "with": [
+    "putra",
+    "dinasti",
+    "mk"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "gibran",
+   "with": [
+    "putra",
+    "dinasti",
+    "mk"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "pdi perjuangan",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "pdi-p",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "pdi perjuangan",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "pdi-p",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "pdi perjuangan",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "pdi-p",
+   "with": [
+    "korupsi",
+    "tersangka"
+   ]
+  }
+ ],
+ "stick": {
+  "lenses": [
+   "id-web-eras-kompas",
+   "id-web-eras-tempo",
+   "id-web-eras-tribun"
+  ],
+  "words": [
+   "tersangka",
+   "korupsi",
+   "suap",
+   "ditangkap",
+   "ditahan",
+   "diperiksa",
+   "saksi",
+   "divonis",
+   "penjara",
+   "terdakwa",
+   "dipecat",
+   "mundur",
+   "maaf",
+   "viral",
+   "video",
+   "kritik",
+   "mengkritik",
+   "dikritik",
+   "demo",
+   "mahasiswa",
+   "buruh",
+   "hoaks",
+   "dinasti",
+   "oligarki",
+   "nepotisme",
+   "perempuan",
+   "istri",
+   "anak",
+   "keluarga",
+   "blusukan",
+   "pencitraan",
+   "janji",
+   "utang",
+   "tambang",
+   "bansos",
+   "kekerasan",
+   "ham",
+   "etik",
+   "oknum",
+   "kontroversial",
+   "survei",
+   "elektabilitas",
+   "tegas",
+   "marah",
+   "bohong",
+   "gagal",
+   "sukses",
+   "rakyat",
+   "tuhan",
+   "doa",
+   "polisi",
+   "pengadilan",
+   "sidang",
+   "dilaporkan",
+   "dituding",
+   "membantah",
+   "klarifikasi"
+  ]
+ },
+ "years": {
+  "lenses": [
+   "id-web-eras-kompas",
+   "id-web-eras-tempo",
+   "id-web-eras-tribun"
+  ],
+  "words": [
+   "kpk",
+   "korupsi",
+   "koruptor",
+   "presiden",
+   "dpr",
+   "menteri",
+   "kejaksaan agung",
+   "operasi tangkap tangan",
+   "viral",
+   "polisi",
+   "sby",
+   "boediono",
+   "jusuf kalla",
+   "hatta rajasa",
+   "ahok",
+   "setya novanto",
+   "anas urbaningrum",
+   "dahlan iskan",
+   "megawati",
+   "jokowi",
+   "prabowo",
+   "kkb",
+   "opm",
+   "china",
+   "tiongkok",
+   "cina",
+   "buruh",
+   "subsidi",
+   "kabut asap",
+   "radikal",
+   "pencitraan",
+   "didesak",
+   "bentrok",
+   "mogok",
+   "harga bahan bakar",
+   "bersubsidi",
+   "penyadapan",
+   "blusukan",
+   "ma'ruf amin",
+   "gatot nurmantyo",
+   "tito karnavian",
+   "anies baswedan",
+   "ganjar pranowo",
+   "gibran",
+   "dinasti",
+   "nepotisme",
+   "politik dinasti",
+   "dinasti politik",
+   "tersangka",
+   "pdip",
+   "pdi perjuangan",
+   "demokrat",
+   "hoaks",
+   "hoax"
+  ],
+  "span": [
+   2011,
+   2024
+  ]
+ }
+}

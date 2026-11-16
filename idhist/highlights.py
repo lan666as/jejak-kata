@@ -8,6 +8,7 @@ Writes site/data/<lens>/:
                        arrivals   words that came and went, and words that came and stayed
                        swaps      pairs where one word took over the company the other used to keep
     chart.json         every entry on one plane, with how far it moved at most
+    first.json         its most frequent entries with their names, and the periods: the first screen
     paths/<n>.json     for the entries of words/<n>.json: where the entry stood on the chart in each
                        period (`route`), its path among its own first and last neighbours, and for a
                        name the adjectives and the verbs that keep it company, each with how strongly
@@ -47,6 +48,7 @@ ROSE, ALIKE = 3.0, 0.5  # a swap needs both words to change by this factor, and 
 SAME, LINE = 0.9, 5  # words that are this alike, this many together, are a repeated line (see _lines)
 LANDMARKS, CLOSEST = 6_000, 8  # a route is placed among the closest of the most frequent entries
 CHART = 1_000  # the chart runs from -CHART to CHART
+FIRST = 2_500  # entries in first.json: the most frequent, with their names, so that a first screen needs nothing else
 LEXICONS = {"adjectives": Path("manifests/adjectives-id.txt"), "verbs": Path("manifests/verbs-id.txt")}
 
 
@@ -146,6 +148,17 @@ def _swaps(share: np.ndarray, sketch: np.ndarray, known: np.ndarray, listable: n
     return swaps
 
 
+def first_screen(out: Path, words: list[str]) -> None:
+    """The head of chart.json with the names written out: all a first screen needs to draw and name the chart."""
+    chart = json.loads((out / "chart.json").read_text())
+    head = {key: values[:FIRST] for key, values in chart.items()}
+    head |= {
+        "names": [words[i] for i in head["words"]],
+        "periods": json.loads((out / "meta.json").read_text())["periods"],
+    }
+    (out / "first.json").write_text(json.dumps(head, separators=(",", ":")))
+
+
 def _chart(
     sketch: np.ndarray, known: np.ndarray, entries: np.ndarray, kept: np.ndarray | None
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -242,6 +255,7 @@ def highlights(lens: Lens) -> None:
     chart = {"words": entries.tolist(), "x": flat[:, 0].tolist(), "y": flat[:, 1].tolist()}
     chart["moved"] = [None if np.isnan(m) else round(float(m), 1) for m in moved]
     (out / "chart.json").write_text(json.dumps(chart, separators=(",", ":")))
+    first_screen(out, counts.words)
     place = {int(w): k for k, w in enumerate(entries)}
 
     shutil.rmtree(out / "paths", ignore_errors=True)

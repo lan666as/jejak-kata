@@ -1,5 +1,6 @@
 // The sea chart: every entry of a lens as an island on one plane, and the routes of chosen words across it.
-// Drag to pan, buttons or ctrl+wheel or pinch-free zoom, hover for a name, click to choose a word.
+// Drag to pan, buttons or ctrl+wheel to zoom, hover for a name, click to choose a word. With the keyboard:
+// arrows pan, + and - zoom, 0 shows everything, Enter chooses the island under the ring in the middle.
 
 const STEPS = [2, 4, 7, 12, 20]; // shift boundaries, as in app.js
 const LEG = 900; // milliseconds a ship takes from one period to the next
@@ -11,16 +12,21 @@ const css = (name) => getComputedStyle(document.documentElement).getPropertyValu
  * Returns the node and: `routes(list)` with list of {id, color, route: [[x, y] | null per period]};
  * `time(p)` sails every ship to period p; `frame(ids)` brings these words and their routes into view; `mark(id)`.
  */
-export function seaChart({ chart, name, pick, periods, tip }) {
+export function seaChart({ chart, name, pick, periods, tip, label = "" }) {
   const node = document.createElement("div");
   node.className = "chart";
-  node.innerHTML = `<canvas></canvas><div class="when"></div><div class="zoom"><button type="button" aria-label="+">+</button><button type="button" aria-label="−">−</button><button type="button" aria-label="⤢">⤢</button></div>`;
+  node.innerHTML = `<canvas tabindex="0" role="application" aria-label="${label}"></canvas><div class="when"></div><div class="zoom"><button type="button" aria-label="+">+</button><button type="button" aria-label="−">−</button><button type="button" aria-label="⤢">⤢</button></div>`;
   const canvas = node.firstChild, ctx = canvas.getContext("2d"), when = node.children[1];
-  const n = chart.words.length;
-  const place = new Map(chart.words.map((w, k) => [w, k]));
-  const level = chart.moved.map((m) => (m === null ? 0 : STEPS.filter((s) => m >= s).length));
+  let n, place, level;
+  const take = (next) => {
+    chart = next;
+    n = chart.words.length;
+    place = new Map(chart.words.map((w, k) => [w, k]));
+    level = chart.moved.map((m) => (m === null ? 0 : STEPS.filter((s) => m >= s).length));
+  };
+  take(chart);
   let W = 0, H = 0, scale = 1, ox = 0, oy = 0, base = 1; // screen = chart * scale + offset
-  let routes = [], now = 0, marked = null, hovered = -1, frameRequest = 0, wanted = null;
+  let routes = [], now = 0, marked = null, hovered = -1, frameRequest = 0, wanted = null, keyed = false;
 
   const sx = (x) => x * scale + ox, sy = (y) => y * scale + oy;
   const redraw = () => (frameRequest ||= requestAnimationFrame(draw));
@@ -165,6 +171,14 @@ export function seaChart({ chart, name, pick, periods, tip }) {
       ctx.lineWidth = 2;
       ctx.stroke();
     }
+    if (keyed && hovered >= 0) {
+      ctx.font = `700 13px ${css("--type")}`;
+      const text = name(chart.words[hovered]), x = sx(chart.x[hovered]) + 10, y = sy(chart.y[hovered]) - 14;
+      ctx.fillStyle = ink;
+      ctx.fillRect(x - 4, y - 10, ctx.measureText(text).width + 8, 20);
+      ctx.fillStyle = paper;
+      ctx.fillText(text, x, y);
+    }
     when.textContent = routes.length ? periods[Math.round(now)] : "";
     node.style.touchAction = scale > base * 1.05 ? "none" : "pan-y"; // a finger scrolls the page until the chart is zoomed in
   }
@@ -187,8 +201,8 @@ export function seaChart({ chart, name, pick, periods, tip }) {
     view([next, cx - ((cx - ox) * next) / scale, cy - ((cy - oy) * next) / scale], 250);
   };
 
-  function nearest(px, py) {
-    let best = -1, distance = 14 * 14;
+  function nearest(px, py, reach = 14) {
+    let best = -1, distance = reach * reach;
     for (let k = 0; k < n; k++) {
       const dx = sx(chart.x[k]) - px, dy = sy(chart.y[k]) - py, d = dx * dx + dy * dy;
       if (d < distance) [best, distance] = [k, d];
@@ -224,6 +238,23 @@ export function seaChart({ chart, name, pick, periods, tip }) {
     const box = canvas.getBoundingClientRect();
     zoomBy(e.deltaY < 0 ? 1.3 : 1 / 1.3, e.clientX - box.left, e.clientY - box.top);
   }, { passive: false });
+  // The keyboard steers by the middle of the chart: what is nearest to it is ringed and named, and Enter chooses it.
+  const aim = () => ((hovered = keyed ? nearest(W / 2, H / 2, Math.min(W, H) / 3) : -1), redraw());
+  canvas.addEventListener("focus", () => ((keyed = canvas.matches(":focus-visible")), aim()));
+  canvas.addEventListener("blur", () => ((keyed = false), aim()));
+  canvas.addEventListener("keydown", (e) => {
+    const pan = { ArrowLeft: [70, 0], ArrowRight: [-70, 0], ArrowUp: [0, 70], ArrowDown: [0, -70] }[e.key];
+    if (pan) [ox, oy] = [ox + pan[0], oy + pan[1]];
+    else if (e.key === "+" || e.key === "=") zoomBy(1.5);
+    else if (e.key === "-") zoomBy(1 / 1.5);
+    else if (e.key === "0") view([base, W / 2, H / 2]);
+    else if (e.key === "Enter" && hovered >= 0) return pick(chart.words[hovered]);
+    else return;
+    e.preventDefault();
+    keyed = true;
+    aim();
+    setTimeout(aim, 280); // once a zoom has glided to its place
+  });
   const [plus, minus, whole] = node.querySelectorAll(".zoom button");
   plus.addEventListener("click", () => zoomBy(1.7));
   minus.addEventListener("click", () => zoomBy(1 / 1.7));
@@ -233,6 +264,11 @@ export function seaChart({ chart, name, pick, periods, tip }) {
   const api = {
     node,
     has: (id) => place.has(id),
+    /** More islands for the same sea: the first screen starts with the most frequent and gets the rest later. */
+    more(next) {
+      take(next);
+      redraw();
+    },
     routes(list) {
       routes = list.filter((r) => r.route.some(Boolean));
       redraw();

@@ -158,12 +158,43 @@ def test_a_repeated_line_is_told_from_a_case_by_its_names():
     assert highlights._lines(sketch, list(range(16)), is_name) == set(range(6))
 
 
-def test_together_counts_pages_that_have_both(measures, monkeypatch):
+def test_together_counts_pages_that_have_both(measures, monkeypatch, tmp_path):
     c, _ = measures
     monkeypatch.setitem(together.LENSES, "toy", LENS)
-    together.ASKED.parent.mkdir(parents=True, exist_ok=True)
-    together.ASKED.write_text(json.dumps([{"lens": "toy", "word": "mover", "with": ["t0w1", "t1w1", "kuno"]}]))
-    together.together()
-    found = json.loads(together.OUT.read_text())["toy/mover"]
+    monkeypatch.setattr(together, "SITE", tmp_path)
+    together.together(
+        [
+            {"lens": "toy", "word": "mover", "with": ["t0w1", "t1w1", "kuno"]},
+            {"lens": "toy", "word": "absent", "with": []},
+        ]
+    )
+    found = json.loads((tmp_path / "together.json").read_text())
+    assert list(found) == ["toy/mover"]  # a word the lens does not have is left out
+    found = found["toy/mover"]
     assert found["pages"] == c.df.sum(1)[:, c.row["mover"]].tolist() and "kuno" not in found["with"]
     assert found["with"]["t0w1"][0] > found["with"]["t1w1"][0] and found["with"]["t1w1"][2] > found["with"]["t0w1"][2]
+    assert found["all"]["t0w1"][0] == round(float(c.df.sum(1)[0, c.row["t0w1"]] / c.units.sum(1)[0]), 4)
+
+
+def test_a_first_name_shared_with_someone_else_is_a_fragment():
+    meta = {
+        "words": ["hatta", "hatta rajasa", "prabowo", "prabowo subianto", "listyo sigit prabowo", "golkar"],
+        "kinds": {"0": "person", "1": "person", "2": "person", "3": "person", "4": "person", "5": "organisation"},
+        "entities": {
+            "0": "Mohammad Hatta",
+            "1": "Hatta Rajasa",
+            "2": "Prabowo Subianto",
+            "3": "Prabowo Subianto",
+            "4": "Listyo Sigit Prabowo",
+            "5": "Golkar",
+        },
+    }
+    assert together._fragments(meta) == {0}  # "prabowo" is the first word only of his own longer name
+
+
+def test_only_the_first_spelling_of_a_name_is_kept():
+    row = np.array([0.5, 0.4, np.nan, 0.3, 0.0])
+    assert together._first_spellings(row, [10, 11, 12, 13, 14], {10: "A", 11: "A", 12: "B", 13: "C", 14: "D"}) == [
+        [10, 500],
+        [13, 300],
+    ]

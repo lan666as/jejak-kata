@@ -139,12 +139,20 @@ For any word or name, in each lens that has it:
 - for a name, **the verbs and adjectives** that keep it company, from two hand-made lists that hold
   praise and blame alike (`manifests/`). They say how the news wrote, not what someone is.
 
-The stories on the site rest on one more number, the plainest there is: of the units that contain one
-word, the share that also contain another (`idhist/together.py`), so that a sentence like "of the pages
-naming him in 2021, 43% also say *menteri pertahanan*" can be checked against the counts.
+The stories and games on the site rest on plainer numbers still, all of them counts of pages
+(`idhist/together.py`): of the pages that contain one word, the share that also contain another, so that a
+sentence like "of the pages naming him in 2021, 43% also say *menteri pertahanan*" can be checked against
+the counts; the same for every person and organisation of the three single-publisher lenses against a
+fixed list of words; a word's share of each publisher's pages year by year (the counts keep years even
+where a lens has five-year periods; what they do not keep per year is which words share a page, so
+year-by-year company exists only for the yearly Kompas lens); and the words that fell or rose between
+two periods in all three publishers at once, ranked by the smallest change among them. Three cautions
+are written on the site wherever these are shown: sharing a page is not being accused; a phrase with a
+Wikipedia title of its own is a word of its own and is not counted under its parts; and a one-word name
+that is the first word of someone else's longer name is left out of tables of people.
 
 And across words: each period in its own words (those that belong to it more than to any other, counted
-and not chosen), the most shifted, names by kind, two words compared, and three stories built from these
+and not chosen), the most shifted, names by kind, two words compared, and stories built from these
 pieces. The path, the company and each period's own words measure no change and need no test; only the
 shift is a claim about change.
 
