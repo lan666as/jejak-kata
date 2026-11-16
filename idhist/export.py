@@ -14,26 +14,30 @@ An entry holds, per period, the word's share of units, its strongest collocates
 (`with`) and the words whose company is most like its own (`like`); and, per
 pair of periods, its shift. Words are referred to by their vocabulary index.
 
-Names are not entries. A word that is mostly written with a capital is a name,
-and a name that makes the top 30,000 of a news corpus is not always a public
-figure. Names still appear as collocates: those come from the 4,000 most common
+A word that is mostly written with a capital is a name, and a name that makes
+the top 30,000 of a news corpus is not always a public figure. So a name is an
+entry only if Indonesian Wikipedia has an article for it: `jokowi`, `kpk`,
+`jakarta`. Such entries are the *entities*; each is listed with its article and,
+where Wikidata tells, its kind (person, place, organisation). Several entries
+can share an article (`jokowi`, `joko widodo`). Other names are left
+out, but still appear as collocates: those come from the 4,000 most common
 context words only.
 """
 
 import argparse
 import json
 from itertools import combinations
-from multiprocessing import Pool
 from pathlib import Path
 
 import numpy as np
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
-from idhist import WORKERS
+from idhist import parallel
 from idhist.counts import Counts
 from idhist.lenses import LENSES, Lens
 from idhist.measure import FLAG, MIN_UNITS, Measures, whole
+from idhist.sources import wikipedia
 
 ROOT = Path("site/data")
 BUCKET = 64  # entries per file
@@ -82,11 +86,15 @@ def export(lens: Lens) -> None:
     periods = range(len(lens.periods))
     pairs = list(combinations(periods, 2))
     is_name = names(counts)
+    titles = wikipedia.titles()
+    entities = {w: titles[counts.words[w]] for w in np.flatnonzero(is_name).tolist() if counts.words[w] in titles}
+    kinds = wikipedia.kinds(entities.values())
+    hidden = is_name.copy()
+    hidden[list(entities)] = False
     share = counts.df.sum(1) / counts.units.sum(1)[:, None]  # period x word
     shift = np.array([measures.shift(a, b) for a, b in pairs])  # pair x word
 
-    with Pool(WORKERS) as pool:
-        collocates, similar = zip(*pool.imap(_company, [(lens, p, ~is_name) for p in periods]))
+    collocates, similar = zip(*parallel(_company, [(lens, p, ~hidden) for p in periods], ordered=True))
 
     out = ROOT / lens.name
     (out / "words").mkdir(parents=True, exist_ok=True)
@@ -104,14 +112,14 @@ def export(lens: Lens) -> None:
         }
 
     for start in range(0, len(counts.words), BUCKET):
-        bucket = [entry(w) for w in range(start, min(start + BUCKET, len(counts.words))) if not is_name[w]]
+        bucket = [entry(w) for w in range(start, min(start + BUCKET, len(counts.words))) if not hidden[w]]
         (out / "words" / f"{start // BUCKET}.json").write_text(json.dumps(bucket, separators=(",", ":")))
 
     short = np.array([len(w) < MOVER_LETTERS for w in counts.words])
     movers = []
     for i, (a, b) in enumerate(pairs):
         if b - a == 1 or (a, b) == (0, len(lens.periods) - 1):
-            s = np.where(is_name | short, np.nan, shift[i])
+            s = np.where(hidden | short, np.nan, shift[i])
             top = [int(w) for w in np.argsort(-np.nan_to_num(s, nan=-np.inf))[:MOVERS] if s[w] >= FLAG]
             movers.append(
                 {
@@ -145,11 +153,15 @@ def export(lens: Lens) -> None:
         "flag": FLAG,
         "sensitivity": sensitivity,
         "words": counts.words,
-        "names": np.flatnonzero(is_name).tolist(),
+        "names": np.flatnonzero(hidden).tolist(),
+        "entities": entities,
+        "kinds": {w: kinds[article] for w, article in entities.items() if article in kinds},
     }
     (out / "meta.json").write_text(json.dumps(meta, separators=(",", ":"), ensure_ascii=False))
     (ROOT / "lenses.json").write_text(json.dumps([n for n in LENSES if (ROOT / n / "meta.json").exists()]))
-    print(f"{lens.name}: {int((~is_name).sum())} entries, {int(is_name.sum())} names left out")
+    print(
+        f"{lens.name}: {int((~hidden).sum())} entries, {len(entities)} of them entities; {int(hidden.sum())} names left out"
+    )
 
 
 if __name__ == "__main__":

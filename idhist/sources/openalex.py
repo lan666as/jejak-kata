@@ -18,7 +18,6 @@ import argparse
 import json
 from collections import Counter
 from itertools import count, islice
-from multiprocessing import Pool
 from pathlib import Path
 
 import pyarrow as pa
@@ -26,7 +25,7 @@ import pyarrow.compute as pc
 import pyarrow.fs
 import pyarrow.parquet as pq
 
-from idhist import WORKERS, text
+from idhist import parallel, text
 from idhist.units import Unit, clear, write_shard
 
 LENS = "id-abstracts"
@@ -76,8 +75,7 @@ def fetch() -> None:
         manifest = json.load(f)
     (ROOT / "manifest.json").write_text(json.dumps({k: v for k, v in manifest.items() if k != "files"}))
     keys = [entry["url"].removeprefix("s3://") for entry in manifest["files"]]
-    with Pool(WORKERS) as pool:
-        n = sum(pool.imap_unordered(_fetch, keys))
+    n = sum(parallel(_fetch, keys))
     print(f"snapshot {manifest['date']}: kept {n} of {manifest['record_count']} works")
 
 
@@ -116,8 +114,7 @@ def build_units() -> None:
     years = set()
     for path in ROOT.glob("*.parquet"):
         years.update(pq.read_table(path, columns=["year"])["year"].drop_null().unique().to_pylist())
-    with Pool(WORKERS) as pool:
-        print(sum(pool.imap_unordered(_year, sorted(years))), "units")
+    print(sum(parallel(_year, sorted(years))), "units")
 
 
 if __name__ == "__main__":

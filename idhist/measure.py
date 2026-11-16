@@ -35,13 +35,12 @@ Three numbers are derived from these for a pair of periods (see `Measures`):
 import argparse
 from dataclasses import dataclass
 from itertools import combinations
-from multiprocessing import Pool
 from pathlib import Path
 
 import numpy as np
 from scipy.ndimage import median_filter
 
-from idhist import WORKERS
+from idhist import parallel
 from idhist.counts import FOLDS, Counts
 from idhist.lenses import LENSES, Lens
 
@@ -125,8 +124,7 @@ def _chunk(job: tuple[Lens, slice]) -> tuple[np.ndarray, np.ndarray]:
 
 def measure(lens: Lens) -> None:
     jobs = [(lens, rows) for rows in Counts(lens).chunks()]
-    with Pool(WORKERS) as pool:
-        distance, support = zip(*pool.imap(_chunk, jobs))
+    distance, support = zip(*parallel(_chunk, jobs, ordered=True))
     ROOT.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(
         ROOT / f"{lens.name}.npz", distance=np.concatenate(distance, axis=2), support=np.concatenate(support, axis=1)

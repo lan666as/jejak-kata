@@ -22,10 +22,9 @@ import json
 import subprocess
 import sys
 from collections import Counter
-from multiprocessing import Pool
 from pathlib import Path
 
-from idhist import WORKERS, text
+from idhist import parallel, text
 from idhist.units import Unit, clear, write_shard
 
 ROOT = Path("data/raw/hathitrust")
@@ -159,8 +158,7 @@ def build_units(lenses: list[str]) -> None:
         jobs += [
             (lens, f"{i // SHARD_VOLUMES:04d}", rows[i : i + SHARD_VOLUMES]) for i in range(0, len(rows), SHARD_VOLUMES)
         ]
-    with Pool(WORKERS) as pool:
-        n = sum(pool.imap_unordered(_write, jobs))
+    n = sum(parallel(_write, jobs))
     print(f"{n} units in {len(jobs)} shards")
 
 

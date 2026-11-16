@@ -2,7 +2,7 @@ import json
 from collections import Counter
 from datetime import date
 
-from idhist import text
+from idhist import text, web
 from idhist.sources import ccnews, hathitrust, openalex
 
 
@@ -99,8 +99,8 @@ def test_language_needs_a_clear_winner():
 
 
 def test_news_publisher_and_date():
-    assert ccnews.publisher("https://pontianak.tribunnews.com/2019/01/02/x") == "tribunnews.com"
-    assert ccnews.publisher("https://www.pikiran-rakyat.co.id/a") == "pikiran-rakyat.co.id"
+    assert web.publisher("https://pontianak.tribunnews.com/2019/01/02/x") == "tribunnews.com"
+    assert web.publisher("https://www.pikiran-rakyat.co.id/a") == "pikiran-rakyat.co.id"
     crawled = date(2019, 1, 5)
     assert ccnews.published("https://x.com/2019/01/02/a", crawled) == date(2019, 1, 2)
     assert ccnews.published("https://x.com/2031/01/02/a", crawled) == crawled  # a date after the crawl is not a date

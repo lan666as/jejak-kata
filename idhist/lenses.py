@@ -39,6 +39,8 @@ def bins(first: int, last: int, width: int) -> tuple[tuple[int, int], ...]:
 
 
 NEWS = bins(2017, 2022, 1)
+WEB = bins(2010, 2024, 1)
+ERAS = ((2010, 2014), (2015, 2019), (2020, 2024))  # presidential terms: Yudhoyono's second, Joko Widodo's two
 ABSTRACTS = (*bins(2000, 2009, 5), (2010, 2012), *bins(2013, 2026, 2))
 SMALL = {"vocab": 10_000, "contexts": 2_000, "skip": 50}
 
@@ -51,6 +53,17 @@ LENSES = {
         # The two publishers present in every year, each on its own: smaller, but one voice throughout.
         Lens("id-news-tribun", "id-news", NEWS, sources=frozenset({"tribunnews.com"})),
         Lens("id-news-okezone", "id-news", NEWS, sources=frozenset({"okezone.com"})),
+        # News pages of the open web: a longer span than CC-NEWS and independent of it, with a publisher mix
+        # that changes even more. Kompas is the one publisher with pages from every year.
+        Lens("id-web-news", "id-web-news", WEB),
+        Lens("id-web-news-kompas", "id-web-news", WEB[1:], sources=frozenset({"kompas.com"})),
+        # The same pages by presidential term, one publisher at a time. All publishers together fail the test of
+        # expected changes over such a distance (AUC 0.37): the mix of publishers changes more than any word does.
+        Lens("id-web-eras-kompas", "id-web-news", ERAS, sources=frozenset({"kompas.com"})),
+        Lens("id-web-eras-tempo", "id-web-news", ERAS, sources=frozenset({"tempo.co"})),
+        Lens("id-web-eras-tribun", "id-web-news", ERAS, sources=frozenset({"tribunnews.com"})),
+        # Blogs: an informal register, largest around 2012 and thinning since.
+        Lens("id-web-blogs", "id-web-blogs", bins(2007, 2024, 2)),
         # Abstracts grow from 4,000 a year to 240,000, so the periods shorten as they go.
         Lens("id-abstracts", "id-abstracts", ABSTRACTS),
         # Javanese and Sundanese books are few (about 40 and 27 million words), so: long periods, a small vocabulary.

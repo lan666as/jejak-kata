@@ -18,7 +18,7 @@ def articles(tmp_path, monkeypatch):
         {
             "url": f"https://daerah{i}.koran.co.id/2020/03/0{1 + i % 9}/berita-{i}",
             "timestamp": "2020-03-20T00:00:00",
-            "text": f"Menu Olahraga Politik\nBaca juga: Gosip artis terbaru\n{story} unik{chr(97 + i)} sumber https://koran.co.id/berita-{i} dan Tribunnews.com\nIkuti kami di media sosial",
+            "text": f"Menu Olahraga Politik\nBaca juga: Gosip artis terbaru\n{story} unik{chr(97 + i)} sumber https://koran.co.id/berita-{i} dan Tribunnews.com\nIkuti kami di media sosial\n(Penulis: Wartawan{chr(97 + i)} | Editor: Redaktur{chr(97 + i)})\nArtikel ini telah tayang di Koran dengan judul Kabar{chr(97 + i)}\nJakarta: {story} lagi{chr(97 + i)}",
         }
         for i in range(30)
     ]
@@ -35,5 +35,15 @@ def test_furniture_and_teasers_are_removed(articles):
     words = set().union(*(u.counts for u in found))
     assert {"kataaa", "unikh"} <= words
     assert not words & {"menu", "olahraga", "gosip", "artis", "ikuti", "sosial", "https", "koran", "com", "tribunnews"}
+    assert not words & {
+        "penulis",
+        "editor",
+        "wartawana",
+        "redaktura",
+        "artikel",
+        "judul",
+        "kabara",
+    }  # labels and notices
+    assert "jakarta" in words  # a long line that opens with a word and a colon is text
     assert {u.source for u in found} == {"koran.co.id"} and {u.year for u in found} == {2020}
     assert found[0].group.startswith("koran.co.id/2020-03-0")

@@ -10,6 +10,7 @@ dependencies = [
     "zarr>=3",
     "zstandard",
     "huggingface_hub",
+    "requests",
 ]
 
 [project.optional-dependencies]
