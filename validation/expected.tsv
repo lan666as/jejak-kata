@@ -201,3 +201,187 @@ id-news	hijrah	seen				inspected before registration
 id-news	rumah	seen				inspected before registration
 id-news	corona	seen				inspected before registration
 id-news	luring	seen				inspected before registration
+id-web-news	klaster	change	2019	2021	penularan, perkantoran, keluarga (was: industri, perumahan)	the id-news row, repeated on other text
+id-web-news	terpapar	change	2019	2021	virus, covid (was: radikalisme, asap)	the id-news row, repeated on other text
+id-web-news	gelombang	change	2019	2021	kedua, ketiga, kasus (was: laut, tinggi)	the id-news row, repeated on other text
+id-web-news	positif	change	2019	2020	covid, kasus, pasien	the id-news row, repeated on other text
+id-web-news	negatif	change	2019	2020	hasil, swab, tes	the id-news row, repeated on other text
+id-web-news	varian	change	2019	2021	delta, omicron, virus (was: mobil, produk)	the id-news row, repeated on other text
+id-web-news	delta	change	2019	2021	varian	the id-news row, repeated on other text
+id-web-news	isolasi	change	2019	2020	mandiri, pasien	the id-news row, repeated on other text
+id-web-news	karantina	change	2019	2020	orang, hotel (was: pertanian, ikan)	the id-news row, repeated on other text
+id-web-news	protokol	change	2019	2020	kesehatan	the id-news row, repeated on other text
+id-web-news	masker	change	2019	2020	medis, wajib (was: wajah, kecantikan)	the id-news row, repeated on other text
+id-web-news	zona	change	2019	2020	merah, hijau, risiko (was: degradasi, zonasi)	the id-news row, repeated on other text
+id-web-news	merah	change	2019	2020	zona	the id-news row, repeated on other text
+id-web-news	hijau	change	2019	2020	zona	the id-news row, repeated on other text
+id-web-news	kurva	change	2019	2020	kasus, melandai	the id-news row, repeated on other text
+id-web-news	landai	change	2019	2021	kasus, kurva	the id-news row, repeated on other text
+id-web-news	vaksin	change	2019	2021	covid, dosis, sinovac (was: MR, imunisasi anak)	the id-news row, repeated on other text
+id-web-news	dosis	change	2019	2021	vaksin, pertama, kedua	the id-news row, repeated on other text
+id-web-news	booster	change	2019	2022	vaksin	the id-news row, repeated on other text
+id-web-news	kerumunan	change	2019	2020	protokol, melanggar	the id-news row, repeated on other text
+id-web-news	tatap	change	2019	2020	muka, pembelajaran	the id-news row, repeated on other text
+id-web-news	virtual	change	2019	2020	rapat, pertemuan, zoom	the id-news row, repeated on other text
+id-web-news	zoom	change	2019	2020	rapat, aplikasi (was: kamera)	the id-news row, repeated on other text
+id-web-news	penyintas	change	2019	2021	covid, plasma (was: bencana, kanker)	the id-news row, repeated on other text
+id-web-news	kontak	change	2019	2020	erat, pelacakan (was: senjata, tembak)	the id-news row, repeated on other text
+id-web-news	erat	change	2019	2020	kontak	the id-news row, repeated on other text
+id-web-news	konfirmasi	change	2019	2020	kasus, positif	the id-news row, repeated on other text
+id-web-news	level	change	2019	2021	PPKM	the id-news row, repeated on other text
+id-web-news	relaksasi	change	2019	2020	kredit, restrukturisasi	the id-news row, repeated on other text
+id-web-news	tabung	change	2019	2021	oksigen (was: gas, elpiji)	the id-news row, repeated on other text
+id-web-news	oksigen	change	2019	2021	tabung, pasien, langka	the id-news row, repeated on other text
+id-web-news	darurat	change	2019	2021	PPKM	the id-news row, repeated on other text
+id-web-news	mandiri	change	2019	2020	isolasi	the id-news row, repeated on other text
+id-web-news	cipta	change	2018	2020	kerja, omnibus, undang-undang (was: hak cipta, lagu)	the id-news row, repeated on other text
+id-web-news	omnibus	change	2018	2020	law, cipta kerja	the id-news row, repeated on other text
+id-web-news	nusantara	change	2019	2022	ibu kota, IKN	the id-news row, repeated on other text
+id-web-news	merdeka	change	2018	2021	belajar, kampus	the id-news row, repeated on other text
+id-web-news	kudeta	change	2019	2021	Myanmar, Demokrat	the id-news row, repeated on other text
+id-web-news	invasi	change	2019	2022	Rusia, Ukraina	the id-news row, repeated on other text
+id-web-news	goreng	change	2020	2022	minyak, langka, harga	the id-news row, repeated on other text
+id-web-news	odol	change	2017	2022	truk, over dimension (was: pasta gigi)	the id-news row, repeated on other text
+id-web-news	cebong	change	2018	2021	political label fades after 2019	the id-news row, repeated on other text
+id-web-news	kampret	change	2018	2021	political label fades after 2019	the id-news row, repeated on other text
+id-web-news	cuan	change	2018	2021	saham, investor	the id-news row, repeated on other text
+id-web-news	sultan	change	2018	2021	kaya, mewah (beside Yogyakarta)	the id-news row, repeated on other text
+id-web-news	ambyar	change	2018	2020	Didi Kempot, patah hati	the id-news row, repeated on other text
+id-web-news	sungai	stable				everyday and stable news beats
+id-web-news	pohon	stable				everyday and stable news beats
+id-web-news	meja	stable				everyday and stable news beats
+id-web-news	kursi	stable				everyday and stable news beats
+id-web-news	kunci	stable				everyday and stable news beats
+id-web-news	sepatu	stable				everyday and stable news beats
+id-web-news	gigi	stable				everyday and stable news beats
+id-web-news	rambut	stable				everyday and stable news beats
+id-web-news	kopi	stable				everyday and stable news beats
+id-web-news	teh	stable				everyday and stable news beats
+id-web-news	garam	stable				everyday and stable news beats
+id-web-news	telur	stable				everyday and stable news beats
+id-web-news	ikan	stable				everyday and stable news beats
+id-web-news	ayam	stable				everyday and stable news beats
+id-web-news	kucing	stable				everyday and stable news beats
+id-web-news	bunga	stable				everyday and stable news beats
+id-web-news	hujan	stable				everyday and stable news beats
+id-web-news	angin	stable				everyday and stable news beats
+id-web-news	pagi	stable				everyday and stable news beats
+id-web-news	malam	stable				everyday and stable news beats
+id-web-news	lagu	stable				everyday and stable news beats
+id-web-news	film	stable				everyday and stable news beats
+id-web-news	buku	stable				everyday and stable news beats
+id-web-news	petani	stable				everyday and stable news beats
+id-web-news	nelayan	stable				everyday and stable news beats
+id-web-news	sawah	stable				everyday and stable news beats
+id-web-news	jembatan	stable				everyday and stable news beats
+id-web-news	kapal	stable				everyday and stable news beats
+id-web-news	gol	stable				everyday and stable news beats
+id-web-news	pelatih	stable				everyday and stable news beats
+id-web-news	wasit	stable				everyday and stable news beats
+id-web-news	kiper	stable				everyday and stable news beats
+id-web-news	motor	stable				everyday and stable news beats
+id-web-news	mesin	stable				everyday and stable news beats
+id-web-news	resep	stable				everyday and stable news beats
+id-web-news	bumbu	stable				everyday and stable news beats
+id-web-news	sambal	stable				everyday and stable news beats
+id-web-news	hakim	stable				everyday and stable news beats
+id-web-news	jaksa	stable				everyday and stable news beats
+id-web-news	terdakwa	stable				everyday and stable news beats
+id-web-news	gempa	stable				everyday and stable news beats
+id-web-news	banjir	stable				everyday and stable news beats
+id-web-news	longsor	stable				everyday and stable news beats
+id-web-news	daring	seen				inspected before registration
+id-web-news	viral	seen				inspected before registration
+id-web-news	healing	seen				inspected before registration
+id-web-news	unggah	seen				inspected before registration
+id-web-news	hijrah	seen				inspected before registration
+id-web-news	rumah	seen				inspected before registration
+id-web-news	corona	seen				inspected before registration
+id-web-news	luring	seen				inspected before registration
+id-web-eras	jokowi	change	2010-2014	2015-2019	presiden, istana, kabinet (was: gubernur, dki, solo, ahok)	event
+id-web-eras	joko widodo	change	2010-2014	2015-2019	presiden, kabinet (was: gubernur dki, wali kota solo)	event
+id-web-eras	ahok	change	2010-2014	2015-2019	penistaan, sidang, pilkada (was: wagub, jokowi, pemprov)	event
+id-web-eras	anies	change	2010-2014	2020-2024	gubernur dki, capres (was: paramadina, konvensi, indonesia mengajar)	event
+id-web-eras	gibran	change	2010-2014	2020-2024	wali kota solo, cawapres, prabowo (was: putra jokowi, katering, martabak)	event
+id-web-eras	prabowo	change	2010-2014	2020-2024	menhan, pertahanan, gibran, presiden terpilih (was: capres, hatta, gerindra)	event
+id-web-eras	ganjar	change	2010-2014	2020-2024	capres, pdip, mahfud (was: gubernur jateng)	event
+id-web-eras	kpk	change	2010-2014	2020-2024	revisi uu, dewas, firli, pegawai (was: penyidik, abraham samad, tersangka)	event
+id-web-eras	nusantara	change	2010-2014	2020-2024	ibu kota, ikn, otorita (was: wawasan, kepulauan, budaya)	event
+id-web-eras	ibu kota	change	2010-2014	2020-2024	pemindahan, ikn, nusantara, kalimantan timur (was: jakarta, macet)	event
+id-web-eras	kalimantan timur	change	2010-2014	2020-2024	ibu kota, ikn, penajam (was: tambang, batu bara, samarinda)	event
+id-web-eras	relawan	change	2010-2014	2015-2019	jokowi, projo, pilpres, deklarasi (was: bencana, pmi, pengungsi)	common
+id-web-eras	blusukan	change	2010-2014	2020-2024	used of any official: menteri, risma, pasar (was: jokowi, gubernur)	common
+id-web-eras	hoax	change	2010-2014	2015-2019	berita bohong, media sosial, pilpres (was: email, kabar, isu)	common
+id-web-eras	buzzer	change	2010-2014	2020-2024	politik, pemerintah, pendengung, media sosial (was: twitter, iklan, bel)	common
+id-web-eras	dinasti	change	2010-2014	2020-2024	jokowi, gibran, mk (was: atut, banten, kerajaan)	event
+id-web-eras	oligarki	change	2010-2014	2020-2024	kekuasaan, tambang, pemilu; a common word of political talk (was: teori, partai)	common
+id-web-eras	moderasi	change	2010-2014	2020-2024	beragama, kemenag, toleransi (was: ekonomi, pertumbuhan, inflasi)	common
+id-web-eras	radikalisme	change	2010-2014	2015-2019	asn, kampus, deradikalisasi, bnpt (was: terorisme, agama)	common
+id-web-eras	penistaan	change	2010-2014	2015-2019	ahok, al-maidah, aksi (was: agama, pasal, kasus-kasus lain)	event
+id-web-eras	alumni	change	2010-2014	2015-2019	aksi, reuni, 212 beside the old sense (was: universitas, sekolah, ikatan)	event
+id-web-eras	cebong	change	2010-2014	2015-2019	kampret, pendukung jokowi (was: kolam, berudu)	common
+id-web-eras	kampret	change	2010-2014	2015-2019	cebong, pendukung prabowo (was: umpatan)	common
+id-web-eras	amnesti	change	2010-2014	2015-2019	pajak, tax amnesty, deklarasi harta (was: internasional, tahanan, grasi)	event
+id-web-eras	pengampunan	change	2010-2014	2015-2019	pajak, tebusan (was: dosa, grasi)	event
+id-web-eras	hilirisasi	change	2010-2014	2020-2024	nikel, baterai, larangan ekspor (was: minerba, smelter, kakao)	common
+id-web-eras	nikel	change	2010-2014	2020-2024	hilirisasi, baterai, smelter, morowali (was: antam, tambang, harga)	common
+id-web-eras	baterai	change	2010-2014	2020-2024	kendaraan listrik, nikel (was: ponsel, laptop, daya)	common
+id-web-eras	token	change	2010-2014	2020-2024	kripto, nft, aset (was: listrik, pln, bank)	common
+id-web-eras	konten	change	2010-2014	2020-2024	kreator, tiktok, youtube (was: lokal, situs, pornografi)	common
+id-web-eras	ojek	change	2010-2014	2015-2019	online, gojek, grab, aplikasi (was: pangkalan, tukang)	common
+id-web-eras	mitra	change	2010-2014	2015-2019	pengemudi, gojek, grab beside the old sense (was: usaha, kerja sama)	common
+id-web-eras	viral	change	2010-2014	2015-2019	video, media sosial (was: infeksi, pemasaran)	common
+id-web-eras	daring	change	2010-2014	2020-2024	pembelajaran, sekolah, pandemi (was: dalam jaringan, kamus; rare)	common
+id-web-eras	vaksin	change	2010-2014	2020-2024	covid, dosis, booster (was: imunisasi, polio, anak)	event
+id-web-eras	masker	change	2010-2014	2020-2024	protokol kesehatan, wajib (was: wajah, kecantikan, asap)	event
+id-web-eras	positif	change	2010-2014	2020-2024	covid, kasus, terkonfirmasi (was: dampak, respons, narkoba)	event
+id-web-eras	isolasi	change	2010-2014	2020-2024	mandiri, pasien, covid (was: daerah terisolasi, tahanan)	event
+id-web-eras	protokol	change	2010-2014	2020-2024	kesehatan (was: istana, kyoto, acara)	event
+id-web-eras	mudik	change	2010-2014	2020-2024	larangan, penyekatan beside the old sense (was: lebaran, arus, tiket)	event
+id-web-eras	subsidi	change	2010-2014	2020-2024	upah, kuota, listrik, minyak goreng beside bbm (was: bbm, pupuk)	common
+id-web-eras	kartu	change	2010-2014	2020-2024	prakerja, kis, kip beside the old senses (was: kredit, atm, tanda penduduk)	common
+id-web-eras	stunting	change	2010-2014	2020-2024	penurunan, bkkbn, gizi; policy word (was: rare, kesehatan anak)	common
+id-web-eras	pindah	change	2010-2014	2020-2024	ibu kota beside the old sense; expected to stay under the flag	common
+id-web-eras	sungai	stable				everyday and stable news beats
+id-web-eras	pohon	stable				everyday and stable news beats
+id-web-eras	meja	stable				everyday and stable news beats
+id-web-eras	kursi	stable				everyday and stable news beats
+id-web-eras	kunci	stable				everyday and stable news beats
+id-web-eras	sepatu	stable				everyday and stable news beats
+id-web-eras	gigi	stable				everyday and stable news beats
+id-web-eras	rambut	stable				everyday and stable news beats
+id-web-eras	kopi	stable				everyday and stable news beats
+id-web-eras	teh	stable				everyday and stable news beats
+id-web-eras	garam	stable				everyday and stable news beats
+id-web-eras	telur	stable				everyday and stable news beats
+id-web-eras	ikan	stable				everyday and stable news beats
+id-web-eras	ayam	stable				everyday and stable news beats
+id-web-eras	kucing	stable				everyday and stable news beats
+id-web-eras	bunga	stable				everyday and stable news beats
+id-web-eras	hujan	stable				everyday and stable news beats
+id-web-eras	angin	stable				everyday and stable news beats
+id-web-eras	pagi	stable				everyday and stable news beats
+id-web-eras	malam	stable				everyday and stable news beats
+id-web-eras	lagu	stable				everyday and stable news beats
+id-web-eras	film	stable				everyday and stable news beats
+id-web-eras	buku	stable				everyday and stable news beats
+id-web-eras	petani	stable				everyday and stable news beats
+id-web-eras	nelayan	stable				everyday and stable news beats
+id-web-eras	sawah	stable				everyday and stable news beats
+id-web-eras	jembatan	stable				everyday and stable news beats
+id-web-eras	kapal	stable				everyday and stable news beats
+id-web-eras	gol	stable				everyday and stable news beats
+id-web-eras	pelatih	stable				everyday and stable news beats
+id-web-eras	wasit	stable				everyday and stable news beats
+id-web-eras	kiper	stable				everyday and stable news beats
+id-web-eras	motor	stable				everyday and stable news beats
+id-web-eras	mesin	stable				everyday and stable news beats
+id-web-eras	resep	stable				everyday and stable news beats
+id-web-eras	bumbu	stable				everyday and stable news beats
+id-web-eras	sambal	stable				everyday and stable news beats
+id-web-eras	hakim	stable				everyday and stable news beats
+id-web-eras	jaksa	stable				everyday and stable news beats
+id-web-eras	terdakwa	stable				everyday and stable news beats
+id-web-eras	gempa	stable				everyday and stable news beats
+id-web-eras	banjir	stable				everyday and stable news beats
+id-web-eras	longsor	stable				everyday and stable news beats

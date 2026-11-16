@@ -29,3 +29,16 @@ applies to every news lens.
 The list may gain rows later, but only with a new date in this file and only
 for words not yet looked at. Rows are not removed or edited after results are
 seen; a wrong expectation stays and is reported as a miss.
+
+## Additions of 2026-11-16 (second registration)
+
+Written before the web lenses (`id-web-news`, `id-web-eras`) were counted or measured; nothing of
+them had been seen but page counts.
+
+- **`id-web-news`**: the `id-news` rows again, word for word and window for window. The text is
+  independent (the main Common Crawl and Internet Archive crawls via HPLT, not the news crawl),
+  but the words are no longer unseen: this is a replication, and is reported as one.
+- **`id-web-eras`**: 44 expectations about the decade of Joko Widodo's presidency (October 2014
+  to October 2024), with presidential terms as periods. They include names (`jokowi`, `ahok`,
+  `kpk`) and phrases (`ibu kota`), which the web lenses can count. Several are guesses and are
+  marked `common`; one (`pindah`) is registered as expected *not* to reach the flag.
