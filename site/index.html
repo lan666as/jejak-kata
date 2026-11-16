@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jejak Kata</title>
+<meta name="description" content="Bagaimana kata-kata bahasa Indonesia berganti teman dari masa ke masa. How Indonesian words changed the company they keep.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <a class="brand" href="#/">Jejak Kata</a>
+  <form id="search" role="search" autocomplete="off">
+    <input id="query" type="search" aria-controls="suggestions">
+    <ul id="suggestions" hidden></ul>
+  </form>
+  <nav>
+    <a href="#/bergeser" data-t="nav_movers"></a>
+    <a href="#/metode" data-t="nav_method"></a>
+    <button id="language" type="button"></button>
+  </nav>
+</header>
+<main id="view"></main>
+<footer data-t="footer"></footer>
+<div id="tip" role="status" hidden></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

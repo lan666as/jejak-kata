@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Rebuild everything from the sources, in order.
+#   ./run.sh                 all stages
+#   ./run.sh measure export  some stages
+# Each stage uses IDHIST_WORKERS processes (default: all cores). The stages up to
+# `counts` are heavy for the large lenses: hours on one core, minutes on a rented
+# many-core machine.
+set -euo pipefail
+
+# lens : the two periods its planted-change test is run on
+LENSES="
+id-books:2000-2004:2005-2009
+jv-books:1970-1989:1990-2019
+su-books:1980-1989:1990-2019
+id-news:2018:2019
+id-news-tribun:2018:2019
+id-news-okezone:2018:2019
+id-abstracts:2017-2018:2019-2020
+"
+EXPECTED="id-books id-news id-news-tribun id-news-okezone"  # lenses that validation/expected.tsv covers
+
+each() { for entry in $LENSES; do python -m "idhist.$1" "${entry%%:*}"; done; }
+
+stage_fetch()    { python -m idhist.sources.hathitrust fetch; python -m idhist.sources.ccnews fetch; python -m idhist.sources.openalex fetch; }
+stage_units()    { python -m idhist.sources.hathitrust units; python -m idhist.sources.ccnews furniture; python -m idhist.sources.ccnews units; python -m idhist.sources.openalex units; }
+stage_counts()   { each counts; }
+stage_measure()  { each measure; }
+stage_validate() {
+  for entry in $LENSES; do python -m idhist.planted ${entry//:/ }; done
+  for lens in $EXPECTED; do python -m idhist.expected "$lens"; done
+}
+stage_export()   { each export; }
+stage_deploy()   {  # publish site/ (with its data) as the gh-pages branch; not part of a plain ./run.sh
+  local tree; tree=$(mktemp -d)
+  cp -r site/. "$tree" && touch "$tree/.nojekyll"
+  git -C "$tree" init -q -b gh-pages && git -C "$tree" add -A
+  git -C "$tree" -c user.name="$(git config user.name)" -c user.email="$(git config user.email)" commit -q -m "Site built $(date -u +%F)"
+  git -C "$tree" push -q -f "$(git remote get-url origin)" gh-pages
+  rm -rf "$tree"
+}
+
+for stage in "${@:-fetch units counts measure validate export}"; do
+  echo "== $stage $(date -u +%FT%TZ)"
+  "stage_$stage"
+done

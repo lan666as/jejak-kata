@@ -1,0 +1,203 @@
+lens	word	kind	from	to	expect	basis
+id-books	virus	change	1980-1984	2000-2004	komputer, program, file	common
+id-books	maya	change	1980-1984	2005-2009	dunia maya: internet, situs	common
+id-books	seluler	change	1985-1989	2005-2009	telepon, operator, ponsel (was: sel, biologi)	common
+id-books	pulsa	change	1985-1989	2005-2009	telepon, kartu, isi ulang (was: listrik, sinyal)	common
+id-books	aplikasi	change	1985-1989	2010-2014	perangkat lunak, komputer (was: penerapan)	documented-changes
+id-books	perangkat	change	1970-1974	2000-2004	lunak, keras, komputer (was: desa, pamong)	common
+id-books	akun	change	1995-1999	2015-2019	pengguna, media sosial (was: akuntansi)	documented-changes
+id-books	platform	change	1995-1999	2015-2019	digital, aplikasi (was: partai, politik)	documented-changes
+id-books	unduh	change	1990-1994	2010-2014	berkas, internet (was: Javanese 'memetik')	documented-changes S17,S18
+id-books	laman	change	1990-1994	2010-2014	web, situs	documented-changes S18
+id-books	gawai	change	1995-1999	2015-2019	gadget, ponsel (was: pekerjaan, upacara Dayak)	documented-changes S16
+id-books	akses	change	1985-1989	2005-2009	internet, informasi	common
+id-books	orde	change	1960-1964	1970-1974	baru, lama, pemerintah	documented-changes S5
+id-books	karya	change	1955-1959	1975-1979	golongan karya, Golkar	common
+id-books	revolusi	change	1960-1964	1975-1979	from Sukarno's ongoing revolusi to history / hijau / industri	common
+id-books	pembangunan	change	1955-1959	1975-1979	repelita, nasional, pemerintah	documented-changes
+id-books	buruh	change	1960-1964	1975-1979	loses the class-movement company after 1966	documented-changes S11
+id-books	karyawan	change	1960-1964	1975-1979	perusahaan, gaji; replaces buruh	documented-changes S11
+id-books	preman	change	1965-1969	1995-1999	kejahatan, pemerasan (was: partikelir, sipil)	documented-changes S6
+id-books	konglomerat	change	1970-1974	1995-1999	pengusaha, kekayaan (was: batuan, or business group)	common
+id-books	pemekaran	change	1985-1989	2005-2009	daerah, kabupaten, provinsi	common
+id-books	otonomi	change	1990-1994	2000-2004	daerah, desentralisasi, undang-undang 1999	common
+id-books	sosialisasi	change	1975-1979	2000-2004	program, kebijakan, masyarakat (was: anak, keluarga)	common
+id-books	wacana	change	1980-1984	2000-2004	diskursus, publik, kritis	common
+id-books	moneter	change	1985-1989	1995-1999	krisis	common
+id-books	ekstasi	change	1980-1984	2000-2004	narkoba, pil (was: mistik, religius)	common
+id-books	artis	change	1960-1964	1995-1999	film, sinetron, selebriti (was: seniman)	common
+id-books	syariah	change	1980-1984	2005-2009	bank, ekonomi, keuangan	common
+id-books	radikal	change	1985-1989	2010-2014	Islam, terorisme (was: politik kiri, kimia)	common
+id-books	teroris	change	1985-1989	2005-2009	bom, jaringan, Islam	common
+id-books	tsunami	change	1995-1999	2005-2009	Aceh, gempa, korban	event 2004
+id-books	lumpur	change	1995-1999	2005-2009	Lapindo, Sidoarjo	event 2006
+id-books	flu	change	1990-1994	2005-2009	burung, unggas	event 2005
+id-books	gaul	change	1985-1989	2000-2004	anak gaul, bahasa gaul, remaja	common
+id-books	seksi	change	1965-1969	2005-2009	tubuh, perempuan (was: bagian, panitia)	common
+id-books	pencitraan	change	1995-1999	2010-2014	politik, presiden (was: satelit, medis)	common
+id-books	cacat	change	1990-1994	2010-2014	loses penyandang; keeps hukum, produk	documented-changes S3
+id-books	narsis	change	1985-1989	2010-2014	foto, diri (was: bunga, mitologi)	documented-changes S25
+id-books	tangan	stable				basic vocabulary
+id-books	kaki	stable				basic vocabulary
+id-books	mata	stable				basic vocabulary
+id-books	hidung	stable				basic vocabulary
+id-books	telinga	stable				basic vocabulary
+id-books	gigi	stable				basic vocabulary
+id-books	rambut	stable				basic vocabulary
+id-books	batu	stable				basic vocabulary
+id-books	pohon	stable				basic vocabulary
+id-books	daun	stable				basic vocabulary
+id-books	akar	stable				basic vocabulary
+id-books	bunga	stable				basic vocabulary
+id-books	buah	stable				basic vocabulary
+id-books	sungai	stable				basic vocabulary
+id-books	gunung	stable				basic vocabulary
+id-books	laut	stable				basic vocabulary
+id-books	pantai	stable				basic vocabulary
+id-books	hujan	stable				basic vocabulary
+id-books	angin	stable				basic vocabulary
+id-books	api	stable				basic vocabulary
+id-books	tanah	stable				basic vocabulary
+id-books	pasir	stable				basic vocabulary
+id-books	kayu	stable				basic vocabulary
+id-books	besi	stable				basic vocabulary
+id-books	garam	stable				basic vocabulary
+id-books	gula	stable				basic vocabulary
+id-books	nasi	stable				basic vocabulary
+id-books	ikan	stable				basic vocabulary
+id-books	ayam	stable				basic vocabulary
+id-books	kambing	stable				basic vocabulary
+id-books	kuda	stable				basic vocabulary
+id-books	burung	stable				basic vocabulary
+id-books	kucing	stable				basic vocabulary
+id-books	anjing	stable				basic vocabulary
+id-books	pintu	stable				basic vocabulary
+id-books	atap	stable				basic vocabulary
+id-books	meja	stable				basic vocabulary
+id-books	kursi	stable				basic vocabulary
+id-books	pisau	stable				basic vocabulary
+id-books	pagi	stable				basic vocabulary
+id-books	malam	stable				basic vocabulary
+id-books	bulan	stable				basic vocabulary
+id-books	matahari	stable				basic vocabulary
+id-books	merah	stable				basic vocabulary
+id-books	putih	stable				basic vocabulary
+id-books	hitam	stable				basic vocabulary
+id-books	makan	stable				basic vocabulary
+id-books	minum	stable				basic vocabulary
+id-books	tidur	stable				basic vocabulary
+id-books	duduk	stable				basic vocabulary
+id-books	transparan	seen				inspected before registration
+id-books	reformasi	seen				inspected before registration
+id-books	situs	seen				inspected before registration
+id-books	krisis	seen				inspected before registration
+id-books	pribumi	seen				inspected before registration
+id-books	perempuan	seen				inspected before registration
+id-books	jaringan	seen				inspected before registration
+id-books	canggih	seen				inspected before registration
+id-books	oknum	seen				inspected before registration
+id-books	sarjana	seen				inspected before registration
+id-books	wanita	seen				inspected before registration
+id-books	layar	seen				inspected before registration
+id-books	air	seen				inspected before registration
+id-books	rumah	seen				inspected before registration
+id-books	yang	seen				inspected before registration
+id-books	jalan	seen				inspected before registration
+id-books	cinta	seen				inspected before registration
+id-news	klaster	change	2019	2021	penularan, perkantoran, keluarga (was: industri, perumahan)	documented-changes S1
+id-news	terpapar	change	2019	2021	virus, covid (was: radikalisme, asap)	documented-changes
+id-news	gelombang	change	2019	2021	kedua, ketiga, kasus (was: laut, tinggi)	documented-changes
+id-news	positif	change	2019	2020	covid, kasus, pasien	documented-changes S1
+id-news	negatif	change	2019	2020	hasil, swab, tes	documented-changes S1
+id-news	varian	change	2019	2021	delta, omicron, virus (was: mobil, produk)	documented-changes
+id-news	delta	change	2019	2021	varian	common
+id-news	isolasi	change	2019	2020	mandiri, pasien	documented-changes S1
+id-news	karantina	change	2019	2020	orang, hotel (was: pertanian, ikan)	documented-changes S1
+id-news	protokol	change	2019	2020	kesehatan	documented-changes S1
+id-news	masker	change	2019	2020	medis, wajib (was: wajah, kecantikan)	common
+id-news	zona	change	2019	2020	merah, hijau, risiko (was: degradasi, zonasi)	documented-changes S1
+id-news	merah	change	2019	2020	zona	documented-changes S1
+id-news	hijau	change	2019	2020	zona	documented-changes S1
+id-news	kurva	change	2019	2020	kasus, melandai	common
+id-news	landai	change	2019	2021	kasus, kurva	common
+id-news	vaksin	change	2019	2021	covid, dosis, sinovac (was: MR, imunisasi anak)	common
+id-news	dosis	change	2019	2021	vaksin, pertama, kedua	common
+id-news	booster	change	2019	2022	vaksin	common
+id-news	kerumunan	change	2019	2020	protokol, melanggar	common
+id-news	tatap	change	2019	2020	muka, pembelajaran	common
+id-news	virtual	change	2019	2020	rapat, pertemuan, zoom	common
+id-news	zoom	change	2019	2020	rapat, aplikasi (was: kamera)	common
+id-news	penyintas	change	2019	2021	covid, plasma (was: bencana, kanker)	documented-changes S9
+id-news	kontak	change	2019	2020	erat, pelacakan (was: senjata, tembak)	documented-changes S1
+id-news	erat	change	2019	2020	kontak	documented-changes S1
+id-news	konfirmasi	change	2019	2020	kasus, positif	documented-changes S1
+id-news	level	change	2019	2021	PPKM	common
+id-news	relaksasi	change	2019	2020	kredit, restrukturisasi	common
+id-news	tabung	change	2019	2021	oksigen (was: gas, elpiji)	common
+id-news	oksigen	change	2019	2021	tabung, pasien, langka	common
+id-news	darurat	change	2019	2021	PPKM	common
+id-news	mandiri	change	2019	2020	isolasi	common
+id-news	cipta	change	2018	2020	kerja, omnibus, undang-undang (was: hak cipta, lagu)	event 2020
+id-news	omnibus	change	2018	2020	law, cipta kerja	event 2020
+id-news	nusantara	change	2019	2022	ibu kota, IKN	event 2022
+id-news	merdeka	change	2018	2021	belajar, kampus	event 2020
+id-news	kudeta	change	2019	2021	Myanmar, Demokrat	event 2021
+id-news	invasi	change	2019	2022	Rusia, Ukraina	event 2022
+id-news	goreng	change	2020	2022	minyak, langka, harga	event 2022
+id-news	odol	change	2017	2022	truk, over dimension (was: pasta gigi)	common
+id-news	cebong	change	2018	2021	political label fades after 2019	common
+id-news	kampret	change	2018	2021	political label fades after 2019	common
+id-news	cuan	change	2018	2021	saham, investor	documented-changes S22
+id-news	sultan	change	2018	2021	kaya, mewah (beside Yogyakarta)	documented-changes
+id-news	ambyar	change	2018	2020	Didi Kempot, patah hati	documented-changes
+id-news	sungai	stable				everyday and stable news beats
+id-news	pohon	stable				everyday and stable news beats
+id-news	meja	stable				everyday and stable news beats
+id-news	kursi	stable				everyday and stable news beats
+id-news	kunci	stable				everyday and stable news beats
+id-news	sepatu	stable				everyday and stable news beats
+id-news	gigi	stable				everyday and stable news beats
+id-news	rambut	stable				everyday and stable news beats
+id-news	kopi	stable				everyday and stable news beats
+id-news	teh	stable				everyday and stable news beats
+id-news	garam	stable				everyday and stable news beats
+id-news	telur	stable				everyday and stable news beats
+id-news	ikan	stable				everyday and stable news beats
+id-news	ayam	stable				everyday and stable news beats
+id-news	kucing	stable				everyday and stable news beats
+id-news	bunga	stable				everyday and stable news beats
+id-news	hujan	stable				everyday and stable news beats
+id-news	angin	stable				everyday and stable news beats
+id-news	pagi	stable				everyday and stable news beats
+id-news	malam	stable				everyday and stable news beats
+id-news	lagu	stable				everyday and stable news beats
+id-news	film	stable				everyday and stable news beats
+id-news	buku	stable				everyday and stable news beats
+id-news	petani	stable				everyday and stable news beats
+id-news	nelayan	stable				everyday and stable news beats
+id-news	sawah	stable				everyday and stable news beats
+id-news	jembatan	stable				everyday and stable news beats
+id-news	kapal	stable				everyday and stable news beats
+id-news	gol	stable				everyday and stable news beats
+id-news	pelatih	stable				everyday and stable news beats
+id-news	wasit	stable				everyday and stable news beats
+id-news	kiper	stable				everyday and stable news beats
+id-news	motor	stable				everyday and stable news beats
+id-news	mesin	stable				everyday and stable news beats
+id-news	resep	stable				everyday and stable news beats
+id-news	bumbu	stable				everyday and stable news beats
+id-news	sambal	stable				everyday and stable news beats
+id-news	hakim	stable				everyday and stable news beats
+id-news	jaksa	stable				everyday and stable news beats
+id-news	terdakwa	stable				everyday and stable news beats
+id-news	gempa	stable				everyday and stable news beats
+id-news	banjir	stable				everyday and stable news beats
+id-news	longsor	stable				everyday and stable news beats
+id-news	daring	seen				inspected before registration
+id-news	viral	seen				inspected before registration
+id-news	healing	seen				inspected before registration
+id-news	unggah	seen				inspected before registration
+id-news	hijrah	seen				inspected before registration
+id-news	rumah	seen				inspected before registration
+id-news	corona	seen				inspected before registration
+id-news	luring	seen				inspected before registration

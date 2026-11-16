@@ -1,0 +1,31 @@
+[project]
+name = "idhist"
+version = "0.1.0"
+description = "How Indonesian words changed the company they keep: dated, genre-stable series of text, measured with a noise floor"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "scipy",
+    "pyarrow",
+    "zarr>=3",
+    "zstandard",
+    "huggingface_hub",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["idhist", "idhist.sources"]
+
+[tool.ruff]
+line-length = 120
+extend-exclude = ["research"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore:.*fork.*:DeprecationWarning"]
