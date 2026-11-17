@@ -77,7 +77,10 @@ def answer(ask: dict) -> dict:
             whole = _matching(tally, names, of)
             both = _matching(tally, names, part if of == "*" else f"{of}+{part}")
             share, off = interval(both.astype(float), whole.astype(float), MIN_PAGES)
-            out["pages"].setdefault(of, []).append(whole.sum(1).tolist())
+            if (
+                len(out["pages"].setdefault(of, [])) < len(out["share"].get(f"{of}|{part}", [])) + 1
+            ):  # once per publisher
+                out["pages"][of].append(whole.sum(1).tolist())
             for kind, values in (("share", share), ("off", off)):
                 listed = [None if np.isnan(v) else round(float(v), 4) for v in values]
                 out[kind].setdefault(f"{of}|{part}", []).append(listed)
