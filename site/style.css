@@ -161,7 +161,7 @@ main:focus { outline: none; }
 
 /* ==== 5. footer ================================================================================================ */
 
-.site-foot { background: var(--deep); color: var(--on-deep-2); font-size: var(--t-small); line-height: var(--l-small); --focus: var(--route-on-deep);
+.site-foot { background: var(--deep); color: var(--on-deep-2); border-top: var(--hair) solid var(--line-deep); font-size: var(--t-small); line-height: var(--l-small); --focus: var(--route-on-deep);
   padding: var(--s8) max(var(--gutter), (100% - var(--content)) / 2) var(--s7); }
 .foot { display: grid; gap: var(--s6); }
 .foot p, .foot ul { margin: 0 0 var(--s3); max-width: 30rem; }
@@ -170,6 +170,7 @@ main:focus { outline: none; }
 .foot h2 { margin: 0 0 var(--s3); font: 600 var(--t-meta)/var(--l-meta) var(--type); color: var(--on-deep); letter-spacing: .02em; }
 .foot-brand { font: 800 var(--t-h2)/var(--l-h2) var(--type); font-stretch: 75%; color: var(--on-deep); }
 .foot a { color: var(--on-deep); }
+.foot-links li { padding: 0; }
 .foot-links a { display: inline-flex; align-items: center; min-height: var(--tap); }
 @media (min-width: 900px) { .foot { grid-template-columns: 1.3fr 1fr 1fr; gap: var(--s7); } }
 
