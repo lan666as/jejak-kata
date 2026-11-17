@@ -206,7 +206,7 @@ text.when-label { font: 800 13px var(--type); fill: var(--route); paint-order: s
 @media (max-width: 760px) {
   .scrolly { display: block; }
   .scrolly .pin { top: 0; height: auto; z-index: 2; display: block; margin: 0 -16px; padding: 6px 16px; background: var(--sea); border-bottom: 1px solid var(--line); }
-  .scrolly .steps { padding: 6vh 0 0; }
+  .scrolly .steps { padding: 16vh 0 0;  /* the first caption is read only once the figure above it has stuck */ }
   .scrolly .steps > div { min-height: 44vh; }
   .scrolly .steps > div:last-child { min-height: 30vh; }
 }
