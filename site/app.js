@@ -15,6 +15,10 @@ const BEAT = 1500; // milliseconds a player stays on one period
 const MAIN = "id-web-news-kompas"; // the lens of the first page: yearly, one publisher, 2011-2024
 const OUTLETS = ["id-web-eras-kompas", "id-web-eras-tempo", "id-web-eras-tribun"]; // one publisher each, the same three periods
 const OUTLET = ["Kompas", "Tempo", "Tribunnews"];
+/** The publishers whose text is counted (idhist/pages.py), as the site calls them. */
+const PUBLISHER = { "kompas.com": "Kompas", "tempo.co": "Tempo", "tribunnews.com": "Tribunnews", "bisnis.com": "Bisnis", "okezone.com": "Okezone", "detik.com": "Detik", "liputan6.com": "Liputan6",
+  "polri.go.id": { id: "Situs Polri", en: "Police's site" }, "mil.id": { id: "Situs TNI", en: "Army's site" } };
+const said = (label) => label[language] || label;
 const ERAS_SHOWN = ["2010–2014", "2015–2019", "2020–2024"];
 const dash = (label) => String(label).replace("-", "–");
 const ROUTES = ["--route", "--route-2", "--ink", "--ink-3"]; // colours of the first, second ... chosen word
@@ -898,6 +902,17 @@ const SCENES = {
         pages: () => t("pages_fell", OUTLET.map((o, k) => `${o} ${thousands(s.pages[k][a])} → ${thousands(s.pages[k][b])}`).join(", ")) }, w, h);
     });
   },
+  /** Counts from the text (idhist/pages.py, data/pages/<name>.json): a row per publisher and a dot per share asked
+   *  for; or, with `rows: "shares"`, a row per share and a dot per publisher. The dots travel from period to period. */
+  asked: async (scene, w, h) => {
+    const d = await json(`pages/${scene.name}.json`), states = scene.periods || d.periods, column = states.map((p) => d.periods.indexOf(p));
+    const value = (key, publisher, c) => d.share[key][d.publishers.indexOf(publisher)][c] ?? null, names = scene.publishers.map((p) => said(PUBLISHER[p]));
+    const rows = scene.rows === "shares"
+      ? scene.shares.map(([key, label]) => ({ label: said(label), values: column.map((c) => scene.publishers.map((p) => value(key, p, c))) }))
+      : scene.publishers.map((p, k) => ({ label: names[k], values: column.map((c) => scene.shares.map(([key]) => value(key, p, c))) }));
+    const figure = strip({ title: scene[language].plate, states: states.map(dash), series: scene.rows === "shares" ? names : scene.shares.map(([, label]) => said(label)), rows, pages: (i) => scene[language].note(dash(states[i])) }, w, h);
+    return { ...figure, show: (i, focus) => figure.show(i, focus?.map((name) => (PUBLISHER[name] ? said(PUBLISHER[name]) : name))) };  // a caption names a publisher by its address
+  },
 };
 const SCENE_DATA = { together: "together.json", stuck: "together.json", yearly: "years.json", forget: "years.json", fell: "stopped.json" };
 
@@ -937,7 +952,7 @@ async function storyPage(slug, scene) {
   const sections = story.scenes.map((part, k) => {
     const section = el(`<section id="scene-${k}"><h2>${part[language].title}</h2>${part[language].text ? `<p class="sub">${part[language].text}</p>` : ""}</section>`);
     section.append(made[k] ? scrolly(made[k], part.steps) : el(`<p class="sub">${t("no_data")}</p>`));
-    section.append(tools(href("cerita", slug, String(k)), { image: made[k] && section, check: part.check, data: SCENE_DATA[part.type] }));
+    section.append(tools(href("cerita", slug, String(k)), { image: made[k] && section, check: part.check, data: part.type === "asked" ? `pages/${part.name}.json` : SCENE_DATA[part.type] }));
     return section;
   });
   view.replaceChildren(...head, ...sections, el(`<section class="limits"><h2>${t("limits_title")}</h2>${story[language].limits}</section>`),

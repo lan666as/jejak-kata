@@ -19,6 +19,37 @@ const PHRASES = {
 
 export const STORIES = [
   {
+    slug: "diamankan",
+    id: {
+      title: "Ditangkap, atau “diamankan”?",
+      teaser: "Di situs berita Polri, sepertiga halaman tentang seorang tersangka memakai kata “diamankan”. Di Tribunnews seperempat. Di Kompas naik dari 5% menjadi 15%. Di Tempo: 3–6%.",
+      intro: "Dalam bahasa polisi, orang jarang ditangkap: ia “diamankan”. Hukum acara pidana hanya mengenal penangkapan dan penahanan; kata yang lebih halus itu datang dari rilis dan konferensi pers. Seberapa jauh sebuah redaksi memakai kata polisi dapat dihitung, dan hasilnya berbeda dari penerbit ke penerbit.",
+      limits: "<p>Yang dihitung adalah halaman, bukan kalimat; sebuah halaman bisa memuat kedua kata. Kami membaca 200 tempat yang diambil acak: di 156 (78%) yang “diamankan” adalah orang yang disangka berbuat pidana, di 42 barang bukti, di 2 lainnya. Jadi kira-kira seperlima dari angka di sini bukan tentang orang, dan itu serupa di tiap penerbit (tentang orang: Tribunnews 83%, Kompas 70%, situs Polri 71%). Kata “mengamankan” tidak dihitung. Situs Polri baru punya cukup halaman sejak 2016; pada 2024 semua penerbit sedikit halamannya. Data ini tidak mengatakan <i>mengapa</i>: wartawan bisa memakai kata itu karena mengutip rilis, karena kebiasaan, atau karena memang sedang menulis tentang barang bukti. Bisnis dihitung juga tetapi halamannya terlalu sedikit untuk digambar.</p>",
+    },
+    en: {
+      title: "Arrested, or “secured”?",
+      teaser: "On the police's own news site, a third of the pages about a suspect use the word “diamankan” (secured). In Tribunnews a quarter. In Kompas it rose from 5% to 15%. In Tempo: 3–6%.",
+      intro: "In police language people are seldom arrested: they are “diamankan”, secured. The criminal procedure code knows only arrest and detention; the softer word comes from press releases and press conferences. How far a newsroom uses the police's word can be counted, and the answer differs from publisher to publisher.",
+      limits: "<p>What is counted is pages, not sentences; a page can hold both words. We read 200 places drawn at random: in 156 (78%) what is “diamankan” is a person suspected of an offence, in 42 it is evidence, in 2 something else. So about a fifth of the figures here are not about people, and that is similar in each publisher (about people: Tribunnews 83%, Kompas 70%, the police's site 71%). The word “mengamankan” is not counted. The police's site has enough pages only from 2016; in 2024 every publisher has few. This does not say <i>why</i>: a reporter may use the word because a release is quoted, out of habit, or because the story is about evidence. Bisnis was counted too but has too few such pages to draw.</p>",
+    },
+    scenes: [
+      { type: "asked", name: "tangkap", periods: ["2012", "2016", "2018", "2021", "2023"], check: ["diamankan", "ditangkap", "polisi"],
+        publishers: ["polri.go.id", "tribunnews.com", "okezone.com", "detik.com", "liputan6.com", "kompas.com", "tempo.co"],
+        shares: [["polisi+pelaku|diamankan", "diamankan"], ["polisi+pelaku|ditangkap", { id: "ditangkap, menangkap, penangkapan", en: "ditangkap, menangkap, penangkapan (arrest)" }]],
+        id: { title: "Kata polisi, penerbit demi penerbit", text: "Yang dihitung hanya halaman yang menyebut polisi dan seorang pelaku, tersangka, atau terduga. Di tiap baris dua titik: bagian halaman itu yang memuat <i>diamankan</i>, dan bagian yang memuat kata tangkap.",
+          plate: "“diamankan” di halaman tentang polisi dan tersangka: sepertiga di situs Polri, 15% di Kompas, 3–6% di Tempo", note: (p) => `${p}: bagian dari halaman tiap penerbit yang menyebut polisi dan seorang pelaku, tersangka, atau terduga.` },
+        en: { title: "The police's word, publisher by publisher", text: "Only pages that name the police and a perpetrator, suspect or alleged offender are counted. Two dots in each row: the share of those pages with <i>diamankan</i>, and the share with a word for arrest.",
+          plate: "“diamankan” on pages about police and a suspect: a third on the police's site, 15% in Kompas, 3–6% in Tempo", note: (p) => `${p}: share of each publisher's pages that name the police and a perpetrator, suspect or alleged offender.` },
+        steps: [
+          s("2012", "2012. Kompas: <i>diamankan</i> di 7,8% halaman seperti itu, kata tangkap di 30%. Tempo: 3,3% dan 37%.", "2012. Kompas: <i>diamankan</i> on 7.8% of such pages, a word for arrest on 30%. Tempo: 3.3% and 37%.", ["kompas.com", "tempo.co"]),
+          s("2016", "Situs berita Polri sendiri, 2016: <i>diamankan</i> 40%, kata tangkap 49%. Di rumahnya sendiri kedua kata itu nyaris setara, dan tetap begitu: 30–37% sampai 2023.", "The police's own news site, 2016: <i>diamankan</i> 40%, a word for arrest 49%. At home the two words are nearly level, and stay so: 30–37% through 2023.", ["polri.go.id"], undefined, "Situs Polri"),
+          s("2018", "2018: Tribunnews 25%, Okezone 21%, Kompas 17%. Kata itu naik di semua portal.", "2018: Tribunnews 25%, Okezone 21%, Kompas 17%. The word rises in every portal.", ["tribunnews.com", "okezone.com", "kompas.com"]),
+          s("2021", "2021: Detik 19%, Liputan6 18%, Kompas 15%. Tempo: 3,3%. Satu redaksi tidak ikut.", "2021: Detik 19%, Liputan6 18%, Kompas 15%. Tempo: 3.3%. One newsroom does not go along.", ["detik.com", "liputan6.com", "kompas.com", "tempo.co"], undefined, "Tempo"),
+          s("2023", "2023: Tempo 6,2%, masih yang terendah. Kata tangkap sendiri tidak ke mana-mana: 34–45% di semua penerbit. <i>Diamankan</i> tidak menggantikan <i>ditangkap</i>; ia tumbuh di sampingnya.", "2023: Tempo 6.2%, still the lowest. The words for arrest go nowhere: 34–45% in every publisher. <i>Diamankan</i> does not replace <i>ditangkap</i>; it grows beside it."),
+        ] },
+    ],
+  },
+  {
     slug: "viral-polisi",
     id: {
       title: "Tidak viral, tidak ada polisi?",

@@ -263,5 +263,115 @@
     "teroris"
    ]
   ]
+ },
+ {
+  "name": "oknum-masa",
+  "publishers": [
+   "kompas.com",
+   "tempo.co",
+   "tribunnews.com",
+   "bisnis.com",
+   "okezone.com",
+   "detik.com",
+   "liputan6.com"
+  ],
+  "by": "span",
+  "first": "2020-01",
+  "last": "2024-12",
+  "patterns": {
+   "oknum": "\\boknum\\b",
+   "salah": "\\b(pungli|pungutan liar|memeras|pemerasan|menganiaya|penganiayaan|memukul|pemukulan|mencabuli|pencabulan|memperkosa|pemerkosaan|menipu|penipuan|suap|menyuap|korupsi|narkoba|sabu|menembak|penembakan|melecehkan|pelecehan)\\b",
+   "polisi": "\\b(polisi|polri|polda|polres|polsek)\\b",
+   "tni": "\\b(tni|tentara|prajurit|kodam|kodim)\\b",
+   "jaksa": "\\b(jaksa|kejaksaan|kejari|kejati)\\b",
+   "pns": "\\b(pns|asn|pegawai negeri|aparatur sipil negara)\\b",
+   "guru": "\\bguru\\b",
+   "dewan": "\\b(anggota dprd?|anggota dewan|legislator)\\b",
+   "hakim": "\\bhakim\\b",
+   "dokter": "\\bdokter\\b",
+   "kades": "\\b(kepala desa|kades|lurah)\\b"
+  },
+  "shares": [
+   [
+    "*",
+    "oknum"
+   ],
+   [
+    "salah",
+    "oknum"
+   ],
+   [
+    "polisi",
+    "oknum"
+   ],
+   [
+    "tni",
+    "oknum"
+   ],
+   [
+    "jaksa",
+    "oknum"
+   ],
+   [
+    "pns",
+    "oknum"
+   ],
+   [
+    "guru",
+    "oknum"
+   ],
+   [
+    "dewan",
+    "oknum"
+   ],
+   [
+    "hakim",
+    "oknum"
+   ],
+   [
+    "dokter",
+    "oknum"
+   ],
+   [
+    "kades",
+    "oknum"
+   ],
+   [
+    "polisi+salah",
+    "oknum"
+   ],
+   [
+    "tni+salah",
+    "oknum"
+   ],
+   [
+    "jaksa+salah",
+    "oknum"
+   ],
+   [
+    "pns+salah",
+    "oknum"
+   ],
+   [
+    "guru+salah",
+    "oknum"
+   ],
+   [
+    "dewan+salah",
+    "oknum"
+   ],
+   [
+    "hakim+salah",
+    "oknum"
+   ],
+   [
+    "dokter+salah",
+    "oknum"
+   ],
+   [
+    "kades+salah",
+    "oknum"
+   ]
+  ]
  }
 ]
