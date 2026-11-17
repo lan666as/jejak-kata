@@ -504,12 +504,12 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .stage-figure .sub { color: var(--on-deep-2); }
 .stage-side { grid-area: side; display: flex; flex-direction: column; gap: var(--s2); min-height: 0; }
 .stage-meta { display: flex; justify-content: space-between; gap: var(--s3); max-width: none; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); font-weight: 600; color: var(--on-deep-2); font-variant-numeric: tabular-nums; }
-.caption { position: relative; flex: 1; display: grid; align-content: start; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-deep) transparent; }
+.caption { flex: 1; display: grid; align-content: start; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-deep) transparent; }
 .caption.more { mask-image: linear-gradient(#000 calc(100% - var(--s6)), transparent); }
 .caption:focus-visible { outline-offset: calc(-1 * var(--rule)); }
 .turn { grid-area: 1 / 1; transition: opacity var(--d-turn) var(--sail), transform var(--d-turn) var(--sail); }
 @starting-style { .turn { opacity: 0; transform: translateY(var(--s2)); } .turn.back { transform: translateY(calc(-1 * var(--s2))); } }
-.turn.out { position: absolute; left: 0; opacity: 0; transform: translateY(calc(-1 * var(--s2))); pointer-events: none; }
+.turn.out { opacity: 0; transform: translateY(calc(-1 * var(--s2))); pointer-events: none; }
 .turn.out.back { transform: translateY(var(--s2)); }
 .turn p { max-width: var(--measure); margin: 0 0 var(--s3); font-size: var(--t-body); line-height: var(--l-body); color: var(--on-deep); }
 .turn .head, .turn .title { margin: 0 0 var(--s2); font: 800 var(--t-h3)/var(--l-h3) var(--type); font-stretch: 75%; text-wrap: balance; }
@@ -541,7 +541,7 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
   .stage-figure { height: auto; min-height: 0; }
   .stage-figure .plate svg { max-height: calc(var(--stage-h) - 2 * var(--s5)); }
   .stage-side { gap: var(--s4); padding: var(--s2) 0; }
-  .caption { align-content: safe center; }
+  .caption { padding-top: clamp(0px, 12vh - var(--s6), 96px); }  /* a short caption sits a little below the top, a fixed amount: nothing moves as captions turn */
   .turn p { font-size: var(--t-caption); line-height: 1.38; }
   .turn .intro { display: none; }  /* the cover shows it */
   .turn .head { font-size: var(--t-h2); line-height: var(--l-h2); }
@@ -595,7 +595,7 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .hero .suggest input { min-height: calc(var(--tap) + var(--s2)); color: var(--on-deep); background: var(--deep-2); border-color: var(--line-deep-2); }
 .hero .suggest input:hover, .hero .suggest input:focus { border-color: var(--on-deep-2); }
 .hero .suggest input::placeholder { color: var(--on-deep-2); }
-.hero .suggest > button { min-height: calc(var(--tap) + var(--s2)); padding: 0 var(--s4); background: var(--route-on-deep); border-color: var(--route-on-deep); color: var(--deep); }
+.hero .suggest > button { min-height: calc(var(--tap) + var(--s2)); padding: 0 var(--s4); flex: none; background: var(--route-on-deep); border-color: var(--route-on-deep); color: var(--deep); }
 .hero .suggest > button:hover { border-color: var(--on-deep); }
 .hero .offers { bottom: calc(100% + var(--s1)); top: auto; }  /* above the field: below it lies the bottom of the screen */
 .hero-try { display: flex; align-items: flex-start; gap: var(--s2); margin-top: var(--s3); font-size: var(--t-small); color: var(--on-deep-2); }

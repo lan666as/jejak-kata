@@ -29,6 +29,9 @@ Colour roles (light / dark). Names used by the figures (`--sea --shoal --paper -
 | `--beacon` | `#f0ae2c` | `#f2b84a` | the key number; highlights on the deep |
 | `--link` | `#0f5c8c` | `#7fc0ea` | links in running text |
 
+At night (the home hero) the islands take `--light-0..5`, dim to bright by how far a word moved; control edges on
+the deep use `--line-deep-2` (3:1 against `--deep`).
+
 Text on `--chart` and on `--deep` must pass WCAG AA (4.5:1 body, 3:1 large). The header and the stage are
 always opaque.
 
@@ -44,7 +47,9 @@ headings stretch 80% weight 700, text stretch 100% weight 400/600.
 | `--t-h3` | 1.5rem | 1.15 | card titles, caption heads |
 | `--t-h2` | clamp(1.75rem, 4vw, 2.5rem) | 1.08 | section titles |
 | `--t-h1` | clamp(2.5rem, 7vw, 4.25rem) | 0.98 | page titles |
-| `--t-display` | clamp(3.25rem, 12vw, 8rem) | 0.9 | hero, story covers, key numbers |
+| `--t-display` | clamp(3.25rem, 12vw, 8rem) | 0.9 | hero, story covers, a word's own page |
+| `--t-key` | clamp(2.75rem, 21cqi, 5rem) | 0.9 | the key number on a large story card (sized by its card) |
+| `--t-caption` | clamp(1.375rem, 1rem + .9vw, 1.875rem) | 1.38 | a story caption beside its figure, from 900px |
 
 Space: `--s1 4px, --s2 8px, --s3 12px, --s4 16px, --s5 24px, --s6 32px, --s7 48px, --s8 72px, --s9 112px`.
 Gutter 16px on phones, 32px from 900px. Content width 1120px; reading measure 38rem.
@@ -66,7 +71,10 @@ the home hero; everything else answers the reader. `prefers-reduced-motion` turn
   Chips are pills. One focus ring: 2px `--route`, 2px offset, on everything focusable.
 - **Field**: 44px, `--chart-2`, hairline; on the deep, `--deep-2` with no border.
 - **Page head**: kicker (meta, uppercase is not used; a short plain label), h1, lede. Same on every page.
-- **Card**: `--chart-2`, hairline, `--r2`, padding `--s5`; a story card leads with its key number in display type.
+- **Card**: `--chart-2`, hairline, `--r2`, padding `--s5`; a story card leads with its key number in display type
+  and a one-line label (`key` in `site/text.js`). The large story card (the three newest, on home and on the
+  stories index) is on `--deep` with the number in `--beacon`; a route-coloured line draws across its top on hover.
+  A play card leads with a small drawn mark of its figure, the moving part in `--route`.
 - **Figure plate**: paper `--chart-2` on the chart, and on the stage; title is a sentence with the number in it.
 - **Footer**: on `--deep`: what the data is, licence, links; quiet.
 
@@ -97,8 +105,13 @@ A story keeps its place by step (not by pixels) across a language switch and the
 - **Home**: hero on the deep, full height: the map of words as a night chart with one route drawn; headline in
   display type; one field ("Ketik kata, lihat rutenya") and a few chips. Then, on the chart: three featured stories
   with their key numbers; things to play with; how it is measured (sources, pages counted, what the tests say), in
-  three short columns.
+  three short columns, every number read from the data. Built: the chart is painted once, already framed on the
+  first route, and the ship sets out when the screen keeps up again (three frames under 25 ms); the whole lens is
+  fetched only after the route is drawn or when the reader types. The far layer lags the pointer and the scroll.
+- **States**: an unknown address is a 404 on the deep with the ways back; a word not on the chart, data that did
+  not load and a search with no match each say what happened and what to do.
 - **Stories index**: page head, then cards led by the key number; the newest three large.
+- **Story on a phone**: the cover holds kicker, title, deck and "Mulai"; the intro opens the first scene's caption.
 - **Word, portrait, map, findings, method, play pages**: the page head pattern, the same cards, fields, chips and
   tables; figures on plates.
 

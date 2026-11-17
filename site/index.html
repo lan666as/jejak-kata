@@ -44,7 +44,7 @@
     <button id="language" type="button">English</button>
   </div>
 </header>
-<main id="view" tabindex="-1"><script>/* the first page is laid out full width from the start, so nothing moves when it arrives */ if (!/^#\/[^/]/.test(location.hash)) document.currentScript.parentNode.className = "home";</script><p class="loading">Memuat peta kata…</p></main>
+<main id="view" tabindex="-1"><script>/* the first page and a story are laid out full width from the start, so nothing moves when it arrives */ { const main = document.currentScript.parentNode; if (!/^#\/[^/]/.test(location.hash)) main.className = "home"; else if (/^#\/cerita\/[^/]/.test(location.hash)) main.className = "voyage"; }</script><p class="loading">Memuat peta kata…</p></main>
 <footer class="site-foot" data-t="footer"></footer>
 <div id="tip" role="status" hidden></div>
 <script type="module" src="app.js"></script>

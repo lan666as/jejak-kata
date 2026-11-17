@@ -209,8 +209,6 @@ function stage(part, k, of, steer, intro = "") {
     show();
     // The caption turns: the one that was leaves a few pixels the way the reader came from, the new one comes in.
     for (const old of caption.querySelectorAll(".turn:not(.out)")) {
-      // It leaves from where it stands, out of the flow, so that the caption that comes is placed once and stays.
-      Object.assign(old.style, { top: old.offsetTop + "px", width: old.offsetWidth + "px" });
       old.classList.add("out");
       old.classList.toggle("back", backwards);
       old.setAttribute("aria-hidden", "true");
