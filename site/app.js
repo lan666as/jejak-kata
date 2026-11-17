@@ -23,6 +23,7 @@ const ERAS_SHOWN = ["2010–2014", "2015–2019", "2020–2024"];
 const dash = (label) => String(label).replace("-", "–");
 const ROUTES = ["--route", "--route-2", "--ink", "--ink-3"]; // colours of the first, second ... chosen word
 const view = document.getElementById("view");
+const masthead = document.querySelector(".masthead");
 const tipNode = document.getElementById("tip");
 
 let language = localStorage.getItem("language") || "id";
@@ -81,6 +82,16 @@ const pairIndex = (lens, a, b) => lens.pairs.findIndex(([x, y]) => x === a && y 
 const largest = (shifts) => Math.max(...shifts.filter((s) => s !== null));
 const known = (e) => e.with.map((w, p) => (w.length ? p : -1)).filter((p) => p >= 0); // periods with enough of the word
 const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+/** The width the page's content has: the main column without its gutters. */
+const room = () => {
+  const style = getComputedStyle(view);
+  return view.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+};
+/** The head every page starts with: a kicker (a label, or a link back), the title, and a lede. */
+const pageHead = (title, { kicker, to, lede, cls = "" } = {}) => el(`<div class="page-head">${kicker ? (to ? `<a class="kicker" href="${to}">${kicker}</a>` : `<p class="kicker">${kicker}</p>`) : ""}
+  <h1${cls ? ` class="${cls}"` : ""}>${title}</h1>${lede ? `<p class="lede">${lede}</p>` : ""}</div>`);
+/** The kicker of a page reached from the play page: a way back to it. */
+const fromPlay = () => ({ kicker: t("nav_play"), to: href("main") });
 
 /** Show `text` beside the pointer, or hide the tip when there is none. */
 function tip(text, e) {
@@ -96,12 +107,17 @@ function hover(node, text) {
 }
 
 /** A row of buttons of which one is pressed; `show(i)` is called for the pressed one. */
-function tabs(labels, show, first = 0) {
-  const list = el(`<ul class="tabs">${labels.map((label) => `<li><button type="button">${label}</button></li>`).join("")}</ul>`);
+function tabs(labels, show, first = 0, style = "tabs") {
+  const list = el(`<ul class="${style}">${labels.map((label) => `<li><button type="button">${label}</button></li>`).join("")}</ul>`);
   const buttons = [...list.querySelectorAll("button")];
   const press = (i) => {
     buttons.forEach((b, j) => b.setAttribute("aria-pressed", i === j));
     show(i);
+    // In a row that scrolls sideways, the pressed one is brought into the row's view.
+    requestAnimationFrame(() => {
+      const row = list.getBoundingClientRect(), at = buttons[i].getBoundingClientRect();
+      if (at.left < row.left || at.right > row.right) list.scrollLeft += at.left - row.left - parseFloat(getComputedStyle(list).paddingLeft);
+    });
   };
   buttons.forEach((b, i) => b.addEventListener("click", () => press(i)));
   press(first);
@@ -109,11 +125,11 @@ function tabs(labels, show, first = 0) {
 }
 
 /** Tabs over one holder: the content of the pressed tab replaces the last. */
-function switcher(labels, content, first = 0) {
+function switcher(labels, content, first = 0, style = "tabs") {
   const holder = el("<div></div>");
   const box = el("<div></div>");
   const show = async (i) => holder.replaceChildren(await Promise.resolve(content(i)).catch(() => el(`<p class="sub">${t("no_data")}</p>`)));
-  box.append(tabs(labels, show, first), holder);
+  box.append(tabs(labels, show, first, style), holder);
   return box;
 }
 
@@ -191,7 +207,7 @@ function scrolly(figure, steps) {
 
 /** Share of units containing each word, per period; one line per entry, named when there are several. */
 function frequencyChart(lens, series, chosen = []) {
-  const W = Math.max(280, Math.min(680, view.clientWidth - 32)), H = 190, L = 44, R = 12, T = 10, B = 26; // drawn at its real size, so text stays legible
+  const W = Math.max(280, Math.min(680, room())), H = 190, L = 44, R = 12, T = 10, B = 26; // drawn at its real size, so text stays legible
   const n = lens.periods.length;
   const top = Math.max(...series.flatMap((e) => e.share)) * 1.1 || 1;
   const x = (i) => L + ((W - L - R) * i) / (n - 1);
@@ -300,7 +316,7 @@ function orbit(lens, e) {
  * side away from it, each tied to its island by a thin line.
  */
 function pathFigure(lens, path) {
-  const W = Math.max(300, Math.min(700, view.clientWidth - 32)), H = Math.round(W * 0.8), P = 30, SIDE = 96;
+  const W = Math.max(300, Math.min(700, room())), H = Math.round(W * 0.8), P = 30, SIDE = 96;
   const raw = path.path.map((xy, p) => xy && { p, xy }).filter(Boolean);
   const smooth = (k, d) => (raw.length > 6 && k > 0 && k < raw.length - 1 ? (raw[k - 1].xy[d] + 2 * raw[k].xy[d] + raw[k + 1].xy[d]) / 4 : raw[k].xy[d]);
   const moved = raw.map((r, k) => [smooth(k, 0), smooth(k, 1)]);
@@ -457,7 +473,7 @@ async function duel(lens, first, second, lexicon) {
 
 /** The company two words keep: what only the first has, what both have, what only the second has. */
 function split(lens, a, b) {
-  const node = el(`<div class="pair" style="grid-template-columns:1fr 1fr 1fr"></div>`);
+  const node = el(`<div class="pair three"></div>`);
   const show = (p) => {
     const both = a.with[p].filter((i) => b.with[p].includes(i));
     const column = (title, ids, cls) => `<div><h3>${title}</h3>${words(lens, ids.filter((i) => !both.includes(i) || cls === "both"), null, "")}</div>`;
@@ -550,11 +566,11 @@ function numbers(lens, e) {
           <p class="sub">${t("with")}</p>${words(lens, e.with[p], e.with[side ? a : b], side ? "new" : "gone")}
           <p class="sub">${t("like")}</p>${words(lens, e.like[p], e.like[side ? a : b], side ? "new" : "gone")}</div>`)
         .join("")}</div>`),
-      el(`<details><summary>${t("all_periods")}</summary><table>
+      el(`<details><summary>${t("all_periods")}</summary><div class="table"><table>
         <tr><th>${t("period")}</th><th class="n">${t("share")}</th><th>${t("with")}</th><th>${t("like")}</th></tr>
         ${lens.periods.map((p, i) => `<tr><td>${p}</td><td class="n">${percent(e.share[i])}</td>
           <td>${e.with[i].map((w) => lens.words[w]).join(", ")}</td><td>${e.like[i].map((w) => lens.words[w]).join(", ")}</td></tr>`).join("")}
-      </table></details>`),
+      </table></div></details>`),
       download(`${lens.words[e.word]}.${lens.lens}`, readable(lens, e)),
     );
     body.querySelectorAll("select").forEach((select) =>
@@ -602,12 +618,12 @@ async function lensSection(lens, e) {
 
 /** One lens at a time: a tab per lens, labelled with what `label(lens)` returns, showing `section(lens)`. */
 async function perLens(found, label, section, first = 0) {
-  view.append(switcher(await Promise.all(found.map(label)), (i) => section(found[i]), first));
+  view.append(switcher(await Promise.all(found.map(label)), (i) => section(found[i]), first, "chips"));
 }
 
 /** A field that offers the words of a lens as one types; `chosen(word)` gets the one picked. */
 function suggest(lens, placeholder, button, chosen) {
-  const form = el(`<form class="controls suggest" autocomplete="off"><span><input type="search" placeholder="${placeholder}" aria-label="${placeholder}"><ul class="offers" hidden></ul></span><button>${button}</button></form>`);
+  const form = el(`<form class="controls suggest" autocomplete="off"><span><input type="search" placeholder="${placeholder}" aria-label="${placeholder}"><ul class="offers" hidden></ul></span><button class="primary">${button}</button></form>`);
   const [input, offers] = [form.querySelector("input"), form.querySelector("ul")];
   const take = (word) => {
     offers.hidden = true;
@@ -653,16 +669,16 @@ function picker(lens, list, changed, most = 12) {
 async function wordPage(word, opened) {
   const all = await allLenses();
   const found = all.filter((lens) => lens.isEntry(lens.index.get(word)));
-  view.replaceChildren(el(`<h1>${escape(word)}</h1>`));
+  const named = found.find((lens) => lens.articles.has(lens.index.get(word)));
+  const kind = named && named.kind(named.index.get(word));
+  view.replaceChildren(pageHead(escape(word), { kicker: named ? `<span class="dot ${kind}"></span>${t("name")}${kind === "other" ? "" : ` · ${t("kind_one_" + kind)}`}` : t("word") }));
   if (!found.length) return view.append(el(`<p>${t(all.some((lens) => lens.index.has(word)) ? "is_name" : "not_found")}</p>`));
 
-  const named = found.find((lens) => lens.articles.has(lens.index.get(word)));
   if (named) {
     const i = named.index.get(word), article = named.articles.get(i);
     const same = new Set(found.flatMap((lens) => [...lens.articles].filter(([j, a]) => a === article && lens.isEntry(j)).map(([j]) => lens.words[j])));
     same.delete(word);
     view.append(
-      el(`<p><span class="badge"><i class="${named.kind(i)}"></i>${t("kind_one_" + named.kind(i))}</span></p>`),
       el(`<p class="note">${t("entity", `<a href="${WIKIPEDIA}${encodeURIComponent(article.replaceAll(" ", "_"))}">${escape(article)}</a>`)}
         ${same.size ? t("also_written", [...same].map(link).join(", ")) : ""}</p>`),
     );
@@ -679,7 +695,7 @@ async function wordPage(word, opened) {
     most,
   );
   const lens = found[most];
-  view.append(el(`<p class="controls">${named ? `<a href="${href("potret", word)}">${t("portrait_ask")}</a>` : ""} <a href="${href("peta", lens.lens, word)}">${t("rival_ask")}</a> <a href="${href("balap", lens.lens, word)}">${t("race_ask")}</a></p>`), tools(href("kata", word, lens.lens), {}));
+  view.append(el(`<ul class="links">${named ? `<li><a href="${href("potret", word)}">${t("portrait_ask")}</a></li>` : ""}<li><a href="${href("peta", lens.lens, word)}">${t("rival_ask")}</a></li><li><a href="${href("balap", lens.lens, word)}">${t("race_ask")}</a></li></ul>`), tools(href("kata", word, lens.lens), {}));
 }
 
 /** The chart of a lens, with up to four words of the reader's choosing sailing across it; two of them are compared below. */
@@ -720,7 +736,7 @@ async function chartPage(name = MAIN, ...list) {
   const share = el("<div></div>");
   const address = () => share.replaceChildren(tools(href("peta", lens.lens, ...list), { check: list }));
   address();
-  view.replaceChildren(el(`<h1>${t("nav_chart")}</h1>`), el(`<p class="lede">${t("chart_lede")}</p>`), controls, pick, explained(figure, t("chart_about")), el(legendMoved()), share, below);
+  view.replaceChildren(pageHead(t("nav_chart"), { kicker: lensText(lens).title, lede: t("chart_lede") }), controls, pick, explained(figure, t("chart_about")), el(legendMoved()), share, below);
   await rivalry();
 }
 const legendMoved = () => `<div class="legend"><span>${t("moved")}</span>${[0, 1, 2, 3, 4, 5].map((i) => `<span><i class="s${i}"></i>${i === 0 ? `< ${STEPS[0]}` : i === 5 ? `≥ ${STEPS[4]}` : `${STEPS[i - 1]}–${STEPS[i]}`}</span>`).join("")}</div>`;
@@ -741,22 +757,22 @@ async function racePage(name = MAIN, ...list) {
   };
   const controls = el(`<div class="controls"></div>`);
   controls.append(select);
-  view.replaceChildren(el(`<h1>${t("nav_race")}</h1>`), el(`<p class="lede">${t("race_lede")}</p>`), controls, picker(lens, list, draw), holder);
+  view.replaceChildren(pageHead(t("nav_race"), { ...fromPlay(), lede: t("race_lede") }), controls, picker(lens, list, draw), holder);
   await draw();
 }
 
 /** Each period in its own words: a wall of posters, lens by lens. */
 async function yearsPage() {
   const found = await allLenses();
-  view.replaceChildren(el(`<h1>${t("nav_years")}</h1>`), el(`<p class="lede">${t("years_about")}</p>`));
-  view.append(switcher(found.map((lens) => lensText(lens).short || lensText(lens).title), (i) => wall(found[i]), Math.max(0, found.findIndex((lens) => lens.lens === MAIN))));
+  view.replaceChildren(pageHead(t("nav_years"), { ...fromPlay(), lede: t("years_about") }));
+  view.append(switcher(found.map((lens) => lensText(lens).short || lensText(lens).title), (i) => wall(found[i]), Math.max(0, found.findIndex((lens) => lens.lens === MAIN)), "chips"));
 }
 
 /** What the counting turned up by itself: who took whose place, what came and went, what came and stayed. */
 async function findingsPage() {
   const found = [];
   for (const lens of await allLenses()) if ((await highlights(lens).catch(() => ({}))).swaps?.length) found.push(lens);
-  view.replaceChildren(el(`<h1>${t("nav_findings")}</h1>`), el(`<p class="lede">${t("findings_lede")}</p>`));
+  view.replaceChildren(pageHead(t("nav_findings"), { kicker: t("findings_kicker"), lede: t("findings_lede") }));
   const section = async (lens) => {
     const { swaps, arrivals } = await highlights(lens);
     const box = el("<div></div>");
@@ -769,7 +785,7 @@ async function findingsPage() {
     }
     return box;
   };
-  view.append(switcher(found.map((lens) => lensText(lens).short || lensText(lens).title), (i) => section(found[i]), Math.max(0, found.findIndex((lens) => lens.lens === MAIN))));
+  view.append(switcher(found.map((lens) => lensText(lens).short || lensText(lens).title), (i) => section(found[i]), Math.max(0, found.findIndex((lens) => lens.lens === MAIN)), "chips"));
 }
 
 /** Lists per lens; a word also flagged between the same periods in another lens is marked. */
@@ -778,7 +794,7 @@ async function moversPage() {
   const key = (lens, m) => `${lens.periods[m.a]}>${lens.periods[m.b]}`;
   const elsewhere = (lens, m, word) =>
     all.filter((o) => o.lens !== lens && o.movers.some((x) => key(o.lens, x) === key(lens, m) && x.words.some(([w]) => o.lens.words[w] === word)));
-  view.replaceChildren(el(`<h1>${t("nav_movers")}</h1>`), el(`<p class="note">${t("movers_about")}</p>`));
+  view.replaceChildren(pageHead(t("nav_movers"), { ...fromPlay(), lede: t("play_bergeser_about") }), el(`<p class="note">${t("movers_about")}</p>`));
   await perLens(all.map((o) => o.lens), (lens) => lensText(lens).short || lensText(lens).title, (lens) => {
     const { movers } = all.find((o) => o.lens === lens);
     const section = el(`<section><p class="sub">${lensText(lens).about}</p>
@@ -811,7 +827,7 @@ async function moversPage() {
 async function entitiesPage() {
   const found = (await allLenses()).filter((lens) => lens.articles.size);
   const kinds = ["person", "organisation", "place", "other"];
-  view.replaceChildren(el(`<h1>${t("nav_entities")}</h1>`), el(`<p class="note">${t("entities_about")}</p>`));
+  view.replaceChildren(pageHead(t("nav_entities"), { ...fromPlay(), lede: t("entities_about") }));
   const section = (lens) => {
     const box = el(`<section><div class="controls"><label>${t("filter")} <input type="search"></label></div></section>`);
     const input = box.querySelector("input");
@@ -833,16 +849,17 @@ async function entitiesPage() {
       kind = kinds[i];
       draw();
     };
-    box.append(tabs(kinds.map((k) => `<span class="dot ${k}"></span> ${t("kind_" + k)}`), pick), list);
+    box.append(tabs(kinds.map((k) => `<span class="dot ${k}"></span>${t("kind_" + k)}`), pick), list);
     return box;
   };
-  view.append(switcher(found.map((lens) => lensText(lens).short || lensText(lens).title), (k) => section(found[k]), Math.max(0, found.findIndex((lens) => lens.lens === MAIN))));
+  view.append(switcher(found.map((lens) => lensText(lens).short || lensText(lens).title), (k) => section(found[k]), Math.max(0, found.findIndex((lens) => lens.lens === MAIN)), "chips"));
 }
 
-/** The room a pinned figure has: beside the captions on a wide screen, above them on a narrow one. */
+/** The room a pinned figure has: beside the captions on a wide screen, above them on a narrow one. The header
+ *  stays on screen at every width, so the height is what is left under it. */
 const figureSize = () => {
-  const wide = innerWidth > 760, width = wide ? Math.min((view.clientWidth - 32) * 0.6 - 14, 680) : view.clientWidth - 32;
-  return [width, wide ? Math.min(innerHeight - document.querySelector("header").offsetHeight - 40, width * 0.7) : Math.round(Math.min(innerHeight * 0.47, width * 1.05))];
+  const wide = innerWidth > 760, head = masthead.offsetHeight, width = wide ? Math.min((room() - 24) * 0.6, 680) : room();
+  return [width, wide ? Math.min(innerHeight - head - 40, width * 0.7) : Math.round(Math.min((innerHeight - head) * 0.47, width * 1.05))];
 };
 const thousands = (n) => Math.round(n).toLocaleString(language);
 
@@ -934,7 +951,7 @@ function tools(address, { image, check = [], data } = {}) {
   return row;
 }
 
-const doors = (list) => `<ul class="doors">${list.map(([to, title, text]) => `<li><a href="${to}"><b>${title}</b><span>${text}</span></a></li>`).join("")}</ul>`;
+const doors = (list) => `<ul class="cards doors">${list.map(([to, title, text]) => `<li><a class="card" href="${to}"><b class="card-title">${title}</b><span class="card-text">${text}</span></a></li>`).join("")}</ul>`;
 const storyDoors = (but) => doors(STORIES.filter((s) => s.slug !== but).map((s) => [href("cerita", s.slug), s[language].title, s[language].teaser]));
 const PLAY = ["tebak", "kuis", "menempel", "lingkaran", "redaksi", "pasang", "balap", "tahun", "bergeser", "entitas"];
 const playDoors = () => doors(PLAY.map((page) => [href(page), t(`play_${page}`), t(`play_${page}_about`)]));
@@ -945,8 +962,8 @@ const playDoors = () => doors(PLAY.map((page) => [href(page), t(`play_${page}`),
  */
 async function storyPage(slug, scene) {
   const story = STORIES.find((s) => s.slug === slug);
-  if (!story) return view.replaceChildren(el(`<h1>${t("nav_stories")}</h1>`), el(`<p class="lede">${t("stories_lede")}</p>`), el(storyDoors()));
-  const head = [el(`<h1 class="story">${story[language].title}</h1>`), el(`<p class="lede">${story[language].intro}</p>`)];
+  if (!story) return view.replaceChildren(pageHead(t("nav_stories"), { kicker: t("stories_kicker", STORIES.length), lede: t("stories_lede") }), el(storyDoors()));
+  const head = [pageHead(story[language].title, { kicker: t("nav_stories"), to: href("cerita"), lede: story[language].intro, cls: "story" })];
   view.replaceChildren(...head, el(`<p class="loading">${t("loading")}</p>`));
   const made = await Promise.all(story.scenes.map((part) => SCENES[part.type](part, ...figureSize()).catch(() => null)));
   const sections = story.scenes.map((part, k) => {
@@ -992,7 +1009,7 @@ async function homePage() {
   await figure.set([SHOWCASE[0]]);
   if (!hero.isConnected) return;
   figure.chart.time(figure.labels.length - 1, 0);
-  chosen.innerHTML = `${t("sail_one")} ${SHOWCASE.map((w) => `<button type="button">${w}</button>`).join("")}`;
+  chosen.innerHTML = `${t("sail_one")} ${SHOWCASE.map((w) => `<button type="button" class="chip">${w}</button>`).join("")}`;
   chosen.addEventListener("click", (e) => e.target.matches("button") && sail(figure, e.target.textContent));
   wall(lens).then((node) => posters.append(node), () => {});
 }
@@ -1005,8 +1022,7 @@ async function portraitPage(word) {
   const said = async (lexicon) => ((await saidOf(lens, word, lexicon))?.findLast((list) => list.length) || []).slice(0, 8).map(([id]) => id);
   const [verbs, adjectives] = await Promise.all([said("verbs"), said("adjectives")]);
   view.replaceChildren(
-    el(`<h1>${escape(word)}</h1>`),
-    el(`<p class="lede">${t("peak_year", lens.periods[peak], percent(e.share[peak]))}</p>`),
+    pageHead(escape(word), { kicker: t("portrait"), lede: t("peak_year", lens.periods[peak], percent(e.share[peak])) }),
     frequencyChart(lens, [e], [peak]),
     el(`<div class="pair"><div><h3>${t("verbs")}</h3>${words(lens, verbs)}</div><div><h3>${t("adjectives")}</h3>${words(lens, adjectives)}</div></div>`),
     el(`<h3>${t("most_alike")} (${lens.periods[last]})</h3>`),
@@ -1014,7 +1030,7 @@ async function portraitPage(word) {
   );
   if (path?.path) view.append(el(`<h3>${t("path")}</h3>`), played(pathFigure(lens, path)));
   view.append(el(`<p class="sub">${lensText(lens).title}. ${t("traits_about")}</p>`),
-    el(`<p class="controls"><a href="${href("lingkaran", word)}">${t("play_lingkaran")}</a><a href="${href("redaksi", word)}">${t("play_redaksi")}</a></p>`), tools(href("potret", word), { check: [word] }));
+    el(`<ul class="links"><li><a href="${href("lingkaran", word)}">${t("play_lingkaran")}</a></li><li><a href="${href("redaksi", word)}">${t("play_redaksi")}</a></li></ul>`), tools(href("potret", word), { check: [word] }));
 }
 
 /** Two games: name the year from its own words; name the person or institution from its verbs and adjectives. */
@@ -1038,30 +1054,31 @@ async function quizPage() {
       }
     },
   };
-  view.replaceChildren(el(`<h1>${t("nav_quiz")}</h1>`), el(`<p class="lede">${t("quiz_lede")}</p>`));
+  view.replaceChildren(pageHead(t("nav_quiz"), { ...fromPlay(), lede: t("quiz_lede") }));
   const play = (kind) => {
     const box = el(`<div class="quiz"></div>`);
     let right = 0, round = 0;
     const next = async () => {
       if (round === ROUNDS) {
         box.innerHTML = `<p class="score">${t("quiz_score", right, ROUNDS)}</p>`;
-        const again = el(`<button type="button">${t("quiz_again")}</button>`), share = el(`<button type="button">${t("copy_link")}</button>`);
+        const again = el(`<button type="button" class="primary">${t("quiz_again")}</button>`), share = el(`<button type="button">${t("copy_link")}</button>`), row = el(`<p class="controls"></p>`);
         again.addEventListener("click", () => ((right = round = 0), next()));
         share.addEventListener("click", async () => {
           await navigator.clipboard?.writeText(`${t("quiz_share", right, ROUNDS)} ${new URL(href("kuis"), location.href).href}`);
           share.textContent = t("copied");
         });
-        return box.append(again, share);
+        row.append(again, share);
+        return box.append(row);
       }
       const q = await games[kind]();
       round++;
-      box.innerHTML = `<p class="sub">${round} / ${ROUNDS}</p><p>${q.ask}</p>${q.clue}<p class="choices">${q.choices.map((c) => `<button type="button">${c}</button>`).join("")}</p><p class="verdict" role="status"></p>`;
+      box.innerHTML = `<p class="step">${round} / ${ROUNDS}</p><p class="ask">${q.ask}</p>${q.clue}<p class="choices">${q.choices.map((c) => `<button type="button">${c}</button>`).join("")}</p><p class="verdict" role="status"></p>`;
       box.querySelectorAll(".choices button").forEach((b) =>
         b.addEventListener("click", () => {
           const ok = b.textContent === q.answer;
           right += ok;
           box.querySelectorAll(".choices button").forEach((x) => ((x.disabled = true), x.classList.toggle("right", x.textContent === q.answer)));
-          box.querySelector(".verdict").innerHTML = `${ok ? t("quiz_right") : t("quiz_wrong", q.answer)} <button type="button">${t("quiz_next")}</button>`;
+          box.querySelector(".verdict").innerHTML = `<span>${ok ? t("quiz_right") : t("quiz_wrong", q.answer)}</span> <button type="button" class="primary">${t("quiz_next")}</button>`;
           box.querySelector(".verdict button").addEventListener("click", next);
         }),
       );
@@ -1074,7 +1091,7 @@ async function quizPage() {
 
 /** How it works, and what the planted-change test found each lens can see. */
 /** A row of buttons of which one is pressed; pressing another goes to `to(i)`. */
-const choice = (labels, on, to) => `<ul class="tabs">${labels.map((label, i) => `<li><a role="button" aria-pressed="${i === +on}" href="${to(i)}">${label}</a></li>`).join("")}</ul>`;
+const choice = (labels, on, to) => `<ul class="chips">${labels.map((label, i) => `<li><a role="button" aria-pressed="${i === +on}" href="${to(i)}">${label}</a></li>`).join("")}</ul>`;
 const stickOf = (k) => json(`${OUTLETS[+k] || OUTLETS[0]}/stick.json`);
 const STUCK_PAGES = 300; // a name is ranked in a period only with this many pages naming it
 
@@ -1084,17 +1101,17 @@ async function stuckPage(word = "tersangka", k = "0", era = "2", kind = "p") {
   const ranked = s.names.map((_, i) => i).filter((i) => s.kinds[i] === kind && s.pages[i][p] >= STUCK_PAGES && share[i][p] !== null).sort((a, b) => share[b][p] - share[a][p]);
   const to = (w, a, b, c) => href("menempel", w, String(a), String(b), c);
   const figure = strip({ title: t("stuck_plate", word, OUTLET[+k], ERAS_SHOWN[p]), note: t("stuck_note", STUCK_PAGES), states: ERAS_SHOWN, series: [OUTLET[+k]],
-    rows: ranked.slice(0, innerWidth > 760 ? 16 : 12).map((i) => ({ label: s.names[i], values: ERAS_SHOWN.map((_, q) => [share[i][q] === null ? null : share[i][q] / 1000]) })) }, Math.min(view.clientWidth - 32, 720), innerWidth > 760 ? 520 : 440);
+    rows: ranked.slice(0, innerWidth > 760 ? 16 : 12).map((i) => ({ label: s.names[i], values: ERAS_SHOWN.map((_, q) => [share[i][q] === null ? null : share[i][q] / 1000]) })) }, Math.min(room(), 720), innerWidth > 760 ? 520 : 440);
   figure.show(p);
   const box = el(`<section></section>`);
   box.append(figure.node, tools(to(word, k, era, kind), { image: box, data: `${OUTLETS[+k]}/stick.json` }));
   const pick = el(`<p class="controls"><label>${t("stuck_word")} <select>${s.words.map((w) => `<option${w === word ? " selected" : ""}>${w}</option>`).join("")}</select></label></p>`);
   pick.querySelector("select").addEventListener("change", (e) => (location.hash = to(e.target.value, k, era, kind)));
-  view.replaceChildren(el(`<h1>${t("play_menempel")}</h1>`), el(`<p class="lede">${t("stuck_lede")}</p>`), pick,
+  view.replaceChildren(pageHead(t("play_menempel"), { ...fromPlay(), lede: t("stuck_lede") }), pick,
     el(choice(OUTLET, k, (i) => to(word, i, era, kind))), el(choice(ERAS_SHOWN, era, (i) => to(word, k, i, kind))), el(choice([t("people"), t("organisations")], kind === "p" ? 0 : 1, (i) => to(word, k, era, "po"[i]))),
     box, el(`<p class="note">${t("stuck_warning")}</p>`),
-    el(`<table><tr><th>${t("name")}</th><th class="n">${t("stuck_share", word)}</th><th class="n">${t("pages")}</th><th></th></tr>${ranked.slice(0, 40).map((i) =>
-      `<tr><td>${link(s.names[i])}</td><td class="n">${number(share[i][p] / 10)}%</td><td class="n">${thousands(s.pages[i][p])}</td><td><a href="${href("redaksi", s.names[i])}">${t("three_rooms")}</a></td></tr>`).join("")}</table>`));
+    el(`<div class="table"><table><tr><th>${t("name")}</th><th class="n">${t("stuck_share", word)}</th><th class="n">${t("pages")}</th><th></th></tr>${ranked.slice(0, 40).map((i) =>
+      `<tr><td>${link(s.names[i])}</td><td class="n">${number(share[i][p] / 10)}%</td><td class="n">${thousands(s.pages[i][p])}</td><td><a href="${href("redaksi", s.names[i])}">${t("three_rooms")}</a></td></tr>`).join("")}</table></div>`));
 }
 
 /** Tide table: a row per name, a column per year; each row is shaded against its own best year, rows in order of that year. */
@@ -1106,7 +1123,7 @@ async function tidePage(k = "0", kind = "person") {
     `<tr><th><a href="${href("potret", r.word)}">${r.word}</a></th>${r.share.map((v, i) => `<td class="t${v === null ? "x" : level(v, r.peak)}" data-tip="${r.word} ${y.years[i]}: ${v === null ? "–" : number(v * 1000) + "‰"} ${t("of_pages", thousands(y.pages[lens][i]))}"></td>`).join("")}</tr>`).join("")}</table></div>`);
   table.addEventListener("pointermove", (e) => tip(e.target.dataset?.tip || null, e));
   table.addEventListener("pointerleave", () => tip(null));
-  view.replaceChildren(el(`<h1>${t("play_pasang")}</h1>`), el(`<p class="lede">${t("tide_lede")}</p>`),
+  view.replaceChildren(pageHead(t("play_pasang"), { ...fromPlay(), lede: t("tide_lede") }),
     el(choice(OUTLET, k, (i) => href("pasang", String(i), kind))), el(choice([t("people"), t("organisations"), t("places")], kinds.indexOf(kind), (i) => href("pasang", k, kinds[i]))),
     el(`<p class="legend"><span>${t("tide_legend")}</span>${[0, 1, 2, 3, 4, 5].map((i) => `<span><i class="t${i}"></i></span>`).join("")}</p>`), table,
     el(`<p class="note">${t("tide_note", OUTLET[+k], thousands(Math.min(...y.pages[lens])), thousands(Math.max(...y.pages[lens])))}</p>`), tools(href("pasang", k, kind), { data: "years.json" }));
@@ -1123,12 +1140,12 @@ async function roomsPage(name = "pdip") {
   };
   const rows = words.filter((w) => spread(w) >= 0).sort((a, b) => spread(b) - spread(a)).slice(0, 12);
   const names = [...new Set(all.flatMap((s) => s.names))].sort();
-  const form = el(`<form class="controls"><input type="search" list="names" placeholder="${t("rooms_ask")}" aria-label="${t("rooms_ask")}"><datalist id="names">${names.map((n) => `<option>${n}</option>`).join("")}</datalist><button>${t("show")}</button></form>`);
+  const form = el(`<form class="controls"><input type="search" list="names" placeholder="${t("rooms_ask")}" aria-label="${t("rooms_ask")}"><datalist id="names">${names.map((n) => `<option>${n}</option>`).join("")}</datalist><button class="primary">${t("show")}</button></form>`);
   form.addEventListener("submit", (e) => (e.preventDefault(), names.includes(form.firstElementChild.value.trim().toLowerCase()) && (location.hash = href("redaksi", form.firstElementChild.value.trim().toLowerCase()))));
-  view.replaceChildren(el(`<h1>${t("play_redaksi")}</h1>`), el(`<p class="lede">${t("rooms_lede")}</p>`), form);
+  view.replaceChildren(pageHead(t("play_redaksi"), { ...fromPlay(), lede: t("rooms_lede") }), form);
   if (!rows.length) return view.append(el(`<p>${t("rooms_none", escape(name))}</p>`));
   const figure = strip({ title: t("rooms_plate", name), states: ERAS_SHOWN, series: OUTLET, rows: rows.map((w) => ({ label: w, values: ERAS_SHOWN.map((_, p) => OUTLETS.map((_, k) => value(w, k, p))) })),
-    pages: (p) => t("pages_stuck", name, ERAS_SHOWN[p], OUTLET.map((o, k) => `${o} ${at[k] < 0 ? "–" : thousands(all[k].pages[at[k]][p])}`).join(", ")) }, Math.min(view.clientWidth - 32, 720), 440);
+    pages: (p) => t("pages_stuck", name, ERAS_SHOWN[p], OUTLET.map((o, k) => `${o} ${at[k] < 0 ? "–" : thousands(all[k].pages[at[k]][p])}`).join(", ")) }, Math.min(room(), 720), 440);
   const box = el(`<section></section>`);
   box.append(played(figure), tools(href("redaksi", name), { image: box, check: [name], data: `${OUTLETS[0]}/stick.json` }));
   view.append(box, el(`<p class="note">${t("rooms_note")}</p>`));
@@ -1137,9 +1154,9 @@ async function roomsPage(name = "pdip") {
 /** Who shares a page with a name: a circle that rearranges itself from period to period. */
 async function circlePage(name = "prabowo", k = "0") {
   const s = await stickOf(k), i = s.names.indexOf(name), names = s.names.filter((_, j) => s.kinds[j] === "p" && s.beside[j].some((list) => list.length));
-  const form = el(`<form class="controls"><input type="search" list="names" placeholder="${t("circle_ask")}" aria-label="${t("circle_ask")}"><datalist id="names">${names.map((n) => `<option>${n}</option>`).join("")}</datalist><button>${t("show")}</button></form>`);
+  const form = el(`<form class="controls"><input type="search" list="names" placeholder="${t("circle_ask")}" aria-label="${t("circle_ask")}"><datalist id="names">${names.map((n) => `<option>${n}</option>`).join("")}</datalist><button class="primary">${t("show")}</button></form>`);
   form.addEventListener("submit", (e) => (e.preventDefault(), s.names.includes(form.firstElementChild.value.trim().toLowerCase()) && (location.hash = href("lingkaran", form.firstElementChild.value.trim().toLowerCase(), k))));
-  view.replaceChildren(el(`<h1>${t("play_lingkaran")}</h1>`), el(`<p class="lede">${t("circle_lede")}</p>`), form, el(choice(OUTLET, k, (j) => href("lingkaran", name, String(j)))));
+  view.replaceChildren(pageHead(t("play_lingkaran"), { ...fromPlay(), lede: t("circle_lede") }), form, el(choice(OUTLET, k, (j) => href("lingkaran", name, String(j)))));
   if (i < 0) return view.append(el(`<p>${t("rooms_none", escape(name))}</p>`));
   const figure = circle(s, i);
   view.append(played(figure), el(`<p class="note">${t("circle_note", name, ERAS_SHOWN.map((era, p) => `${era}: ${thousands(s.pages[i][p])}`).join("; "))}</p>`),
@@ -1159,20 +1176,20 @@ async function guessPage() {
     if (!rounds.some((r) => r.name === q.name || r.w === q.w)) rounds.push(q);
   }
   const box = el(`<section class="quiz"></section>`);
-  view.replaceChildren(el(`<h1>${t("play_tebak")}</h1>`), el(`<p class="lede">${t("guess_lede")}</p>`), box);
+  view.replaceChildren(pageHead(t("play_tebak"), { ...fromPlay(), lede: t("guess_lede") }), box);
   let score = 0;
   const ask = (k) => {
     if (k === rounds.length) {
       const said = t("guess_share", score, rounds.length * 100, location.href.split("#")[0] + "#/tebak");
-      box.replaceChildren(el(`<p class="score">${score} / ${rounds.length * 100}</p>`), el(`<p>${t("guess_done")}</p>`), el(`<p class="controls"><button type="button">${t("copy_score")}</button><a role="button" href="${href("tebak")}">${t("again")}</a></p>`));
+      box.replaceChildren(el(`<p class="score">${score} / ${rounds.length * 100}</p>`), el(`<p>${t("guess_done")}</p>`), el(`<p class="controls"><button type="button">${t("copy_score")}</button><a role="button" class="primary" href="${href("tebak")}">${t("again")}</a></p>`));
       box.querySelector("button").addEventListener("click", async (e) => (await navigator.clipboard?.writeText(said), (e.target.textContent = t("copied"))));
       box.querySelector("a").addEventListener("click", (e) => (e.preventDefault(), guessPage()));
       return;
     }
     const q = rounds[k];
-    box.replaceChildren(el(`<p class="sub">${k + 1} / ${rounds.length}</p>`), el(`<p class="ask">${t("guess_ask", q.name, q.w)}</p>`),
+    box.replaceChildren(el(`<p class="step">${k + 1} / ${rounds.length}</p>`), el(`<p class="ask">${t("guess_ask", q.name, q.w)}</p>`),
       el(`<div class="gauge"><input type="range" min="0" max="100" value="50" aria-label="${t("guess_yours")}"><div class="scale"><i class="yours"></i><i class="truth" hidden></i></div><output>50</output></div>`),
-      el(`<p class="controls"><button type="button">${t("guess_lock")}</button></p>`), el(`<p class="verdict" hidden></p>`));
+      el(`<p class="controls"><button type="button" class="primary">${t("guess_lock")}</button></p>`), el(`<p class="verdict" hidden></p>`));
     const [slider, scale, output] = box.querySelector(".gauge").children, [yours, truth] = scale.children, verdict = box.querySelector(".verdict"), button = box.querySelector(".controls button");
     const move = () => ((output.textContent = slider.value), (yours.style.transform = `translateX(${slider.value * (scale.clientWidth / 100)}px)`));
     slider.addEventListener("input", move);
@@ -1193,20 +1210,20 @@ async function guessPage() {
 }
 
 async function playPage() {
-  view.replaceChildren(el(`<h1>${t("nav_play")}</h1>`), el(`<p class="lede">${t("play_lede")}</p>`), el(playDoors()));
+  view.replaceChildren(pageHead(t("nav_play"), { kicker: t("play_kicker", PLAY.length), lede: t("play_lede") }), el(playDoors()));
 }
 
 async function methodPage() {
-  view.replaceChildren(el(`<article>${t("method")}</article>`));
+  view.replaceChildren(pageHead(t("method_title"), { kicker: t("method_kicker") }), el(`<article class="prose">${t("method")}</article>`));
   const tested = (await allLenses()).filter((lens) => lens.sensitivity);
   const found = (lens, share) => percent(lens.sensitivity.found[share]);
   view.append(
     el(`<h2>${t("tests_title")}</h2>`),
     el(`<p class="sub">${t("tests_about")}</p>`),
-    el(`<table><tr><th>${t("lens")}</th><th class="n">${t("units")}</th><th class="n">20%</th><th class="n">40%</th><th class="n">80%</th><th class="n">${t("false_alarms")}</th></tr>
+    el(`<div class="table"><table><tr><th>${t("lens")}</th><th class="n">${t("units")}</th><th class="n">20%</th><th class="n">40%</th><th class="n">80%</th><th class="n">${t("false_alarms")}</th></tr>
       ${tested.map((lens) => `<tr><td>${lensText(lens).title}</td><td class="n">${lens.units.reduce((x, y) => x + y).toLocaleString(language)}</td>
         ${["0.2", "0.4", "0.8"].map((share) => `<td class="n">${found(lens, share)}</td>`).join("")}<td class="n">${percent(lens.sensitivity.false_alarms)}</td></tr>`).join("")}
-    </table>`),
+    </table></div>`),
   );
 }
 
@@ -1216,9 +1233,10 @@ async function methodPage() {
 // coming back to an entry, or changing the language, returns to that place; a new entry starts at the top.
 history.scrollRestoration = "manual";
 const places = new Map();
-let rendering = false;
-addEventListener("scroll", () => rendering || places.set(history.state?.id, scrollY), { passive: true });
-const shell = () => document.documentElement.style.setProperty("--head", (innerWidth > 760 ? document.querySelector("header").offsetHeight : 0) + "px");
+let rendering = false, first = true;
+addEventListener("scroll", () => rendering || menuOpen() || places.set(history.state?.id, scrollY), { passive: true });
+/** The header stays on screen at every width; what is pinned below it is pinned at its height. */
+const shell = () => document.documentElement.style.setProperty("--head", masthead.offsetHeight + "px");
 addEventListener("resize", shell);
 
 function route() {
@@ -1228,21 +1246,81 @@ function route() {
   const [, page, ...args] = location.hash.split("/").map(decodeURIComponent);
   document.documentElement.lang = language;
   document.querySelectorAll("[data-t]").forEach((node) => (node.innerHTML = t(node.dataset.t)));
-  document.querySelectorAll("nav a").forEach((a) => (a.getAttribute("href") === `#/${page}` ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
-  document.getElementById("language").textContent = language === "id" ? "English" : "Bahasa Indonesia";
-  document.getElementById("query").placeholder = t("search");
+  document.querySelectorAll(".menu nav a").forEach((a) => (a.getAttribute("href") === `#/${page}` ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
+  const other = language === "id" ? "en" : "id", languageButton = document.getElementById("language");
+  languageButton.textContent = other === "en" ? "English" : "Bahasa Indonesia";
+  languageButton.lang = other;
+  document.querySelector(".menu nav").setAttribute("aria-label", t("nav_label"));
+  const query = document.getElementById("query");
+  query.placeholder = t("search");
+  query.setAttribute("aria-label", t("search_label"));
+  menuLabels();
   shell();
   const pages = { kata: wordPage, potret: portraitPage, kuis: quizPage, tebak: guessPage, menempel: stuckPage, pasang: tidePage, redaksi: roomsPage, lingkaran: circlePage, main: playPage,
     peta: chartPage, balap: racePage, tahun: yearsPage, temuan: findingsPage, bergeser: moversPage, entitas: entitiesPage, cerita: storyPage, metode: methodPage };
-  rendering = true;
-  if (!place) scrollTo(0, 0);
-  Promise.resolve((pages[page] || homePage)(...args))
-    .catch(() => view.replaceChildren(el(`<p>${t("no_data")}</p>`)))
-    .then(() => {
-      if (place) scrollTo(0, place);
-      rendering = false;
-    });
+  const render = () => {
+    rendering = true;
+    if (!place) scrollTo(0, 0);
+    return Promise.resolve((pages[page] || homePage)(...args))
+      .catch(() => view.replaceChildren(el(`<p>${t("no_data")}</p>`)))
+      .then(() => {
+        if (place) scrollTo(0, place);
+        rendering = false;
+      });
+  };
+  // A page turn: the old page gives way to the new one (--d-turn). The new one is caught as it stands after a
+  // moment, so that a page still fetching its data does not hold the screen still.
+  if (first || still() || !document.startViewTransition) render();
+  else document.startViewTransition(() => Promise.race([render(), new Promise((done) => setTimeout(done, 240))]));
+  first = false;
 }
+
+// ---- the header: search, and below 900px the menu sheet ---------------------
+
+const menu = document.getElementById("menu"), menuButton = document.getElementById("menu-button"), searchButton = document.getElementById("search-button");
+const wideHeader = matchMedia("(min-width: 900px)");
+const menuOpen = () => menu.classList.contains("open");
+function menuLabels() {
+  menuButton.querySelector("span").textContent = t(menuOpen() ? "menu_close" : "menu");
+}
+/** What can take focus in the header while the sheet is open: the bar and the sheet, nothing behind. */
+const focusable = () => [...masthead.querySelectorAll("a[href], button, input, [tabindex]:not([tabindex='-1'])")].filter((node) => node.getClientRects().length && !node.closest("[hidden]"));
+function openMenu(focus) {
+  if (wideHeader.matches || menuOpen()) return focus?.focus();
+  menu.classList.add("open");
+  menu.setAttribute("role", "dialog");
+  menu.setAttribute("aria-modal", "true");
+  menu.setAttribute("aria-label", t("menu"));
+  [menuButton, searchButton].forEach((b) => b.setAttribute("aria-expanded", "true"));
+  for (const node of [view, document.querySelector(".site-foot"), document.getElementById("skip")]) node.inert = true;
+  document.documentElement.classList.add("locked");
+  menuLabels();
+  (focus || menu.querySelector("nav a")).focus();
+}
+function closeMenu(returnFocus) {
+  if (!menuOpen()) return;
+  menu.classList.remove("open");
+  ["role", "aria-modal", "aria-label"].forEach((name) => menu.removeAttribute(name));
+  [menuButton, searchButton].forEach((b) => b.setAttribute("aria-expanded", "false"));
+  for (const node of [view, document.querySelector(".site-foot"), document.getElementById("skip")]) node.inert = false;
+  document.documentElement.classList.remove("locked");
+  document.getElementById("suggestions").hidden = true;
+  menuLabels();
+  if (returnFocus) menuButton.focus();
+}
+menuButton.addEventListener("click", () => (menuOpen() ? closeMenu(true) : openMenu()));
+searchButton.addEventListener("click", () => (menuOpen() ? document.getElementById("query").focus() : openMenu(document.getElementById("query"))));
+masthead.addEventListener("keydown", (e) => {
+  if (!menuOpen()) return;
+  if (e.key === "Escape") return closeMenu(true);
+  if (e.key !== "Tab") return;
+  const list = focusable(), at = list.indexOf(document.activeElement);
+  if (e.shiftKey && at <= 0) (e.preventDefault(), list.at(-1).focus());
+  else if (!e.shiftKey && at === list.length - 1) (e.preventDefault(), list[0].focus());
+});
+menu.addEventListener("click", (e) => e.target.closest("a[href]") && closeMenu());  // a link to the page one is on changes no address
+wideHeader.addEventListener("change", () => closeMenu());
+document.getElementById("skip").addEventListener("click", (e) => (e.preventDefault(), view.focus()));
 
 function search() {
   const query = document.getElementById("query");
@@ -1260,20 +1338,28 @@ function search() {
     list.innerHTML = hits.map((w) => `<li>${link(w)}</li>`).join("");
     list.hidden = !hits.length;
   });
+  query.addEventListener("keydown", (e) => e.key === "ArrowDown" && !list.hidden && (e.preventDefault(), list.querySelector("a")?.focus()));
+  list.addEventListener("keydown", (e) => {
+    const links = [...list.querySelectorAll("a")], at = links.indexOf(document.activeElement);
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") (e.preventDefault(), (links[at + (e.key === "ArrowDown" ? 1 : -1)] || query).focus());
+  });
   document.getElementById("search").addEventListener("submit", (e) => {
     e.preventDefault();
     go(query.value.trim().toLowerCase());
   });
+  document.addEventListener("click", (e) => !e.target.closest("#search") && (list.hidden = true));
 }
 
 document.getElementById("language").addEventListener("click", () => {
   language = language === "id" ? "en" : "id";
   localStorage.setItem("language", language);
+  closeMenu();
   route();
 });
 addEventListener("hashchange", () => {
   document.getElementById("suggestions").hidden = true;
   document.getElementById("query").value = "";
+  closeMenu();
   route();
 });
 search();

@@ -5,8 +5,31 @@ const log = (name, ok, detail) => { failures += !ok; console.log(`${ok ? "ok  " 
 const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport: { width: 390, height: 780 }, ...opts }); p.errors = []; p.on("pageerror", (e) => p.errors.push(e.message)); return p; };
 { // language switch mid-page
   const p = await fresh(); await p.goto(base + "#/cerita/prabowo"); await p.waitForTimeout(2500); await p.mouse.wheel(0, 2500); await p.waitForTimeout(600);
-  const before = await p.evaluate(() => scrollY); await p.click("#language"); await p.waitForTimeout(2500); const after = await p.evaluate(() => scrollY);
+  const before = await p.evaluate(() => scrollY); await p.click("#menu-button"); await p.click("#language"); await p.waitForTimeout(2500); const after = await p.evaluate(() => scrollY);
   log("language switch keeps the place", Math.abs(after - before) < 200, `scroll ${before} -> ${after}`); await p.close(); }
+{ // the header at 390px: opaque, and stuck at the top after a scroll
+  const p = await fresh(); await p.goto(base + "#/kata/kpk"); await p.waitForTimeout(2500); await p.mouse.wheel(0, 1500); await p.waitForTimeout(600);
+  const h = await p.evaluate(() => { const node = document.querySelector(".masthead"), r = node.getBoundingClientRect(), bg = getComputedStyle(node).backgroundColor;
+    const alpha = bg.startsWith("rgba") ? +bg.split(",")[3].replace(")", "") : 1; return { top: r.top, height: r.height, alpha, y: scrollY, wide: document.documentElement.scrollWidth > innerWidth + 1 }; });
+  log("header at 390px is opaque and stuck after a scroll", h.y > 500 && Math.abs(h.top) < 1 && h.height === 56 && h.alpha === 1 && !h.wide, `scrolled ${h.y}px; header top ${h.top}px, ${h.height}px tall, opacity ${h.alpha}; sideways scroll ${h.wide}`); await p.close(); }
+{ // the menu at 390px: opens, keeps focus inside, Escape closes it, a link in it navigates and closes it
+  const p = await fresh(); await p.goto(base + "#/temuan"); await p.waitForTimeout(2000);
+  await p.click("#menu-button"); await p.waitForTimeout(400);
+  const open = await p.evaluate(() => ({ expanded: document.getElementById("menu-button").getAttribute("aria-expanded"), controls: document.getElementById("menu-button").getAttribute("aria-controls"),
+    shown: document.getElementById("menu").getClientRects().length > 0, locked: getComputedStyle(document.documentElement).overflow === "hidden", inMenu: !!document.activeElement.closest("#menu") }));
+  log("menu opens", open.expanded === "true" && open.controls === "menu" && open.shown && open.locked && open.inMenu, JSON.stringify(open));
+  let escaped = 0; for (let i = 0; i < 25; i++) { await p.keyboard.press("Tab"); escaped += await p.evaluate(() => !document.activeElement.closest(".masthead")); }
+  for (let i = 0; i < 25; i++) { await p.keyboard.press("Shift+Tab"); escaped += await p.evaluate(() => !document.activeElement.closest(".masthead")); }
+  log("menu keeps focus inside", escaped === 0, `${escaped} of 50 tab presses left the header and its sheet`);
+  await p.keyboard.press("Escape"); await p.waitForTimeout(400);
+  const closed = await p.evaluate(() => ({ expanded: document.getElementById("menu-button").getAttribute("aria-expanded"), shown: document.getElementById("menu").getClientRects().length > 0, focus: document.activeElement.id }));
+  log("Escape closes the menu", closed.expanded === "false" && !closed.shown && closed.focus === "menu-button", JSON.stringify(closed));
+  await p.click("#menu-button"); await p.waitForTimeout(400); await p.click("#menu nav a[href='#/main']"); await p.waitForTimeout(1500);
+  const went = await p.evaluate(() => ({ hash: location.hash, shown: document.getElementById("menu").getClientRects().length > 0, locked: getComputedStyle(document.documentElement).overflow === "hidden", current: document.querySelector("#menu nav a[aria-current]")?.getAttribute("href") }));
+  log("a link in the menu navigates and closes it", went.hash === "#/main" && !went.shown && !went.locked && went.current === "#/main", JSON.stringify(went));
+  await p.click("#search-button"); await p.waitForTimeout(300); await p.keyboard.type("korup"); await p.waitForTimeout(1500);
+  const offered = await p.locator("#suggestions a").count(); await p.locator("#suggestions a").first().click(); await p.waitForTimeout(1200);
+  log("search from the menu offers words and opens one", offered > 0 && (await p.evaluate(() => location.hash)).startsWith("#/kata/") && !(await p.evaluate(() => document.getElementById("menu").getClientRects().length)), `${offered} offers; address ${await p.evaluate(() => location.hash)}; errors ${p.errors.length}`); await p.close(); }
 { // back button
   const p = await fresh(); await p.goto(base + "#/cerita/kata-korupsi"); await p.waitForTimeout(2500); await p.mouse.wheel(0, 1800); await p.waitForTimeout(500);
   const before = await p.evaluate(() => scrollY); await p.evaluate(() => (location.hash = "#/kata/kpk")); await p.waitForTimeout(1500); await p.goBack(); await p.waitForTimeout(2500);

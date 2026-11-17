@@ -526,7 +526,19 @@ export const TEXT = {
     search: "Cari kata atau nama…",
     nav_movers: "Bergeser",
     nav_method: "Cara",
-    footer: "Data: HathiTrust Extracted Features (CC BY 4.0), HPLT 3.0 (dari Common Crawl dan Internet Archive), OpenAlex (CC0), serta judul artikel Wikipedia bahasa Indonesia dan Wikidata. Angka-angka di sini adalah ukuran statistik atas teks, bukan kamus.",
+    footer: `<div class="foot">
+      <div class="foot-about"><p class="foot-brand">Jejak Kata</p><p>Bagaimana kata-kata bahasa Indonesia berganti teman dari masa ke masa, dihitung dari buku, berita, blog, dan abstrak ilmiah. Angka-angka di sini adalah ukuran statistik atas teks, bukan kamus.</p></div>
+      <div><h2>Data</h2><ul>
+        <li>HathiTrust Extracted Features (CC BY 4.0)</li>
+        <li>HPLT 3.0, dari Common Crawl dan Internet Archive (kemasan CC0; teksnya milik penerbit)</li>
+        <li>OpenAlex (CC0)</li>
+        <li>Judul artikel Wikipedia bahasa Indonesia (CC BY-SA 4.0) dan Wikidata (CC0)</li></ul>
+        <p>Yang diterbitkan hanya hitungan; tidak ada teks halaman.</p></div>
+      <div><h2>Lisensi dan kode</h2><p>Kode: MIT. Hitungan, ukuran, dan data situs ini: CC BY 4.0, dengan atribusi sumber di atas.</p>
+        <ul class="foot-links"><li><a href="https://github.com/lan666as/jejak-kata">Kode sumber</a></li><li><a href="https://github.com/lan666as/jejak-kata/tree/gh-pages/data">Data situs (JSON)</a></li><li><a href="#/metode">Cara kerja dan ujinya</a></li></ul></div>
+    </div>`,
+    skip: "Langsung ke isi", menu: "Menu", menu_close: "Tutup", search_open: "Cari", search_label: "Cari kata atau nama", nav_label: "Halaman utama",
+    stories_kicker: (n) => `${n} cerita`, play_kicker: (n) => `${n} mainan`, findings_kicker: "Dihitung, bukan dipilih", method_kicker: "Sumber, ukuran, dan uji", method_title: "Cara kerja",
     intro: "Ini peta 20 ribu kata dalam berita Kompas, 2011–2024. Kata yang berdekatan bergaul dengan kata-kata yang sama. Ketuk sebuah pulau.",
     caveats: `<h2>Sebelum membaca angkanya</h2><ul>
       <li><b>Yang diukur adalah pemakaian dalam teks tertentu</b>, yaitu buku di perpustakaan, berita dan blog di web, serta abstrak ilmiah; bukan bahasa lisan dan bukan makna kamus.</li>
@@ -672,7 +684,7 @@ export const TEXT = {
     not_found: "Kata ini tidak termasuk kata-kata tersering di sumber mana pun.",
     is_name: "Kata ini hampir selalu ditulis dengan huruf kapital dan tidak punya artikel di Wikipedia bahasa Indonesia, jadi dianggap nama diri yang bukan milik umum dan tidak ditampilkan.",
     no_data: "Data belum tersedia.",
-    method: `<h1>Cara kerja</h1>
+    method: `
       <p>Untuk tiap masa, setiap kata diberi <b>profil</b>: catatan, untuk tiap kata lain, apakah keduanya muncul sehalaman atau seartikel lebih sering atau lebih jarang daripada kebetulan. Profil dari dua masa dapat langsung dibandingkan, karena keduanya memakai daftar kata konteks yang sama.</p>
       <p>Jarak antara dua profil tidak pernah nol, bahkan untuk dua contoh acak dari masa yang sama, dan makin besar untuk kata yang makin jarang. Karena itu tiap masa dibelah dua secara acak berulang kali: jarak antara belahan masa A dan belahan masa B dikurangi jarak antara dua belahan dari masa yang sama. Sisanya lalu dibandingkan dengan 500 kata lain yang paling dekat kekerapannya. Hasilnya angka <b>pergeseran</b>.</p>
       <p>Ejaan lama (<i>tj, dj, j, oe</i>) diubah ke ejaan sekarang untuk tiap buku yang masih memakainya. Kata tidak dipotong menjadi kata dasar.</p>
@@ -728,7 +740,19 @@ export const TEXT = {
     search: "Look up a word or a name…",
     nav_movers: "Shifted",
     nav_method: "Method",
-    footer: "Data: HathiTrust Extracted Features (CC BY 4.0), HPLT 3.0 (from Common Crawl and the Internet Archive), OpenAlex (CC0), and the article titles of Indonesian Wikipedia with Wikidata. The numbers here are statistics over text, not a dictionary.",
+    footer: `<div class="foot">
+      <div class="foot-about"><p class="foot-brand">Jejak Kata</p><p>How Indonesian words changed the company they keep, counted in books, news, blogs and scholarly abstracts. The numbers here are statistics over text, not a dictionary.</p></div>
+      <div><h2>Data</h2><ul>
+        <li>HathiTrust Extracted Features (CC BY 4.0)</li>
+        <li>HPLT 3.0, from Common Crawl and the Internet Archive (packaging CC0; the text is the publishers')</li>
+        <li>OpenAlex (CC0)</li>
+        <li>Article titles of Indonesian Wikipedia (CC BY-SA 4.0) and Wikidata (CC0)</li></ul>
+        <p>Only counts are published; no page text.</p></div>
+      <div><h2>Licence and code</h2><p>Code: MIT. The counts, measures and data of this site: CC BY 4.0, with the attributions above.</p>
+        <ul class="foot-links"><li><a href="https://github.com/lan666as/jejak-kata">Source code</a></li><li><a href="https://github.com/lan666as/jejak-kata/tree/gh-pages/data">Site data (JSON)</a></li><li><a href="#/metode">How it works, and its tests</a></li></ul></div>
+    </div>`,
+    skip: "Skip to content", menu: "Menu", menu_close: "Close", search_open: "Search", search_label: "Look up a word or a name", nav_label: "Main pages",
+    stories_kicker: (n) => `${n} stories`, play_kicker: (n) => `${n} things to play with`, findings_kicker: "Counted, not chosen", method_kicker: "Sources, measures and tests", method_title: "How it works",
     intro: "This is a chart of 20,000 words in Kompas news, 2011–2024. Words that lie close keep the same company. Tap an island.",
     caveats: `<h2>Before reading the numbers</h2><ul>
       <li><b>What is measured is usage in particular texts</b>: library books, news and blogs on the web, and academic abstracts. Not speech, and not dictionary meaning.</li>
@@ -874,7 +898,7 @@ export const TEXT = {
     not_found: "This word is not among the most common words of any source.",
     is_name: "This word is almost always capitalised and has no article on Indonesian Wikipedia, so it is treated as a private name and not shown.",
     no_data: "The data is not available yet.",
-    method: `<h1>How it works</h1>
+    method: `
       <p>For each period, every word gets a <b>profile</b>: a record, for every other word, of whether the two share a page or an article more or less often than chance. Profiles from two periods can be compared directly, because both use the same list of context words.</p>
       <p>The distance between two profiles is never zero, even for two random samples of one period, and it grows as a word gets rarer. So each period is split in two at random, many times over: the distance between a half of period A and a half of period B, minus the distance between two halves of the same period. What is left is then compared with the 500 words nearest in frequency. The result is the <b>shift</b>.</p>
       <p>Old spelling (<i>tj, dj, j, oe</i>) is converted to current spelling for each book that still uses it. Words are not reduced to their roots.</p>
