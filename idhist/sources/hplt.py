@@ -4,8 +4,10 @@
     python -m idhist.sources.hplt fetch       # stream the release, keep the dated pages
     python -m idhist.sources.hplt census      # what was kept, by register, year and publisher
     python -m idhist.sources.hplt furniture   # find the lines that are not text
+    python -m idhist.sources.hplt copies      # find the pages that repeat an earlier page of the same publisher
     python -m idhist.sources.hplt phrases     # find the Wikipedia titles that occur often enough to count as one word
     python -m idhist.sources.hplt units
+    python -m idhist.sources.hplt text        # keep the text of the publishers read one at a time
 
 HPLT (https://hplt-project.org/datasets/v3.0) did the expensive part: reading
 7 PB of crawls, extracting the text of each page and identifying its language.
@@ -28,12 +30,22 @@ The release is read as a stream and never stored; what is kept is a private
 working copy of the dated pages, cut into BUCKETS by address so that every
 capture of one page ends up in the same bucket.
 
+A publisher prints one story at several addresses; of such copies only the
+earliest is a unit (`web.signature`, `web.copies`). How many were left out, by
+publisher and year, is in data/raw/hplt/census/copies.parquet.
+
+The text of the publishers in KEPT (cleared of furniture and copies) is also
+kept, privately, under data/raw/hplt/text: what needs word order (a phrase, a
+sentence, a headline) can then be counted without reading the release again.
+It is not ours to publish and is never published; only counts are.
+
 Indonesian only. The same release has Javanese and Sundanese, but half of it is
 machine translation, and what is left and dated is about 20,000 pages each.
 """
 
 import argparse
 import ast
+import hashlib
 import io
 import json
 import re
@@ -62,6 +74,16 @@ LANGUAGE = "ind_Latn"  # HPLT's name for Indonesian
 PAGES = ROOT / LANGUAGE  # the working copy
 PHRASES = PAGES / "phrases.txt"
 FURNITURE = PAGES / "furniture.npy"
+COPIES = PAGES / "copies.npy"  # sorted ids of the pages that repeat an earlier one
+TEXT = ROOT / "text"
+# Publishers with news pages in nearly every year of 2010-2024, read one at a time; and two bodies of the state
+# that publish their own news (the police and the armed forces).
+KEPT = frozenset(
+    {
+        *("kompas.com", "tempo.co", "tribunnews.com", "bisnis.com", "okezone.com", "detik.com", "liputan6.com"),
+        *("viva.co.id", "polri.go.id", "mil.id"),
+    }
+)
 NEWS, BLOGS = "id-web-news", "id-web-blogs"
 BLOG_PLATFORMS = frozenset({"blogspot.com", "blogspot.co.id", "wordpress.com"})
 BUCKETS = 256
@@ -325,11 +347,62 @@ def _furniture() -> frozenset[int]:
     return frozenset(np.load(FURNITURE).tolist())
 
 
-def _bodies(b: int) -> Iterator[tuple[dict, str, date, str]]:
-    """The pages of one bucket that belong to a lens: (page, lens, day, text cleared of furniture)."""
+def page_id(url: str) -> int:
+    return int.from_bytes(hashlib.blake2b(key(url).encode(), digest_size=8).digest())
+
+
+@cache
+def _copies() -> np.ndarray:
+    return np.load(COPIES)
+
+
+def _is_copy(url: str) -> bool:
+    at = np.searchsorted(_copies(), np.uint64(page_id(url)))
+    return at < len(_copies()) and int(_copies()[at]) == page_id(url)
+
+
+def _bodies(b: int, with_copies: bool = False) -> Iterator[tuple[dict, str, date, str]]:
+    """The pages of one bucket that belong to a lens: (page, lens, day, text cleared of furniture). Pages that
+    repeat an earlier page of their publisher are left out, unless asked for."""
     for row in pages(b):
-        if found := lens_of(row):
+        if (found := lens_of(row)) and (with_copies or not _is_copy(row["url"])):
             yield row, *found, web.body(web.publisher(row["url"]), row["text"], _furniture())
+
+
+def _signatures(b: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, dict[int, tuple[str, int]]]:
+    """For every lens page of a bucket: its id, the day it is dated to, its keys, and a number for its publisher
+    and year, with what those numbers stand for."""
+    ids, days, keys, spots, names = [], [], [], [], {}
+    for row, _, day, body in _bodies(b, with_copies=True):
+        source = web.publisher(row["url"])
+        ids.append(page_id(row["url"]))
+        days.append(day.toordinal())
+        keys.append(web.signature(source, [word for run in web.runs(body) for word, _ in run]))
+        spots.append(zlib.crc32(source.encode()) * 10_000 + day.year)
+        names[spots[-1]] = (source, day.year)
+    keys = np.array(keys, np.uint64).reshape(-1, web.BANDS + 1)
+    return np.array(ids, np.uint64), np.array(days, np.int64), keys, np.array(spots, np.int64), names
+
+
+def find_copies() -> None:
+    """Of the pages of a publisher that say the same thing, all but the earliest are copies."""
+    parts = list(zip(*parallel(_signatures, buckets())))
+    ids, days, keys, spots = (np.concatenate(part) for part in parts[:4])
+    names = {spot: name for part in parts[4] for spot, name in part.items()}
+    rank = np.empty(len(ids), np.int64)
+    rank[np.lexsort((ids, days))] = np.arange(len(ids))
+    copy = web.copies(rank, keys)
+    np.save(COPIES, np.sort(ids[copy]))
+    seen, left_out = (dict(zip(*np.unique(found, return_counts=True))) for found in (spots, spots[copy]))
+    rows = [
+        {"publisher": names[s][0], "year": names[s][1], "pages": int(n), "copies": int(left_out.get(s, 0))}
+        for s, n in seen.items()
+    ]
+    pq.write_table(pa.Table.from_pylist(rows), ROOT / "census" / "copies.parquet")
+    print(f"{copy.sum():,} of {len(ids):,} pages repeat an earlier page of their publisher")
+    for publisher in sorted(KEPT):
+        mine = [r for r in rows if r["publisher"] == publisher]
+        print(f"  {publisher}: {sum(r['copies'] for r in mine):,} of {sum(r['pages'] for r in mine):,}")
 
 
 @cache
@@ -372,6 +445,23 @@ def _write(b: int) -> int:
     return written + sum(write_shard(lens, f"{year}-{b:03d}-{part:02d}", units) for (lens, year), units in held.items())
 
 
+def _keep_text(b: int) -> int:
+    """The text of one bucket's pages of the publishers in KEPT, one file per publisher."""
+    held: dict[str, list[dict]] = defaultdict(list)
+    for row, lens, day, body in _bodies(b):
+        if lens == NEWS and (source := web.publisher(row["url"])) in KEPT:
+            held[source].append({"url": row["url"], "day": day, "text": body})
+    for source, rows in held.items():
+        path = TEXT / source / f"{b:03d}.parquet"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        pq.write_table(pa.Table.from_pylist(rows), path, compression="zstd", compression_level=12)
+    return sum(map(len, held.values()))
+
+
+def keep_text() -> None:
+    print(sum(parallel(_keep_text, buckets())), "pages kept as text")
+
+
 def build_units() -> None:
     clear(NEWS)
     clear(BLOGS)
@@ -380,12 +470,14 @@ def build_units() -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("step", choices=["fetch", "census", "furniture", "phrases", "units"])
+    parser.add_argument("step", choices=["fetch", "census", "furniture", "phrases", "copies", "units", "text"])
     steps = {
         "fetch": fetch,
         "census": census,
         "furniture": find_furniture,
         "phrases": find_phrases,
+        "copies": find_copies,
         "units": build_units,
+        "text": keep_text,
     }
     steps[parser.parse_args().step]()

@@ -20,6 +20,7 @@ id-web-eras-tempo:2015-2019:2020-2024
 id-web-eras-tribun:2015-2019:2020-2024
 id-web-blogs:2013-2014:2015-2016
 "
+COUNTED="tempo tribun bisnis okezone detik liputan6 viva polri tni"  # publishers counted year by year, not scored (idhist/lenses.py)
 EXPECTED="id-books id-web-news id-web-news-kompas id-web-eras-kompas id-web-eras-tempo id-web-eras-tribun"  # lenses that validation/expected.tsv covers
 
 each() { for entry in $LENSES; do python -m "idhist.$1" "${entry%%:*}"; done; }
@@ -31,9 +32,12 @@ stage_units() {
   python -m idhist.sources.hathitrust units
   python -m idhist.sources.openalex units
   python -m idhist.sources.wikipedia titles
-  for step in furniture phrases units; do python -m idhist.sources.hplt $step; done
+  for step in furniture copies phrases units text; do python -m idhist.sources.hplt $step; done
 }
-stage_counts()   { each counts; }
+stage_counts()   {
+  each counts
+  for name in $COUNTED; do python -m idhist.counts "id-web-news-$name"; done
+}
 stage_measure()  { each measure; }
 stage_validate() {
   for entry in $LENSES; do python -m idhist.planted ${entry//:/ }; done

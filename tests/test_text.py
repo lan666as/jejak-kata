@@ -1,6 +1,8 @@
 import json
 from collections import Counter
 
+import numpy as np
+
 from idhist import text, web
 from idhist.sources import hathitrust, openalex
 
@@ -167,3 +169,23 @@ def test_abstracts_keep_indonesian_only():
     assert openalex.unit(row(indonesian + english)) is None  # printed in both languages
     assert openalex.unit(row(indonesian[:20])) is None  # too short
     assert openalex.unit(row(indonesian, venue=None)).group == "W1/2015"
+
+
+def test_copies_of_a_story_are_found_and_the_earliest_kept():
+    rng = np.random.default_rng(0)
+    story = [f"w{i}" for i in rng.integers(0, 5000, 300)]
+    other = [f"w{i}" for i in rng.integers(0, 5000, 300)]
+    edited = story[:140] + ["ralat", "baru"] + story[150:] + ["tambahan"] * 3  # nine runs in ten survive
+    pages = [
+        ("a", other),
+        ("a", edited),
+        ("a", story),
+        ("b", story),
+        ("a", list(story)),
+        ("a", story[:150] + other[:150]),
+    ]
+    keys = np.array([web.signature(source, words) for source, words in pages])
+    order = np.array([5, 3, 1, 0, 2, 4])  # the third page is the earliest of publisher a
+    assert web.copies(order, keys).tolist() == [False, True, False, False, True, False]
+    # another publisher's copy is its own page; half a story is not a copy
+    assert not web.copies(np.arange(2), np.array([web.signature("a", ["x"] * 3), web.signature("a", ["y"] * 3)])).any()

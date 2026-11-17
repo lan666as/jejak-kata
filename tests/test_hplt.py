@@ -1,5 +1,6 @@
 """Web pages are dated by what they say about themselves, met once, and cut into units by year."""
 
+import random
 from datetime import date
 
 import pyarrow as pa
@@ -48,19 +49,23 @@ def test_pages_that_are_filtered_translated_unsure_or_undated_are_dropped():
 @pytest.fixture
 def release(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    story = " ".join(f"kata{chr(97 + i % 26)}{chr(97 + i // 26)}" for i in range(60))
+    words = [f"kata{chr(97 + i % 26)}{chr(97 + i // 26)}" for i in range(60)]
+    story = " ".join(words)
+    told = [" ".join(random.Random(i).sample(words, 60)) for i in range(30)]  # the same words, another story each
     docs = [
         doc(
             f"https://daerah{i}.koran.co.id/{2019 + i % 2}/03/0{1 + i % 9}/berita-{i}",
-            f"Menu Olahraga Politik\nBaca juga: Gosip artis\n{story} unik{chr(97 + i)}. Kata Joko Widodo, ibu kota pindah.\n"
+            f"Menu Olahraga Politik\nBaca juga: Gosip artis\n{told[i]} unik{chr(97 + i)}. Kata Joko Widodo, ibu kota pindah.\n"
             f"(Penulis: Wartawan{chr(97 + i)} | Editor: Redaktur{chr(97 + i)})\nArtikel ini telah tayang di Koran dengan judul Kabar{chr(97 + i)}\n"
-            f"Jakarta: {story} lagi{chr(97 + i)} sumber https://koran.co.id/berita-{i}",
+            f"Jakarta: {told[i]} lagi{chr(97 + i)} sumber https://koran.co.id/berita-{i}",
         )
         for i in range(30)
     ]
     docs.append(
         doc(docs[0]["u"] + "?halaman=2", "tangkapan kemudian " + story, crawled="2021-01-01")
     )  # a later capture
+    again = docs[0]["text"].replace("unika.", "unika, ralat.")  # the first story once more, at another address, later
+    docs.append(doc("https://daerah9.koran.co.id/2020/04/01/berita-ulang", again))
     docs.append(doc("https://blog.id/2019/03/01/a", story, **{"web-register": "{'nb': 0.9}"}))  # a blog by its register
     docs.append(doc("https://saya.blogspot.com/2019/03/a.html", story))  # a blog by its platform, though labelled news
     docs.append(
@@ -79,17 +84,26 @@ def release(tmp_path, monkeypatch):
     wikipedia.titles.cache_clear()
 
 
-def test_from_the_release_to_units(release):
+def test_from_the_release_to_units(release, monkeypatch):
     hplt.fetch()
     hplt.census()
     hplt.find_furniture()
+    hplt.find_copies()
     hplt.find_phrases()
     hplt.build_units()
+    monkeypatch.setattr(hplt, "KEPT", frozenset({"koran.co.id"}))
+    hplt.keep_text()
     assert hplt.PHRASES.read_text().split("\n")[:-1] == ["ibu kota", "joko widodo"]  # the teaser's phrase is never seen
     shards = units.shards(hplt.NEWS)
     assert {s.stem.split("-")[0] for s in shards} == {"2019", "2020"}
     found = [u for shard in shards for u in units.read_shard(shard)]
-    assert len(found) == 31  # 30 stories once each, and the one dated by its text
+    assert len(found) == 31  # 30 stories once each, and the one dated by its text: the repeated story is left out
+    copies = pq.read_table(hplt.ROOT / "census" / "copies.parquet").to_pylist()
+    assert [(r["year"], r["copies"]) for r in copies if r["copies"]] == [(2020, 1)]
+    kept = pq.read_table(hplt.TEXT / "koran.co.id").to_pylist()
+    assert len(kept) == 31 and all(
+        "Baca juga" not in page["text"] and "Kata Joko Widodo" in page["text"] for page in kept[:1]
+    )
     words = set().union(*(u.counts for u in found))
     assert {"kataaa", "unikh", "joko widodo", "ibu kota"} <= words
     assert not words & {"menu", "olahraga", "gosip", "tangkapan", "joko", "kota"}

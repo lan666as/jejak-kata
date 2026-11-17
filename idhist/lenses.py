@@ -42,6 +42,20 @@ WEB = bins(2010, 2024, 1)
 ERAS = ((2010, 2014), (2015, 2019), (2020, 2024))  # presidential terms: Yudhoyono's second, Joko Widodo's two
 ABSTRACTS = (*bins(2000, 2009, 5), (2010, 2012), *bins(2013, 2026, 2))
 SMALL = {"vocab": 10_000, "contexts": 2_000, "skip": 50}
+# More publishers of `id-web-news` read alone, year by year, from the first year each has at least 2,000 dated pages
+# to the last: two papers already read by term, a business daily, three news portals, and the news the police and
+# the armed forces publish about themselves. These are counted, not scored: the stories read page counts from them.
+COUNTED = {
+    "tempo": ("tempo.co", 2011, 2024),
+    "tribun": ("tribunnews.com", 2011, 2024),
+    "bisnis": ("bisnis.com", 2011, 2024),
+    "okezone": ("okezone.com", 2010, 2023),
+    "detik": ("detik.com", 2012, 2023),
+    "liputan6": ("liputan6.com", 2013, 2024),
+    "viva": ("viva.co.id", 2010, 2024),
+    "polri": ("polri.go.id", 2016, 2024),
+    "tni": ("mil.id", 2014, 2024),
+}
 
 LENSES = {
     lens.name: lens
@@ -51,6 +65,10 @@ LENSES = {
         # Kompas is the one publisher with pages from every year.
         Lens("id-web-news", "id-web-news", WEB),
         Lens("id-web-news-kompas", "id-web-news", WEB[1:], sources=frozenset({"kompas.com"})),
+        *(
+            Lens(f"id-web-news-{name}", "id-web-news", bins(first, last, 1), sources=frozenset({publisher}))
+            for name, (publisher, first, last) in COUNTED.items()
+        ),
         # The same pages by presidential term, one publisher at a time. All publishers together fail the test of
         # expected changes over such a distance (AUC 0.37): the mix of publishers changes more than any word does.
         Lens("id-web-eras-kompas", "id-web-news", ERAS, sources=frozenset({"kompas.com"})),
