@@ -13,6 +13,8 @@ const STEPS = [2, 4, 7, 12, 20]; // shift boundaries of the colour steps
 const WIKIPEDIA = "https://id.wikipedia.org/wiki/";
 const BEAT = 1500; // milliseconds a player stays on one period
 const MAIN = "id-web-news-kompas"; // the lens of the first page: yearly, one publisher, 2011-2024
+const LEG = 900; // milliseconds a ship takes from one period to the next (--d-leg)
+const BUCKET = 64; // entries per file of words and of paths, as idhist.export writes them (each lens's meta says so too)
 const OUTLETS = ["id-web-eras-kompas", "id-web-eras-tempo", "id-web-eras-tribun"]; // one publisher each, the same three periods
 const OUTLET = ["Kompas", "Tempo", "Tribunnews"];
 /** The publishers whose text is counted (idhist/pages.py), as the site calls them. */
@@ -126,7 +128,7 @@ function tabs(labels, show, first = 0, style = "tabs") {
 
 /** Tabs over one holder: the content of the pressed tab replaces the last. */
 function switcher(labels, content, first = 0, style = "tabs") {
-  const holder = el("<div></div>");
+  const holder = el(`<div class="holder"></div>`);  // keeps its room while its content is on the way (style.css)
   const box = el("<div></div>");
   const show = async (i) => holder.replaceChildren(await Promise.resolve(content(i)).catch(() => el(`<p class="sub">${t("no_data")}</p>`)));
   box.append(tabs(labels, show, first, style), holder);
@@ -174,7 +176,7 @@ function played(figure, start = figure.labels.length - 1) {
  * position chooses the step (`voyage`), and every caption stays in its beat, in reading order, for screen readers
  * and find-in-page. `steer(j)` is asked to move to step j; returns {node, stage, figure box, steps, on(), go(j)}.
  */
-function stage(part, k, of, steer) {
+function stage(part, k, of, steer, intro = "") {
   const words = part[language], n = part.steps.length;
   const head = (j) => dash(part.steps[j - 1].head ?? part.steps[j - 1].mark ?? part.steps[j - 1].at);
   const name = (j) => (j ? t("step_name", j, n, head(j)) : t("opening", words.title));
@@ -192,7 +194,7 @@ function stage(part, k, of, steer) {
   const ticks = [...box.querySelectorAll(".ticks button")], [back, ahead] = box.querySelectorAll(".step");
   let at = -1, figure = null;
   const said = (j) => (j ? `<p class="head">${head(j)}</p><p>${part.steps[j - 1][language]}</p>`
-    : `<p class="title">${words.title}</p>${words.text ? `<p>${words.text}</p>` : ""}${k ? "" : `<p class="hint">${t("stage_hint")}</p>`}`);
+    : `<p class="title">${words.title}</p>${intro ? `<p class="intro">${intro}</p>` : ""}${words.text ? `<p>${words.text}</p>` : ""}${k ? "" : `<p class="hint">${t("stage_hint")}</p>`}`);
   const show = () => {
     if (!figure || at < 0) return;
     const step = part.steps[Math.max(0, at - 1)], i = figure.labels.indexOf(step.at);
@@ -207,6 +209,8 @@ function stage(part, k, of, steer) {
     show();
     // The caption turns: the one that was leaves a few pixels the way the reader came from, the new one comes in.
     for (const old of caption.querySelectorAll(".turn:not(.out)")) {
+      // It leaves from where it stands, out of the flow, so that the caption that comes is placed once and stays.
+      Object.assign(old.style, { top: old.offsetTop + "px", width: old.offsetWidth + "px" });
       old.classList.add("out");
       old.classList.toggle("back", backwards);
       old.setAttribute("aria-hidden", "true");
@@ -232,7 +236,7 @@ function stage(part, k, of, steer) {
 
 /** Share of units containing each word, per period; one line per entry, named when there are several. */
 function frequencyChart(lens, series, chosen = []) {
-  const W = Math.max(280, Math.min(680, room())), H = 190, L = 44, R = 12, T = 10, B = 26; // drawn at its real size, so text stays legible
+  const W = Math.max(280, Math.min(880, room())), H = W > 600 ? 230 : 190, L = 44, R = 12, T = 10, B = 26; // drawn at its real size, so text stays legible
   const n = lens.periods.length;
   const top = Math.max(...series.flatMap((e) => e.share)) * 1.1 || 1;
   const x = (i) => L + ((W - L - R) * i) / (n - 1);
@@ -341,7 +345,7 @@ function orbit(lens, e) {
  * side away from it, each tied to its island by a thin line.
  */
 function pathFigure(lens, path) {
-  const W = Math.max(300, Math.min(700, room())), H = Math.round(W * 0.8), P = 30, SIDE = 96;
+  const W = Math.max(300, Math.min(960, room())), H = Math.round(Math.min(W * 0.8, 560)), P = 30, SIDE = Math.round(Math.min(180, W * 0.22)); // room at the sides for the names
   const raw = path.path.map((xy, p) => xy && { p, xy }).filter(Boolean);
   const smooth = (k, d) => (raw.length > 6 && k > 0 && k < raw.length - 1 ? (raw[k - 1].xy[d] + 2 * raw[k].xy[d] + raw[k + 1].xy[d]) / 4 : raw[k].xy[d]);
   const moved = raw.map((r, k) => [smooth(k, 0), smooth(k, 1)]);
@@ -398,20 +402,37 @@ function pathFigure(lens, path) {
   return figure;
 }
 
-/** The chart of a lens with the routes of the given words on it. `pick(word)` is called when an island is clicked. */
-async function chartFigure(name, list, pick = (word) => (location.hash = href("kata", word)), height = "min(70vh, 560px)") {
+/** The chart of a lens with the routes of the given words on it. `pick(word)` is called when an island is clicked.
+ *  With `night`, the chart is drawn for the deep (the home page's hero). */
+async function chartFigure(name, list, pick = (word) => (location.hash = href("kata", word)), height = "min(70vh, 560px)", { night = false, wait } = {}) {
   const first = await json(`${name}/first.json`), label = new Map(first.words.map((id, k) => [id, first.names[k]]));
-  const meta = lensNamed(name); // the whole lens comes later; the chart is on screen before it
+  // The whole lens comes later (after `wait`, if given); the chart is on screen before it.
+  const meta = Promise.resolve(wait).then(() => lensNamed(name));
   let lens = null;
-  const chart = seaChart({ chart: first, name: (id) => (lens ? lens.words[id] : label.get(id)), pick: async (id) => pick((await meta).words[id]), periods: first.periods, tip, label: t("chart_keys") });
+  const chart = seaChart({ chart: first, name: (id) => (lens ? lens.words[id] : label.get(id)), pick: async (id) => pick((await meta).words[id]), periods: first.periods, tip, label: t("chart_keys"), night });
   Promise.all([meta, json(`${name}/chart.json`)]).then(([l, whole]) => ((lens = l), chart.more(whole)));
-  chart.node.style.height = height;
+  if (height) chart.node.style.height = height;
   const figure = { node: chart.node, labels: first.periods, chart, show: (p) => chart.time(p) };
-  figure.set = async (names) => {
-    const l = await meta, ids = names.map((w) => l.index.get(w)).filter((i) => i !== undefined);
-    const paths = await Promise.all(ids.map((i) => pathOf(l, i)));
-    chart.routes(ids.map((id, k) => ({ id, color: ROUTES[Math.min(k, 3)], route: paths[k]?.route || [] })));
-    requestAnimationFrame(() => chart.frame(ids));
+  /** The route of a word of the first screen, before the whole lens is here: its number is on the first screen and
+   *  its path in bucket number / BUCKET. A word that is not there, or not in that bucket, waits for the lens. */
+  const quick = async (word) => {
+    const k = first.names.indexOf(word);
+    if (k < 0 || lens) return null;
+    const id = first.words[k], found = (await json(`${name}/paths/${Math.floor(id / BUCKET)}.json`).catch(() => [])).find((p) => p.word === id);
+    return found?.route ? [{ id, color: ROUTES[0], route: found.route }] : null;
+  };
+  figure.set = async (names, { ms = 900, most } = {}) => {
+    let routes = names.length === 1 ? await quick(names[0]) : null;
+    if (!routes) {
+      const l = await meta, ids = names.map((w) => l.index.get(w)).filter((i) => i !== undefined);
+      const paths = await Promise.all(ids.map((i) => pathOf(l, i)));
+      routes = ids.map((id, k) => ({ id, color: ROUTES[Math.min(k, 3)], route: paths[k]?.route || [] }));
+    }
+    chart.routes(routes);
+    const frame = () => chart.frame(routes.map((r) => r.id), ms, most);
+    if (ms) requestAnimationFrame(frame);  // a glide starts from where the view stands in the next frame
+    else frame();  // a cut: the islands are painted once, already where the route is
+    return routes.some((r) => r.route.some(Boolean));
   };
   if (list.length) await figure.set(list);
   return figure;
@@ -610,17 +631,17 @@ function numbers(lens, e) {
 }
 
 /** A figure with its player and a line under it saying how to read it. */
-const explained = (figure, about, start) => {
+const explained = (figure, about, start, fold = false) => {
   const box = played(figure, start);
-  box.append(el(`<p class="sub">${about}</p>`));
+  box.append(el(fold ? `<details class="about"><summary>${t("read_figure")}</summary><p class="sub">${about}</p></details>` : `<p class="sub">${about}</p>`));
   return box;
 };
 
 /** A word in one lens: its path among its neighbours, its route on the chart, its company, the numbers, and for a name what is said of it. */
 async function lensSection(lens, e) {
   const word = lens.words[e.word];
-  const section = el(`<section><p class="sub">${lensText(lens).about}
-    ${lens.sensitivity ? t("sensitivity", lens.sensitivity, percent) : ""}</p></section>`);
+  const section = el(`<section class="lens-section"><p class="sub lens-about">${lensText(lens).about}</p>
+    ${lens.sensitivity ? `<details class="about"><summary>${t("tests_title")}</summary><p class="sub">${t("sensitivity", lens.sensitivity, percent)}</p></details>` : ""}</section>`);
   const path = await pathOf(lens, e.word);
   const said = async () => {
     const box = el(`<div><p class="sub">${t("traits_about")}</p></div>`);
@@ -631,8 +652,8 @@ async function lensSection(lens, e) {
     return box;
   };
   const views = [
-    path?.path && [t("path"), () => explained(pathFigure(lens, path), t("path_about"))],
-    path?.route && [t("chart"), async () => explained(await chartFigure(lens.lens, [word]), t("chart_about"))],
+    path?.path && [t("path"), () => explained(pathFigure(lens, path), t("path_about"), undefined, true)],
+    path?.route && [t("chart"), async () => explained(await chartFigure(lens.lens, [word]), t("chart_about"), undefined, true)],
     known(e).length > 1 && [t("orbit"), () => explained(orbit(lens, e), t("orbit_about"))],
     [t("numbers"), () => numbers(lens, e)],
     lens.articles.has(e.word) && [t("said"), said],
@@ -646,27 +667,32 @@ async function perLens(found, label, section, first = 0) {
   view.append(switcher(await Promise.all(found.map(label)), (i) => section(found[i]), first, "chips"));
 }
 
-/** A field that offers the words of a lens as one types; `chosen(word)` gets the one picked. */
+/** A field that offers the words of a lens as one types; `chosen(word)` gets the one picked. `lens` may still be on
+ *  its way (a promise): the field is there at once and offers words once it has them. */
 function suggest(lens, placeholder, button, chosen) {
-  const form = el(`<form class="controls suggest" autocomplete="off"><span><input type="search" placeholder="${placeholder}" aria-label="${placeholder}"><ul class="offers" hidden></ul></span><button class="primary">${button}</button></form>`);
+  const form = el(`<form class="controls suggest" autocomplete="off"><span><input type="search" placeholder="${placeholder}" aria-label="${placeholder}" enterkeyhint="go"><ul class="offers" hidden></ul></span><button class="primary">${button}</button></form>`);
   const [input, offers] = [form.querySelector("input"), form.querySelector("ul")];
+  const ready = Promise.resolve(lens);
   const take = (word) => {
     offers.hidden = true;
     input.value = "";
     chosen(word);
   };
-  input.addEventListener("input", () => {
-    const q = input.value.trim().toLowerCase(), hits = [];
-    if (q) for (const [w, i] of lens.index) if (w.startsWith(q) && lens.isEntry(i) && hits.push(w) === 8) break; // in order of frequency
-    offers.innerHTML = hits.map((w) => `<li><button type="button">${w}</button></li>`).join("");
-    offers.hidden = !hits.length;
+  input.addEventListener("input", async () => {
+    const l = await ready, q = input.value.trim().toLowerCase(), hits = [];
+    if (!l) return;
+    if (q) for (const [w, i] of l.index) if (w.startsWith(q) && l.isEntry(i) && hits.push(w) === 8) break; // in order of frequency
+    offers.innerHTML = hits.length ? hits.map((w) => `<li><button type="button">${w}</button></li>`).join("") : q ? `<li class="none">${t("no_offers", escape(q))}</li>` : "";
+    offers.hidden = !q;
     offers.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => take(b.textContent)));
   });
+  input.addEventListener("keydown", (e) => e.key === "Escape" && (offers.hidden = true));
   form.addEventListener("submit", (ev) => {
     ev.preventDefault();
     const word = offers.querySelector("button")?.textContent || input.value.trim().toLowerCase();
     if (word) take(word);
   });
+  form.addEventListener("focusout", (e) => !form.contains(e.relatedTarget) && setTimeout(() => !form.contains(document.activeElement) && (offers.hidden = true), 0));
   return form;
 }
 
@@ -696,8 +722,13 @@ async function wordPage(word, opened) {
   const found = all.filter((lens) => lens.isEntry(lens.index.get(word)));
   const named = found.find((lens) => lens.articles.has(lens.index.get(word)));
   const kind = named && named.kind(named.index.get(word));
-  view.replaceChildren(pageHead(escape(word), { kicker: named ? `<span class="dot ${kind}"></span>${t("name")}${kind === "other" ? "" : ` · ${t("kind_one_" + kind)}`}` : t("word") }));
-  if (!found.length) return view.append(el(`<p>${t(all.some((lens) => lens.index.has(word)) ? "is_name" : "not_found")}</p>`));
+  view.replaceChildren(pageHead(escape(word), { kicker: named ? `<span class="dot ${kind}"></span>${t("name")}${kind === "other" ? "" : ` · ${t("kind_one_" + kind)}`}` : t("word"), cls: "word-title" }));
+  if (!found.length) {
+    const head = view.firstElementChild;
+    head.querySelector("h1").textContent = t("word_missing", word);
+    return view.append(el(`<section class="empty"><p>${t(all.some((lens) => lens.index.has(word)) ? "is_name" : "not_found")}</p><p>${t("word_missing_next")}</p>
+      <ul class="words">${FEATURED.map((w) => `<li>${link(w)}</li>`).join("")}</ul></section>`));
+  }
 
   if (named) {
     const i = named.index.get(word), article = named.articles.get(i);
@@ -980,10 +1011,32 @@ function tools(address, { image, check = [], data } = {}) {
   return row;
 }
 
-const doors = (list) => `<ul class="cards doors">${list.map(([to, title, text]) => `<li><a class="card" href="${to}"><b class="card-title">${title}</b><span class="card-text">${text}</span></a></li>`).join("")}</ul>`;
-const storyDoors = (but) => doors(STORIES.filter((s) => s.slug !== but).map((s) => [href("cerita", s.slug), s[language].title, s[language].teaser]));
+/** A story as a card, led by its key number and the line that says what the number counts. Large: on the deep. */
+const keyOf = (story) => ({ number: story.key.number[language] || story.key.number, label: story.key[language] });
+const storyCard = (story, large = false) => {
+  const key = keyOf(story), words = story[language];
+  return `<li><a class="card story-card${large ? " large" : ""}" href="${href("cerita", story.slug)}"><span class="key"><b class="key-number">${key.number}</b><span class="key-label">${key.label}</span></span>
+    <b class="card-title">${words.title}</b><span class="card-text">${words.teaser}</span></a></li>`;
+};
+const storyCards = (list, large = false) => `<ul class="cards doors story-cards${large ? " large" : ""}">${list.map((s) => storyCard(s, large)).join("")}</ul>`;
 const PLAY = ["tebak", "kuis", "menempel", "lingkaran", "redaksi", "pasang", "balap", "tahun", "bergeser", "entitas"];
-const playDoors = () => doors(PLAY.map((page) => [href(page), t(`play_${page}`), t(`play_${page}_about`)]));
+/** A mark for each thing to play with, drawn in a few strokes: what its figure looks like, at a glance. The route's
+ *  colour marks the one thing in each that moves. */
+const PLAY_MARKS = {
+  tebak: `<path d="M6 30h52"/><path d="M6 26v8M19 28v4M32 28v4M45 28v4M58 26v8"/><path class="on" d="M40 12v26"/><circle class="on fill" cx="40" cy="12" r="4"/><path d="M24 18v16" stroke-dasharray="3 3"/>`,
+  kuis: `<rect x="6" y="8" width="24" height="12" rx="6"/><rect class="on fill" x="34" y="8" width="24" height="12" rx="6"/><rect x="6" y="26" width="24" height="12" rx="6"/><rect x="34" y="26" width="24" height="12" rx="6"/>`,
+  menempel: `<path d="M6 10h52M6 22h52M6 34h52" stroke-dasharray="1 4"/><circle class="on fill" cx="46" cy="10" r="4"/><circle class="fill" cx="30" cy="22" r="4"/><circle class="fill" cx="16" cy="34" r="4"/>`,
+  lingkaran: `<circle cx="32" cy="22" r="17" stroke-dasharray="2 4"/><circle class="on fill" cx="32" cy="22" r="4"/><circle class="fill" cx="18" cy="12" r="3"/><circle class="fill" cx="47" cy="17" r="3"/><circle class="fill" cx="25" cy="37" r="3"/><circle class="fill" cx="44" cy="33" r="3"/>`,
+  redaksi: `<path d="M6 10h52M6 22h52M6 34h52"/><circle class="on fill" cx="14" cy="10" r="4"/><circle class="fill" cx="38" cy="10" r="4"/><circle class="fill" cx="50" cy="22" r="4"/><circle class="on fill" cx="22" cy="22" r="4"/><circle class="fill" cx="30" cy="34" r="4"/><circle class="on fill" cx="44" cy="34" r="4"/>`,
+  pasang: `${[0, 1, 2, 3].map((r) => [0, 1, 2, 3, 4, 5].map((c) => `<rect class="fill" x="${6 + c * 9}" y="${6 + r * 9}" width="7" height="7" rx="1" opacity="${[0.15, 0.35, 0.7, 1, 0.5, 0.2][(c + 2 * r) % 6]}"/>`).join("")).join("")}`,
+  balap: `<rect class="on fill" x="6" y="7" width="50" height="8" rx="1"/><rect class="fill" x="6" y="19" width="36" height="8" rx="1"/><rect class="fill" x="6" y="31" width="22" height="8" rx="1"/>`,
+  tahun: `<rect x="8" y="6" width="22" height="32" rx="2"/><rect class="on fill" x="24" y="10" width="22" height="30" rx="2"/><rect x="40" y="6" width="18" height="32" rx="2"/>`,
+  bergeser: `<path class="on" d="M8 34C18 34 18 14 30 16S44 32 56 10"/><circle class="fill" cx="8" cy="34" r="3"/><circle class="on fill" cx="56" cy="10" r="4"/><circle cx="30" cy="16" r="3"/>`,
+  entitas: `<circle class="fill person" cx="14" cy="22" r="6"/><circle class="fill organisation" cx="32" cy="22" r="6"/><circle class="fill place" cx="50" cy="22" r="6"/><path d="M6 36h52"/>`,
+};
+const playCard = (page) => `<li><a class="card play-card" href="${href(page)}"><svg class="play-mark" viewBox="0 0 64 44" width="64" height="44" aria-hidden="true">${PLAY_MARKS[page]}</svg>
+  <b class="card-title">${t(`play_${page}`)}</b><span class="card-text">${t(`play_${page}_about`)}</span></a></li>`;
+const playDoors = (row = false) => `<ul class="cards doors play-cards${row ? " row" : ""}">${PLAY.map(playCard).join("")}</ul>`;
 
 /** The chart's graticule and a route sailed across it, faint behind a story's cover. */
 const GRATICULE = `<svg class="graticule" viewBox="0 0 1200 800" preserveAspectRatio="xMaxYMin slice" aria-hidden="true">
@@ -994,6 +1047,12 @@ const readingTime = (story) => {
   const words = [story[language].teaser, story[language].intro, story[language].limits, ...story.scenes.flatMap((part) => [part[language].text || "", ...part.steps.map((step) => step[language])])];
   return Math.max(1, Math.round(words.join(" ").replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length / 200));
 };
+
+/** Every story, led by its key number; the newest three large, on the deep. */
+function storiesPage() {
+  view.replaceChildren(pageHead(t("nav_stories"), { kicker: t("stories_kicker", STORIES.length), lede: t("stories_lede") }), el(storyCards(STORIES.slice(0, 3), true)),
+    el(`<h2 class="cards-head">${t("more_stories")}</h2>`), el(storyCards(STORIES.slice(3))));
+}
 
 /** The story on screen, if one is: `ask()` after a scroll or a resize, `key(e)` for the keyboard, `place()` for
  *  where to return to. A story keeps its place by step, not by pixels, since its cover is not as tall in each
@@ -1012,14 +1071,16 @@ addEventListener("scrollend", () => voyage?.arrived());
  */
 async function storyPage(slug, scene) {
   const story = STORIES.find((s) => s.slug === slug);
-  if (!story) return view.replaceChildren(pageHead(t("nav_stories"), { kicker: t("stories_kicker", STORIES.length), lede: t("stories_lede") }), el(storyDoors()));
+  if (!slug) return storiesPage();
+  if (!story) return lostPage();
   const words = story[language], next = STORIES[(STORIES.indexOf(story) + 1) % STORIES.length], parts = story.scenes;
   const cover = el(`<header class="cover">${GRATICULE}<div class="cover-text"><a class="kicker" href="${href("cerita")}">${t("nav_stories")}</a>
     <p class="cover-kicker">${t("story")} · ${t("read_time", readingTime(story))}</p><h1${words.title.length > 34 ? ' class="long"' : ""}>${words.title}</h1>
     <div class="cover-body"><p class="deck">${words.teaser}</p><div><p class="cover-intro">${words.intro}</p>
     <button type="button" class="primary begin">${t("begin")}<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button></div></div></div></header>`);
   let last = 0;  // the scene seen last: what the tools save and link to
-  const stages = parts.map((part, k) => stage(part, k, parts.length, (j) => steer(k, j)));
+  // On a phone the cover holds the title, the deck and "Mulai"; the intro opens the first scene instead.
+  const stages = parts.map((part, k) => stage(part, k, parts.length, (j) => steer(k, j), k ? "" : words.intro));
   const landing = el(`<section class="landing"><div class="limits"><h2>${t("limits_title")}</h2>${words.limits}</div></section>`);
   landing.append(tools(() => href("cerita", slug, String(last)), { image: () => stages[last].room, check: [...new Set(parts.flatMap((part) => part.check || []))],
     data: [...new Set(parts.map((part) => (part.type === "asked" ? `pages/${part.name}.json` : SCENE_DATA[part.type])).filter(Boolean))] }),
@@ -1052,7 +1113,7 @@ async function storyPage(slug, scene) {
     stages.forEach((s, k) => s.go(Math.max(0, Math.min(s.steps - 1, Math.round((top - rects[k].top) / beats[k])))));
     const seen = rects.findIndex((r) => r.top <= middle && r.bottom >= middle), shore = landing.getBoundingClientRect().top;
     if (seen >= 0) last = seen;
-    if (!rendering) marks.set(history.state?.id, seen >= 0 ? [seen, stages[seen].on()] : shore <= top ? [-1, top - shore] : null);
+    if (!rendering && !menuOpen()) marks.set(history.state?.id, seen >= 0 ? [seen, stages[seen].on()] : shore <= top ? [-1, top - shore] : null);
     const sailed = (top - rects[0].top) / (rects.at(-1).bottom - height - rects[0].top);
     masthead.style.setProperty("--voyage", Math.max(0, Math.min(1, sailed)).toFixed(4));
   };
@@ -1094,41 +1155,143 @@ async function storyPage(slug, scene) {
   }));
 }
 
-/** The first page: the chart, with one word after another sailing its route until the reader takes over. */
+/**
+ * The first page. A hero on the deep: the chart of words at night, one route drawn once as the page arrives, the
+ * headline, a field that sails any word, and words to try. Then, on the chart: three stories led by their key
+ * numbers, the things to play with, and how it is all measured. The hero's text is on screen before any data.
+ */
 async function homePage() {
-  const hero = el(`<section class="hero"><div class="chart"></div><div class="over"><h1>${t("title")}</h1><p class="lede">${t("intro")}</p></div></section>`);
-  const chosen = el(`<p class="controls"></p>`), posters = el(`<section class="wall"><h2>${t("wall_title")}</h2><p class="sub">${t("years_about")}</p></section>`);
-  const note = el(`<p class="sub"></p>`);
-  view.replaceChildren(hero, chosen, note,
-    el(`<section><h2>${t("nav_stories")}</h2>${storyDoors()}</section>`),
-    el(`<section><h2>${t("nav_play")}</h2>${playDoors()}</section>`),
-    posters,
-    el(`<section><h2>${t("try")}</h2><ul class="words">${FEATURED.map((w) => `<li>${link(w)}</li>`).join("")}</ul></section>`),
-    el(`<section>${t("caveats")}</section>`));
-  const sail = async (figure, word) => {
-    await figure.set([word]);
-    if (!figure.node.isConnected) return;
-    figure.chart.time(0, 0);
-    note.innerHTML = `${t("sailing", link(word))} <a href="${href("peta", MAIN, word)}">${t("rival_ask")}</a>`;
-    const last = figure.labels.length - 1;
-    setTimeout(() => figure.node.isConnected && figure.chart.time(last, still() ? 0 : 520 * last), 1200);
+  const down = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>`;
+  const hero = el(`<section class="hero" aria-labelledby="hero-title"><div class="hero-sea"><div class="chart night"></div></div>
+    <div class="hero-text"><h1 id="hero-title">${t("title")}</h1><p class="hero-lede">${t("hero_lede")}</p><div class="hero-ask"></div>
+      <div class="hero-try"><span>${t("hero_try")}</span><ul class="chips">${SHOWCASE.map((w) => `<li><button type="button" aria-pressed="false">${w}</button></li>`).join("")}</ul></div>
+      <div class="hero-foot"><p class="hero-now" role="status"></p><button type="button" class="hero-down quiet">${t("hero_down")}${down}</button></div></div></section>`);
+  const featured = el(`<section class="featured" aria-labelledby="featured-title"><p class="kicker">${t("featured_kicker")}</p><h2 id="featured-title">${t("featured_title")}</h2>
+    ${storyCards(STORIES.slice(0, 3), true)}<p class="more"><a class="button" href="${href("cerita")}">${t("all_stories_n", STORIES.length)}</a></p></section>`);
+  const play = el(`<section class="play-home" aria-labelledby="play-title"><p class="kicker">${t("nav_play")}</p><h2 id="play-title">${t("play_home_title")}</h2><p class="sub">${t("play_lede")}</p>
+    ${playDoors(true)}<p class="more"><a class="button" href="${href("main")}">${t("all_play_n", PLAY.length)}</a></p></section>`);
+  const measure = el(`<section class="measure" aria-labelledby="measure-title"><p class="kicker">${t("measure_kicker")}</p><h2 id="measure-title">${t("measure_title")}</h2>
+    <div class="measure-cols">${["sources", "text", "tests"].map((k) => `<div class="measure-col" data-k="${k}"><h3>${t(`measure_${k}_title`)}</h3><p class="measure-number">&nbsp;</p><p class="measure-label">&nbsp;</p><div class="measure-more"></div></div>`).join("")}</div>
+    <p class="more"><a href="${href("metode")}">${t("measure_more")}</a></p></section>`);
+  view.classList.add("home");
+  view.replaceChildren(hero, featured, play, measure);
+  hero.querySelector(".hero-down").addEventListener("click", () => featured.scrollIntoView({ behavior: still() ? "instant" : "smooth" }));
+  measured(measure);
+
+  // The whole lens (half a megabyte) is asked for once the first route has been drawn, or as soon as the reader
+  // types or picks a word: reading it would otherwise hold up the frames of the route drawing itself.
+  let wanted, figure = null, sailing = null, pending = null;
+  const want = new Promise((done) => (wanted = done)), lens = want.then(() => lensNamed(MAIN));
+  const now = hero.querySelector(".hero-now"), chips = [...hero.querySelectorAll(".hero-try button")];
+  // A word sails: its route is framed in the open part of the hero, then the ship travels it, period by period.
+  const sail = async (word) => {
+    if (!figure?.node.isConnected) return void (pending = word);
+    sailing = word;
+    chips.forEach((b) => b.setAttribute("aria-pressed", b.textContent === word));
+    if ((await figure.set([word], { most: 9 })) && sailing === word) (moor(word), go(word));
   };
-  const figure = await chartFigure(MAIN, [], (word) => sail(figure, word), "min(78vh, 720px)").catch(() => null);
-  if (!figure || !hero.isConnected) return;
-  hero.firstElementChild.replaceWith(figure.node);
-  const lens = await lensNamed(MAIN);
-  if (!hero.isConnected) return;
-  hero.querySelector(".over").append(suggest(lens, t("hero_ask"), t("hero_go"), (word) => {
-    if (!lens.isEntry(lens.index.get(word))) return (location.hash = href("kata", word));
-    sail(figure, word);
+  // The ship at its first port, and the word named under the field.
+  const moor = (word) => {
+    figure.chart.time(0, 0);
+    now.innerHTML = `<span class="hidden">${t("sailing", escape(word))}</span><a href="${href("kata", word)}">${t("hero_open", escape(word))}</a>`;
+  };
+  const go = (word, intro = false) => {
+    if (!figure.node.isConnected || sailing !== word) return;
+    figure.node.dataset.route = word;
+    const last = figure.labels.length - 1;
+    // The one motion on the site that nobody asked for: the first route, drawn once, in about two legs.
+    if (intro) return figure.chart.time(last, still() ? 0 : 2 * LEG), setTimeout(wanted, still() ? 0 : 2 * LEG + 400);
+    setTimeout(() => figure.node.isConnected && sailing === word && figure.chart.time(last, still() ? 0 : 520 * last), LEG);
+  };
+  hero.querySelector(".hero-ask").addEventListener("focusin", () => wanted());
+  hero.querySelector(".hero-ask").append(suggest(lens, t("hero_ask"), t("hero_go"), async (word) => {
+    const l = await lens;
+    if (!l?.isEntry(l.index.get(word))) return (location.hash = href("kata", word));
+    sail(word);
   }));
-  // Nothing sails until the reader asks: the first route lies drawn, and each name below sets its ship off.
-  await figure.set([SHOWCASE[0]]);
+  hero.querySelector(".hero-try").addEventListener("click", (e) => e.target.matches("button") && (wanted(), sail(e.target.textContent)));
+
+  figure = await chartFigure(MAIN, [], (word) => sail(word), null, { night: true, wait: want }).catch(() => null);
   if (!hero.isConnected) return;
-  figure.chart.time(figure.labels.length - 1, 0);
-  chosen.innerHTML = `${t("sail_one")} ${SHOWCASE.map((w) => `<button type="button" class="chip">${w}</button>`).join("")}`;
-  chosen.addEventListener("click", (e) => e.target.matches("button") && sail(figure, e.target.textContent));
-  wall(lens).then((node) => posters.append(node), () => {});
+  if (!figure) return hero.querySelector(".hero-sea").classList.add("failed");
+  // The route is framed where the text is not: above it on a phone, to its right on a wide screen.
+  const inset = () => {
+    const box = hero.getBoundingClientRect(), text = hero.querySelector(".hero-text").getBoundingClientRect(), wide = innerWidth >= 900;
+    figure.chart.inset(wide ? [box.height * 0.12, box.width * 0.04, box.height * 0.16, text.right - box.left] : [box.height * 0.08, 0, box.bottom - text.top + 8, 0]);
+  };
+  inset();
+  addEventListener("resize", inset);
+  // The first route is laid out before the chart is shown, so that its islands are painted once, already framed
+  // on the route; the ship sets out a frame after they are on screen.
+  const first = pending || SHOWCASE[0];
+  sailing = first;
+  chips.forEach((b) => b.setAttribute("aria-pressed", b.textContent === first));
+  const drawn = await figure.set([first], { ms: 0, most: 9 });
+  if (!hero.isConnected) return;
+  if (drawn) moor(first);
+  hero.querySelector(".hero-sea .chart").replaceWith(figure.node);
+  await figure.chart.drawn();
+  if (!still()) await settled();  // the sea settles on screen, then the ship sets out
+  if (drawn) go(first, !pending);
+  // Depth: the far islands lag behind the near ones as the pointer moves and as the page scrolls.
+  if (!still()) {
+    hero.addEventListener("pointermove", (e) => {
+      if (e.pointerType !== "mouse" || e.buttons) return;  // not while the chart is being dragged
+      const box = hero.getBoundingClientRect();
+      figure.chart.tilt(((e.clientX - box.left) / box.width) * 2 - 1, ((e.clientY - box.top) / box.height) * 2 - 1);
+    });
+    hero.addEventListener("pointerleave", () => figure.chart.tilt(0, 0));
+    const lift = () => (hero.isConnected ? scrollY < hero.offsetHeight + 200 && figure.chart.lift(scrollY) : removeEventListener("scroll", lift));
+    addEventListener("scroll", lift, { passive: true });
+  }
+}
+
+/** Resolves once the screen keeps up again: three frames in a row each under 25 ms, or after `most` ms. A new layer
+ *  on screen costs a few slow frames (more on a slow phone); a motion started then would stutter. */
+const settled = (most = 1500) => new Promise((done) => {
+  let last = 0, calm = 0;
+  const end = performance.now() + most, tick = (t) => {
+    calm = last && t - last < 25 ? calm + 1 : 0;
+    last = t;
+    calm >= 3 || t > end ? done() : requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+});
+
+/** The three columns of "how it is measured", filled from the data itself once they come near the screen. */
+function measured(section) {
+  const fill = async () => {
+    const names = await json("lenses.json"), own = names.filter((name) => !/-(tribun|okezone|kompas|tempo)$/.test(name)); // one publisher's lens is a part of the news
+    const lenses = (await Promise.all(own.map(lensNamed))).filter(Boolean), main = await lensNamed(MAIN);
+    if (!section.isConnected || !lenses.length) return;
+    const years = lenses.flatMap((l) => l.periods.join(" ").match(/\d{4}/g).map(Number)), total = (l) => l.units.reduce((x, y) => x + y, 0);
+    const amount = (n) => (n >= 1e6 ? `${number(n / 1e6, n >= 1e7 ? 0 : 1)} ${t("million")}` : thousands(n));
+    const col = (k) => section.querySelector(`[data-k="${k}"]`);
+    const put = (k, big, label, more) => {
+      col(k).querySelector(".measure-number").textContent = big;
+      col(k).querySelector(".measure-label").textContent = label;
+      col(k).querySelector(".measure-more").innerHTML = more;
+    };
+    put("sources", String(names.length), t("measure_sources", `${Math.min(...years)}–${Math.max(...years)}`), `<ul class="measure-list">${lenses.map((l) => `<li>${lensText(l).title}</li>`).join("")}</ul>`);
+    put("text", number(lenses.reduce((sum, l) => sum + total(l), 0) / 1e6, 0), t("measure_text"),
+      `<ul class="measure-list">${[...lenses].sort((a, b) => total(b) - total(a)).map((l) => `<li><span>${lensText(l).title}</span><b>${amount(total(l))}</b></li>`).join("")}</ul>`);
+    if (main?.sensitivity) put("tests", percent(main.sensitivity.found["0.8"]), t("measure_tests", lensText(main).short), `<p>${t("measure_alarms", percent(main.sensitivity.false_alarms), percent(main.sensitivity.found["0.4"]))}</p>`);
+  };
+  const seen = new IntersectionObserver((list) => list.some((e) => e.isIntersecting) && (seen.disconnect(), fill().catch(() => {})), { rootMargin: "600px 0px" });
+  seen.observe(section);
+}
+
+/** An address that leads nowhere: said plainly, on the deep, with the ways back. */
+function lostPage() {
+  view.replaceChildren(el(`<section class="lost">${GRATICULE}<p class="cover-kicker">${t("lost_kicker")}</p><h1>${t("lost_title")}</h1><p class="deck">${t("lost_lede")}</p>
+    <p class="lost-ways"><a class="button primary" href="#/">${t("lost_home")}</a><a class="button" href="${href("cerita")}">${t("nav_stories")}</a><a class="button" href="${href("main")}">${t("nav_play")}</a><a class="button" href="${href("peta")}">${t("nav_chart")}</a></p></section>`));
+}
+
+/** Data that did not come: what happened and what to do, with a way to try again. */
+function failedPage() {
+  const box = el(`<section class="empty" role="alert"><h1>${t("failed_title")}</h1><p>${t("failed")}</p><p><button type="button" class="primary">${t("reload")}</button></p></section>`);
+  box.querySelector("button").addEventListener("click", () => location.reload());
+  view.replaceChildren(box);
 }
 
 /** One screen about a name: when it peaked, its voyage, what the news had it doing, and who keeps company like it. */
@@ -1139,7 +1302,7 @@ async function portraitPage(word) {
   const said = async (lexicon) => ((await saidOf(lens, word, lexicon))?.findLast((list) => list.length) || []).slice(0, 8).map(([id]) => id);
   const [verbs, adjectives] = await Promise.all([said("verbs"), said("adjectives")]);
   view.replaceChildren(
-    pageHead(escape(word), { kicker: t("portrait"), lede: t("peak_year", lens.periods[peak], percent(e.share[peak])) }),
+    pageHead(escape(word), { kicker: t("portrait"), cls: "word-title", lede: t("peak_year", lens.periods[peak], percent(e.share[peak])) }),
     frequencyChart(lens, [e], [peak]),
     el(`<div class="pair"><div><h3>${t("verbs")}</h3>${words(lens, verbs)}</div><div><h3>${t("adjectives")}</h3>${words(lens, adjectives)}</div></div>`),
     el(`<h3>${t("most_alike")} (${lens.periods[last]})</h3>`),
@@ -1331,7 +1494,7 @@ async function playPage() {
 }
 
 async function methodPage() {
-  view.replaceChildren(pageHead(t("method_title"), { kicker: t("method_kicker") }), el(`<article class="prose">${t("method")}</article>`));
+  view.replaceChildren(pageHead(t("method_title"), { kicker: t("method_kicker") }), el(`<div class="method-body"><article class="prose">${t("method")}</article><aside class="caveats">${t("caveats")}</aside></div>`));
   const tested = (await allLenses()).filter((lens) => lens.sensitivity);
   const found = (lens, share) => percent(lens.sensitivity.found[share]);
   view.append(
@@ -1379,13 +1542,14 @@ function route() {
     rendering = true;
     // A story is laid out across the whole width and snaps to its steps; any other page is neither.
     voyage = null;
-    view.classList.remove("voyage");
+    view.classList.remove("voyage", "home");
     document.documentElement.classList.remove("voyaging");
     masthead.style.removeProperty("--voyage");
     if (!place) scrollTo(0, 0);
-    return Promise.resolve((pages[page] || homePage)(...args))
-      .catch(() => view.replaceChildren(el(`<p>${t("no_data")}</p>`)))
+    return Promise.resolve((page ? pages[page] || lostPage : homePage)(...args))
+      .catch(failedPage)
       .then(() => {
+        describe(page, args);
         if (place) scrollTo(0, voyage?.place() ?? place);
         rendering = false;
       });
@@ -1395,6 +1559,14 @@ function route() {
   if (first || still() || !document.startViewTransition) render();
   else document.startViewTransition(() => Promise.race([render(), new Promise((done) => setTimeout(done, 240))]));
   first = false;
+}
+
+/** The window's title and the page's description, from what the page shows: its title and its lede. */
+function describe(page, args) {
+  const title = view.querySelector("h1")?.textContent.replace(/\s+/g, " ").trim(), lede = view.querySelector(".page-head .lede, .cover .deck, .lost .deck, .empty p");
+  const said = { kata: () => t("desc_word", args[0]), main: () => t("desc_play"), peta: () => t("desc_chart"), temuan: () => t("desc_findings"), metode: () => t("desc_method") }[page];
+  document.title = !page ? t("doc_title") : page === "kata" && title === args[0] ? t("doc_word", args[0]) : `${title || t("nav_label")} · Jejak Kata`;
+  document.querySelector('meta[name="description"]').content = (!page ? t("desc_home") : said ? said() : lede?.textContent.replace(/\s+/g, " ").trim()) || t("desc_home");
 }
 
 // ---- the header: search, and below 900px the menu sheet ---------------------
@@ -1457,8 +1629,9 @@ function search() {
     const seen = new Set();
     if (q) for (const lens of await allLenses()) for (const [w, i] of lens.index) if (w.startsWith(q) && lens.isEntry(i)) seen.add(w);
     const hits = [...seen].sort((a, b) => a.length - b.length || a.localeCompare(b)).slice(0, 8);
-    list.innerHTML = hits.map((w) => `<li>${link(w)}</li>`).join("");
-    list.hidden = !hits.length;
+    if (q !== query.value.trim().toLowerCase()) return;  // a later keystroke has asked already
+    list.innerHTML = hits.length ? hits.map((w) => `<li>${link(w)}</li>`).join("") : q ? `<li class="none">${t("no_offers", escape(q))}</li>` : "";
+    list.hidden = !q;
   });
   query.addEventListener("keydown", (e) => e.key === "ArrowDown" && !list.hidden && (e.preventDefault(), list.querySelector("a")?.focus()));
   list.addEventListener("keydown", (e) => {

@@ -20,6 +20,7 @@ const PHRASES = {
 export const STORIES = [
   {
     slug: "penyesuaian",
+    key: { number: "139 / 200", id: "“penyesuaian harga” yang kami baca berarti naik", en: "“price adjustments” we read mean a rise" },
     id: {
       title: "Harga naik, atau “disesuaikan”?",
       teaser: "“Penyesuaian harga” hampir hanya dipakai untuk harga yang ditetapkan negara: BBM, listrik, tol, BPJS. Dari 200 yang kami baca, 139 berarti naik, dan 120 diucapkan pemerintah atau perusahaan negara.",
@@ -51,6 +52,7 @@ export const STORIES = [
   },
   {
     slug: "oknum",
+    key: { number: "150 / 200", id: "“oknum” yang kami baca tidak disebut namanya", en: "“oknum” we read are not named" },
     id: {
       title: "Siapa yang disebut “oknum”?",
       teaser: "Di halaman tentang pelanggaran, kata “oknum” menempel pada guru, pegawai negeri, tentara, dan kepala desa dua sampai lima kali lebih sering daripada pada anggota dewan atau hakim. Dari 200 “oknum” yang kami baca, 150 tidak disebut namanya.",
@@ -85,6 +87,7 @@ export const STORIES = [
   },
   {
     slug: "diamankan",
+    key: { number: "5% → 15%", id: "halaman Kompas tentang tersangka yang memakai “diamankan”", en: "of Kompas pages about a suspect use “diamankan”" },
     id: {
       title: "Ditangkap, atau “diamankan”?",
       teaser: "Di situs berita Polri, sepertiga halaman tentang seorang tersangka memakai kata “diamankan”. Di Tribunnews seperempat. Di Kompas naik dari 5% menjadi 15%. Di Tempo: 3–6%.",
@@ -116,6 +119,7 @@ export const STORIES = [
   },
   {
     slug: "viral-polisi",
+    key: { number: "6–12%", id: "halaman tentang polisi memuat kata “viral”", en: "of pages about the police carry the word “viral”" },
     id: {
       title: "Tidak viral, tidak ada polisi?",
       teaser: "Pada 2010–2014 kata “viral” tidak ada di berita tentang polisi. Sekarang ada di 6–12% halamannya, dua sampai tiga kali rata-rata semua berita. Di halaman KPK, DPR, dan menteri: di bawah rata-rata.",
@@ -152,6 +156,7 @@ export const STORIES = [
   },
   {
     slug: "berhenti-dibicarakan",
+    key: { number: { id: "4,3×", en: "4.3×" }, id: "susutnya “harga bahan bakar” sesudah 2014, di tiap media", en: "the fall of “harga bahan bakar” after 2014, in every outlet" },
     id: {
       title: "Yang berhenti dibicarakan tiap ganti masa jabatan",
       teaser: "Sesudah SBY: harga BBM, buruh, bentrok, dan kata “didesak”. Sesudah periode pertama Jokowi: kabut asap, radikalisme, operasi tangkap tangan. Daftarnya dibuat aturan, dan hanya memuat kata yang susut di tiga media sekaligus.",
@@ -192,6 +197,7 @@ export const STORIES = [
   },
   {
     slug: "dilupakan",
+    key: { number: "19%", id: "SBY pada 2015, dari tahun terakhirnya menjabat, di Kompas", en: "SBY in 2015, of his last year in office, in Kompas" },
     id: {
       title: "Setahun sesudah turun, tinggal seperlima",
       teaser: "SBY pada 2015: 19% dari tahun terakhirnya menjabat di Kompas, 6% di Tempo, 16% di Tribunnews. Boediono: 6–10%. Seberapa cepat berita melupakan orang yang kehilangan kuasa, dan siapa yang tidak dilupakan.",
@@ -230,6 +236,7 @@ export const STORIES = [
   },
   {
     slug: "kata-korupsi",
+    key: { number: "17–25%", id: "halaman Demokrat memuat “korupsi” saat berkuasa", en: "of Demokrat's pages carried “korupsi” while it governed" },
     id: {
       title: "Partai mana yang ditulis bersama kata “korupsi”",
       teaser: "Ketika Demokrat berkuasa, “korupsi” ada di 17–25% halaman yang menyebutnya. Ketika PDI Perjuangan berkuasa: paling tinggi 11%. Sekarang semua partai berkumpul di 3–10%.",
@@ -267,6 +274,7 @@ export const STORIES = [
   },
   {
     slug: "yang-hilang",
+    key: { number: "KPK", id: "susut lebih dari separuh di tiga media, dari 2012 ke 2023", en: "shrank by more than half in three outlets, from 2012 to 2023" },
     id: {
       title: "KPK menyusut dari berita. Kata “tersangka” tidak",
       teaser: "Dari 2012 ke 2023, kata “kpk” susut lebih dari separuh di tiga media. Tetapi pada 2024 Tempo berbalik, kata kerja di samping KPK tidak pernah melunak, dan berita tentang tersangka sebanyak dulu.",
@@ -312,6 +320,7 @@ export const STORIES = [
   },
   {
     slug: "prabowo",
+    key: { number: "4% → 38%", id: "“menteri pertahanan” di samping namanya, 2019 ke 2020", en: "“menteri pertahanan” beside his name, 2019 to 2020" },
     id: {
       title: "Dari capres menjadi menteri pertahanan, dalam satu tahun",
       teaser: "Dua kali kalah, lalu masuk kabinet. Dalam satu tahun kata di samping nama Prabowo berganti dari “capres” menjadi “menteri pertahanan”. Kata “oposisi” jarang di sampingnya, tetapi juga jarang di samping siapa pun.",
@@ -340,6 +349,7 @@ export const STORIES = [
   },
   {
     slug: "kata-resmi",
+    key: { number: { id: "Negara", en: "The state" }, id: "mengganti “Cina” dengan “Tiongkok”: Kompas menurut selama dua tahun, Tempo tidak pernah", en: "replaced “Cina” with “Tiongkok”: Kompas followed for two years, Tempo never did" },
     id: {
       title: "Negara memilih kata. Redaksi tidak selalu menurut",
       teaser: "Keputusan presiden mengganti “Cina” dengan “Tiongkok”: Kompas menurut selama dua tahun, Tempo tidak pernah. Tetapi istilah polisi untuk kelompok bersenjata di Papua, “KKB”, menang di ketiganya.",
@@ -385,6 +395,7 @@ export const STORIES = [
   },
   {
     slug: "umur-slogan",
+    key: { number: "Slogan", id: "berapa lama kata-kata dari pemerintah bertahan di berita", en: "how long a government's words last in the news" },
     id: {
       title: "Umur sebuah slogan",
       teaser: "Revolusi mental, nawacita, tol laut, tax amnesty, new normal. Berapa lama kata-kata dari pemerintah bertahan di berita sebelum hilang? Sebuah catatan ringan.",
@@ -420,7 +431,7 @@ export const STORIES = [
 for (const story of STORIES) for (const language of ["id", "en"]) story[language].limits = story[language].limits.replace("PHRASES", PHRASES[language]);
 
 // Words that sail one after another on the first page, until the reader chooses one.
-export const SHOWCASE = ["kpk", "prabowo", "jokowi", "ahok", "gibran", "ibu kota", "konten", "nusantara"];
+export const SHOWCASE = ["jokowi", "kpk", "prabowo", "ahok", "ibu kota", "nusantara", "konten", "gibran"]; // the first sails as the home page opens: the longest voyage of these
 
 export const FEATURED = ["transparan", "mantan", "situs", "lengser", "positif", "daring", "goreng", "jokowi", "ibu kota", "kpk", "nusantara", "rumah"];
 
@@ -478,6 +489,28 @@ export const NOTES = Object.fromEntries(
 
 export const TEXT = {
   id: {
+    hero_lede: "Peta 20 ribu kata dari berita Kompas, 2011–2024, tempat kata yang bergaul dengan kata-kata yang sama berlabuh berdekatan.",
+    hero_try: "Coba:", hero_open: (word) => `Buka “${word}”`, hero_down: "Mulai dari cerita", hero_wait: "Memuat kata-kata…",
+    featured_kicker: "Cerita", featured_title: "Tiga pelayaran untuk memulai", all_stories_n: (n) => `Semua ${n} cerita`,
+    play_home_title: "Untuk dimainkan", all_play_n: (n) => `Semua ${n} mainan`,
+    measure_kicker: "Cara kerja", measure_title: "Bagaimana semua ini diukur",
+    measure_sources_title: "Sumbernya", measure_sources: (span) => `sumber, diukur sendiri-sendiri, ${span}`,
+    measure_text_title: "Seberapa banyak teks", measure_text: "juta halaman buku, artikel berita, tulisan blog, dan abstrak",
+    measure_tests_title: "Apa kata ujinya", measure_tests: (lens) => `perubahan buatan yang tertangkap bila 80% pemakaian sebuah kata diganti (${lens})`,
+    measure_alarms: (share, half) => `Kata yang tidak disentuh ikut tertandai: ${share}. Bila yang diganti 40%, yang tertangkap ${half}.`,
+    measure_more: "Cara kerja dan ujinya selengkapnya",
+    lost_kicker: "404", lost_title: "Halaman ini tidak ada di peta", lost_lede: "Alamatnya mungkin salah ketik, atau halamannya sudah pindah. Cari sebuah kata, atau berangkat dari salah satu tempat ini.", lost_home: "Halaman depan",
+    word_missing: (word) => `“${word}” tidak ada di peta`, word_missing_next: "Coba ejaan lain atau bentuk dasarnya di kotak cari, atau buka salah satu kata ini:",
+    failed_title: "Datanya tidak termuat", failed: "Mungkin sambungan terputus. Muat ulang halaman ini; bila tetap gagal, coba lagi sebentar lagi.", reload: "Muat ulang",
+    no_offers: (q) => `Tidak ada kata yang dimulai dengan “${q}”. Coba ejaan lain atau kata dasarnya.`,
+    read_figure: "Cara membaca gambar ini",
+    doc_title: "Jejak Kata: tiap kata punya pelayarannya", doc_word: (w) => `“${w}”: pelayaran sebuah kata`,
+    desc_home: "Peta 20 ribu kata bahasa Indonesia dan rute tiap kata dari masa ke masa, dihitung dari buku, berita, blog, dan abstrak ilmiah.",
+    desc_word: (w) => `Bagaimana kata “${w}” berganti teman dari masa ke masa: rutenya di peta kata, temannya, dan angka-angkanya.`,
+    desc_play: "Permainan dan alat dari data yang sama: tebak angkanya, kuis, balapan nama, tabel pasang surut.",
+    desc_findings: "Hal-hal yang ditemukan hitungan sendiri: siapa menggantikan siapa, kata yang datang lalu pergi.",
+    desc_method: "Sumber, ukuran, dan uji di balik Jejak Kata.",
+    desc_chart: "Seluruh kosakata sebuah sumber pada satu peta, dengan rute kata-kata pilihanmu.",
     sail_one: "Berlayarkan:", nav_stories: "Cerita", nav_play: "Mainan", loading: "Memuat…", more_stories: "Cerita lain", next: "Berikutnya", again: "Main lagi",
     stories_lede: "Tiap cerita berangkat dari pertanyaan yang diperdebatkan orang, berbelok pada sesuatu yang ditemukan hitungan, dan berakhir pada apa yang tidak dapat dikatakan data. Semua angka adalah hitungan halaman yang dapat diperiksa.",
     play_lede: "Data yang sama, untuk dimainkan. Tidak satu pun dipilih dengan tangan.",
@@ -696,6 +729,28 @@ export const TEXT = {
       <p>Cara ini diuji dengan menanam perubahan buatan pada data nyata, dan dengan daftar kata yang perubahannya sudah dituliskan sebelum hasilnya dilihat. Rincian, kode, dan hasil ujinya ada di repositori.</p>`,
   },
   en: {
+    hero_lede: "A chart of 20,000 words from Kompas news, 2011–2024, where words that keep the same company lie close together.",
+    hero_try: "Try:", hero_open: (word) => `Open “${word}”`, hero_down: "Start with a story", hero_wait: "Loading the words…",
+    featured_kicker: "Stories", featured_title: "Three voyages to begin with", all_stories_n: (n) => `All ${n} stories`,
+    play_home_title: "Things to play with", all_play_n: (n) => `All ${n} things to play with`,
+    measure_kicker: "How it works", measure_title: "How all this is measured",
+    measure_sources_title: "The sources", measure_sources: (span) => `sources, each measured on its own, ${span}`,
+    measure_text_title: "How much text", measure_text: "million book pages, news articles, blog posts and abstracts",
+    measure_tests_title: "What the tests say", measure_tests: (lens) => `of planted changes caught when 80% of a word's use is swapped (${lens})`,
+    measure_alarms: (share, half) => `Untouched words flagged as well: ${share}. With 40% swapped, ${half} are caught.`,
+    measure_more: "The method and its tests in full",
+    lost_kicker: "404", lost_title: "This page is not on the chart", lost_lede: "The address may be mistyped, or the page has moved. Search for a word, or set out from one of these.", lost_home: "Front page",
+    word_missing: (word) => `“${word}” is not on the chart`, word_missing_next: "Try another spelling or the root form in the search box, or open one of these words:",
+    failed_title: "The data did not load", failed: "The connection may have dropped. Reload this page; if it still fails, try again in a moment.", reload: "Reload",
+    no_offers: (q) => `No word starts with “${q}”. Try another spelling or the root form.`,
+    read_figure: "How to read this figure",
+    doc_title: "Jejak Kata: every word has its voyage", doc_word: (w) => `“${w}”: the voyage of a word`,
+    desc_home: "A chart of 20,000 Indonesian words and each word's route from period to period, counted in books, news, blogs and academic abstracts.",
+    desc_word: (w) => `How the word “${w}” changed the company it keeps: its route on the chart of words, its company, and its numbers.`,
+    desc_play: "Games and tools on the same data: guess the number, a quiz, a race of names, a tide table.",
+    desc_findings: "What the counting found by itself: who took whose place, words that came and went.",
+    desc_method: "The sources, measures and tests behind Jejak Kata.",
+    desc_chart: "A source's whole vocabulary on one chart, with the routes of the words you pick.",
     sail_one: "Set sail:", nav_stories: "Stories", nav_play: "Play", loading: "Loading…", more_stories: "More stories", next: "Next", again: "Play again",
     stories_lede: "Each story starts from a question people argue about, turns on something the counting found, and ends on what the data cannot tell. Every number is a count of pages that can be checked.",
     play_lede: "The same data, to play with. Nothing is chosen by hand.",

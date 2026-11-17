@@ -46,14 +46,25 @@ const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport:
   await c.send("Network.emulateNetworkConditions", { offline: false, latency: 300, downloadThroughput: 50_000, uploadThroughput: 20_000 });
   const t0 = Date.now(); await p.goto(base + "#/"); await p.waitForTimeout(1500);
   const early = await p.evaluate(() => document.getElementById("view").innerText.trim().length);
-  await p.waitForSelector(".chart canvas", { timeout: 60000 }).catch(() => {}); const t = Date.now() - t0;
+  await p.waitForSelector(".chart > canvas", { timeout: 60000 }).catch(() => {}); const t = Date.now() - t0;
   log("slow connection (400 kbit/s): something on screen at 1.5 s", early > 0, `${early} characters of text at 1.5 s; chart after ${t} ms`); await p.close(); }
+{ // the home page: the hero's field sails a route, a featured story opens its story, an unknown address is a 404
+  const p = await fresh({ viewport: { width: 360, height: 740 } }); await p.goto(base + "#/"); await p.waitForSelector(".hero .chart > canvas"); await p.waitForTimeout(2500);
+  const first = await p.evaluate(() => document.querySelector(".hero .chart")?.dataset.route);
+  await p.fill(".hero .suggest input", "prabowo"); await p.waitForTimeout(300); await p.keyboard.press("Enter"); await p.waitForTimeout(2500);
+  const sailed = await p.evaluate(() => ({ route: document.querySelector(".hero .chart").dataset.route, pressed: document.querySelector(".hero-try [aria-pressed='true']")?.textContent, hash: location.hash }));
+  log("hero field sails a route", first && sailed.route === "prabowo" && sailed.pressed === "prabowo" && sailed.hash === "#/", `first route ${first}; after typing: ${JSON.stringify(sailed)}; errors ${p.errors.length}`);
+  const card = p.locator(".featured .story-card").first(), to = await card.getAttribute("href"); await card.click(); await p.waitForSelector(".cover h1"); await p.waitForTimeout(500);
+  log("a featured story card opens its story", (await p.evaluate(() => location.hash)) === to && (await p.locator(".stage").count()) > 0, `${to} -> ${await p.evaluate(() => location.hash)}: ${await p.locator(".cover h1").innerText()}`);
+  await p.goto(base + "#/tidak-ada-di-sini"); await p.waitForTimeout(1200);
+  const lost = await p.evaluate(() => ({ h1: document.querySelector(".lost h1")?.textContent, ways: document.querySelectorAll(".lost-ways a").length, title: document.title, wide: document.documentElement.scrollWidth > innerWidth + 1 }));
+  log("an unknown address is a 404 with ways back", lost.h1 && lost.ways >= 3 && !lost.wide && !p.errors.length, JSON.stringify(lost)); await p.close(); }
 { // chart: search, fly, keyboard, two words
   const p = await fresh({ viewport: { width: 1200, height: 800 } }); await p.goto(base + "#/peta"); await p.waitForTimeout(3000);
   await p.fill(".suggest input", "ahok"); await p.waitForTimeout(300); const offered = await p.locator(".offers button").count();
   await p.keyboard.press("Enter"); await p.waitForTimeout(1800);
   log("chart search offers words and adds the pick", offered > 0 && (await p.locator(".picked li").count()) === 1, `${offered} offers; ${await p.locator(".picked li").count()} picked; address ${await p.evaluate(() => location.hash)}`);
-  const focusable = await p.evaluate(() => document.querySelector(".chart canvas").tabIndex >= 0);
+  const focusable = await p.evaluate(() => document.querySelector(".chart > canvas").tabIndex >= 0);
   log("chart can be reached by keyboard", focusable, focusable ? "canvas takes focus" : "canvas has no tab stop and no key handling");
   await p.fill(".suggest input", "anies"); await p.keyboard.press("Enter"); await p.waitForTimeout(2500);
   log("two words give a comparison", (await p.locator("h2").count()) > 0, `${await p.locator(".picked li").count()} picked; ${await p.locator(".duel").count()} head-to-head figures; errors ${p.errors.length}`); await p.close(); }
@@ -69,7 +80,7 @@ const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport:
   const p = await fresh(); await p.goto(base + "#/potret/setya%20novanto"); await p.waitForTimeout(3000);
   log("portrait opens cold", (await p.locator("h1").innerText()).includes("setya"), `${(await p.locator("#view").innerText()).slice(0, 70).replace(/\s+/g, " ")}; errors ${p.errors.length}`); await p.close(); }
 { // chart by keyboard
-  const p = await fresh({ viewport: { width: 1200, height: 800 } }); await p.goto(base + "#/peta"); await p.waitForSelector(".chart canvas"); await p.waitForTimeout(2500);
+  const p = await fresh({ viewport: { width: 1200, height: 800 } }); await p.goto(base + "#/peta"); await p.waitForSelector(".chart > canvas"); await p.waitForTimeout(2500);
   await p.keyboard.press("Tab"); for (let i = 0; i < 30 && !(await p.evaluate(() => document.activeElement?.tagName === "CANVAS")); i++) await p.keyboard.press("Tab");
   const focused = await p.evaluate(() => document.activeElement?.tagName === "CANVAS");
   await p.keyboard.press("+"); await p.waitForTimeout(400); await p.keyboard.press("ArrowRight"); await p.waitForTimeout(400); await p.keyboard.press("Enter"); await p.waitForTimeout(1500);

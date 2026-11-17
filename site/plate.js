@@ -24,16 +24,15 @@ function sheet(spec, width, height, body) {
     <rect width="${W}" height="${H}" fill="${paper}"/>
     <text y="${size + 6}" style="font-size:${size}px;font-weight:800;fill:${ink}">${lines.map((l, k) => `<tspan x="12" dy="${k ? size * 1.14 : 0}">${l}</tspan>`).join("")}</text>
     ${body({ W, H, narrow, top, ink, soft, paper, line: css("--line") })}
-    <text class="note" y="${H - 34}" style="font-size:10.5px;fill:${soft}"></text>
-    <text x="12" y="${H - 8}" style="font-size:10.5px;font-weight:700;fill:${ink}">${SITE}</text>
+    <text class="note" y="${H - 23}" style="font-size:12px;fill:${soft}"></text>
+    <text x="12" y="${H - 7}" style="font-size:12px;font-weight:700;fill:${ink}">${SITE}</text>
   </svg>`;
-  // The note says what was counted and over how many pages; it takes two lines when it has to.
+  // The note says what was counted and over how many pages, at 12px like all text on the site: up to three lines,
+  // the last one just above the site's name.
   const note = (text) => {
-    const size = text.length > 2 * Math.floor((W - 24) / 5.8) ? 9 : 10.5;  // a note too long for two lines is set smaller
-    const words = text.split(" "), half = Math.floor((W - 24) / (size * 0.55)), rows = [""];
-    for (const word of words) (rows.at(-1) + " " + word).length > half && rows.length < 2 ? rows.push(word) : (rows[rows.length - 1] = (rows.at(-1) + " " + word).trim());
-    node.querySelector(".note").style.fontSize = size + "px";
-    node.querySelector(".note").innerHTML = rows.map((row, k) => `<tspan x="12" dy="${k ? 12 : rows.length > 1 ? 0 : 12}">${row.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</tspan>`).join("");
+    const words = text.split(" "), line = Math.floor((W - 24) / 6.3), rows = [""];
+    for (const word of words) (rows.at(-1) + " " + word).length > line && rows.length < 3 ? rows.push(word) : (rows[rows.length - 1] = (rows.at(-1) + " " + word).trim());
+    node.querySelector(".note").innerHTML = rows.map((row, k) => `<tspan x="12" dy="${k ? 13 : -13 * (rows.length - 1)}">${row.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</tspan>`).join("");
   };
   note(spec.note || "");
   return { node, svg: node.firstElementChild, W, H, narrow, top, note };
@@ -45,7 +44,7 @@ function sheet(spec, width, height, body) {
  * Returns {node, labels, show(i, focus)}: the marker travels to period i; series not named in `focus` fade.
  */
 export function plate(spec, width, height) {
-  const n = spec.periods.length, B = 70, L = 40;
+  const n = spec.periods.length, B = 84, L = 40;
   const most = Math.max(...spec.series.flatMap((s) => s.values.map((v, i) => (v || 0) + (s.off?.[i] || 0)))) * 1.08 || 1;
   let x, y, R, T;
   const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line }) => {
@@ -53,8 +52,8 @@ export function plate(spec, width, height) {
     x = (i) => L + ((W - L - R) * i) / Math.max(1, n - 1);
     y = (v) => H - B - ((H - T - B) * v) / most;
     const every = Math.ceil(n / ((W - L - R) / 44));
-    return `${[0, 0.5, 1].map((f) => `<line x1="${L}" x2="${W - R}" y1="${y(most * f)}" y2="${y(most * f)}" stroke="${line}"/><text x="${L - 5}" y="${y(most * f) + 4}" text-anchor="end" style="font-size:10.5px;fill:${soft}">${percent(most * f)}</text>`).join("")}
-    ${spec.periods.map((p, i) => (i % every ? "" : `<text x="${x(i)}" y="${H - B + 15}" text-anchor="middle" style="font-size:10.5px;fill:${soft}">${p}</text>`)).join("")}
+    return `${[0, 0.5, 1].map((f) => `<line x1="${L}" x2="${W - R}" y1="${y(most * f)}" y2="${y(most * f)}" stroke="${line}"/><text x="${L - 5}" y="${y(most * f) + 4}" text-anchor="end" style="font-size:12px;fill:${soft}">${percent(most * f)}</text>`).join("")}
+    ${spec.periods.map((p, i) => (i % every ? "" : `<text x="${x(i)}" y="${H - B + 15}" text-anchor="middle" style="font-size:12px;fill:${soft}">${p}</text>`)).join("")}
     <g class="marker" style="${MOVE}"><line y1="${T - 4}" y2="${H - B}" stroke="${ink}" stroke-dasharray="3 3"/><text y="${T - 9}" text-anchor="middle" style="font-size:12px;font-weight:800;fill:${ink}"></text></g>
     ${spec.series.map((s, k) => {
       const colour = css(COLOURS[k % COLOURS.length]);
@@ -63,7 +62,7 @@ export function plate(spec, width, height) {
       const band = !s.off ? [] : s.values.reduce((acc, v, i) => (v === null ? acc.push([]) : acc.at(-1).push(i), acc), [[]]).filter((r) => r.length > 1)
         .map((r) => [...r.map((i) => `${x(i)},${y(s.values[i] + s.off[i])}`), ...r.reverse().map((i) => `${x(i)},${y(Math.max(0, s.values[i] - s.off[i]))}`)].join(" "));
       return `<g class="series" style="transition:opacity .3s">${band.map((b) => `<polygon points="${b}" fill="${colour}" opacity="0.16"/>`).join("")}${runs.map((r) => `<polyline points="${r.join(" ")}" fill="none" stroke="${colour}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`).join("")}
-        <circle r="5" fill="${colour}" stroke="${paper}" stroke-width="2" style="${MOVE}"/><text x="${W - R + 9}" style="font-size:${narrow ? 11.5 : 13}px;font-weight:700;fill:${colour};${MOVE}"></text></g>`;
+        <circle r="5" fill="${colour}" stroke="${paper}" stroke-width="2" style="${MOVE}"/><text x="${W - R + 9}" style="font-size:${narrow ? 12 : 13}px;font-weight:700;fill:${colour};${MOVE}"></text></g>`;
     }).join("")}`;
   });
   const marker = made.svg.querySelector(".marker"), groups = [...made.svg.querySelectorAll(".series")];
@@ -97,24 +96,24 @@ export function strip(spec, width, height) {
   const most = Math.max(...spec.rows.flatMap((r) => r.values.flat().map((v) => v || 0))) * 1.05 || 1;
   let x, y;
   const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line }) => {
-    const longest = Math.max(...spec.rows.map((r) => r.label.length)), L = narrow ? Math.min(W * 0.42, 16 + 6.9 * longest) : 178, R = narrow ? 80 : 84;
-    const T = top + (narrow ? 50 : 34), B = 62, gap = (H - T - B) / rows;
+    const longest = Math.max(...spec.rows.map((r) => r.label.length)), L = narrow ? Math.min(W * 0.42, 16 + 7.2 * longest) : 178, R = narrow ? 80 : 84;
+    const T = top + (narrow ? 50 : 34), B = 76, gap = (H - T - B) / rows;
     x = (v) => L + ((W - L - R) * v) / most;
     y = (k) => T + gap * (k + 0.5);
-    const size = Math.min(narrow ? 11.5 : 13, gap * 0.9);
+    const size = Math.max(12, Math.min(13, gap * 0.9));
     let legend = 12;
     return `${spec.series.map((name, k) => {
       const here = legend;
-      legend += 22 + name.length * 6.4;
-      return `<circle cx="${here + 5}" cy="${top + 10}" r="4.5" fill="${css(COLOURS[k])}"/><text x="${here + 14}" y="${top + 14}" style="font-size:11px;fill:${soft}">${name}</text>`;
+      legend += 22 + name.length * 7;
+      return `<circle cx="${here + 5}" cy="${top + 10}" r="4.5" fill="${css(COLOURS[k])}"/><text x="${here + 14}" y="${top + 14}" style="font-size:12px;fill:${soft}">${name}</text>`;
     }).join("")}
     <text class="state" x="${narrow ? 12 : W - 12}" y="${top + (narrow ? 32 : 15)}" text-anchor="${narrow ? "start" : "end"}" style="font-size:14px;font-weight:800;fill:${ink}"></text>
-    ${[0, 0.5, 1].map((f) => `<line x1="${x(most * f)}" x2="${x(most * f)}" y1="${T - 4}" y2="${H - B + 2}" stroke="${line}"/><text x="${x(most * f)}" y="${H - B + 14}" text-anchor="middle" style="font-size:10.5px;fill:${soft}">${format(most * f)}</text>`).join("")}
+    ${[0, 0.5, 1].map((f) => `<line x1="${x(most * f)}" x2="${x(most * f)}" y1="${T - 4}" y2="${H - B + 2}" stroke="${line}"/><text x="${x(most * f)}" y="${H - B + 14}" text-anchor="middle" style="font-size:12px;fill:${soft}">${format(most * f)}</text>`).join("")}
     ${spec.rows.map((row, k) => `<g class="row" style="transition:opacity .3s"><text x="${L - 9}" y="${y(k) + size * 0.35}" text-anchor="end" style="font-size:${size}px;font-weight:600;fill:${ink}">${row.label}</text>
       <line x1="${L}" x2="${W - R}" y1="${y(k)}" y2="${y(k)}" stroke="${line}" stroke-dasharray="1 3"/>
       ${spec.series.map((_, j) => (row.values[0][j] === null || spec.states.length < 2 ? "" : `<circle cx="${x(row.values[0][j])}" cy="${y(k)}" r="4" fill="none" stroke="${css(COLOURS[j])}" stroke-width="1.2" opacity=".65"/>`)).join("")}
       ${spec.series.map((_, j) => `<circle class="dot" r="${Math.min(5.5, gap * 0.36)}" fill="${css(COLOURS[j])}" stroke="${paper}" stroke-width="1.5" style="${MOVE}"/>`).join("")}
-      <text class="value" x="${W - R + 8}" y="${y(k) + size * 0.35}" style="font-size:${Math.min(size, 12)}px;font-weight:700;fill:${ink}"></text></g>`).join("")}`;
+      <text class="value" x="${W - R + 8}" y="${y(k) + size * 0.35}" style="font-size:12px;font-weight:700;fill:${ink}"></text></g>`).join("")}`;
   });
   const groups = [...made.svg.querySelectorAll(".row")], state = made.svg.querySelector(".state");
   const show = (i, focus) => {
