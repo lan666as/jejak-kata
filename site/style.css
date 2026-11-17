@@ -12,7 +12,7 @@
   --chart: #f3f5ef; --chart-2: #fbfcf8; --chart-3: #e7ece4;
   --deep: #0a1f36; --deep-2: #13324f; --line-deep: #24476a; --on-deep: #eef4f2; --on-deep-2: #a8bccb;
   --ink: #0c1d2e; --ink-2: #3d4f60; --ink-3: #5a6b78;
-  --line: #cdd8d4; --line-2: #a3b3b2;
+  --line: #cdd8d4; --line-2: #7d8e8f;  /* --line-2: control edges, 3:1 against the chart */
   --route: #cf1b7e; --on-route: #ffffff; --route-on-deep: #ea5aa6; --route-soft: #f8dcea; --route-2: #cc6a00; --on-route-2: #0c1d2e;
   --beacon: #f0ae2c; --link: #0f5c8c; --focus: var(--route);
   --person: #2a78d6; --organisation: #1baf7a; --place: #eda100; --other: #8a8f96;
@@ -52,7 +52,7 @@
     --chart: #0a1622; --chart-2: #102030; --chart-3: #0d1c2b;
     --deep: #06121f; --deep-2: #0e2338; --line-deep: #1d3853; --on-deep: #e8eff0; --on-deep-2: #93a8b8;
     --ink: #e8eff0; --ink-2: #b3c3cc; --ink-3: #8497a3;
-    --line: #24394d; --line-2: #3b546b;
+    --line: #24394d; --line-2: #56718a;
     --route: #ea5aa6; --on-route: #0a1622; --route-on-deep: #ea5aa6; --route-soft: #3d1a30; --route-2: #d98a2b; --on-route-2: #0a1622;
     --beacon: #f2b84a; --link: #7fc0ea;
     --person: #3987e5; --organisation: #199e70; --place: #c98500; --other: #8f96a0;
@@ -181,9 +181,11 @@ main:focus { outline: none; }
 .page-head .lede { margin: var(--s4) 0 0; }
 .kicker { display: inline-flex; align-items: center; gap: var(--s2); margin: 0 0 var(--s3); font-size: var(--t-small); font-weight: 600; color: var(--ink-2); }
 a.kicker { min-height: var(--tap); margin: calc(-1 * var(--s3)) 0 0; text-decoration: none; }
-a.kicker::before { content: "←"; color: var(--ink-3); transition: transform var(--d-press) var(--sail); }
+a.kicker::before { content: "←"; font-size: var(--t-lede); line-height: 1; color: var(--ink-3); transition: transform var(--d-press) var(--sail); }
 a.kicker:hover { color: var(--ink); }
 a.kicker:hover::before { transform: translateX(calc(-1 * var(--s1))); }
+.page-head + section > h2:first-child, .page-head + h2 { margin-top: 0; }
+h2:first-child { margin-top: var(--s6); }
 @media (min-width: 900px) { .page-head { padding: var(--s8) 0 var(--s6); } }
 
 /* buttons: secondary by default, .primary, .quiet */
@@ -221,7 +223,8 @@ input[type="range"] { accent-color: var(--route); min-height: var(--tap); margin
 
 /* links to go further: a row of plain links with an arrow */
 .links { display: flex; flex-wrap: wrap; gap: 0 var(--s5); margin: var(--s5) 0; padding: 0; list-style: none; max-width: none; }
-.links a { display: inline-flex; align-items: center; gap: var(--s2); min-height: var(--tap); font-weight: 600; }
+.links a { display: inline-flex; align-items: center; gap: var(--s2); min-height: var(--tap); font-weight: 600; text-decoration: none; }
+.links a:hover { text-decoration: underline; }
 .links a::after { content: "→"; transition: transform var(--d-press) var(--sail); }
 .links a:hover::after { transform: translateX(var(--s1)); }
 
@@ -245,6 +248,7 @@ input[type="range"] { accent-color: var(--route); min-height: var(--tap); margin
 .chips button:hover, .chips a[role="button"]:hover, .chip:hover { border-color: var(--ink-2); }
 .chips :is(button, a)[aria-pressed="true"], .chips :is(button, a)[aria-pressed="true"]:hover { background: var(--ink); border-color: var(--ink); color: var(--chart); }
 .chips b { font-weight: 800; font-variant-numeric: tabular-nums; }
+.chips + .chips { margin-top: calc(-1 * var(--s2)); }
 @media (min-width: 900px) { .chips { flex-wrap: wrap; margin-inline: 0; padding-inline: 0; overflow: visible; } }
 
 /* word lists: a chip per word */

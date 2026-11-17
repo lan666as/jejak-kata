@@ -859,7 +859,7 @@ async function entitiesPage() {
  *  stays on screen at every width, so the height is what is left under it. */
 const figureSize = () => {
   const wide = innerWidth > 760, head = masthead.offsetHeight, width = wide ? Math.min((room() - 24) * 0.6, 680) : room();
-  return [width, wide ? Math.min(innerHeight - head - 40, width * 0.7) : Math.round(Math.min((innerHeight - head) * 0.47, width * 1.05))];
+  return [width, wide ? Math.min(innerHeight - head - 40, width * 0.7) : Math.round(Math.min((innerHeight - head) * 0.42, width * 1.05))];
 };
 const thousands = (n) => Math.round(n).toLocaleString(language);
 
