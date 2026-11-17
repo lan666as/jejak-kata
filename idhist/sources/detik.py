@@ -12,6 +12,7 @@ lines); what is furniture is decided later, as for every web source (`idhist/web
 
 import argparse
 import gzip
+import http.client
 import re
 import time
 import urllib.request
@@ -50,7 +51,7 @@ def _get(url: str) -> str:
                 return (gzip.decompress(page) if r.headers.get("Content-Encoding") == "gzip" else page).decode(
                     "utf-8", errors="replace"
                 )
-        except OSError as error:  # refused, timed out, 4xx, 5xx
+        except (OSError, http.client.HTTPException) as error:  # refused, timed out, cut short, 4xx, 5xx
             if getattr(error, "code", None) == 404:
                 return ""
             last = error
