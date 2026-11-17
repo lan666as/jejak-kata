@@ -27,8 +27,8 @@ import pyarrow.parquet as pq
 ROOT = Path("data/raw/detik")
 INDEX = "https://news.detik.com/indeks?page={page}&date={day:%m/%d/%Y}"
 AGENT = "idhist/0.1 (research; counts of words in dated text)"
-PAUSE = 0.6  # seconds a line waits before each request
-LINES = 8  # requests open at a time: a story takes the site about a second and a half
+PAUSE = 1.0  # seconds a line waits before each request
+LINES = 6  # requests open at a time
 TRIES = 4
 
 _STORY = re.compile(r'href="(https://news\.detik\.com/[\w-]+/d-(\d+)/[^"?#]+)"')
@@ -106,7 +106,10 @@ def listed(day: date) -> dict[str, str]:
     page = last = 1
     while page <= min(last, 400):
         listing = _get(INDEX.format(page=page, day=day))
-        found |= {i: url for url, i in _STORY.findall(listing)}
+        stories = {i: url for url, i in _STORY.findall(listing)}
+        if not stories:  # a day the index has nothing for still links to pages, of some other day
+            break
+        found |= stories
         last = max(last, *(int(n) for n in _PAGE.findall(listing)))
         page += 1
     return found
