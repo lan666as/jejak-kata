@@ -3,15 +3,19 @@
     python -m idhist.sources.detik fetch 2008-10-01 2008-10-31    # one file per day under data/raw/detik
 
 The index lists every story of a day; each story's page carries its time of publication to the second.
-The site's robots file allows every client everywhere. Requests go one at a time, PAUSE seconds apart,
-and a day already fetched is not fetched again. The text is kept as it is on the page (paragraphs as
+The site's robots file allows every client everywhere. LINES requests are open at a time, each line
+waiting PAUSE seconds before every request (three to four requests a second in all), pages come compressed,
+and a day already fetched is not fetched again. A story the index lists but the site no longer has (readers'
+letters, mostly) is left out. The text is kept as it is on the page (paragraphs as
 lines); what is furniture is decided later, as for every web source (`idhist/web.py`).
 """
 
 import argparse
+import gzip
 import re
 import time
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 from html import unescape
 from html.parser import HTMLParser
@@ -23,10 +27,12 @@ import pyarrow.parquet as pq
 ROOT = Path("data/raw/detik")
 INDEX = "https://news.detik.com/indeks?page={page}&date={day:%m/%d/%Y}"
 AGENT = "idhist/0.1 (research; counts of words in dated text)"
-PAUSE = 1.0  # seconds between requests
+PAUSE = 0.6  # seconds a line waits before each request
+LINES = 8  # requests open at a time: a story takes the site about a second and a half
 TRIES = 4
 
 _STORY = re.compile(r'href="(https://news\.detik\.com/[\w-]+/d-(\d+)/[^"?#]+)"')
+_PAGE = re.compile(r"indeks\?page=(\d+)")
 _PUBLISHED = re.compile(r'<meta name="publishdate" content="([^"]+)"')
 _TITLE = re.compile(r'<meta property="og:title" content="([^"]*)"')
 _BLOCKS = {"p", "div", "br", "li", "h2", "h3", "table", "tr"}
@@ -38,8 +44,12 @@ def _get(url: str) -> str:
     for attempt in range(TRIES):
         time.sleep(PAUSE * (1 + 4 * attempt))
         try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": AGENT}), timeout=40) as r:
-                return r.read().decode("utf-8", errors="replace")
+            asked = urllib.request.Request(url, headers={"User-Agent": AGENT, "Accept-Encoding": "gzip"})
+            with urllib.request.urlopen(asked, timeout=40) as r:
+                page = r.read()
+                return (gzip.decompress(page) if r.headers.get("Content-Encoding") == "gzip" else page).decode(
+                    "utf-8", errors="replace"
+                )
         except OSError as error:  # refused, timed out, 4xx, 5xx
             if getattr(error, "code", None) == 404:
                 return ""
@@ -90,13 +100,15 @@ def story(page: str) -> tuple[str, str, str]:
 
 
 def listed(day: date) -> dict[str, str]:
-    """Every story the index lists for a day: id -> address."""
+    """Every story the index lists for a day: id -> address. The index sometimes serves a page twice, so a page
+    with nothing new does not end the day: only the last page the index itself links to does."""
     found: dict[str, str] = {}
-    for page in range(1, 200):
-        new = {i: url for url, i in _STORY.findall(_get(INDEX.format(page=page, day=day))) if i not in found}
-        if not new:
-            break
-        found |= new
+    page = last = 1
+    while page <= min(last, 400):
+        listing = _get(INDEX.format(page=page, day=day))
+        found |= {i: url for url, i in _STORY.findall(listing)}
+        last = max(last, *(int(n) for n in _PAGE.findall(listing)))
+        page += 1
     return found
 
 
@@ -106,15 +118,22 @@ def fetch(first: date, last: date) -> None:
         out = ROOT / f"{day.year}" / f"{day}.parquet"
         if out.exists():
             continue
-        rows = []
-        for i, url in listed(day).items():
-            published, title, text = story(_get(url + "?single=1"))
-            rows.append({"id": int(i), "url": url, "published": published, "title": title, "text": text})
+        found = listed(day)
+        with ThreadPoolExecutor(LINES) as lines:
+            pages = lines.map(lambda url: story(_get(url + "?single=1")), found.values())
+        rows = [
+            {"id": int(i), "url": url, "published": published, "title": title, "text": text}
+            for (i, url), (published, title, text) in zip(found.items(), pages)
+            if published
+        ]
         out.parent.mkdir(parents=True, exist_ok=True)
         tmp = out.with_suffix(".tmp")
         pq.write_table(pa.Table.from_pylist(rows), tmp, compression="zstd")
         tmp.rename(out)
-        print(f"{day}: {len(rows)} stories, {sum(not r['text'] for r in rows)} without text", flush=True)
+        print(
+            f"{day}: {len(rows)} stories of {len(found)} listed, {sum(not r['text'] for r in rows)} without text",
+            flush=True,
+        )
 
 
 if __name__ == "__main__":
