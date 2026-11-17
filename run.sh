@@ -40,7 +40,12 @@ stage_validate() {
   for lens in $EXPECTED; do python -m idhist.expected "$lens"; done
 }
 stage_export()   { each export; each highlights; python -m idhist.together; }
-stage_deploy()   {  # publish site/ (with its data) as the gh-pages branch; not part of a plain ./run.sh
+stage_look()     {  # the site used like a reader, in a real browser; needs `npm install` in tests/site once
+  for f in site/*.js; do node --check "$f"; done
+  node tests/site/stories.mjs && node tests/site/pages.mjs
+}
+stage_deploy()   {  # publish site/ (with its data) as the gh-pages branch, if it passes `look`; not part of a plain ./run.sh
+  stage_look
   local tree; tree=$(mktemp -d)
   cp -r site/. "$tree" && touch "$tree/.nojekyll"
   git -C "$tree" init -q -b gh-pages && git -C "$tree" add -A

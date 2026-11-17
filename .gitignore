@@ -8,3 +8,4 @@ data/
 site/data/
 .env
 internal/
+node_modules/
