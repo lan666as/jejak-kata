@@ -17,7 +17,8 @@ years.json      year by year, the share of a publisher's pages that contain a wo
                 even where a lens has longer periods): {"years", "pages": {lens: [...]}, "share": {word: {lens: [...]}}}
                 and "tide": per lens, the names that were on the most pages in their best year
 stopped.json    words (names left out) that fell or rose between two periods in every lens asked, ranked by
-                the smallest change among them: no single publisher can make the list
+                the least the change is likely to be ("least": the low end of its 95% interval) in the lens
+                where it is smallest: no single publisher, and no handful of pages, can make the list
 
 The second word of a pair has to be one of the lens's context words; one that is not is left out.
 """
@@ -172,13 +173,30 @@ def years(lenses: list[str], words: list[str], span: list[int]) -> None:
     print(f"{len(words)} words year by year in {len(lenses)} lenses")
 
 
+def _times_at_least(c: Counts, words: list[int], old: int, new: int) -> tuple[np.ndarray, np.ndarray]:
+    """How many times larger a word's share of pages is in period `old` than in `new`, and the least that ratio
+    is likely to be (the low end of its 95% interval, from leaving out each fold of days in turn)."""
+    df, units = c.df[:, :, words].astype(float), c.units.astype(float)[:, :, None]  # period, fold, word
+
+    def log_ratio(df: np.ndarray, units: np.ndarray) -> np.ndarray:  # half a page added, so that none is not zero
+        share = (df + 0.5) / (units + 1)
+        return np.log(share[old] / share[new])
+
+    whole = log_ratio(df.sum(1), units.sum(1))
+    left = log_ratio(df.sum(1, keepdims=True) - df, units.sum(1, keepdims=True) - units)  # fold, word
+    k = left.shape[0]
+    spread = np.sqrt((k - 1) / k * ((left - left.mean(0)) ** 2).sum(0))
+    return np.exp(whole), np.exp(whole - T95 * spread)
+
+
 def stopped(lenses: list[str]) -> None:
     counts = [Counts(LENSES[name]) for name in lenses]
     metas = [json.loads((SITE / name / "meta.json").read_text()) for name in lenses]
     names = {m["words"][int(i)] for m in metas for i in [*m["names"], *m["entities"]]}
     common = sorted(set.intersection(*(set(c.words) for c in counts)) - names)
+    rows = [[c.row[w] for w in common] for c in counts]
     share = np.stack(
-        [(c.df.sum(1) / c.units.sum(1)[:, None])[:, [c.row[w] for w in common]] for c in counts]
+        [(c.df.sum(1) / c.units.sum(1)[:, None])[:, r] for c, r in zip(counts, rows)]
     )  # lens, period, word
     out = {
         "lenses": lenses,
@@ -189,20 +207,21 @@ def stopped(lenses: list[str]) -> None:
     }
     for a, b in [(0, 1), (1, 2), (0, 2)]:
         for key, (old, new) in {"fell": (a, b), "rose": (b, a)}.items():
-            ratio = np.where(
-                (share[:, old] >= MIN_SHARE).all(0), (share[:, old] / np.maximum(share[:, new], 1e-6)).min(0), 0
-            )
-            top = np.argsort(-ratio)[:LISTED]
+            times, least = (np.stack(x) for x in zip(*(_times_at_least(c, r, old, new) for c, r in zip(counts, rows))))
+            # Ranked by the least the change is likely to be in the lens where it is smallest: a word cannot
+            # top the list on one publisher, nor on a ratio that a few pages more or fewer would undo.
+            rank = np.where((share[:, old] >= MIN_SHARE).all(0), least.min(0), 0)
             out[key][f"{a}-{b}"] = [
                 {
                     "word": common[i],
-                    "times": round(float(ratio[i]), 1),
+                    "times": round(float(times[:, i].min()), 1),
+                    "least": round(float(rank[i]), 1),
                     "share": [
                         [round(float(share[k, a, i]), 5), round(float(share[k, b, i]), 5)] for k in range(len(lenses))
                     ],
                 }
-                for i in top
-                if ratio[i] >= 1.5
+                for i in np.argsort(-rank)[:LISTED]
+                if rank[i] >= 1.5
             ]
     (SITE / "stopped.json").write_text(json.dumps(out, separators=(",", ":")))
     print(f"{len(common)} words compared across {len(lenses)} lenses")
