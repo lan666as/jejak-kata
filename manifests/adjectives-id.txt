@@ -3,6 +3,10 @@
 # story and describe nobody (politik, publik, sosial, resmi, besar, ...). Revised again on 2026-11-16 at the
 # owner's request: words of blame and insult, first left out, are in (last two lines). What the site shows
 # with them is how often the news put such a word on the same page as a name, nothing more.
+# Enlarged on 2026-11-17 at the owner's request, from candidates found by a rule (idhist/lexicon.py: words seen
+# after sangat, amat, terlalu, paling, agak), of which those that say something about a person or an institution
+# were kept, praise and blame alike; and some more of both kinds by hand. A word is shown only where it is a context
+# word of the lens.
 tegas keras lembut santun sopan ramah sabar tenang kalem santai serius sederhana merakyat populer
 terkenal ternama kontroversial kritis vokal lantang berani nekat hati-hati waspada cermat teliti cepat lambat
 sigap tanggap lamban gesit lincah kuat lemah tangguh rapuh kokoh solid stabil labil mapan
@@ -18,3 +22,17 @@ nyaman tertib kondusif rawan bagus jelek hebat luar-biasa demokratis otoriter mo
 religius sekuler progresif reformis bugar lelah sibuk agresif defensif ofensif ambisius rendah-hati
 korup curang arogan kasar sombong licik munafik zalim kejam brutal bersalah bohong bodoh gagal rakus serakah
 tamak culas bejat biadab plin-plan cengeng lebay otoriter diktator lamban lalai ceroboh
+antusias berbahaya berpengaruh bersyukur ketat rentan strategis buruk siap aktif peduli berhati-hati sukses fokus
+paham tertutup sakit sehat seksi canggih panik ketakutan keberatan unggul mampu berkuasa rusak terancam penasaran
+bermasalah stres sadar liar negatif positif berkomitmen terpaksa wajar pantas layak ideal sempurna berisiko
+berlebihan membahayakan mengkhawatirkan mengejutkan menjanjikan menyenangkan menantang berharga berguna bermanfaat
+beruntung tertarik terkesan terganggu tertinggal terlambat gencar intensif masif optimal maksimal eksklusif lancar
+hancur rugi parah sulit berat sepi ramai panas minim mahal murah dikenal dicari diminati dibutuhkan favorit
+dipercaya spesial enak semangat bebas normal alami terkendali terjaga humoris karismatik visioner emosional
+temperamental pragmatis idealis populis elitis feodal bobrok amburadul sakti kebal tercela terhormat terpuji
+bermartabat berintegritas amanah bersahaja flamboyan nyentrik galak garang judes cuek baper lugas blak-blakan
+ceplas-ceplos pendiam humanis represif anarkis radikal intoleran toleran ekstrem fanatik militan tercoreng ilegal
+legal sah resmi haram halal suci mulia hina busuk cacat lesu loyo letih uzur renta pikun vulgar cabul mesum tidak-
+senonoh rasis sektarian diskriminatif partisan oportunis pengecut penakut pemberani pemarah pendendam pemaaf
+dermawan pelit kikir murah-hati tulus ikhlas pamrih angkuh congkak pongah jemawa narsis egois sewenang-wenang
+semena-mena lalim bengis sadis keji nista durhaka khianat

@@ -2,6 +2,10 @@
 # reported as done to them. Chosen by hand. Revised on 2026-11-16 at the owner's request: verbs that accuse,
 # first left out, are in (last four lines). What the site shows with them is how often the news put such a
 # verb on the same page as a name, nothing more.
+# Enlarged on 2026-11-17 at the owner's request, from candidates found by a rule (idhist/lexicon.py: words seen
+# after telah, sudah, akan, sedang, belum and the like, or before bahwa), of which those that report what a person
+# or an institution says, does or has done to them were kept; and more verbs that accuse or praise by hand. A word
+# is shown only where it is a context word of the lens.
 mengatakan menegaskan menyatakan menyebut menjelaskan menyampaikan mengungkapkan menuturkan mengaku mengakui
 membantah menolak menepis menampik mengkritik mengecam menyindir menuding menuduh menyesalkan menyayangkan
 memuji mengapresiasi mendukung membela menyambut menyetujui merestui mengizinkan melarang
@@ -19,3 +23,28 @@ menyuap mencuri menipu berbohong membohongi mengancam memukul menganiaya membunu
 menyalahgunakan melanggar menghina menista memfitnah menyerang mengintimidasi mengkhianati merampas merugikan
 ditangkap ditahan diperiksa dipecat dicopot divonis dihukum dituntut dilaporkan dituduh dituding didakwa
 dipanggil dijerat diberhentikan dikritik dikecam dipuji didukung dilantik ditunjuk dipilih diusung dicalonkan
+menyebutkan mengumumkan menambahkan membenarkan menilai mengklaim menjawab menekankan membeberkan menceritakan
+berkomentar mengonfirmasi menerangkan meyakini berpendapat menganggap menanggapi bercerita menduga berkata
+menyimpulkan memaparkan berujar menanyakan merespons bertanya mempertanyakan menyoroti mengemukakan menyerukan
+berpesan mengeluhkan menyinggung mengucapkan menyapa menyarankan merekomendasikan memprediksi memperkirakan
+mengungkap berteriak berbicara menggelar menyiapkan mengajukan menerapkan menyelesaikan mendorong menangani
+membentuk menjabat memantau meluncurkan bergabung menghadapi bertugas menghentikan mendalami mengecek menyusun
+mengundang mengusulkan memberlakukan memperkuat merencanakan menyelamatkan menciptakan menaikkan menurunkan
+mengupayakan bertindak mengerahkan mendampingi mengawal menawarkan membongkar menggantikan memegang mengevaluasi
+mengkaji menduduki memfasilitasi mempertahankan menggandeng mengawasi menempatkan menjatuhkan membatasi menekan
+mewakili merebut menguasai menguji mematuhi merancang menghancurkan memaksa menembak melindungi membebaskan mencegah
+membiarkan menghambat memamerkan mengelola mengatasi mempromosikan memutus menyumbang menghalangi menutupi
+mengendalikan menghindari mengutamakan berkuasa bersikap berjuang berupaya berusaha berkoordinasi berkomunikasi
+berkunjung berkomitmen berkolaborasi berpartisipasi bersaing berinvestasi berjaga beraksi mengungsi melarikan
+menikah meninggal melahirkan menewaskan melukai menabrak membakar merusak diamankan ditetapkan ditemukan dievakuasi
+dimakamkan dirawat dibebaskan diangkat diizinkan disita diundang ditolak dibunuh ditembak diserang dipaksa diduga
+dikaitkan dinilai dianggap diakui dikenal dipercaya diminta dimintai disambut dipindahkan dihentikan dibatalkan
+dilarang dibatasi dilindungi diwajibkan disuruh ditanya dihubungi didampingi dijanjikan dikabarkan diberitakan
+dibicarakan disebut dikatakan dinyatakan diumumkan dilarikan ditinggalkan dibiarkan dipimpin terpilih terlibat
+terbukti tertangkap terungkap terinfeksi terpapar terjebak terancam terdampak memanipulasi merekayasa menyelewengkan
+menilap mengemplang membungkam mengkriminalisasi membubarkan menyadap meretas memata-matai menculik menyiksa
+menghilangkan mengusir merampok menjarah memonopoli menyogok menyelundupkan mengelak berkelit mangkir absen kabur
+buron bersembunyi berprestasi menginspirasi memberdayakan menolong menyantuni berdonasi berkorban disuap disogok
+dikriminalisasi dibungkam diculik disiksa diusir dikeroyok dianiaya dilecehkan diperkosa dihujat dicibir disindir
+dicap dijuluki digadang-gadang dielu-elukan dikorupsi diselewengkan dimanipulasi direkayasa dibubarkan disadap
+diretas dipenjara dieksekusi dideportasi dicekal diblokir dibekukan disegel digerebek dirazia ditilang didenda
