@@ -3,10 +3,13 @@ import { base, browser, done } from "./serve.mjs";
 let failures = 0;
 const log = (name, ok, detail) => { failures += !ok; console.log(`${ok ? "ok  " : "FAIL"} ${name}: ${detail}`); };
 const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport: { width: 390, height: 780 }, ...opts }); p.errors = []; p.on("pageerror", (e) => p.errors.push(e.message)); return p; };
-{ // language switch mid-page
-  const p = await fresh(); await p.goto(base + "#/cerita/prabowo"); await p.waitForTimeout(2500); await p.mouse.wheel(0, 2500); await p.waitForTimeout(600);
-  const before = await p.evaluate(() => scrollY); await p.click("#menu-button"); await p.click("#language"); await p.waitForTimeout(2500); const after = await p.evaluate(() => scrollY);
-  log("language switch keeps the place", Math.abs(after - before) < 200, `scroll ${before} -> ${after}`); await p.close(); }
+{ // language switch mid-story: the same scene at the same step, its stage stuck under the header (the cover is not as tall in each language, so pixels differ)
+  const where = () => { const head = document.querySelector(".masthead").getBoundingClientRect().bottom, middle = head + (innerHeight - head) / 2;
+    const stage = [...document.querySelectorAll(".stage")].find((s) => { const r = s.parentNode.getBoundingClientRect(); return r.top <= middle && r.bottom >= middle; });
+    return stage ? `scene ${stage.parentNode.id.split("-")[1]} step ${stage.dataset.step}, ${Math.round(stage.getBoundingClientRect().top - head)}px under the header` : "no stage"; };
+  const p = await fresh(); await p.goto(base + "#/cerita/prabowo"); await p.waitForTimeout(2500); await p.mouse.wheel(0, 2500); await p.waitForTimeout(900);
+  const before = await p.evaluate(where); await p.click("#menu-button"); await p.click("#language"); await p.waitForTimeout(2500); const after = await p.evaluate(where);
+  log("language switch keeps the place", before === after && before.includes("step") && !before.includes("step 0,") && before.endsWith(" 0px under the header"), `${before} -> ${after}`); await p.close(); }
 { // the header at 390px: opaque, and stuck at the top after a scroll
   const p = await fresh(); await p.goto(base + "#/kata/kpk"); await p.waitForTimeout(2500); await p.mouse.wheel(0, 1500); await p.waitForTimeout(600);
   const h = await p.evaluate(() => { const node = document.querySelector(".masthead"), r = node.getBoundingClientRect(), bg = getComputedStyle(node).backgroundColor;
