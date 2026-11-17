@@ -11,12 +11,15 @@ Data: <https://huggingface.co/datasets/lan666as/jejak-kata>.
 | Lens | Text | Units |
 |---|---|---|
 | `id-books` | Indonesian books (HathiTrust), 1950–2019, five-year periods | 8.51M pages |
-| `id-web-news` | news pages of the open web (HPLT 3.0), 2010–2024, by year | 37.3M pages |
-| `id-web-news-kompas` | the same, Kompas only, 2011–2024 | 1.13M |
-| `id-web-eras-kompas`, `-tempo`, `-tribun` | the same by presidential term (2010–14, 2015–19, 2020–24), one publisher each | 1.13M, 0.37M, 2.57M |
-| `id-web-blogs` | blog posts of the open web, 2007–2024, two-year periods | 8.81M pages |
+| `id-web-news` | news pages of the open web (HPLT 3.0), 2010–2024, by year | 37.0M pages |
+| `id-web-news-kompas` | the same, Kompas only, 2011–2024 | 1.07M |
+| `id-web-eras-kompas`, `-tempo`, `-tribun` | the same by presidential term (2010–14, 2015–19, 2020–24), one publisher each | 1.07M, 0.37M, 2.50M |
+| `id-web-blogs` | blog posts of the open web, 2007–2024, two-year periods | 8.61M pages |
 | `id-abstracts` | Indonesian academic abstracts (OpenAlex), 2000–2026, ten periods | 2.61M abstracts |
 | `jv-books`, `su-books` | Javanese and Sundanese books (HathiTrust), 1910–2019, four long periods | 127k, 82k pages |
+
+In web text a publisher's copies of one story (1.2% of pages; 5% for Kompas) are left out: only the earliest stays.
+Nine more publishers of the news lens are counted year by year for the stories, without scores (`COUNTED` in `idhist/lenses.py`).
 
 The site shows all of them. A short report is in [`docs/WRITEUP.md`](docs/WRITEUP.md).
 
@@ -51,12 +54,12 @@ untouched words reach it too.
 | Lens (periods tested) | 20% replaced | 40% replaced | 80% replaced | untouched words flagged |
 |---|---|---|---|---|
 | `id-books` (2000–04 → 2005–09) | 13% | 63% | 95% | 3.5% |
-| `id-web-news` (2018 → 2019) | 15% | 35% | 92% | 5.0% |
-| `id-web-news-kompas` | 10% | 30% | 89% | 2.3% |
-| `id-web-eras-kompas` (2015–19 → 2020–24) | 3% | 21% | 81% | 3.5% |
-| `id-web-eras-tempo` | 5% | 21% | 83% | 3.5% |
-| `id-web-eras-tribun` | 12% | 31% | 91% | 4.4% |
-| `id-web-blogs` (2013–14 → 2015–16) | 25% | 65% | 96% | 7.3% |
+| `id-web-news` (2018 → 2019) | 17% | 36% | 90% | 4.9% |
+| `id-web-news-kompas` | 7% | 30% | 87% | 2.3% |
+| `id-web-eras-kompas` (2015–19 → 2020–24) | 8% | 28% | 81% | 3.6% |
+| `id-web-eras-tempo` | 6% | 23% | 81% | 3.5% |
+| `id-web-eras-tribun` | 8% | 27% | 83% | 4.5% |
+| `id-web-blogs` (2013–14 → 2015–16) | 28% | 59% | 95% | 7.1% |
 | `id-abstracts` (2017–18 → 2019–20) | 15% | 56% | 94% | 3.5% |
 | `jv-books` (1970–89 → 1990–2019) | 6% | 14% | 45% | 3.4% |
 | `su-books` (1980–89 → 1990–2019) | 0% | 0% | 12% | 0.3% |
@@ -76,9 +79,9 @@ them for the news and web lenses).
 |---|---|---|---|---|
 | `id-books` | 0.97 | 11 of 33 | 2% | 5 |
 | `id-web-news` | 0.92 | 28 of 41 | 3% | 5 |
-| `id-web-news-kompas` | 0.99 | 23 of 31 | 0% | 15 |
+| `id-web-news-kompas` | 0.98 | 23 of 30 | 0% | 16 |
 | `id-web-eras-kompas` | 0.94 | 7 of 26 | 0% | 18 |
-| `id-web-eras-tempo` | 0.94 | 8 of 23 | 0% | 21 |
+| `id-web-eras-tempo` | 0.94 | 7 of 23 | 0% | 21 |
 | `id-web-eras-tribun` | 0.94 | 4 of 23 | 0% | 21 |
 
 The expected words rank above the stable ones nearly always. In books two
