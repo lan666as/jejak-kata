@@ -19,6 +19,37 @@ const PHRASES = {
 
 export const STORIES = [
   {
+    slug: "penyesuaian",
+    id: {
+      title: "Harga naik, atau “disesuaikan”?",
+      teaser: "“Penyesuaian harga” hampir hanya dipakai untuk harga yang ditetapkan negara: BBM, listrik, tol, BPJS. Dari 200 yang kami baca, 139 berarti naik, dan 120 diucapkan pemerintah atau perusahaan negara.",
+      intro: "Cabai naik. Beras naik. Tetapi harga bensin “disesuaikan”. Kata itu sudah lama dicurigai sebagai penghalus, dan kecurigaan itu dapat diuji dengan hitungan: untuk harga macam apa kata itu dipakai, dan oleh siapa.",
+      limits: "<p>Yang dihitung adalah halaman yang menyebut harga yang ditetapkan negara (bbm, pertamax, pertalite, solar, tarif listrik, bpjs, tarif tol, elpiji) atau harga pasar (cabai, bawang, beras, telur, daging, minyak goreng, gula), dan di dalamnya frasa “penyesuaian harga” atau “penyesuaian tarif”, serta “kenaikan”, “naiknya”, atau “menaikkan” harga atau tarif. Sebuah halaman bisa menyebut kedua macam harga. Frasa lain (“harga disesuaikan”, “menyesuaikan harga”) tidak dihitung, jadi angkanya terlalu rendah. Dalam 200 tempat yang kami baca, siapa yang mengucapkan kata itu tidak selalu jelas karena kutipannya terpotong; arah harganya lebih pasti. “Penyesuaian” memang juga dipakai untuk penurunan: 19 dari 200.</p>",
+    },
+    en: {
+      title: "Did the price rise, or was it “adjusted”?",
+      teaser: "“Penyesuaian harga” (price adjustment) is used almost only for prices the state sets: fuel, electricity, tolls, health insurance. Of 200 we read, 139 mean a rise, and 120 are spoken by the government or a state company.",
+      intro: "Chili goes up. Rice goes up. But the price of petrol is “adjusted”. The word has long been suspected of softening, and the suspicion can be tested by counting: for what kind of price the word is used, and by whom.",
+      limits: "<p>What is counted is pages that name a price the state sets (bbm, pertamax, pertalite, solar, tarif listrik, bpjs, tarif tol, elpiji) or a market price (cabai, bawang, beras, telur, daging, minyak goreng, gula), and in them the phrase “penyesuaian harga” or “penyesuaian tarif”, and “kenaikan”, “naiknya” or “menaikkan” of a price or tariff. A page can name both kinds of price. Other phrasings (“harga disesuaikan”, “menyesuaikan harga”) are not counted, so the figures are too low. In the 200 places we read, who says the word is not always clear because the excerpt is cut; the direction of the price is more certain. “Penyesuaian” is indeed also used for cuts: 19 of the 200.</p>",
+    },
+    scenes: [
+      { type: "asked", name: "harga", rows: "shares", periods: ["2013", "2016", "2019", "2021", "2022"], check: ["penyesuaian", "kenaikan", "subsidi"],
+        publishers: ["kompas.com", "tempo.co", "tribunnews.com", "bisnis.com"],
+        shares: [["negara|penyesuaian", { id: "BBM, listrik, tol, BPJS", en: "fuel, power, tolls, BPJS" }], ["pasar|penyesuaian", { id: "cabai, beras, telur", en: "chili, rice, eggs" }]],
+        id: { title: "Dua macam harga", text: "Dua baris: halaman yang menyebut harga yang ditetapkan negara, dan halaman yang menyebut harga pasar. Tiap titik satu penerbit: bagian halaman itu yang memuat <i>penyesuaian harga</i> atau <i>penyesuaian tarif</i>.",
+          plate: "“penyesuaian harga”: di 1–11% halaman tentang harga yang ditetapkan negara, di bawah 2% halaman harga pasar", note: (p) => `${p}: bagian dari halaman yang menyebut harga macam itu. Satu titik tiap penerbit.` },
+        en: { title: "Two kinds of price", text: "Two rows: pages that name a price the state sets, and pages that name a market price. Each dot a publisher: the share of those pages with <i>penyesuaian harga</i> or <i>penyesuaian tarif</i>.",
+          plate: "“penyesuaian harga”: on 1–11% of pages about state-set prices, under 2% of pages about market prices", note: (p) => `${p}: share of the pages that name that kind of price. One dot per publisher.` },
+        steps: [
+          s("2013", "2013. Harga negara: <i>penyesuaian</i> di 2,4% halaman (Kompas), 1,1% (Tempo), 2,1% (Tribunnews). Harga pasar: 0,7%, 0,3%, 0,0%.", "2013. State-set prices: <i>penyesuaian</i> on 2.4% of pages (Kompas), 1.1% (Tempo), 2.1% (Tribunnews). Market prices: 0.7%, 0.3%, 0.0%."),
+          s("2019", "2019, tahun yang tenang: 2,5%, 3,2%, 1,6% untuk harga negara; 0,1–0,2% untuk harga pasar. Di Kompas kata terangnya, <i>kenaikan harga</i>, hanya ada di 5% halaman harga negara.", "2019, a quiet year: 2.5%, 3.2%, 1.6% for state-set prices; 0.1–0.2% for market prices. In Kompas the plain phrase, <i>kenaikan harga</i>, is on only 5% of state-price pages."),
+          s("2021", "2021, Kompas: <i>penyesuaian</i> 5,3%, <i>kenaikan</i> 6%. Kata halus dan kata terang hampir setara.", "2021, Kompas: <i>penyesuaian</i> 5.3%, <i>kenaikan</i> 6%. The soft word and the plain one are nearly level.", undefined, undefined, "Hampir setara"),
+          s("2022", "2022, harga BBM naik. <i>penyesuaian</i>: 7,3% (Kompas), 8,0% (Tempo), 6,7% (Tribunnews), 11% (Bisnis). Tetapi tahun itu semua menulis <i>kenaikan</i>, di 34–44% halaman harga negara. Ketika kenaikannya besar, kata halus kalah.", "2022, fuel prices rise. <i>penyesuaian</i>: 7.3% (Kompas), 8.0% (Tempo), 6.7% (Tribunnews), 11% (Bisnis). But that year everyone writes <i>kenaikan</i>, on 34–44% of state-price pages. When the rise is large, the soft word loses."),
+          s("2022", "Lalu kami membaca 200 <i>penyesuaian</i> dari halaman harga negara. Di 139 artinya naik, di 19 turun, di 12 keduanya, di 30 tidak jelas. Di 120 kata itu diucapkan pemerintah atau perusahaan negara; di 41 redaksi menulisnya dengan suaranya sendiri.", "Then we read 200 <i>penyesuaian</i> from state-price pages. In 139 it means a rise, in 19 a cut, in 12 both, in 30 it is unclear. In 120 the word is spoken by the government or a state company; in 41 the paper writes it in its own voice.", undefined, undefined, "200 dibaca"),
+        ] },
+    ],
+  },
+  {
     slug: "oknum",
     id: {
       title: "Siapa yang disebut “oknum”?",
