@@ -1074,8 +1074,8 @@ async function storyPage(slug, scene) {
   const words = story[language], next = STORIES[(STORIES.indexOf(story) + 1) % STORIES.length], parts = story.scenes;
   const cover = el(`<header class="cover">${GRATICULE}<div class="cover-text"><a class="kicker" href="${href("cerita")}">${t("nav_stories")}</a>
     <p class="cover-kicker">${t("story")} · ${t("read_time", readingTime(story))}</p><h1${words.title.length > 34 ? ' class="long"' : ""}>${words.title}</h1>
-    <div class="cover-body"><p class="deck">${words.teaser}</p><div><p class="cover-intro">${words.intro}</p>
-    <button type="button" class="primary begin">${t("begin")}<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button></div></div></div></header>`);
+    <div class="cover-body"><div><p class="deck">${words.teaser}</p>
+    <button type="button" class="primary begin">${t("begin")}<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button></div><p class="cover-intro">${words.intro}</p></div></div></header>`);
   let last = 0;  // the scene seen last: what the tools save and link to
   // On a phone the cover holds the title, the deck and "Mulai"; the intro opens the first scene instead.
   const stages = parts.map((part, k) => stage(part, k, parts.length, (j) => steer(k, j), k ? "" : words.intro));
