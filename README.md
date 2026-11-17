@@ -130,6 +130,16 @@ in 1980–84, with *publik, akuntabel, kinerja, korupsi* in 2010–14 (shift 11.
 *mantan* arrives in 1985–89 (19.5), *lengser* in 1995–99 (24.5), *situs* turns
 from archaeology to the web by 2000–04 (22.9).
 
+## What needs the text
+
+The counts know which words share a page. Some questions need more: a phrase, a word only where two
+others stand, a count by month. For those the text of ten publishers of the news lens is kept
+(`KEPT` in `idhist/sources/hplt.py`), privately: it is not ours to publish, and only counts leave the
+machine. `site/pages.json` holds the questions asked of it and `idhist/pages.py` answers them. A count
+of pages says that two things share a page, not that one is said of the other, so each story built on
+it states a precision: places are drawn at random (`python -m idhist.pages read ...`) and read, and the
+story says how many of them mean what it claims.
+
 ## What the site shows
 
 For any word or name, in each lens that has it:
@@ -149,7 +159,9 @@ the counts; the same for every person and organisation of the three single-publi
 fixed list of words; a word's share of each publisher's pages year by year (the counts keep years even
 where a lens has five-year periods; what they do not keep per year is which words share a page, so
 year-by-year company exists only for the yearly Kompas lens); and the words that fell or rose between
-two periods in all three publishers at once, ranked by the smallest change among them. Three cautions
+two periods in all three publishers at once, ranked by the smallest change among them. Every share comes with a 95% range, found by leaving out one
+sixth of the days at a time, so that the pages of one day stand or fall together; a ranked list uses the
+low end of that range. Three cautions
 are written on the site wherever these are shown: sharing a page is not being accused; a phrase with a
 Wikipedia title of its own is a word of its own and is not counted under its parts; and a one-word name
 that is the first word of someone else's longer name is left out of tables of people.
@@ -179,11 +191,15 @@ idhist/
   export.py             the entries of the site: frequency, shift, company
   highlights.py         the chart, routes, each period's own words, arrivals, successions, verbs
   together.py           of the pages with one word, the share with another: the stories' numbers
+  pages.py              counts that need the text (a phrase, a word where two others stand, by month),
+                        and places drawn at random to be read by a person: a story's precision
+  lexicon.py            candidates for the lists of adjectives and verbs, found in the text by rule
 site/                   the static site (no build step, no dependencies)
 validation/             the pre-registered word lists and their protocol
 manifests/              which HathiTrust volumes (pinned: the catalogue dump changes monthly);
                         the adjectives and verbs looked for around names
-tests/                  the whole path on a toy corpus with one planted change
+tests/                  the whole path on a toy corpus with one planted change; tests/site uses the site
+                        like a reader in a real browser, and `./run.sh deploy` runs it first
 docs/                   the report, and how the measure was chosen (instrument.md)
 run.sh                  rebuild everything, in order
 ```
