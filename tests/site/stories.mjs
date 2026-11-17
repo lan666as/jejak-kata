@@ -4,7 +4,7 @@
 // caption's moment, and the caption itself must be whole. It also counts screens inside a story with no caption.
 import { STORIES } from "../../site/text.js";
 import { base, browser, done } from "./serve.mjs";
-const slugs = STORIES.map((s) => s.slug);
+const slugs = process.argv.length > 2 ? process.argv.slice(2) : STORIES.map((s) => s.slug);  // all stories, or those named
 const state = () => {
   const vh = innerHeight, wide = innerWidth > 760, header = document.querySelector("header");
   const head = getComputedStyle(header).position === "sticky" ? header.getBoundingClientRect().bottom : 0;
