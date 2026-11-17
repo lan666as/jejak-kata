@@ -8,6 +8,7 @@ const COLOURS = ["--route", "--route-2", "--link", "--ink", "--ink-3", "--organi
 const SITE = "Jejak Kata · zidan.dev/jejak-kata";
 const MOVE = "transition:transform .6s cubic-bezier(.45,.05,.25,1),opacity .3s";
 const percent = (v) => (v * 100).toLocaleString(document.documentElement.lang, { maximumSignificantDigits: 2 }) + "%";
+const points = (v) => (v * 100).toLocaleString(document.documentElement.lang, { maximumSignificantDigits: v < 0.0095 ? 1 : 2 });  // percentage points
 const at = (node, x, y) => (node.style.transform = `translate(${x}px,${y}px)`);
 
 /** The paper, the title broken into lines, the note and the site's name; `body(top)` draws between them. */
@@ -37,12 +38,13 @@ function sheet(spec, width, height, body) {
 }
 
 /**
- * Lines. `spec`: {title, note, periods: [labels], series: [{label, values: [share | null]}], pages: (i) => text}.
+ * Lines. `spec`: {title, note, periods: [labels], series: [{label, values: [share | null], off}], pages: (i) => text};
+ * `off[i]` is how far value i may be off either way: drawn as a band, and written after the value.
  * Returns {node, labels, show(i, focus)}: the marker travels to period i; series not named in `focus` fade.
  */
 export function plate(spec, width, height) {
   const n = spec.periods.length, B = 70, L = 40;
-  const most = Math.max(...spec.series.flatMap((s) => s.values.map((v) => v || 0))) * 1.08 || 1;
+  const most = Math.max(...spec.series.flatMap((s) => s.values.map((v, i) => (v || 0) + (s.off?.[i] || 0)))) * 1.08 || 1;
   let x, y, R, T;
   const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line }) => {
     [R, T] = [narrow ? W * 0.43 : 190, top + 22];
@@ -55,7 +57,10 @@ export function plate(spec, width, height) {
     ${spec.series.map((s, k) => {
       const colour = css(COLOURS[k % COLOURS.length]);
       const runs = s.values.reduce((acc, v, i) => (v === null ? acc.push([]) : acc.at(-1).push(`${x(i)},${y(v)}`), acc), [[]]).filter((r) => r.length);
-      return `<g class="series" style="transition:opacity .3s">${runs.map((r) => `<polyline points="${r.join(" ")}" fill="none" stroke="${colour}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`).join("")}
+      // Where a series says how far each value may be off, a band of that width lies under its line.
+      const band = !s.off ? [] : s.values.reduce((acc, v, i) => (v === null ? acc.push([]) : acc.at(-1).push(i), acc), [[]]).filter((r) => r.length > 1)
+        .map((r) => [...r.map((i) => `${x(i)},${y(s.values[i] + s.off[i])}`), ...r.reverse().map((i) => `${x(i)},${y(Math.max(0, s.values[i] - s.off[i]))}`)].join(" "));
+      return `<g class="series" style="transition:opacity .3s">${band.map((b) => `<polygon points="${b}" fill="${colour}" opacity="0.16"/>`).join("")}${runs.map((r) => `<polyline points="${r.join(" ")}" fill="none" stroke="${colour}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`).join("")}
         <circle r="5" fill="${colour}" stroke="${paper}" stroke-width="2" style="${MOVE}"/><text x="${W - R + 9}" style="font-size:${narrow ? 11.5 : 13}px;font-weight:700;fill:${colour};${MOVE}"></text></g>`;
     }).join("")}`;
   });
@@ -71,7 +76,7 @@ export function plate(spec, width, height) {
       const row = rows.find((r) => r.k === k), [dot, text] = [g.querySelector("circle"), g.querySelector("text")];
       g.style.opacity = !row ? 0.25 : focus && !focus.includes(spec.series[k].label) ? 0.2 : 1;
       dot.style.opacity = row ? 1 : 0;
-      text.textContent = row ? `${spec.series[k].label} ${percent(row.v)}` : spec.series[k].label;
+      text.textContent = row ? `${spec.series[k].label} ${percent(row.v)}${spec.series[k].off?.[i] ? " ±" + points(spec.series[k].off[i]) : ""}` : spec.series[k].label;
       if (row) at(dot, x(i), y(row.v));
       at(text, 0, (row ? row.at : T + 15 * k) + 4);
     });

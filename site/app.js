@@ -859,7 +859,7 @@ const SCENES = {
   /** Of the pages naming one word, the share that also contain each of the others (idhist/together.py). */
   together: async (scene, w, h) => {
     const found = (await json("together.json"))[`${scene.lens}/${scene.word}`];
-    return plate({ title: scene[language].plate, periods: found.periods, series: scene.with.filter((x) => found.with[x]).map((x) => ({ label: x, values: found.with[x] })),
+    return plate({ title: scene[language].plate, periods: found.periods, series: scene.with.filter((x) => found.with[x]).map((x) => ({ label: x, values: found.with[x], off: found.off[x] })),
       pages: (i) => t("pages_naming", thousands(found.pages[i]), scene.word, found.periods[i]) }, w, h);
   },
   /** Year by year in the three outlets, one plate per word; with `outlet`, the words of one outlet on one plate. */

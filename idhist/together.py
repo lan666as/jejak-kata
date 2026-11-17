@@ -6,7 +6,10 @@ Four small tables, each a count anyone can check against data/counts:
 
 together.json   of the pages that contain one word, the share that also contain another, per period
                 "<lens>/<word>": {"periods", "pages": [...], "with": {"<other>": [share, null below MIN_PAGES]},
+                                  "off": {"<other>": [half-width of the share's 95% interval]},
                                   "all": {"<other>": [its share of all pages]}}
+                The interval comes from the six folds the counts are kept in (each day of a publisher falls in
+                one): the share is recomputed with each fold left out, so pages of one day stand or fall together.
 <lens>/stick.json   the same for every person and organisation of a lens against a fixed list of words
                 {"words", "names", "kinds", "pages": [name][period], "share": {word: [name][period] in per mille},
                  "beside": [name][period] -> [[other name, per mille of this name's pages], ...]}
@@ -38,16 +41,22 @@ LISTED = 30  # words per list in stopped.json
 TIDE = 60  # names per lens and kind in the tide table
 BESIDE = 8  # other names kept per name and period
 CHUNK = 200  # names whose company is read at a time
+T95 = 2.571  # Student's t for 95% with five degrees of freedom: six folds, one left out at a time
 
 
-def _shares(counts: Counts, words: list[int], columns: list[int]) -> tuple[np.ndarray, np.ndarray]:
-    """Pages per (word, period), and the share of them that hold each column's word: (word, period, column)."""
-    pages = counts.df.sum(1)[:, words].T
+def _shares(counts: Counts, words: list[int], columns: list[int]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Pages per (word, period); the share of them that hold each column's word, (word, period, column); and how far
+    that share may be off (the half-width of a 95% interval), found by leaving out each fold of days in turn."""
+    pages = counts.df[:, :, words].transpose(2, 0, 1).astype(float)  # word, period, fold
     both = np.concatenate(
-        [counts.cooc(words[i : i + CHUNK]).sum(1)[:, :, columns] for i in range(0, len(words), CHUNK)], 1
-    )
+        [counts.cooc(words[i : i + CHUNK])[:, :, :, columns] for i in range(0, len(words), CHUNK)], 2
+    ).transpose(2, 0, 1, 3)  # word, period, fold, column
+    n, k = pages.sum(2), pages.shape[2]
     with np.errstate(invalid="ignore", divide="ignore"):
-        return pages, np.where(pages[:, :, None] >= MIN_PAGES, both.transpose(1, 0, 2) / pages[:, :, None], np.nan)
+        share = np.where(n[:, :, None] >= MIN_PAGES, both.sum(2) / n[:, :, None], np.nan)
+        left = (both.sum(2, keepdims=True) - both) / (n[:, :, None] - pages)[..., None]  # the share without one fold
+        spread = np.sqrt((k - 1) / k * ((left - left.mean(2, keepdims=True)) ** 2).sum(2))
+    return n.astype(int), share, np.where(np.isnan(share), np.nan, T95 * spread)
 
 
 def _listed(x: np.ndarray, digits: int = 4) -> list:
@@ -61,7 +70,7 @@ def together(asked: list[dict]) -> None:
         if ask["word"] not in counts.row:
             continue
         others = [w for w in ask["with"] if w in counts.contexts]
-        pages, share = _shares(counts, [counts.row[ask["word"]]], [counts.contexts.index(w) for w in others])
+        pages, share, off = _shares(counts, [counts.row[ask["word"]]], [counts.contexts.index(w) for w in others])
         everywhere = (
             counts.df.sum(1) / counts.units.sum(1)[:, None]
         )  # of all pages of a period, the share with each word
@@ -69,6 +78,7 @@ def together(asked: list[dict]) -> None:
             "periods": [str(a) if a == b else f"{a}-{b}" for a, b in counts.lens.periods],
             "pages": pages[0].tolist(),
             "with": {w: _listed(share[0, :, k]) for k, w in enumerate(others)},
+            "off": {w: _listed(off[0, :, k]) for k, w in enumerate(others)},
             "all": {w: _listed(everywhere[:, counts.row[w]]) for w in others},
         }
     (SITE / "together.json").write_text(json.dumps(found, separators=(",", ":")))
@@ -107,10 +117,10 @@ def stick(lenses: list[str], words: list[str]) -> None:
         kinds = {int(i): k for i, k in meta["kinds"].items() if k != "place" and int(i) not in fragments}
         names = [i for i in sorted(kinds) if counts.df.sum(1)[:, i].max() >= STICK_PAGES]
         kept = [w for w in words if w in counts.contexts]
-        pages, share = _shares(counts, names, [counts.contexts.index(w) for w in kept])
+        pages, share, _ = _shares(counts, names, [counts.contexts.index(w) for w in kept])
         # Who shares a page with whom: for each name and period, the BESIDE other names on the largest share of its pages.
         others = [k for k, i in enumerate(names) if counts.own[i] >= 0]
-        _, among = _shares(counts, names, [int(counts.own[names[k]]) for k in others])
+        _, among, _ = _shares(counts, names, [int(counts.own[names[k]]) for k in others])
         article = [meta["entities"].get(str(i)) for i in names]
         for k, c in ((k, c) for k in range(len(names)) for c, o in enumerate(others) if article[k] == article[o]):
             among[k, :, c] = np.nan  # not itself, under this name or another ("jokowi", "joko widodo")

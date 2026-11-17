@@ -174,6 +174,9 @@ def test_together_counts_pages_that_have_both(measures, monkeypatch, tmp_path):
     assert found["pages"] == c.df.sum(1)[:, c.row["mover"]].tolist() and "kuno" not in found["with"]
     assert found["with"]["t0w1"][0] > found["with"]["t1w1"][0] and found["with"]["t1w1"][2] > found["with"]["t0w1"][2]
     assert found["all"]["t0w1"][0] == round(float(c.df.sum(1)[0, c.row["t0w1"]] / c.units.sum(1)[0]), 4)
+    # The interval, from leaving out one fold at a time, is of the size chance alone gives when pages are independent.
+    share, off, pages = found["with"]["t0w1"][0], found["off"]["t0w1"][0], found["pages"][0]
+    assert 0.4 < off / (1.96 * (share * (1 - share) / pages) ** 0.5) < 2.5
 
 
 def test_a_first_name_shared_with_someone_else_is_a_fragment():
