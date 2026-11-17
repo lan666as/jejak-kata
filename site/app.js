@@ -911,7 +911,7 @@ const SCENES = {
       ? scene.shares.map(([key, label]) => ({ label: said(label), values: column.map((c) => scene.publishers.map((p) => value(key, p, c))) }))
       : scene.publishers.map((p, k) => ({ label: names[k], values: column.map((c) => scene.shares.map(([key]) => value(key, p, c))) }));
     const figure = strip({ title: scene[language].plate, states: states.map(dash), series: scene.rows === "shares" ? names : scene.shares.map(([, label]) => said(label)), rows, pages: (i) => scene[language].note(dash(states[i])) }, w, h);
-    return { ...figure, show: (i, focus) => figure.show(i, focus?.map((name) => (PUBLISHER[name] ? said(PUBLISHER[name]) : name))) };  // a caption names a publisher by its address
+    return { ...figure, show: (i, focus) => figure.show(i, focus?.map((name) => said(PUBLISHER[name] || scene.shares.find(([key]) => key === name)?.[1] || name))) };  // a caption names a row by its address or its share
   },
 };
 const SCENE_DATA = { together: "together.json", stuck: "together.json", yearly: "years.json", forget: "years.json", fell: "stopped.json" };

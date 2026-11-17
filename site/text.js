@@ -19,6 +19,40 @@ const PHRASES = {
 
 export const STORIES = [
   {
+    slug: "oknum",
+    id: {
+      title: "Siapa yang disebut “oknum”?",
+      teaser: "Di halaman tentang pelanggaran, kata “oknum” menempel pada guru, pegawai negeri, tentara, dan kepala desa dua sampai lima kali lebih sering daripada pada anggota dewan atau hakim. Dari 200 “oknum” yang kami baca, 150 tidak disebut namanya.",
+      intro: "“Oknum” adalah kata untuk orang yang berbuat salah tanpa membawa nama lembaganya: yang memeras bukan polisi, melainkan oknum polisi. Kata itu sering dituduh melindungi lembaga. Yang dapat dihitung lebih sederhana: di samping siapa kata itu paling sering berdiri, ketika beritanya memang tentang pelanggaran.",
+      limits: "<p>Yang dihitung adalah halaman yang memuat sebuah kata pelanggaran (pungli, pungutan liar, pemerasan, penganiayaan, pemukulan, pencabulan, pemerkosaan, penipuan, suap, korupsi, narkoba, sabu, penembakan, pelecehan, dan bentuk kata kerjanya) dan menyebut sebuah kelompok; daftar katanya ada di berkas pertanyaan. Sehalaman tidak berarti kata “oknum” ditujukan kepada kelompok itu: polisi, jaksa, dan hakim sering ada di halaman seperti itu sebagai pihak yang menangani perkara, sehingga angka mereka terlalu rendah. Perbandingan yang lebih bersih adalah guru, pegawai negeri, dan tentara melawan anggota dewan dan dokter. Sebuah halaman yang menyebut dua kelompok dihitung untuk keduanya. Dari 200 tempat yang kami baca, 40 adalah orang biasa tanpa jabatan (“oknum pasien”, “oknum masyarakat”) dan 12 tidak jelas; dua pertiga contoh itu dari Tribunnews, karena diambil sebanding dengan jumlah halaman. Data ini tidak mengatakan mengapa: orang berpangkat rendah lebih sering tidak disebut namanya, dan kata “oknum” mengisi tempat nama itu.</p>",
+    },
+    en: {
+      title: "Who gets called “oknum”?",
+      teaser: "On pages about wrongdoing, the word “oknum” (a rogue individual) sits beside teachers, civil servants, soldiers and village heads two to five times more often than beside legislators or judges. Of 200 “oknum” we read, 150 are not named.",
+      intro: "“Oknum” is the word for someone who does wrong without carrying the institution's name: it is not the police who extort, it is an oknum of the police. The word is often accused of shielding institutions. What can be counted is simpler: beside whom the word stands most often, when the story is indeed about wrongdoing.",
+      limits: "<p>What is counted is pages that hold a word of wrongdoing (illegal levies, extortion, assault, beating, molestation, rape, fraud, bribery, corruption, drugs, shooting, harassment, and their verb forms) and name a group; the word list is in the question file. Sharing a page does not mean “oknum” is said of that group: police, prosecutors and judges are often on such pages as the ones handling a case, so their figures are too low. The cleaner comparison is teachers, civil servants and soldiers against legislators and doctors. A page naming two groups counts for both. Of the 200 places we read, 40 are ordinary people with no office (“oknum pasien”, “oknum masyarakat”) and 12 are unclear; two thirds of that sample is from Tribunnews, because places were drawn in proportion to pages. This does not say why: people of low rank are more often left unnamed, and the word “oknum” fills the place of the name.</p>",
+    },
+    scenes: [
+      { type: "asked", name: "oknum-masa", rows: "shares", check: ["oknum", "pungli", "guru"], publishers: ["kompas.com", "tribunnews.com", "detik.com", "tempo.co"],
+        shares: [["guru+salah|oknum", { id: "guru", en: "teachers" }], ["pns+salah|oknum", { id: "pegawai negeri", en: "civil servants" }], ["tni+salah|oknum", { id: "tentara", en: "soldiers" }],
+          ["kades+salah|oknum", { id: "kepala desa, lurah", en: "village heads" }], ["polisi+salah|oknum", { id: "polisi", en: "police" }], ["dewan+salah|oknum", { id: "anggota dewan", en: "legislators" }],
+          ["jaksa+salah|oknum", { id: "jaksa", en: "prosecutors" }], ["dokter+salah|oknum", { id: "dokter", en: "doctors" }], ["hakim+salah|oknum", { id: "hakim", en: "judges" }],
+          ["salah|oknum", { id: "semua pelanggaran", en: "all wrongdoing" }]],
+        id: { title: "Di samping siapa", text: "Tiap baris satu kelompok, tiap titik satu penerbit: dari halaman 2020–2024 yang memuat kata pelanggaran dan menyebut kelompok itu, bagian yang juga memuat <i>oknum</i>.",
+          plate: "“oknum” di halaman pelanggaran, Kompas: guru 15%, tentara 13%, pegawai negeri 11%; anggota dewan 4,8%, hakim 2,9%", note: (p) => `${p}: bagian dari halaman yang memuat kata pelanggaran dan menyebut kelompok itu. Satu titik tiap penerbit.` },
+        en: { title: "Beside whom", text: "Each row a group, each dot a publisher: of the 2020–2024 pages that hold a word of wrongdoing and name the group, the share that also contain <i>oknum</i>.",
+          plate: "“oknum” on wrongdoing pages, Kompas: teachers 15%, soldiers 13%, civil servants 11%; legislators 4.8%, judges 2.9%", note: (p) => `${p}: share of the pages that hold a word of wrongdoing and name the group. One dot per publisher.` },
+        steps: [
+          s("2020–2024", "Baris terbawah adalah pembandingnya: semua halaman yang memuat kata pelanggaran. <i>oknum</i> ada di 5,9% (Kompas), 8,9% (Tribunnews), 5,5% (Detik), 2,3% (Tempo).", "The bottom row is the comparison: all pages that hold a word of wrongdoing. <i>oknum</i> is on 5.9% (Kompas), 8.9% (Tribunnews), 5.5% (Detik), 2.3% (Tempo).", ["salah|oknum"]),
+          s("2020–2024", "Guru: 15% di Kompas, 28% di Tribunnews, 14% di Detik. Pegawai negeri: 11%, 24%, 14%. Tentara: 13%, 18%, 14%. Kepala desa dan lurah: 12%, 20%, 17%.", "Teachers: 15% in Kompas, 28% in Tribunnews, 14% in Detik. Civil servants: 11%, 24%, 14%. Soldiers: 13%, 18%, 14%. Village heads: 12%, 20%, 17%.", ["guru+salah|oknum", "pns+salah|oknum", "tni+salah|oknum", "kades+salah|oknum"], undefined, "Guru, pegawai"),
+          s("2020–2024", "Anggota dewan: 4,8%, 14%, 6,9%. Dokter: 4,3%, 12%, 6,2%. Hakim: 2,9%, 7,1%, 2,9%. Di Kompas dan Detik, guru disebut <i>oknum</i> dua sampai lima kali lebih sering daripada anggota dewan atau hakim.", "Legislators: 4.8%, 14%, 6.9%. Doctors: 4.3%, 12%, 6.2%. Judges: 2.9%, 7.1%, 2.9%. In Kompas and Detik a teacher is called <i>oknum</i> two to five times more often than a legislator or a judge.", ["dewan+salah|oknum", "dokter+salah|oknum", "hakim+salah|oknum", "guru+salah|oknum"], undefined, "Dewan, hakim"),
+          s("2020–2024", "Polisi dan jaksa di tengah: 7,5% dan 4,6% di Kompas. Tetapi di sini hitungan ini lemah: polisi, jaksa, dan hakim ada di halaman pelanggaran juga sebagai yang menangani perkara, dan itu menurunkan angka mereka.", "Police and prosecutors sit in the middle: 7.5% and 4.6% in Kompas. But here the count is weak: police, prosecutors and judges are on wrongdoing pages also as the ones handling a case, which lowers their figures.", ["polisi+salah|oknum", "jaksa+salah|oknum", "hakim+salah|oknum"], undefined, "Polisi"),
+          s("2020–2024", "Tempo berbeda dari tiga lainnya: kata itu jarang untuk siapa pun, 1,6–6,5%, dan selisih antarkelompok kecil.", "Tempo differs from the other three: the word is rare for anyone, 1.6–6.5%, and the gaps between groups are small.", undefined, undefined, "Tempo"),
+          s("2020–2024", "Lalu kami membaca 200 <i>oknum</i> yang diambil acak dari halaman seperti itu. Polisi 47, pegawai negeri 31, guru 23, perangkat desa 11, aparat peradilan 8, tentara 5; politisi 6; orang biasa 40. Dan 150 dari 200 tidak disebut namanya, 30 hanya inisial.", "Then we read 200 <i>oknum</i> drawn at random from such pages. Police 47, civil servants 31, teachers 23, village officials 11, court and prosecution staff 8, soldiers 5; politicians 6; ordinary people 40. And 150 of the 200 are not named, 30 only by initials.", undefined, undefined, "200 dibaca"),
+        ] },
+    ],
+  },
+  {
     slug: "diamankan",
     id: {
       title: "Ditangkap, atau “diamankan”?",
