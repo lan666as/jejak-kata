@@ -135,7 +135,7 @@ function switcher(labels, content, first = 0, style = "tabs") {
 
 /**
  * A figure is {node, labels, show(i)}: something that can be shown at each of a row of moments.
- * `played` puts a play button and a slider under it; `scrolly` lets the page's scrolling drive it instead.
+ * `played` puts a play button and a slider under it; a story's `stage` lets the reader's steps drive it instead.
  */
 function played(figure, start = figure.labels.length - 1) {
   const box = el(`<div></div>`);
@@ -167,40 +167,65 @@ function played(figure, start = figure.labels.length - 1) {
 }
 
 /**
- * A figure that stays in place while captions scroll past. Each caption names the moment to show (`at`, one of
- * the figure's labels), and may name what to bring forward (`focus`) and a moment inside it (`mark`).
- * The caption shown is the one nearest to where captions are read: the middle of the screen, or on a narrow
- * screen the middle of what the figure leaves free. That is one answer per scroll position, the same going
- * down and coming back up.
+ * A scene of a story on its stage. The figure holds the screen and the caption sits in one place beside it (below
+ * it on a narrow screen); moving a step turns the caption while the figure's marks travel. Step 0 opens the scene
+ * with its title and text; step j shows caption j (`at` names the figure's moment, `focus` what to bring forward,
+ * `mark` a moment inside a plate). Under the sticky stage lies a run of beats, one per step: the page's scroll
+ * position chooses the step (`voyage`), and every caption stays in its beat, in reading order, for screen readers
+ * and find-in-page. `steer(j)` is asked to move to step j; returns {node, stage, figure box, steps, on(), go(j)}.
  */
-function scrolly(figure, steps) {
-  const box = el(`<div class="scrolly"><div class="pin"></div><div class="steps">${steps
-    .map((s) => `<div data-at="${escape(s.at)}"><p><b>${dash(s.head ?? s.mark ?? s.at)}</b>${s[language]}</p></div>`).join("")}</div></div>`);
-  const pin = box.firstElementChild, nodes = [...box.querySelectorAll(".steps > div")];
-  pin.append(figure.node);
-  let on = -1, waiting = false, seen = false;
-  const go = (k) => {
-    if (k === on) return;
-    on = k;
-    nodes.forEach((n, j) => n.classList.toggle("on", j === k));
-    const i = figure.labels.indexOf(steps[k].at);
-    if (i >= 0) figure.show(i, steps[k].focus, steps[k].mark);
+function stage(part, k, of, steer) {
+  const words = part[language], n = part.steps.length;
+  const head = (j) => dash(part.steps[j - 1].head ?? part.steps[j - 1].mark ?? part.steps[j - 1].at);
+  const name = (j) => (j ? t("step_name", j, n, head(j)) : t("opening", words.title));
+  const arrow = (d) => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="${d}"/></svg>`;
+  const node = el(`<section class="scene" id="scene-${k}" aria-labelledby="scene-${k}-title">
+    <div class="stage" data-step="0" tabindex="-1"><div class="stage-figure"></div>
+      <div class="stage-side"><p class="stage-meta"><span>${t("part_of", k + 1, of)}</span><span class="count"></span></p>
+        <div class="caption" aria-live="polite"></div>
+        <div class="stage-nav"><button type="button" class="step back">${arrow("M15 5l-7 7 7 7")}<span>${t("step_back")}</span></button>
+          <ol class="ticks" aria-label="${t("steps_label")}">${[...Array(n + 1)].map((_, j) => `<li><button type="button" aria-label="${escape(name(j).replace(/<[^>]+>/g, ""))}"></button></li>`).join("")}</ol>
+          <button type="button" class="step on"><span>${t("step_on")}</span>${arrow("M9 5l7 7-7 7")}</button></div></div></div>
+    <ol class="beats">${[...Array(n + 1)].map((_, j) => `<li class="beat"><div class="hidden">${j ? `<p><b>${head(j)}.</b> ${part.steps[j - 1][language]}</p>`
+      : `<h2 id="scene-${k}-title">${words.title}</h2>${words.text ? `<p>${words.text}</p>` : ""}`}</div></li>`).join("")}</ol></section>`);
+  const box = node.firstElementChild, caption = box.querySelector(".caption"), count = box.querySelector(".count");
+  const ticks = [...box.querySelectorAll(".ticks button")], [back, ahead] = box.querySelectorAll(".step");
+  let at = -1, figure = null;
+  const said = (j) => (j ? `<p class="head">${head(j)}</p><p>${part.steps[j - 1][language]}</p>`
+    : `<p class="title">${words.title}</p>${words.text ? `<p>${words.text}</p>` : ""}${k ? "" : `<p class="hint">${t("stage_hint")}</p>`}`);
+  const show = () => {
+    if (!figure || at < 0) return;
+    const step = part.steps[Math.max(0, at - 1)], i = figure.labels.indexOf(step.at);
+    box.dataset.plate = i;
+    if (i >= 0) figure.show(i, at ? step.focus : undefined, step.mark);
   };
-  const place = () => {
-    waiting = false;
-    if (!box.isConnected) return seen && removeEventListener("scroll", ask);
-    seen = true;
-    const line = innerWidth > 760 ? innerHeight / 2 : (Math.min(pin.getBoundingClientRect().bottom, innerHeight * 0.6) + innerHeight) / 2;
-    const gaps = nodes.map((n) => {
-      const r = n.firstElementChild.getBoundingClientRect();
-      return Math.abs((r.top + r.bottom) / 2 - line);
-    });
-    go(gaps.indexOf(Math.min(...gaps)));
+  const go = (j) => {
+    if (j === at) return;
+    const backwards = j < at;
+    at = j;
+    box.dataset.step = j;
+    show();
+    // The caption turns: the one that was leaves a few pixels the way the reader came from, the new one comes in.
+    for (const old of caption.querySelectorAll(".turn:not(.out)")) {
+      old.classList.add("out");
+      old.classList.toggle("back", backwards);
+      old.setAttribute("aria-hidden", "true");
+      setTimeout(() => old.remove(), parseFloat(getComputedStyle(old).transitionDuration) * 1000 + 60);
+    }
+    caption.append(el(`<div class="turn${backwards ? " back" : ""}">${said(j)}</div>`));
+    caption.scrollTop = 0;
+    count.textContent = j ? `${j} / ${n}` : t("steps_n", n);
+    ticks.forEach((b, m) => (b.classList.toggle("past", m < j), m === j ? b.setAttribute("aria-current", "step") : b.removeAttribute("aria-current")));
+    requestAnimationFrame(more);
   };
-  const ask = () => waiting || ((waiting = true), requestAnimationFrame(place));
-  addEventListener("scroll", ask, { passive: true });
+  // A caption longer than its band scrolls inside it; the band's lower edge fades while there is more below.
+  const more = () => caption.classList.toggle("more", caption.scrollTop + caption.clientHeight < caption.scrollHeight - 2);
+  caption.addEventListener("scroll", more, { passive: true });
+  ticks.forEach((b, m) => b.addEventListener("click", () => steer(m)));
+  back.addEventListener("click", () => steer(at - 1));
+  ahead.addEventListener("click", () => steer(at + 1));
   go(0);
-  return box;
+  return { node, stage: box, room: box.firstElementChild, steps: n + 1, on: () => at, go, hold: (made) => ((figure = made), show()) };
 }
 
 // ---- figures --------------------------------------------------------------
@@ -855,11 +880,14 @@ async function entitiesPage() {
   view.append(switcher(found.map((lens) => lensText(lens).short || lensText(lens).title), (k) => section(found[k]), Math.max(0, found.findIndex((lens) => lens.lens === MAIN)), "chips"));
 }
 
-/** The room a pinned figure has: beside the captions on a wide screen, above them on a narrow one. The header
- *  stays on screen at every width, so the height is what is left under it. */
-const figureSize = () => {
-  const wide = innerWidth > 760, head = masthead.offsetHeight, width = wide ? Math.min((room() - 24) * 0.6, 680) : room();
-  return [width, wide ? Math.min(innerHeight - head - 40, width * 0.7) : Math.round(Math.min((innerHeight - head) * 0.42, width * 1.05))];
+/** The room a figure has on its stage, measured on the stage: the width and height to draw it at, and the zoom
+ *  to show it at. A plate is drawn at most 760px wide so that its text keeps its size; on a larger stage it is
+ *  shown up to 1.35 times larger, never wider or taller than its room, and beside the caption never much taller
+ *  than wide. */
+const figureSize = (room) => {
+  const width = room.clientWidth, height = innerWidth >= 900 ? Math.min(room.clientHeight, width * 0.9) : room.clientHeight;
+  const zoom = Math.min(1.35, Math.max(1, width / 760));
+  return [Math.floor(width / zoom), Math.floor(height / zoom), zoom];
 };
 const thousands = (n) => Math.round(n).toLocaleString(language);
 
@@ -938,16 +966,17 @@ function tools(address, { image, check = [], data } = {}) {
   const row = el(`<p class="controls tools"></p>`);
   if (image) {
     const save = el(`<button type="button">${t("save_image")}</button>`);
-    save.addEventListener("click", () => savePlate(image, "jejak-kata"));
+    save.addEventListener("click", () => savePlate(typeof image === "function" ? image() : image, "jejak-kata"));
     row.append(save);
   }
   const copy = el(`<button type="button">${t("copy_link")}</button>`);
   copy.addEventListener("click", async () => {
-    await navigator.clipboard?.writeText(new URL(address, location.href).href);
+    await navigator.clipboard?.writeText(new URL(typeof address === "function" ? address() : address, location.href).href);
     copy.textContent = t("copied");
   });
   row.append(copy);
-  if (check.length || data) row.append(el(`<span>${t("check")} ${check.map(link).join(", ")}${data ? `${check.length ? ", " : ""}<a href="${DATA}/${data}">${t("check_data")}</a>` : ""}</span>`));
+  const list = [].concat(data || []), files = list.map((file) => `<a href="${DATA}/${file}">${t("check_data")}${list.length > 1 ? ` (${file})` : ""}</a>`);
+  if (check.length || files.length) row.append(el(`<span>${t("check")} ${[...check.map(link), ...files].join(", ")}</span>`));
   return row;
 }
 
@@ -956,25 +985,113 @@ const storyDoors = (but) => doors(STORIES.filter((s) => s.slug !== but).map((s) 
 const PLAY = ["tebak", "kuis", "menempel", "lingkaran", "redaksi", "pasang", "balap", "tahun", "bergeser", "entitas"];
 const playDoors = () => doors(PLAY.map((page) => [href(page), t(`play_${page}`), t(`play_${page}_about`)]));
 
+/** The chart's graticule and a route sailed across it, faint behind a story's cover. */
+const GRATICULE = `<svg class="graticule" viewBox="0 0 1200 800" preserveAspectRatio="xMaxYMin slice" aria-hidden="true">
+  ${[...Array(13)].map((_, i) => `<path d="M${i * 100} 0V800"/>`).join("")}${[...Array(9)].map((_, i) => `<path d="M0 ${i * 100}H1200"/>`).join("")}
+  <path class="sailed" d="M1260 30C1160 60 1130 170 1040 200S900 250 900 330"/><circle cx="1040" cy="200" r="5"/><circle cx="900" cy="330" r="5"/></svg>`;
+/** Minutes to read a story at 200 words a minute, counted from its own text in the language shown. */
+const readingTime = (story) => {
+  const words = [story[language].teaser, story[language].intro, story[language].limits, ...story.scenes.flatMap((part) => [part[language].text || "", ...part.steps.map((step) => step[language])])];
+  return Math.max(1, Math.round(words.join(" ").replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length / 200));
+};
+
+/** The story on screen, if one is: `ask()` after a scroll or a resize, `key(e)` for the keyboard, `place()` for
+ *  where to return to. A story keeps its place by step, not by pixels, since its cover is not as tall in each
+ *  language: `marks` holds, for each entry of the browser's history, [scene, step] or [-1, pixels past the landing]. */
+let voyage = null;
+const marks = new Map();
+addEventListener("scroll", () => voyage?.ask(), { passive: true });
+addEventListener("resize", () => voyage?.ask());
+addEventListener("keydown", (e) => voyage?.key(e));
+addEventListener("scrollend", () => voyage?.arrived());
+
 /**
- * A story: a question, scenes with pinned figures, and an ending that says what the data cannot tell.
- * Every figure is made before any is shown, so that nothing on the page moves once it is there.
+ * A story is a voyage in three parts: a cover on the deep, a stage per scene, and a landing on the chart that says
+ * what the data cannot tell. The cover and the stages are laid out before any figure is drawn, so nothing moves
+ * once it is on screen; each figure is then drawn at the size its stage has.
  */
 async function storyPage(slug, scene) {
   const story = STORIES.find((s) => s.slug === slug);
   if (!story) return view.replaceChildren(pageHead(t("nav_stories"), { kicker: t("stories_kicker", STORIES.length), lede: t("stories_lede") }), el(storyDoors()));
-  const head = [pageHead(story[language].title, { kicker: t("nav_stories"), to: href("cerita"), lede: story[language].intro, cls: "story" })];
-  view.replaceChildren(...head, el(`<p class="loading">${t("loading")}</p>`));
-  const made = await Promise.all(story.scenes.map((part) => SCENES[part.type](part, ...figureSize()).catch(() => null)));
-  const sections = story.scenes.map((part, k) => {
-    const section = el(`<section id="scene-${k}"><h2>${part[language].title}</h2>${part[language].text ? `<p class="sub">${part[language].text}</p>` : ""}</section>`);
-    section.append(made[k] ? scrolly(made[k], part.steps) : el(`<p class="sub">${t("no_data")}</p>`));
-    section.append(tools(href("cerita", slug, String(k)), { image: made[k] && section, check: part.check, data: part.type === "asked" ? `pages/${part.name}.json` : SCENE_DATA[part.type] }));
-    return section;
-  });
-  view.replaceChildren(...head, ...sections, el(`<section class="limits"><h2>${t("limits_title")}</h2>${story[language].limits}</section>`),
-    el(`<section><h2>${t("more_stories")}</h2>${storyDoors(slug)}</section>`));
-  if (scene) document.getElementById(`scene-${scene}`)?.scrollIntoView();
+  const words = story[language], next = STORIES[(STORIES.indexOf(story) + 1) % STORIES.length], parts = story.scenes;
+  const cover = el(`<header class="cover">${GRATICULE}<div class="cover-text"><a class="kicker" href="${href("cerita")}">${t("nav_stories")}</a>
+    <p class="cover-kicker">${t("story")} · ${t("read_time", readingTime(story))}</p><h1${words.title.length > 34 ? ' class="long"' : ""}>${words.title}</h1>
+    <div class="cover-body"><p class="deck">${words.teaser}</p><div><p class="cover-intro">${words.intro}</p>
+    <button type="button" class="primary begin">${t("begin")}<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button></div></div></div></header>`);
+  let last = 0;  // the scene seen last: what the tools save and link to
+  const stages = parts.map((part, k) => stage(part, k, parts.length, (j) => steer(k, j)));
+  const landing = el(`<section class="landing"><div class="limits"><h2>${t("limits_title")}</h2>${words.limits}</div></section>`);
+  landing.append(tools(() => href("cerita", slug, String(last)), { image: () => stages[last].room, check: [...new Set(parts.flatMap((part) => part.check || []))],
+    data: [...new Set(parts.map((part) => (part.type === "asked" ? `pages/${part.name}.json` : SCENE_DATA[part.type])).filter(Boolean))] }),
+    el(`<a class="card next-story" href="${href("cerita", next.slug)}"><span class="kicker">${t("next_story")}</span><b class="card-title">${next[language].title}</b><span class="card-text">${next[language].teaser}</span></a>`),
+    el(`<ul class="links"><li><a href="${href("cerita")}">${t("all_stories")}</a></li></ul>`));
+  view.classList.add("voyage");
+  document.documentElement.classList.add("voyaging");
+  view.replaceChildren(cover, ...stages.map((s) => s.node), landing);
+
+  // Where the page stands when stage k shows step j: the stage stuck under the header, j beats down.
+  const head = () => masthead.offsetHeight;
+  const spot = (k, j) => scrollY + stages[k].node.getBoundingClientRect().top - head() + j * stages[k].node.querySelector(".beat").offsetHeight;
+  const glide = (top) => scrollTo({ top, behavior: still() ? "instant" : "smooth" });
+  let aim = null, asked = false;
+  // Step j of scene k, or past either end of the scene into the one before or after, the cover or the landing.
+  function steer(k, j) {
+    if (j < 0 && k === 0) return (aim = null), glide(0);
+    if (j < 0) return steer(k - 1, stages[k - 1].steps - 1);
+    if (j >= stages[k].steps && k === stages.length - 1) return (aim = null), glide(scrollY + landing.getBoundingClientRect().top - head());
+    if (j >= stages[k].steps) return steer(k + 1, 0);
+    aim = [k, j];
+    glide(spot(k, j));
+  }
+  const frame = () => {
+    asked = false;
+    if (!landing.isConnected) return;
+    // All that is measured is measured first; then the stages are told their step.
+    const top = head(), rects = stages.map((s) => s.node.getBoundingClientRect()), beats = stages.map((s) => s.node.querySelector(".beat").offsetHeight);
+    const middle = top + (innerHeight - top) / 2, height = innerHeight - top;
+    stages.forEach((s, k) => s.go(Math.max(0, Math.min(s.steps - 1, Math.round((top - rects[k].top) / beats[k])))));
+    const seen = rects.findIndex((r) => r.top <= middle && r.bottom >= middle), shore = landing.getBoundingClientRect().top;
+    if (seen >= 0) last = seen;
+    if (!rendering) marks.set(history.state?.id, seen >= 0 ? [seen, stages[seen].on()] : shore <= top ? [-1, top - shore] : null);
+    const sailed = (top - rects[0].top) / (rects.at(-1).bottom - height - rects[0].top);
+    masthead.style.setProperty("--voyage", Math.max(0, Math.min(1, sailed)).toFixed(4));
+  };
+  voyage = {
+    ask: () => asked || ((asked = true), requestAnimationFrame(frame)),
+    arrived: () => (aim = null),
+    place: () => {
+      const mark = marks.get(history.state?.id);
+      return !mark ? null : mark[0] < 0 ? scrollY + landing.getBoundingClientRect().top - head() + mark[1] : spot(...mark);
+    },
+    key: (e) => {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || menuOpen() || !landing.isConnected) return;
+      const forward = ["ArrowDown", "ArrowRight", "PageDown"].includes(e.key) || (e.key === " " && !e.shiftKey);
+      if (!forward && !["ArrowUp", "ArrowLeft", "PageUp", " "].includes(e.key)) return;
+      if (e.target.closest?.("input, textarea, select, .masthead") || (e.key === " " && e.target.closest?.("button, a, summary"))) return;
+      const caption = e.target.closest?.(".caption");
+      if (caption && caption.scrollHeight > caption.clientHeight && e.key.startsWith("Arrow")) return;  // a long caption scrolls itself
+      // Only while a stage holds the middle of the screen: elsewhere the keys scroll the page as they always do.
+      const top = head(), middle = top + (innerHeight - top) / 2;
+      const k = stages.findIndex((s) => { const r = s.node.getBoundingClientRect(); return r.top <= middle && r.bottom >= middle; });
+      if (k < 0) return;
+      e.preventDefault();
+      const [from, j] = aim || [k, stages[k].on()];
+      steer(from, j + (forward ? 1 : -1));
+    },
+  };
+  cover.querySelector(".begin").addEventListener("click", () => (steer(0, 0), stages[0].stage.focus({ preventScroll: true })));
+  if (scene && stages[+scene]) scrollTo(0, spot(+scene, 0));
+  frame();
+
+  // The figures, each at the size of its stage (all stages are alike), with the step each stage is on.
+  const [w, h, zoom] = figureSize(stages[0].room);
+  await Promise.all(parts.map(async (part, k) => {
+    const made = await SCENES[part.type](part, w, h).catch(() => null);
+    if (!made) return stages[k].room.append(el(`<p class="sub">${t("no_data")}</p>`));
+    made.node.querySelectorAll(".plate svg").forEach((svg) => (svg.style.width = svg.width.baseVal.value * zoom + "px"));
+    stages[k].room.append(made.node);
+    stages[k].hold(made);
+  }));
 }
 
 /** The first page: the chart, with one word after another sailing its route until the reader takes over. */
@@ -1235,7 +1352,7 @@ history.scrollRestoration = "manual";
 const places = new Map();
 let rendering = false, first = true;
 addEventListener("scroll", () => rendering || menuOpen() || places.set(history.state?.id, scrollY), { passive: true });
-/** The header stays on screen at every width; what is pinned below it is pinned at its height. */
+/** The header stays on screen at every width; a story's stage is held just below it, at its height. */
 const shell = () => document.documentElement.style.setProperty("--head", masthead.offsetHeight + "px");
 addEventListener("resize", shell);
 
@@ -1260,11 +1377,16 @@ function route() {
     peta: chartPage, balap: racePage, tahun: yearsPage, temuan: findingsPage, bergeser: moversPage, entitas: entitiesPage, cerita: storyPage, metode: methodPage };
   const render = () => {
     rendering = true;
+    // A story is laid out across the whole width and snaps to its steps; any other page is neither.
+    voyage = null;
+    view.classList.remove("voyage");
+    document.documentElement.classList.remove("voyaging");
+    masthead.style.removeProperty("--voyage");
     if (!place) scrollTo(0, 0);
     return Promise.resolve((pages[page] || homePage)(...args))
       .catch(() => view.replaceChildren(el(`<p>${t("no_data")}</p>`)))
       .then(() => {
-        if (place) scrollTo(0, place);
+        if (place) scrollTo(0, voyage?.place() ?? place);
         rendering = false;
       });
   };

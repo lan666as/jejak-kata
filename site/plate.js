@@ -29,8 +29,10 @@ function sheet(spec, width, height, body) {
   </svg>`;
   // The note says what was counted and over how many pages; it takes two lines when it has to.
   const note = (text) => {
-    const words = text.split(" "), half = Math.floor((W - 24) / 5.2), rows = [""];
+    const size = text.length > 2 * Math.floor((W - 24) / 5.8) ? 9 : 10.5;  // a note too long for two lines is set smaller
+    const words = text.split(" "), half = Math.floor((W - 24) / (size * 0.55)), rows = [""];
     for (const word of words) (rows.at(-1) + " " + word).length > half && rows.length < 2 ? rows.push(word) : (rows[rows.length - 1] = (rows.at(-1) + " " + word).trim());
+    node.querySelector(".note").style.fontSize = size + "px";
     node.querySelector(".note").innerHTML = rows.map((row, k) => `<tspan x="12" dy="${k ? 12 : rows.length > 1 ? 0 : 12}">${row.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</tspan>`).join("");
   };
   note(spec.note || "");
@@ -95,7 +97,7 @@ export function strip(spec, width, height) {
   const most = Math.max(...spec.rows.flatMap((r) => r.values.flat().map((v) => v || 0))) * 1.05 || 1;
   let x, y;
   const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line }) => {
-    const longest = Math.max(...spec.rows.map((r) => r.label.length)), L = narrow ? Math.min(W * 0.46, 16 + 6.9 * longest) : 178, R = narrow ? 66 : 84;
+    const longest = Math.max(...spec.rows.map((r) => r.label.length)), L = narrow ? Math.min(W * 0.42, 16 + 6.9 * longest) : 178, R = narrow ? 80 : 84;
     const T = top + (narrow ? 50 : 34), B = 62, gap = (H - T - B) / rows;
     x = (v) => L + ((W - L - R) * v) / most;
     y = (k) => T + gap * (k + 0.5);

@@ -452,28 +452,114 @@ text.when-label { font: 800 13px var(--type); fill: var(--route); paint-order: s
 .picked button { min-height: calc(var(--tap) - var(--s1)); min-width: var(--tap); border: 0; border-radius: var(--pill); background: none; color: inherit; padding: 0; font-size: var(--t-lede); }
 .picked button:hover { background: color-mix(in srgb, currentColor 18%, transparent); }
 
-/* ==== 8. stories: a pinned figure, captions that pass it =================================================== */
+/* ==== 8. stories: a voyage in three parts (docs/DESIGN.md, "The story") ======================================= */
 
-h1.story { max-width: 16em; }
-.scrolly { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 0 var(--s5); }
-.scrolly .pin { position: sticky; top: var(--head, var(--head-h)); height: calc(100vh - var(--head, var(--head-h))); display: flex; align-items: center; }
-.scrolly .pin > * { width: 100%; }
-.scrolly .steps { padding: 34vh 0 30vh; }
-.scrolly .steps > div { min-height: 62vh; display: flex; align-items: center; }
-.scrolly .steps p { margin: 0; padding: var(--s3) var(--s4); background: var(--chart-2); border-left: var(--mark) solid var(--line); border-radius: 0 var(--r1) var(--r1) 0; font-size: var(--t-body); opacity: .45;
-  transition: opacity var(--d-turn) var(--sail), border-color var(--d-turn) var(--sail); }
-.scrolly .steps .on p { border-color: var(--route); opacity: 1; }
-.scrolly .steps b { font: 800 var(--t-h3)/1 var(--type); font-stretch: 75%; display: block; margin-bottom: var(--s1); }
-.scrolly .orbit { width: min(100%, 66vh); }
-@media (max-width: 760px) {
-  .scrolly { display: block; }
-  .scrolly .pin { top: var(--head, var(--head-h)); height: auto; z-index: 2; display: block; margin: 0 calc(-1 * var(--gutter)); padding: var(--s2) var(--gutter); background: var(--chart); border-bottom: var(--hair) solid var(--line); }
-  .scrolly .steps { padding: 16vh 0 0;  /* the first caption is read only once the figure above it has stuck */ }
-  .scrolly .steps > div { min-height: 44vh; }
-  .scrolly .steps > div:last-child { min-height: 30vh; }
+/* the page: a story runs the full width, snaps to its steps, and the header's lower edge shows how far one is */
+main.voyage { max-width: none; padding: 0; }
+html.voyaging { scroll-snap-type: y proximity; }
+html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: var(--rule); background: var(--route-on-deep);
+  transform-origin: 0 50%; transform: scaleX(var(--voyage, 0)); }
+.voyage { --stage-h: calc(100svh - var(--head, var(--head-h))); --beat: calc(var(--stage-h) * .7); --side: clamp(20rem, 30vw, 26rem); }
+
+/* 1. the cover, on the deep, with the chart's graticule faintly behind */
+.cover { position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: center; min-height: var(--stage-h); overflow: hidden;
+  padding: var(--s6) max(var(--gutter), (100% - var(--content)) / 2) var(--s7); background: var(--deep); color: var(--on-deep); scroll-snap-align: start; --focus: var(--route-on-deep); }
+.graticule { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; max-width: none; fill: none; stroke: var(--line-deep); stroke-width: 1; vector-effect: non-scaling-stroke;
+  mask-image: radial-gradient(ellipse 80% 90% at 70% 40%, #000 30%, transparent 85%); }
+.graticule path { vector-effect: non-scaling-stroke; }
+.graticule .sailed { stroke: var(--route-on-deep); stroke-width: var(--rule); stroke-dasharray: 2 7; stroke-linecap: round; opacity: .55; }
+@media (max-width: 899.98px) { .graticule .sailed, .graticule circle { display: none; } }  /* on a phone the title fills the cover: only the graticule */
+.graticule circle { fill: var(--deep); stroke: var(--on-deep-2); stroke-width: var(--rule); opacity: .6; }
+.cover a.kicker { align-self: flex-start; color: var(--on-deep-2); }
+.cover a.kicker::before { color: var(--on-deep-2); }
+.cover a.kicker:hover { color: var(--on-deep); }
+.cover-kicker { display: flex; align-items: center; gap: var(--s3); margin: var(--s5) 0 var(--s4); font-size: var(--t-small); font-weight: 600; color: var(--on-deep-2); }
+.cover-kicker::before { content: ""; width: var(--s6); height: var(--rule); background: var(--route-on-deep); }
+.cover h1 { max-width: 13ch; margin: 0 0 var(--s6); font: 800 var(--t-display)/var(--l-display) var(--type); font-stretch: 75%; letter-spacing: -.02em; color: var(--on-deep); }
+.cover h1.long { max-width: 16ch; font-size: calc((var(--t-h1) + var(--t-display)) / 2); }
+.cover .deck { margin: 0 0 var(--s5); font-size: var(--t-lede); line-height: var(--l-lede); color: var(--on-deep); }
+.cover-intro { color: var(--on-deep-2); }
+.begin { min-height: calc(var(--tap) + var(--s2)); margin-top: var(--s2); padding: 0 var(--s5); font-size: var(--t-body); }
+.begin svg, .stage-nav svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+@media (min-width: 900px) {
+  .cover-body { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s7); align-items: start; }
+  .cover .deck { font-size: var(--t-h3); line-height: var(--l-lede); }
 }
-.limits { margin-top: var(--s8); padding: var(--s2) var(--s5) var(--s4); background: var(--chart-2); border: var(--hair) solid var(--line-2); border-radius: var(--r2); }
+
+/* 2. a stage per scene: the figure holds the screen, the caption turns in one place beside it (below 900px: under it).
+   Under the sticky stage lies a run of beats, one per step, that the scroll snaps to; each holds its caption, hidden. */
+.scene { position: relative; background: var(--deep); }
+.stage { position: sticky; top: var(--head, var(--head-h)); z-index: 1; display: grid; grid-template: "figure" auto "side" minmax(0, 1fr) / minmax(0, 1fr); gap: var(--s3);
+  height: var(--stage-h); padding: var(--s3) var(--gutter); background: var(--deep); color: var(--on-deep); --focus: var(--route-on-deep); }
+.stage:focus { outline: none; }
+.stage-figure { grid-area: figure; display: grid; place-items: center; height: calc(var(--stage-h) / 2); min-width: 0; }
+.stage-figure > * { grid-area: 1 / 1; max-width: 100%; }
+.stage-figure .plate svg { max-height: calc(var(--stage-h) / 2); border-color: transparent; }
+.stage-figure .sub { color: var(--on-deep-2); }
+.stage-side { grid-area: side; display: flex; flex-direction: column; gap: var(--s2); min-height: 0; }
+.stage-meta { display: flex; justify-content: space-between; gap: var(--s3); max-width: none; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); font-weight: 600; color: var(--on-deep-2); font-variant-numeric: tabular-nums; }
+.caption { flex: 1; display: grid; align-content: start; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-deep) transparent; }
+.caption.more { mask-image: linear-gradient(#000 calc(100% - var(--s6)), transparent); }
+.caption:focus-visible { outline-offset: calc(-1 * var(--rule)); }
+.turn { grid-area: 1 / 1; transition: opacity var(--d-turn) var(--sail), transform var(--d-turn) var(--sail); }
+@starting-style { .turn { opacity: 0; transform: translateY(var(--s2)); } .turn.back { transform: translateY(calc(-1 * var(--s2))); } }
+.turn.out { opacity: 0; transform: translateY(calc(-1 * var(--s2))); pointer-events: none; }
+.turn.out.back { transform: translateY(var(--s2)); }
+.turn p { max-width: var(--measure); margin: 0 0 var(--s3); font-size: var(--t-body); line-height: var(--l-body); color: var(--on-deep); }
+.turn .head, .turn .title { margin: 0 0 var(--s2); font: 800 var(--t-h3)/var(--l-h3) var(--type); font-stretch: 75%; text-wrap: balance; }
+.turn .title { font-size: var(--t-h2); line-height: var(--l-h2); }
+.turn .hint { display: none; font-size: var(--t-small); color: var(--on-deep-2); }
+.stage-nav { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s2); }
+.stage-nav .step { min-width: var(--tap); padding: 0 var(--s3); color: var(--on-deep); border-color: var(--line-deep); }
+.stage-nav .step:hover { background: var(--deep-2); border-color: var(--on-deep-2); }
+.stage-nav .step span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ticks { display: flex; gap: var(--s1); margin: 0; padding: 0; list-style: none; }
+.ticks li { display: flex; flex: 1; }
+.ticks button { flex: 1; min-width: 0; min-height: var(--tap); padding: 0; border: 0; border-radius: var(--r1); }
+.ticks button:hover { background: var(--deep-2); }
+.ticks button::before { content: ""; width: 100%; height: var(--mark); border-radius: var(--pill); background: var(--line-deep); transition: background-color var(--d-turn) var(--sail); }
+.ticks li:first-child { flex: 0 0 auto; }
+.ticks li:first-child button { min-width: calc(var(--tap) / 2); }
+.ticks li:first-child button::before { width: var(--s3); height: var(--s3); border-radius: 50%; background: none; box-shadow: inset 0 0 0 var(--rule) var(--line-deep); }
+.ticks .past::before { background: var(--on-deep-2); }
+.ticks li:first-child .past::before { background: var(--on-deep-2); box-shadow: none; }
+.ticks [aria-current]::before { background: var(--route-on-deep); }
+.ticks li:first-child [aria-current]::before { background: var(--route-on-deep); box-shadow: none; }
+.beats { margin: calc(-1 * var(--stage-h)) 0 0; padding: 0; list-style: none; pointer-events: none; }
+.beat { position: relative; height: var(--beat); scroll-snap-align: start; }
+.beat:last-child { height: calc(var(--stage-h) + var(--s1)); }  /* a little slack, so that rounded beats never unstick the last step */
+.beat > .hidden { top: 50%; }
+@media (min-width: 900px) {
+  .stage { grid-template: "figure side" minmax(0, 1fr) / minmax(0, 1fr) var(--side); gap: var(--s6); padding: var(--s5) max(var(--gutter), (100% - var(--content)) / 2 - var(--s9)); }
+  .stage-figure { height: auto; min-height: 0; }
+  .stage-figure .plate svg { max-height: calc(var(--stage-h) - 2 * var(--s5)); }
+  .stage-side { gap: var(--s4); padding: var(--s2) 0; }
+  .turn p { font-size: var(--t-h3); line-height: var(--l-lede); }
+  .turn .head { font-size: var(--t-h2); line-height: var(--l-h2); }
+  .turn .title { font-size: var(--t-h1); line-height: var(--l-h1); }
+  .turn .hint { display: block; margin-top: var(--s5); }
+  .stage-nav { grid-template: "ticks ticks" auto "back on" auto / auto auto; justify-content: space-between; row-gap: var(--s3); }
+  .stage-nav .ticks { grid-area: ticks; }
+  .stage-nav .back { grid-area: back; } .stage-nav .on { grid-area: on; }
+  .stage-nav .step span { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  .stage-nav .back { padding-right: var(--s4); } .stage-nav .on { padding-left: var(--s4); }
+}
+
+/* 3. the landing, on the chart: what the data cannot say, the tools, the next story */
+.landing { max-width: calc(var(--content) + 2 * var(--gutter)); margin: 0 auto; padding: var(--s8) var(--gutter) var(--s9); scroll-snap-align: start; }
+.limits { max-width: calc(var(--measure) + 2 * var(--s6)); padding: var(--s2) var(--s5) var(--s4); background: var(--chart-2); border: var(--hair) solid var(--line-2); border-radius: var(--r2); }
 .limits h2 { margin-top: var(--s4); }
+.next-story { max-width: calc(var(--measure) + 2 * var(--s6)); margin-top: var(--s7); padding: var(--s6); gap: var(--s3); }
+@media (min-width: 900px) {
+  .landing { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); column-gap: var(--s7); align-items: start; }
+  .landing > :not(.next-story) { grid-column: 1; }
+  .landing .next-story { grid-column: 2; grid-row: 1 / span 3; margin-top: 0; }
+}
+.next-story .kicker { margin: 0; }
+.next-story .kicker::after { content: "→"; transition: transform var(--d-press) var(--sail); }
+.next-story:hover .kicker::after { transform: translateX(var(--s1)); }
+.next-story .card-title { font-size: var(--t-h2); line-height: var(--l-h2); font-weight: 800; font-stretch: 75%; }
+.next-story .card-text { font-size: var(--t-body); line-height: var(--l-body); }
 
 /* ==== 9. home (the chart as hero) ============================================================================== */
 
@@ -494,4 +580,5 @@ h1.story { max-width: 16em; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  html.voyaging { scroll-snap-type: none; }
 }
