@@ -1,9 +1,12 @@
 import json
 from collections import Counter
+from datetime import date
 
 import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
 
-from idhist import text, web
+from idhist import pages, text, web
 from idhist.sources import hathitrust, openalex
 
 
@@ -189,3 +192,27 @@ def test_copies_of_a_story_are_found_and_the_earliest_kept():
     assert web.copies(order, keys).tolist() == [False, True, False, False, True, False]
     # another publisher's copy is its own page; half a story is not a copy
     assert not web.copies(np.arange(2), np.array([web.signature("a", ["x"] * 3), web.signature("a", ["y"] * 3)])).any()
+
+
+def test_pages_are_counted_from_the_kept_text(tmp_path, monkeypatch):
+    monkeypatch.setattr(pages, "TEXT", tmp_path)
+    monkeypatch.setattr(pages, "MIN_PAGES", 5)
+    rows = [
+        {
+            "day": date(2020 + i % 2, 1 + i % 12, 1 + i % 28),
+            "text": ("Oknum polisi " if i % 4 == 0 else "Polisi ") + f"cerita {i}",
+        }
+        for i in range(400)
+    ] + [{"day": date(2020, 5, 5), "text": "tanpa keduanya"}] * 100
+    (tmp_path / "koran.id").mkdir()
+    pq.write_table(pa.Table.from_pylist(rows), tmp_path / "koran.id" / "000.parquet")
+    ask = {"publishers": ["koran.id"], "by": "year", "first": "2020-01", "last": "2021-12"}
+    ask |= {
+        "patterns": {"oknum": r"\boknum\b", "polisi": r"\bpolisi\b"},
+        "shares": [["polisi", "oknum"], ["*", "oknum"]],
+    }
+    found = pages.answer(ask)
+    assert found["periods"] == ["2020", "2021"] and found["pages"] == {"polisi": [[200, 200]], "*": [[300, 200]]}
+    assert found["share"]["polisi|oknum"] == [[0.5, 0.0]] and found["share"]["*|oknum"][0][0] == round(100 / 300, 4)
+    assert 0 < found["off"]["polisi|oknum"][0][0] < 0.3
+    assert pages.periods("2020-11", "2021-02", "month") == ["2020-11", "2020-12", "2021-01", "2021-02"]

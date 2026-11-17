@@ -1,0 +1,92 @@
+"""Counts that need the text itself: a phrase, one word only where another stands, month by month.
+
+    python -m idhist.pages            # every question in site/pages.json
+    python -m idhist.pages oknum      # one of them
+
+The counts under data/counts know which words share a page, for the words of a lens and by year. What they
+cannot answer (a phrase that is not a Wikipedia title, three things on one page, a count by month) is counted
+here, from the text kept of the publishers read one at a time (`idhist/sources/hplt.py`, KEPT).
+
+A question in site/pages.json:
+
+    {"name": "oknum", "publishers": ["kompas.com", "tempo.co"], "by": "year", "first": "2011-01", "last": "2024-12",
+     "patterns": {"oknum": "\\\\boknum\\\\b", "polisi": "\\\\bpolisi\\\\b"},
+     "shares": [["polisi", "oknum"], ["*", "oknum"]]}
+
+Patterns are regular expressions on the page in lower case. Each share is, of the pages that match the first
+name ("*" is every page; "a+b" pages that match both), the part that also matches the second. The answer,
+site/data/pages/<name>.json: {"periods", "publishers", "pages": {of: [publisher][period]},
+"share": {"of|with": [publisher][period]}, "off": the same shape}; `off` is the half-width of the share's 95%
+interval, from the same six folds of days as everywhere else (`together.interval`).
+"""
+
+import json
+import re
+import sys
+from pathlib import Path
+
+import numpy as np
+import pyarrow.parquet as pq
+
+from idhist import parallel
+from idhist.counts import FOLDS, fold_of
+from idhist.sources.hplt import TEXT
+from idhist.together import interval
+
+ASKED = Path("site/pages.json")
+SITE = Path("site/data/pages")
+MIN_PAGES = 50  # with fewer pages than this in a period, a share is not given
+
+
+def periods(first: str, last: str, by: str) -> list[str]:
+    """The labels of the periods from `first` to `last`, both "YYYY-MM": years, or months."""
+    (y0, m0), (y1, m1) = (map(int, x.split("-")) for x in (first, last))
+    if by == "year":
+        return [str(y) for y in range(y0, y1 + 1)]
+    return [f"{y}-{m:02d}" for y in range(y0, y1 + 1) for m in range(1, 13) if (y0, m0) <= (y, m) <= (y1, m1)]
+
+
+def _tally(job: tuple[Path, str, dict[str, str], list[str], str]) -> np.ndarray:
+    """One file of one publisher: pages by [period, fold, which patterns match] (the last as bits)."""
+    path, publisher, patterns, labels, by = job
+    found, at = [re.compile(p) for p in patterns.values()], {label: i for i, label in enumerate(labels)}
+    table = pq.read_table(path, columns=["day", "text"])
+    tally = np.zeros((len(labels), FOLDS, 2 ** len(found)), np.int64)
+    for day, text in zip(table["day"].to_pylist(), table["text"].to_pylist()):
+        period = at.get(str(day.year) if by == "year" else f"{day.year}-{day.month:02d}")
+        if period is not None:
+            text = text.lower()
+            match = sum(1 << i for i, pattern in enumerate(found) if pattern.search(text))
+            tally[period, fold_of(f"{publisher}/{day}"), match] += 1
+    return tally
+
+
+def _matching(tally: np.ndarray, names: list[str], wanted: str) -> np.ndarray:
+    """Pages [period, fold] that match every pattern named in `wanted` ("a+b"; "*" is every page)."""
+    need = 0 if wanted == "*" else sum(1 << names.index(name) for name in wanted.split("+"))
+    return tally[:, :, [m for m in range(tally.shape[2]) if m & need == need]].sum(2)
+
+
+def answer(ask: dict) -> dict:
+    labels, names = periods(ask["first"], ask["last"], ask["by"]), list(ask["patterns"])
+    out = {"periods": labels, "publishers": ask["publishers"], "pages": {}, "share": {}, "off": {}}
+    for publisher in ask["publishers"]:
+        jobs = [(path, publisher, ask["patterns"], labels, ask["by"]) for path in sorted((TEXT / publisher).glob("*"))]
+        tally = sum(parallel(_tally, jobs))
+        for of, part in ask["shares"]:
+            whole = _matching(tally, names, of)
+            both = _matching(tally, names, part if of == "*" else f"{of}+{part}")
+            share, off = interval(both.astype(float), whole.astype(float), MIN_PAGES)
+            out["pages"].setdefault(of, []).append(whole.sum(1).tolist())
+            for kind, values in (("share", share), ("off", off)):
+                listed = [None if np.isnan(v) else round(float(v), 4) for v in values]
+                out[kind].setdefault(f"{of}|{part}", []).append(listed)
+    return out
+
+
+if __name__ == "__main__":
+    SITE.mkdir(parents=True, exist_ok=True)
+    for ask in json.loads(ASKED.read_text()):
+        if len(sys.argv) < 2 or ask["name"] in sys.argv[1:]:
+            (SITE / f"{ask['name']}.json").write_text(json.dumps(answer(ask), separators=(",", ":")))
+            print(f"{ask['name']}: {len(ask['shares'])} shares in {len(ask['publishers'])} publishers")

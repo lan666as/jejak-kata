@@ -45,19 +45,27 @@ CHUNK = 200  # names whose company is read at a time
 T95 = 2.571  # Student's t for 95% with five degrees of freedom: six folds, one left out at a time
 
 
+def interval(part: np.ndarray, whole: np.ndarray, least: int = MIN_PAGES) -> tuple[np.ndarray, np.ndarray]:
+    """`part` as a share of `whole`, both counted per fold along the last axis, and how far that share may be off
+    (the half-width of a 95% interval): it is worked out again with each fold of days left out in turn, so that
+    pages of one day stand or fall together. NaN where `whole` has fewer than `least` pages."""
+    n, k = whole.sum(-1), whole.shape[-1]
+    with np.errstate(invalid="ignore", divide="ignore"):
+        share = np.where(n >= least, part.sum(-1) / n, np.nan)
+        left = (part.sum(-1, keepdims=True) - part) / (n[..., None] - whole)
+        spread = np.sqrt((k - 1) / k * ((left - left.mean(-1, keepdims=True)) ** 2).sum(-1))
+    return share, np.where(np.isnan(share), np.nan, T95 * spread)
+
+
 def _shares(counts: Counts, words: list[int], columns: list[int]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Pages per (word, period); the share of them that hold each column's word, (word, period, column); and how far
-    that share may be off (the half-width of a 95% interval), found by leaving out each fold of days in turn."""
+    """Pages per (word, period); the share of them that hold each column's word, (word, period, column); and how
+    far that share may be off."""
     pages = counts.df[:, :, words].transpose(2, 0, 1).astype(float)  # word, period, fold
     both = np.concatenate(
         [counts.cooc(words[i : i + CHUNK])[:, :, :, columns] for i in range(0, len(words), CHUNK)], 2
-    ).transpose(2, 0, 1, 3)  # word, period, fold, column
-    n, k = pages.sum(2), pages.shape[2]
-    with np.errstate(invalid="ignore", divide="ignore"):
-        share = np.where(n[:, :, None] >= MIN_PAGES, both.sum(2) / n[:, :, None], np.nan)
-        left = (both.sum(2, keepdims=True) - both) / (n[:, :, None] - pages)[..., None]  # the share without one fold
-        spread = np.sqrt((k - 1) / k * ((left - left.mean(2, keepdims=True)) ** 2).sum(2))
-    return n.astype(int), share, np.where(np.isnan(share), np.nan, T95 * spread)
+    ).transpose(2, 0, 3, 1)  # word, period, column, fold
+    share, off = interval(both, pages[:, :, None, :])
+    return pages.sum(2).astype(int), share, off
 
 
 def _listed(x: np.ndarray, digits: int = 4) -> list:
