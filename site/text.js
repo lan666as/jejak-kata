@@ -7,7 +7,7 @@ const unit = {
 const unitOf = (language, lens) => unit[language][lens.lens.split("-")[1]];
 
 // Stories. Each opens on a question people argue about, turns on something the counting found, and ends on what
-// it cannot tell. A scene names a figure (see SCENES in app.js); its steps scroll past the pinned figure, each
+// it cannot tell. A scene names a figure (see SCENES in app.js) shown on a stage; its steps turn one after another beside it, each
 // naming the moment to show (`at`), what to bring forward (`focus`; "*" is the row of all pages), a moment
 // inside a plate (`mark`) and the caption's heading (`head`). `check` lists the words to look up.
 const K = "id-web-news-kompas";
@@ -659,6 +659,10 @@ export const TEXT = {
     hero_go: "Berlayar",
     nav_quiz: "Kuis",
     limits_title: "Yang tidak dapat dikatakan data ini",
+    story: "Cerita", begin: "Mulai", read_time: (n) => `${n} menit baca`, part_of: (k, n) => `Bagian ${k} dari ${n}`, steps_n: (n) => `${n} langkah`,
+    step_back: "Kembali", step_on: "Lanjut", opening: (title) => `Pembuka: ${title}`,
+    step_name: (k, n, head) => `Langkah ${k} dari ${n}: ${head}`, steps_label: "Langkah-langkah bagian ini", stage_hint: "Gulir, usap, atau tekan tombol panah untuk melangkah.",
+    next_story: "Cerita berikutnya", all_stories: "Semua cerita", take_away: "Bawa pulang",
     check: "Periksa sendiri:",
     check_data: "angka mentahnya",
     save_image: "Simpan gambar",
@@ -873,6 +877,10 @@ export const TEXT = {
     hero_go: "Sail",
     nav_quiz: "Quiz",
     limits_title: "What this cannot tell you",
+    story: "Story", begin: "Begin", read_time: (n) => `${n} min read`, part_of: (k, n) => `Part ${k} of ${n}`, steps_n: (n) => `${n} steps`,
+    step_back: "Back", step_on: "Next", opening: (title) => `Opening: ${title}`,
+    step_name: (k, n, head) => `Step ${k} of ${n}: ${head}`, steps_label: "The steps of this part", stage_hint: "Scroll, swipe or press the arrow keys to step through.",
+    next_story: "Next story", all_stories: "All stories", take_away: "Take it with you",
     check: "Check it yourself:",
     check_data: "the raw numbers",
     save_image: "Save image",

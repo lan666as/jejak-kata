@@ -80,14 +80,17 @@ A story is a voyage in three parts.
    it (from 900px: a column at the right; below: a band under the figure). Captions do not scroll past as boxes:
    the stage stays, the caption turns (`--d-turn`), the figure's marks travel (`--d-leg`). Scroll, swipe, the arrow
    keys, space, or the next/previous controls all move one step; scrolling settles on a step (scroll snap,
-   proximity). The caption shows its head, the text, and "3 / 6"; a row of ticks shows the steps and takes a tap.
-   Nothing is ever cut: on a phone the figure takes at most 52% of the height and the caption band the rest,
-   and a long caption scrolls inside its band.
+   proximity). Step 0 of a scene opens it: the scene's title and text, so the reader knows the figure before it
+   moves. The caption shows its head, the text, and "3 / 6"; a row of ticks shows the steps and takes a tap.
+   Nothing is ever cut: on a phone the figure takes half the height under the header and the caption band the
+   rest, and a long caption scrolls inside its band. Under each sticky stage lies a run of invisible beats, one
+   per step, that the scroll snaps to; the scroll position chooses the step.
 3. **Landing**, on the chart: "What this data cannot say" as a bordered panel, the tools (save image, copy link,
    check for yourself), and the next story as a card.
 
-Every caption stays in the document for screen readers; the visible caption is an `aria-live="polite"` region.
-With reduced motion, or without JavaScript scroll support, the scenes fall back to figure-then-captions in order.
+Every caption stays in the document, in its beat, for screen readers and find-in-page; the visible caption is an
+`aria-live="polite"` region. With reduced motion the stage stays, steps cut instead of travelling and nothing snaps.
+A story keeps its place by step (not by pixels) across a language switch and the back button.
 
 ## Pages
 
