@@ -46,7 +46,7 @@ stage_validate() {
 stage_export()   { each export; each highlights; python -m idhist.together; }
 stage_look()     {  # the site used like a reader, in a real browser; needs `npm install` in tests/site once
   for f in site/*.js; do node --check "$f"; done
-  node tests/site/stories.mjs && node tests/site/pages.mjs
+  node tests/site/stories.mjs && node tests/site/pages.mjs && node tests/site/hero.mjs
 }
 stage_deploy()   {  # publish site/ (with its data) as the gh-pages branch, if it passes `look`; not part of a plain ./run.sh
   stage_look
