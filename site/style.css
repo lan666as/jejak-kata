@@ -204,7 +204,7 @@ main:focus { outline: none; }
 /* the shore: the night sea behind a head on the deep, darker where the text lies; the graticule until it is there */
 .shore-sea { position: absolute; z-index: -1; top: 0; bottom: 0; left: calc(50% - 50vw); width: 100vw; overflow: hidden; pointer-events: none; }
 .shore-sea > .chart { position: absolute; inset: 0; height: 100%; background: none; border: 0; border-radius: 0; pointer-events: auto; animation: fade calc(var(--d-leg) * 1.5) var(--sail) both; }
-.shore-sea .chart .when, .shore-sea .chart .tally { display: none; }
+.shore-sea .chart.gl :is(.when, .tally) { display: none; }
 .shore-sea::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, var(--deep) 30%, color-mix(in srgb, var(--deep) 80%, transparent) 55%, color-mix(in srgb, var(--deep) 58%, transparent)); }  /* on a phone the title lies over the sea: the lights stay dim behind it */
 @media (min-width: 900px) { .shore-sea::after { background: linear-gradient(to right, var(--deep) calc((100% - var(--content)) / 2 + 26rem), color-mix(in srgb, var(--deep) 55%, transparent) calc((100% - var(--content)) / 2 + 38rem), transparent 75%); } }
 
@@ -403,7 +403,7 @@ svg text { fill: var(--ink-2); font: 12px var(--type); }
 .map-steer .picked { margin-top: 0; } .map-steer .picked:empty { display: none; }
 .map-steer .suggest { margin: 0; }
 @media (min-width: 900px) {
-  .page-head.joined { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--s8); align-items: end; padding-top: var(--s7); }
+  .page-head.joined { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--s8); align-items: last baseline; padding-top: var(--s7); }
   .page-head.joined > .kicker { grid-column: 1 / -1; }
   .page-head.joined > .lede { margin: 0; max-width: 34rem; font-size: var(--t-body); line-height: var(--l-body); }
 }
@@ -433,8 +433,27 @@ svg text { fill: var(--ink-2); font: 12px var(--type); }
 .chart.night.explore .zoom button:hover { border-color: var(--on-deep); background: var(--deep-2); }
 .chart.night.explore .zoom [data-k="above"] { width: auto; padding: 0 var(--s3); margin-top: var(--s2); font-size: var(--t-meta); }
 .chart.night.explore .zoom [aria-pressed="true"], .chart.night.explore .zoom [aria-pressed="true"]:hover { color: var(--deep); background: var(--on-deep); border-color: var(--on-deep); }
-.chart.night.explore .when { top: auto; bottom: var(--s4); left: max(var(--gutter), (100% - var(--content)) / 2); right: auto; font-size: var(--t-h1); opacity: .9; }
-.chart.night.explore.above .when { color: var(--ink-3); }
+/* how to move over the sea, on it, until the reader does */
+.sea-hint { position: absolute; left: 50%; bottom: var(--s5); transform: translateX(-50%); max-width: calc(100% - 2 * var(--gutter)); margin: 0; padding: var(--s2) var(--s4);
+  border-radius: var(--pill); background: color-mix(in srgb, var(--deep) 82%, transparent); color: var(--on-deep); font-size: var(--t-small); line-height: var(--l-small); text-align: center;
+  pointer-events: none; transition: opacity var(--d-turn) var(--sail); }
+.sea-hint.gone { opacity: 0; }
+.map-demo { margin: var(--s2) 0 0; }
+@media (max-width: 899.98px) {
+  /* on a phone the sea is the first thing: a short head, the sea, then what steers it */
+  .page-head.joined { padding-top: var(--s5); }
+  .page-head.joined > .lede { display: none; }
+  .map-deep { display: flex; flex-direction: column; }
+  .map-deep > .map-steer { order: 2; margin-top: var(--s4); }
+  .map-deep > .legend { order: 3; }
+  .map-deep .chart.gl { margin-top: 0; }
+  .chart.night.explore .zoom { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; top: var(--s3); right: var(--gutter); }
+  .chart.night.explore .zoom [data-k="above"] { margin-top: 0; }
+  .chart.night.explore .when { bottom: var(--s3); }
+  .sea-hint { bottom: calc(var(--s7) + var(--s6)); }
+}
+.chart.night.explore .when { top: auto; bottom: var(--s4); left: max(var(--gutter), (100% - var(--content)) / 2); right: auto; justify-items: start; }
+.chart.night.explore.above .when, .chart.night.explore.above .when b { color: var(--ink-3); }
 
 /* orbit: a word and its company */
 .orbit { position: relative; width: min(100%, 560px); aspect-ratio: 1; margin: var(--s2) auto; }
@@ -491,6 +510,20 @@ text.when-label { font: 800 13px var(--type); fill: var(--route); paint-order: s
 .sparks small { color: var(--ink-2); font-size: var(--t-meta); line-height: var(--l-meta); }
 .spark-line { fill: none; stroke: var(--route); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .spark-line.k1 { stroke: var(--ink-3); } .spark-area { fill: var(--route); opacity: .12; }
+
+/* findings: the lead pairs as figures, each word named where its line is; the rest folded under them */
+.rule { max-width: var(--measure); margin: 0 0 var(--s4); padding-left: var(--s4); border-left: var(--rule) solid var(--beacon); font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
+.duets { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); gap: var(--s4); margin: var(--s4) 0; padding: 0; list-style: none; }
+.duets a { display: flex; flex-direction: column; gap: var(--s1); height: 100%; padding: var(--s4) var(--s5) var(--s3); color: var(--ink); text-decoration: none; background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); transition: border-color var(--d-press) var(--sail); }
+.duets a:hover { border-color: var(--ink-2); }
+.duet-word { font: 800 var(--t-h2)/var(--l-h2) var(--type); font-stretch: 75%; color: var(--route); }
+.duet-was { font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
+.duet-figure { margin-top: var(--s2); }
+.duet-figure text { font-size: 12px; fill: var(--ink-3); }
+.duet-figure .duet-rose, .duet-figure .duet-fell { font-size: 13px; font-weight: 700; paint-order: stroke; stroke: var(--chart-2); stroke-width: 4px; stroke-linejoin: round; }
+.duet-figure .duet-rose { fill: var(--route); } .duet-figure .duet-fell { fill: var(--ink-2); } .duet-figure .duet-year { font-weight: 700; fill: var(--ink); }
+.more-finds > summary { color: var(--link); font-size: var(--t-small); }
+.more-finds[open] > summary { margin-bottom: var(--s2); }
 
 /* posters: a year in its own words */
 .wall { display: flex; gap: var(--s3); min-height: 420px; overflow-x: auto; scroll-snap-type: x mandatory; padding: var(--s1) var(--gutter) var(--s4); margin: 0 calc(-1 * var(--gutter)); }
@@ -561,8 +594,8 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .cover a.kicker:hover { color: var(--on-deep); }
 .cover-kicker { display: flex; align-items: center; gap: var(--s3); margin: var(--s5) 0 var(--s4); font-size: var(--t-small); font-weight: 600; color: var(--on-deep-2); }
 .cover-kicker::before { content: ""; width: var(--s6); height: var(--rule); background: var(--route-on-deep); }
-.cover h1 { max-width: 13ch; margin: 0 0 var(--s6); font: 800 var(--t-display)/var(--l-display) var(--type); font-stretch: 75%; letter-spacing: 0; color: var(--on-deep); }
-.cover h1.long { max-width: 16ch; font-size: calc((var(--t-h1) + var(--t-display)) / 2); }
+.cover h1 { max-width: 13ch; margin: 0 0 var(--s6); font: 800 min(var(--t-display), 12.5svh)/var(--l-display) var(--type); font-stretch: 75%; letter-spacing: 0; color: var(--on-deep); }
+.cover h1.long { max-width: 16ch; font-size: min(calc((var(--t-h1) + var(--t-display)) / 2), 11svh); }  /* the cover keeps to one screen: "Mulai" is on it */
 .cover .deck { margin: 0 0 var(--s5); font-size: var(--t-lede); line-height: var(--l-lede); color: var(--on-deep); }
 .cover-intro { color: var(--on-deep-2); }
 /* the story's key number, a beacon over the water, beside the deck from 900px (a phone's cover keeps its title) */
@@ -570,7 +603,8 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .cover-key .key-number { display: block; font: 800 var(--t-h1)/var(--l-display) var(--type); font-stretch: 75%; color: var(--beacon); font-variant-numeric: tabular-nums; }
 .cover-key .key-label { display: block; max-width: 24rem; margin-top: var(--s2); font-size: var(--t-small); line-height: var(--l-small); color: var(--on-deep-2); }
 @media (min-width: 900px) { .cover-key { display: block; animation: surface var(--d-leg) var(--sail) calc(var(--d-turn) * 1.6) both; } }
-@media (max-width: 899.98px) { .cover-intro { display: none; } .cover { justify-content: flex-end; } }  /* on a phone the intro opens the first scene's caption; the sea lies above the title */
+.cover-intro { display: none; }  /* one paragraph on the cover, the deck: the intro opens the first scene's caption */
+@media (max-width: 899.98px) { .cover { justify-content: flex-end; } }  /* on a phone the sea lies above the title */
 .cover .shore-sea { left: 0; width: 100%; }
 @media (max-width: 899.98px) { .cover .shore-sea::after { background: linear-gradient(to top, var(--deep) 55%, color-mix(in srgb, var(--deep) 60%, transparent) 68%, transparent 82%); } }
 .cover-text { position: relative; }
@@ -580,6 +614,12 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
   .cover-body { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s7); align-items: start; }
   .cover .deck { font-size: var(--t-h3); line-height: var(--l-lede); }
 }
+@media (min-width: 900px) and (max-height: 940px) {  /* a laptop's screen: the cover still holds "Mulai" */
+  .cover { padding-top: var(--s4); }
+  .cover-kicker { margin: var(--s3) 0; }
+  .cover h1 { margin-bottom: var(--s5); }
+  .cover .deck { font-size: var(--t-lede); }
+}
 
 /* 2. a stage per scene: the figure holds the screen, the caption turns in one place beside it (below 900px: under it).
    Under the sticky stage lies a run of beats, one per step, that the scroll snaps to; each holds its caption, hidden. */
@@ -587,7 +627,12 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .stage { position: sticky; top: var(--head, var(--head-h)); z-index: 1; display: grid; grid-template: "figure" auto "side" minmax(0, 1fr) / minmax(0, 1fr); gap: var(--s3);
   height: var(--stage-h); padding: var(--s3) var(--gutter); background: var(--deep); color: var(--on-deep); --focus: var(--route-on-deep); }
 .stage:focus { outline: none; }
-.stage-figure { grid-area: figure; display: grid; place-items: center; height: var(--fig, calc(var(--stage-h) / 2)); min-width: 0; }  /* --fig: the figure's share on a phone, by need (app.js, share) */
+.stage-figure { grid-area: figure; display: grid; place-items: center; height: var(--fig, calc(var(--stage-h) / 2)); min-width: 0; }
+/* behind the plate, the chart's graticule, faint: the figure is a chart laid on the deep */
+.stage::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .55;
+  background: linear-gradient(var(--line-deep) 0 1px, transparent 1px) 0 0 / 100% 96px, linear-gradient(90deg, var(--line-deep) 0 1px, transparent 1px) 0 0 / 96px 100%;
+  mask-image: radial-gradient(ellipse 60% 70% at 38% 50%, #000 20%, transparent 75%); }
+.stage { isolation: isolate; }  /* --fig: the figure's share on a phone, by need (app.js, share) */
 .stage-figure > * { grid-area: 1 / 1; max-width: 100%; }
 .stage-figure .plate svg { max-height: var(--fig, calc(var(--stage-h) / 2)); border-color: transparent; }
 .stage-figure .sub { color: var(--on-deep-2); }
@@ -633,13 +678,12 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .beat:last-child { height: calc(var(--stage-h) + var(--s1)); }  /* a little slack, so that rounded beats never unstick the last step */
 .beat > .hidden { top: 50%; }
 @media (min-width: 900px) {
-  .stage { grid-template: "figure side" minmax(0, 1fr) / minmax(0, 1fr) var(--side); gap: var(--s6); padding: var(--s5) max(var(--gutter), (100% - var(--content)) / 2 - var(--s9)); }
+  .stage { grid-template: "figure side" minmax(0, 1fr) / minmax(0, 1fr) var(--side); gap: var(--s7); padding: var(--s5) max(var(--gutter), (100% - var(--content)) / 2); }
   .stage-figure { height: auto; min-height: 0; }
   .stage-figure .plate svg { max-height: calc(var(--stage-h) - 2 * var(--s5)); }
   .stage-side { gap: var(--s4); padding: var(--s2) 0; }
   .caption { padding-top: clamp(0px, 12vh - var(--s6), 96px); }  /* a short caption sits a little below the top, a fixed amount: nothing moves as captions turn */
   .turn p { font-size: var(--t-caption); line-height: 1.38; }
-  .turn .intro { display: none; }  /* the cover shows it */
   .turn .head { font-size: var(--t-h2); line-height: var(--l-h2); }
   .turn .title { font-size: var(--t-h1); line-height: var(--l-h1); }
   .turn .hint { display: block; margin-top: var(--s5); }
@@ -688,11 +732,19 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
   background: linear-gradient(to top, var(--deep) 0, var(--deep) 30%, color-mix(in srgb, var(--deep) 70%, transparent) 48%, transparent 66%); }
 @media (max-width: 899.98px) { .hero-sea::after { background: linear-gradient(to top, var(--deep) 0, var(--deep) 44%, color-mix(in srgb, var(--deep) 78%, transparent) 60%, transparent 76%); } }  /* on a phone the text lies over the chart: the sea darkens under it */
 .hero-sea.failed::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, var(--line-deep) 0 1px, transparent 1px 25%), repeating-linear-gradient(0deg, var(--line-deep) 0 1px, transparent 1px 25%); opacity: .5; }
-.chart.night .when { top: var(--s4); right: var(--gutter); left: auto; bottom: auto; font-size: var(--t-h2); color: var(--on-deep-2); opacity: calc(1 - var(--away)); font-variant-numeric: tabular-nums; }
+.chart.night .when { top: var(--s4); right: var(--gutter); left: auto; bottom: auto; color: var(--on-deep-2); opacity: calc(1 - var(--away)); }
+/* the year the ships are at, counting as they sail, over a line from the first year to the last filled as far as they are */
+.chart.gl .when { display: grid; justify-items: end; gap: var(--s1); width: 8.5rem; font: 600 var(--t-meta)/var(--l-meta) var(--type); opacity: 1; font-variant-numeric: tabular-nums; }
+.chart.gl .when[hidden] { display: none; }
+.chart.gl .when b { font: 800 var(--t-h2)/1 var(--type); font-stretch: 75%; color: var(--on-deep); }
+.when-bar { position: relative; width: 100%; height: var(--rule); background: var(--line-deep-2); border-radius: var(--pill); }
+.when-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--at, 1) * 100%); background: var(--route-on-deep); border-radius: inherit; }
+.when-bar i::after { content: ""; position: absolute; right: -4px; top: -3px; width: var(--s2); height: var(--s2); border-radius: 50%; background: var(--on-deep); }
+.when-ends { display: flex; justify-content: space-between; width: 100%; color: var(--on-deep-2); }
 .chart.night .zoom { display: none; }
 .chart.night > canvas:focus-visible { outline-offset: calc(-1 * var(--s1)); }
 .chart.gl > canvas { position: absolute; inset: 0; cursor: default; }
-.chart.gl .tally { position: absolute; top: calc(var(--s4) + var(--t-h2) + var(--s1)); right: var(--gutter); margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); font-weight: 600;
+.chart.gl .tally { position: absolute; top: calc(var(--s4) + var(--t-h2) + var(--s7)); right: var(--gutter); margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); font-weight: 600;
   color: var(--on-deep-2); font-variant-numeric: tabular-nums; transition: opacity var(--d-turn) var(--sail) var(--d-leg); }  /* the arrival's count of words lit, under the year */
 .chart.gl .tally.done { opacity: 0; }
 .chart.gl > canvas + canvas { pointer-events: none; }
@@ -711,16 +763,34 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .hero .suggest > button { min-height: calc(var(--tap) + var(--s2)); padding: 0 var(--s4); flex: none; background: var(--route-on-deep); border-color: var(--route-on-deep); color: var(--deep); }
 .hero .suggest > button:hover { border-color: var(--on-deep); }
 .hero .offers { bottom: calc(100% + var(--s1)); top: auto; }  /* above the field: below it lies the bottom of the screen */
-.hero-try { display: flex; align-items: flex-start; gap: var(--s2); margin-top: var(--s3); font-size: var(--t-small); color: var(--on-deep-2); }
-.hero-try > span { flex: none; line-height: calc(var(--chip) + 2 * var(--s1)); }
-.hero-try .chips { flex: 1; min-width: 0; margin: 0 calc(-1 * var(--gutter)) 0 0; padding: var(--s1) var(--gutter) var(--s1) var(--s1); }
+.hero-try { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s3); font-size: var(--t-small); color: var(--on-deep-2); }
+.hero-try > span { flex: none; font-size: var(--t-meta); font-weight: 600; }
+.hero-try .chips { flex: 1; min-width: 0; margin: 0 calc(-1 * var(--gutter)) 0 0; padding: var(--s1) var(--s7) var(--s1) var(--s1);
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--s7)), transparent); }  /* a row that scrolls on a phone: it fades where it goes on */
 .hero-try .chips button { min-height: var(--chip); padding: 0 var(--s3); color: var(--on-deep); background: transparent; border-color: var(--line-deep-2); }
 .hero-try .chips button:hover { border-color: var(--on-deep); background: var(--deep-2); }
 .hero-try .chips button[aria-pressed="true"] { color: var(--deep); background: var(--on-deep); border-color: var(--on-deep); }
-.hero-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); min-height: var(--tap); margin-top: var(--s2); }
-.hero-now { margin: 0; font-size: var(--t-small); color: var(--on-deep-2); }
+.hero-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s1) var(--s3); min-height: var(--tap); margin-top: var(--s2); }
+.hero-foot > .hero-now { flex: 1 1 100%; }
+.hero-now { margin: 0; font-size: var(--t-small); line-height: var(--l-small); color: var(--on-deep-2); }
 .hero-now a { color: var(--on-deep); font-weight: 600; }
-.hero-down { flex: none; padding: 0 var(--s2); color: var(--on-deep); font-size: var(--t-small); }
+.hero-now .gloss { display: block; font-size: var(--t-meta); line-height: var(--l-meta); }
+/* what a light and a route are, beside the sea, until the dive turns it to paper */
+.hero-key { position: absolute; top: var(--s4); left: var(--gutter); display: grid; gap: var(--s1); max-width: 17rem; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta);
+  color: var(--on-deep-2); opacity: calc(1 - var(--away)); pointer-events: none; }
+.hero-key p { display: flex; align-items: center; gap: var(--s2); margin: 0; }
+.hero-key svg { flex: none; fill: none; stroke: var(--on-deep-2); stroke-width: 1.5; stroke-linecap: round; }
+.hero-key .light { fill: var(--light-5); stroke: none; } .hero-key .route { stroke: var(--route-on-deep); stroke-width: 2.5; } .hero-key .port { fill: var(--route-on-deep); stroke: none; }
+.hero-key .ship { fill: var(--on-deep); }
+.dives .hero-down .no-dive, html:not(.dives) .hero-down .dive-cue { display: none; }
+.tide-mark { flex: none; fill: none; stroke: var(--route-on-deep); stroke-width: 2; stroke-linecap: round; }
+.hero-down { flex: none; padding: 0 var(--s3); color: var(--on-deep); font-size: var(--t-small); white-space: nowrap; border-color: var(--line-deep-2); border-radius: var(--pill); }
+@media (max-width: 899.98px) {
+  .hero h1 { font-size: clamp(2.75rem, 13.4vw, 4.5rem); margin-bottom: var(--s3); }
+  .hero-lede { margin-bottom: var(--s4); font-size: var(--t-small); line-height: var(--l-small); }
+  .hero-now .gloss { display: inline; } .hero-now .gloss::before { content: " · "; }
+  .hero-key { right: calc(8.5rem + 2 * var(--gutter)); }
+}
 .hero-down:hover { color: var(--on-deep); text-decoration: none; background: var(--deep-2); }
 .hero-down svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--d-press) var(--sail); }
 .hero-down:hover svg { transform: translateY(var(--s1)); }
@@ -731,10 +801,16 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
   .hero h1 { margin-bottom: var(--s5); font-size: clamp(4rem, 7.4vw, 7rem); }
   .hero-lede { font-size: var(--t-lede); line-height: var(--l-lede); margin-bottom: var(--s6); }
   .hero .offers { top: calc(100% + var(--s1)); bottom: auto; }
-  .hero-try .chips { margin: 0; padding: var(--s1); }
+  .hero-try { flex-direction: column; align-items: flex-start; gap: var(--s1); margin-top: var(--s4); }  /* the label above the chips: no hanging indent */
+  .hero-try .chips { margin: 0; padding: var(--s1) 0; mask-image: none; }
   .hero-foot { max-width: 32rem; margin-top: var(--s4); }
-  .chart.night .when { top: auto; bottom: var(--s5); right: max(var(--gutter), (100% - var(--content)) / 2); font-size: var(--t-h1); }
-  .chart.gl .tally { top: auto; bottom: calc(var(--s5) + var(--t-h1)); right: max(var(--gutter), (100% - var(--content)) / 2); }
+  /* the dive is signposted at the foot of the first screen, in the middle */
+  .hero-down { position: absolute; left: 50vw; bottom: var(--s5); transform: translateX(-50%); background: color-mix(in srgb, var(--deep) 70%, transparent); }
+  .hero-down:hover { transform: translateX(-50%); }
+  .hero-key { top: var(--s5); left: auto; right: max(var(--gutter), (100% - var(--content)) / 2); }
+  .chart.night .when { top: auto; bottom: var(--s5); right: max(var(--gutter), (100% - var(--content)) / 2); }
+  .chart.night .when b { font-size: var(--t-h1); }
+  .chart.gl .tally { top: auto; bottom: calc(var(--s5) + var(--t-h1) + var(--s6)); right: max(var(--gutter), (100% - var(--content)) / 2); }
 }
 
 /* cards led by a number: stories (the key number) and play (a mark) */
@@ -745,7 +821,6 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .key { display: flex; flex-direction: column; gap: var(--s2); padding-bottom: var(--s4); border-bottom: var(--hair) solid var(--line); }
 .key-number { font: 800 var(--t-h2)/var(--l-display) var(--type); font-stretch: 75%; letter-spacing: -.01em; color: var(--ink); font-variant-numeric: tabular-nums; }
 .key-label { font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
-.story-card .card-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
 .story-cards.large { gap: var(--s4); }
 .story-card.large { padding: var(--s6) var(--s5) var(--s5); background: var(--deep); border-color: var(--line-deep); color: var(--on-deep); --focus: var(--route-on-deep); }
 .story-card.large::before { background: var(--route-on-deep); }
@@ -766,7 +841,9 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .story-card.large .card-title { color: var(--on-deep); }
 .story-card.large .card-text { color: var(--on-deep-2); }
 .cards-head { margin-top: var(--s7); }
-@media (min-width: 900px) { .story-cards.large { grid-template-columns: repeat(3, minmax(0, 1fr)); } .story-card.large { padding: var(--s6); } }
+/* the newest story leads: a wider card, its number larger */
+@media (min-width: 900px) { .story-cards.large { grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(0, 1fr)); } .story-card.large { padding: var(--s6); }
+  .story-cards.large li:first-child .key-number { font-size: calc(var(--t-key) * 1.25); } .story-cards.large li:first-child .card-title { font-size: var(--t-h2); line-height: var(--l-h2); } }
 
 .play-card { gap: var(--s2); }
 .play-mark { width: 64px; height: 44px; margin-bottom: var(--s2); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; color: var(--ink-2); transition: color var(--d-press) var(--sail); }
@@ -811,18 +888,18 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .empty .words { margin-bottom: 0; }
 .offers .none, #suggestions .none { padding: var(--s3); font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
 @media (max-width: 899.98px) { #suggestions .none { color: var(--on-deep-2); } }
-.lost { position: relative; isolation: isolate; overflow: hidden; margin: var(--s6) 0; padding: var(--s8) var(--s5) var(--s7); background: var(--deep); color: var(--on-deep); border-radius: var(--r2); --focus: var(--route-on-deep); }
-.lost h1 { max-width: 14ch; margin: 0 0 var(--s5); font: 800 var(--t-display)/var(--l-display) var(--type); font-stretch: 75%; letter-spacing: 0; color: var(--on-deep); }
-.lost .deck { margin: 0 0 var(--s6); font-size: var(--t-lede); line-height: var(--l-lede); color: var(--on-deep-2); }
+/* an address that leads nowhere: a head of the deep like every other page's, as tall as the screen allows, the night
+   sea held still beside its text (under it on a phone), no route on it */
+.page-head.lost { display: flex; flex-direction: column; justify-content: flex-end; min-height: calc(100svh - var(--head-h) - var(--s7)); margin-bottom: 0; }
+.lost h1 { max-width: 11ch; margin: 0 0 var(--s5); font: 800 clamp(3rem, 6.4vw, 6rem)/var(--l-display) var(--type); font-stretch: 75%; letter-spacing: 0; color: var(--on-deep); }
+.lost .deck { max-width: 32rem; margin: 0 0 var(--s6); font-size: var(--t-lede); line-height: var(--l-lede); color: var(--on-deep-2); }
 .lost .cover-kicker { margin-top: 0; }
 .lost-ways { display: flex; flex-wrap: wrap; gap: var(--s3); max-width: none; margin: 0; }
 .lost-ways .button:not(.primary) { color: var(--on-deep); background: var(--deep); border-color: var(--line-deep-2); }
 .lost-ways .button:not(.primary):hover { background: var(--deep-2); border-color: var(--on-deep); }
 .lost-ways .primary { color: var(--deep); background: var(--route-on-deep); border-color: var(--route-on-deep); }
 .lost-ways .primary:hover { border-color: var(--on-deep); }
-@media (min-width: 900px) { .lost { padding: var(--s9) var(--s8) var(--s8); } }
-.lost .shore-sea { left: 0; width: 100%; }  /* the night sea, still, with no route on it */
-.lost .shore-sea::after { background: linear-gradient(to right, var(--deep) 20%, color-mix(in srgb, var(--deep) 40%, transparent) 70%, transparent); }
+@media (min-width: 900px) { .page-head.lost { justify-content: center; } }
 
 /* a word's own pages: the word is the subject, set in display type; its notes quiet, beside a rule */
 .page-head h1.word-title { letter-spacing: 0; font-size: var(--t-display); line-height: var(--l-display); max-width: none; overflow-wrap: anywhere; }
@@ -936,6 +1013,7 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .share-to button { width: 100%; margin-top: var(--s1); }
 .share-mark { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .cover .share { margin: var(--s2) 0 0 var(--s3); vertical-align: top; }
+.cover .share .share-to { top: auto; bottom: calc(100% + var(--s2)); }  /* opens upward, over the deck: below lies the cover's edge */
 .cover .share > summary { min-height: calc(var(--tap) + var(--s2)); color: var(--on-deep); background: var(--deep); border-color: var(--line-deep-2); }
 .cover .share > summary:hover { background: var(--deep-2); border-color: var(--on-deep); }
 .stage-meta .count { margin-left: auto; }

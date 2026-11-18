@@ -58,7 +58,7 @@ function sheet(spec, width, height, body, least = 0) {
   node.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${spec.title.replace(/"/g, "")}" style="font-family:${css("--type").replace(/"/g, "'")}">
     <rect width="${W}" height="${H}" fill="${paper}"/>
     <text y="${size + 6}" style="font-size:${size}px;font-weight:800;fill:${ink}">${lines.map((l, k) => `<tspan x="12" dy="${k ? size * 1.14 : 0}">${l}</tspan>`).join("")}</text>
-    ${body({ W, H, narrow, top, ink, soft, paper, line: css("--line") })}
+    ${body({ W, H, narrow, top, ink, soft, paper, line: css("--line"), beacon: css("--beacon") })}
     <text class="note" y="${H - 23}" style="font-size:12px;fill:${soft}"></text>
     <text x="12" y="${H - 7}" style="font-size:12px;font-weight:700;fill:${ink}">${SITE}</text>
   </svg>`;
@@ -82,7 +82,7 @@ export function plate(spec, width, height) {
   const n = spec.periods.length, B = 84, L = 40;
   const most = Math.max(...spec.series.flatMap((s) => s.values.map((v, i) => (v || 0) + (s.off?.[i] || 0)))) * 1.08 || 1;
   let x, y, R, T, tag;
-  const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line }) => {
+  const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line, beacon }) => {
     // The names at the right are as wide as the longest name with its value needs: on a phone up to half the plate;
     // a name and value longer than that go on two lines (show), never smaller than 12px.
     const long = Math.max(...spec.series.map((s) => s.label.length + (s.off ? 12 : 8)));
@@ -101,7 +101,7 @@ export function plate(spec, width, height) {
       const band = !s.off ? [] : s.values.reduce((acc, v, i) => (v === null ? acc.push([]) : acc.at(-1).push(i), acc), [[]]).filter((r) => r.length > 1)
         .map((r) => [...r.map((i) => `${x(i)},${y(s.values[i] + s.off[i])}`), ...r.reverse().map((i) => `${x(i)},${y(Math.max(0, s.values[i] - s.off[i]))}`)].join(" "));
       return `<g class="series" style="--k:${k};transition:opacity var(--d-turn) var(--sail)">${band.map((b) => `<polygon class="band" points="${b}" fill="${colour}" opacity="0.16"/>`).join("")}${runs.map((r) => `<polyline class="draw" pathLength="1" points="${r.join(" ")}" fill="none" stroke="${colour}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`).join("")}
-        <circle r="5" fill="${colour}" stroke="${paper}" stroke-width="2" style="${MOVE}"/><text x="${W - R + 9}" style="font-size:${tag}px;font-weight:700;fill:${ink};${MOVE}"></text></g>`;
+        <circle r="5.5" fill="${colour}" stroke="${paper}" stroke-width="2" style="${MOVE}"/><rect class="beacon" x="${W - R + 3}" rx="4" fill="${beacon}" opacity="0" style="${MOVE}"/><text x="${W - R + 9}" style="font-size:${tag}px;font-weight:700;fill:${ink};${MOVE}"></text></g>`;
     }).join("")}`;
   });
   const marker = made.svg.querySelector(".marker"), groups = [...made.svg.querySelectorAll(".series")], { W } = made;
@@ -110,6 +110,10 @@ export function plate(spec, width, height) {
     const dot = wide("● ", tag), room = R - 12 - dot, lines = [""];
     for (const word of said.split(" ")) wide((lines.at(-1) + " " + word).trim(), tag) > room && lines.at(-1) ? lines.push(word) : (lines[lines.length - 1] = (lines.at(-1) + " " + word).trim());
     groups[k].querySelector("text").innerHTML = `<tspan fill="${css(COLOURS[k % COLOURS.length])}">● </tspan>` + lines.map((l, j) => `<tspan${j ? ` x="${W - R + 9 + dot}" dy="${tag + 2}"` : ""}>${escape(l)}</tspan>`).join("");
+    const pill = groups[k].querySelector(".beacon");
+    pill.setAttribute("width", dot + Math.max(...lines.map((l) => wide(l, tag))) + 12);
+    pill.setAttribute("height", (tag + 2) * lines.length + 6);
+    pill.setAttribute("y", -tag - 2);
     return 15 + (tag + 2) * (lines.length - 1);  // the height it takes
   };
   const show = (i, focus) => {
@@ -123,12 +127,17 @@ export function plate(spec, width, height) {
     // ... and, where they ran past the foot of the plot, pushed back up together.
     for (let j = rows.length - 1; j >= 0; j--) rows[j].at = Math.min(rows[j].at, j < rows.length - 1 ? rows[j + 1].at - rows[j].h : y(0) + 15 - rows[j].h);
     groups.forEach((g, k) => {
-      const row = rows.find((r) => r.k === k), [dot, text] = [g.querySelector("circle"), g.querySelector("text")];
-      g.style.opacity = !row ? 0.25 : focus && !focus.includes(spec.series[k].label) ? 0.2 : 1;
+      const row = rows.find((r) => r.k === k), [dot, pill, text] = [g.querySelector("circle"), g.querySelector(".beacon"), g.querySelector("text")];
+      const named = !!row && !!focus?.includes(spec.series[k].label);
+      g.style.opacity = !row ? 0.25 : focus && !named ? 0.2 : 1;
       dot.style.opacity = row ? 1 : 0;
       if (!row) name(k, spec.series[k].label);
       if (row) at(dot, x(i), y(row.v));
       at(text, 0, (row ? row.at : T + 15 * k) + 4);
+      // The number the caption names stands on the beacon: amber is the one number a figure wants you to see.
+      at(pill, 0, (row ? row.at : T + 15 * k) + 4);
+      pill.setAttribute("opacity", +named);
+      text.style.fill = css(named ? "--deep" : "--ink");
     });
   };
   show(n - 1);
@@ -144,7 +153,7 @@ export function strip(spec, width, height) {
   const format = spec.format || percent, rows = spec.rows.length;
   const most = spec.most || Math.max(...spec.rows.flatMap((r) => r.values.flat().map((v) => v || 0))) * 1.05 || 1;
   let x, y;
-  const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line }) => {
+  const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line, beacon }) => {
     const longest = Math.max(...spec.rows.map((r) => r.label.length)), L = narrow ? Math.min(W * 0.45, 16 + 7 * longest) : 178, R = narrow ? 80 : 84;
     const legend = key(spec.series, W, narrow), extra = (legend.lines - 1) * 16;
     legend.beside &&= legend.end + 9 * Math.max(...spec.states.map((s) => s.length)) < W - 12;
@@ -167,7 +176,8 @@ export function strip(spec, width, height) {
     ${spec.rows.map((row, k) => `<g class="row" style="--k:${k};transition:opacity var(--d-turn) var(--sail)">${name(row.label, k)}
       <line x1="${L}" x2="${W - R}" y1="${y(k)}" y2="${y(k)}" stroke="${line}" stroke-dasharray="1 3"/>
       ${spec.series.map((_, j) => (row.values[0][j] === null || spec.states.length < 2 ? "" : `<circle cx="${x(row.values[0][j])}" cy="${y(k)}" r="4" fill="none" stroke="${css(COLOURS[j])}" stroke-width="1.2" opacity=".65"/>`)).join("")}
-      ${spec.series.map((_, j) => `<circle class="dot" r="${Math.min(5.5, gap * 0.36)}" fill="${css(COLOURS[j])}" stroke="${paper}" stroke-width="1.5" style="${MOVE}"/>`).join("")}
+      ${spec.series.map((_, j) => `<circle class="dot" r="${Math.min(7, gap * 0.42)}" fill="${css(COLOURS[j])}" stroke="${paper}" stroke-width="1.5" style="${MOVE}"/>`).join("")}
+      <rect class="beacon" x="${W - R + 3}" y="${y(k) - 10}" height="20" rx="4" fill="${beacon}" opacity="0"/>
       <text class="value" x="${W - R + 8}" y="${y(k) + size * 0.35}" style="font-size:12px;font-weight:700;fill:${ink}"></text></g>`).join("")}`;
   }, stripLeast(spec.title, rows, width, spec.series, PITCH.floor));
   const groups = [...made.svg.querySelectorAll(".row")], state = made.svg.querySelector(".state");
@@ -178,8 +188,13 @@ export function strip(spec, width, height) {
       const values = spec.rows[k].values[i], known = values.filter((v) => v !== null);
       g.style.opacity = focus && !focus.includes(spec.rows[k].label) ? 0.28 : 1;
       g.querySelectorAll(".dot").forEach((dot, j) => ((dot.style.opacity = values[j] === null ? 0 : 1), values[j] !== null && at(dot, x(values[j]), y(k))));
-      const [low, high] = [format(Math.min(...known)), format(Math.max(...known))];
-      g.querySelector(".value").textContent = !known.length ? "" : low === high ? low : `${low.replace("%", "")}–${high.replace(/^[^0-9]+/, "")}`;
+      const [low, high] = [format(Math.min(...known)), format(Math.max(...known))], value = g.querySelector(".value"), pill = g.querySelector(".beacon");
+      value.textContent = !known.length ? "" : low === high ? low : `${low.replace("%", "")}–${high.replace(/^[^0-9]+/, "")}`;
+      // The rows the caption names: their numbers stand on the beacon, their names in bold.
+      const named = !!focus?.includes(spec.rows[k].label) && known.length > 0;
+      pill.setAttribute("width", wide(value.textContent, 12) + 10);
+      pill.setAttribute("opacity", +named);
+      value.style.fill = css(named ? "--deep" : "--ink");
     });
   };
   show(spec.states.length - 1);

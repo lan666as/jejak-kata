@@ -188,16 +188,18 @@ void main() {
  * (0 at the top of the hero, 1 when the reader has scrolled out of it: seen from above, on paper), `still()` (draw one
  * frame and hold it), `describe(text)` (the canvas's text alternative), `end()` (let the GPU go).
  * `hold`: one frame, drawn again only when asked. `most`: carry at most this many words; `names`: name at most this
- * many (a quiet backdrop names few). `look(to)` sets the camera of a sea with no route. `explore` (the map): the
+ * many (a quiet backdrop names few); `pitch`: how steeply a held sea is seen (a short band shows more of the chart
+ * from higher). `look(to)` sets the camera of a sea with no route. `explore` (the map): the
  * reader moves the camera, with `controls` {in, out, all, turn, above, level} naming its buttons.
  */
-export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hold = false, most: carry = Infinity, names: named = Infinity, explore = false, controls = {} }) {
+export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hold = false, most: carry = Infinity, names: named = Infinity, explore = false, controls = {}, pitch: tilted = null }) {
   const node = document.createElement("div");
   node.className = `chart night gl${explore ? " explore" : ""}`;
   const button = (k, text) => `<button type="button" data-k="${k}" aria-label="${controls[k] || text}" title="${controls[k] || text}">${text}</button>`;
-  node.innerHTML = `<canvas ${explore ? `tabindex="0" role="application"` : `role="img"`} aria-label="${alt}"></canvas><canvas aria-hidden="true"></canvas><div class="when" aria-hidden="true"></div><div class="tally" aria-hidden="true" hidden></div>`
+  node.innerHTML = `<canvas ${explore ? `tabindex="0" role="application"` : `role="img"`} aria-label="${alt}"></canvas><canvas aria-hidden="true"></canvas>`
+    + `<div class="when" aria-hidden="true" hidden><b></b><span class="when-bar"><i></i></span><span class="when-ends"><span>${periods[0]}</span><span>${periods.at(-1)}</span></span></div><div class="tally" aria-hidden="true" hidden></div>`
     + (explore ? `<div class="zoom">${button("in", "+")}${button("out", "−")}${button("all", "⤢")}${button("turn", "↻")}<button type="button" data-k="above" aria-pressed="false">${controls.above || "⬒"}</button></div>` : "");
-  const [canvas, names, when, tally] = node.children;
+  const [canvas, names, when, tally] = node.children, year = when.firstElementChild;
   const gl = canvas.getContext("webgl2", { antialias: false, depth: false, powerPreference: "low-power" });  // with alpha: an opaque WebGL canvas in a sticky box leaves holes in Chromium once the box scrolls on
   if (!gl) return null;
   const ctx = names.getContext("2d"), ease = curve(), LEG = parseFloat(root().getPropertyValue("--d-leg")) || 900;
@@ -288,7 +290,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     const e = ease(depth), t = Math.tan(fovOf() / 2), asp = W / H;
     // The open part of the hero, beside or above the text: the camera looks at its middle; the horizon lies above it.
     const [top, right, bottom, left] = pad, cx = ((left + (W - right)) / W - 1) * (1 - e), cy = (1 - (top + (H - bottom)) / H) * (1 - e);
-    const horizon = wide() ? 0.5 : 0.86, low = explore ? aim.pitch : Math.max(0.15, Math.min(0.38, Math.atan((horizon - cy) * t)));
+    const horizon = wide() ? 0.5 : 0.86, low = explore ? aim.pitch : tilted ?? Math.max(0.15, Math.min(0.38, Math.atan((horizon - cy) * t)));
     const pitch = mix(low, Math.PI / 2 - 1e-3, e) - nudge.y * 0.035 * (1 - e);
     const yaw = (explore ? aim.yaw : mix(aim.yaw, 0, e)) + nudge.x * 0.07 * (1 - e);
     // From above: the hero shows the whole chart, as wide as the screen allows; the map keeps the reader's place.
@@ -430,10 +432,12 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       gl.drawArrays(gl.POINTS, 0, list.length / 4);
     }
     // The names, on their own canvas: drawn again only when the camera, the tide or a ship has moved.
-    const key = [...cam.eye, cam.pitch, now, n, W, H, tide(), hovered, ringed, arrival.reach, colours === c].map((v) => (typeof v === "number" ? v.toFixed(4) : v)).join();
+    const key = [...cam.eye, cam.pitch, now, n, W, H, tide(), hovered, ringed, arrival.reach, colours === c, noteAlpha().toFixed(2)].map((v) => (typeof v === "number" ? v.toFixed(4) : v)).join();
     if (key !== labelsAt) ((labelsAt = key), label(sailing.reverse()));
+    // The year the ships are at, and how far through the years: it counts as they sail.
     const shown = routes.length ? periods[Math.round(now)] : "";
-    if (when.textContent !== shown) when.textContent = shown;
+    if (year.textContent !== shown) ((year.textContent = shown), (when.hidden = !shown));
+    when.style.setProperty("--at", (now / Math.max(1, periods.length - 1)).toFixed(3));
     if (!ready) (ready = true), waiting.splice(0).forEach((done) => done());
   }
   /** Each ship's name, and the first route's first port's year; then the names of the words that moved most among
@@ -441,16 +445,22 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
    *  the tide. With several routes a ship's name carries a dot of its route's colour. */
   function label(sailing) {
     const { css } = palette(), fade = (w) => 1 - smooth(cam.fog[0], cam.fog[1], w), lift = RISE * (1 - settle());
-    const taken = new Set(), cell = (x, y) => `${Math.floor(x / 84)},${Math.floor(y / 17)}`, claim = (x, y, width) => {
-      const cells = [cell(x, y), cell(x + width, y), cell(x + width / 2, y)];
-      if (cells.some((c) => taken.has(c))) return false;
-      cells.forEach((c) => taken.add(c));
+    // Every name takes a box (with a margin) and no box overlaps another: a name that would touch one already written
+    // is left out. A held sea names only in its open water, clear of the page's text.
+    const taken = [], overlaps = (l, t, r, b) => taken.some((k) => l < k[2] && r > k[0] && t < k[3] && b > k[1]);
+    const claim = (x, y, width, height = 16) => {
+      const k = [x - 3, y - height / 2 - 2, x + width + 3, y + height / 2 + 2];
+      if (overlaps(...k)) return false;
+      taken.push(k);
       return true;
     };
-    // Nothing is named under what lies over the sea: its buttons and the year, with a margin around them.
-    const box = canvas.getBoundingClientRect(), keep = [...node.querySelectorAll(".zoom, .when")].map((n) => n.getBoundingClientRect()).filter((r) => r.width && r.height)
+    // Nothing is named under what lies over the sea: its buttons, the year, a hint, with a margin around them; nor,
+    // in a held sea, outside its open water.
+    const box = canvas.getBoundingClientRect(), keep = [...node.querySelectorAll(".zoom, .when, .sea-hint")].map((n) => n.getBoundingClientRect()).filter((r) => r.width && r.height)
       .map((r) => [r.left - box.left - 8, r.top - box.top - 8, r.right - box.left + 8, r.bottom - box.top + 8]);
-    const clear = (x, y, width, height = 18) => !keep.some(([l, t, r, b]) => x < r && x + width > l && y + height / 2 > t && y - height / 2 < b);
+    const open = held && !explore ? [pad[3], pad[0], W - pad[1], H - pad[2]] : [-1e9, -1e9, 1e9, 1e9];
+    const clear = (x, y, width, height = 18) => x >= open[0] && x + width <= open[2] && y - height / 2 >= open[1] && y + height / 2 <= open[3]
+      && !keep.some(([l, t, r, b]) => x < r && x + width > l && y + height / 2 > t && y - height / 2 < b);
     ctx.clearRect(0, 0, W, H);
     ctx.textBaseline = "middle";
     /** A name in a pill beside a point, to its left where its right is not clear; `dot` is the colour of its route,
@@ -459,8 +469,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       const paper = dayAt(...at) > 0.5, inset = dot ? 14 : 0;
       ctx.font = `800 ${strong ? 15 : 13}px ${css["--type"]}`;
       const width = ctx.measureText(text).width + inset, x = clear(at[0] + 14, at[1], width + 14, 24) ? at[0] + 14 : at[0] - 28 - width;
-      claim(x, at[1] - 8, width + 14);
-      claim(x, at[1] + 8, width + 14);
+      taken.push([x - 3, at[1] - 15, x + width + 17, at[1] + 15]);
       ctx.fillStyle = paper ? css["--chart-2"] : css["--deep-2"];
       ctx.beginPath();
       ctx.roundRect ? ctx.roundRect(x, at[1] - 12, width + 14, 24, 12) : ctx.rect(x, at[1] - 12, width + 14, 24);
@@ -476,11 +485,11 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     const first = sailing[0]?.r, start = first?.legs.length > 1 && project(first.legs[0].x, 0, first.legs[0].z);
     ctx.font = `700 12px ${css["--type"]}`;
     const year = start && periods[first.legs[0].p], wide = year && ctx.measureText(year).width;
-    if (start && start[0] + 9 + wide < W - 4 && clear(start[0] + 9, start[1] - 12, wide)) {
-      claim(start[0] + 9, start[1] - 12, wide);
+    if (start && start[0] + 9 + wide < W - 4 && clear(start[0] + 9, start[1] - 12, wide) && claim(start[0] + 9, start[1] - 12, wide)) {
       ctx.fillStyle = dayAt(...start) > 0.5 ? css["--route"] : css["--route-on-deep"];
       ctx.fillText(year, start[0] + 9, start[1] - 12);
     }
+    note(sailing[0], taken, css);
     // Exploring, the word nearest the middle of the screen is ringed and named: Enter chooses it.
     const ring = ringed >= 0 && project(chart.x[ringed] / 1000, Math.max(0, chart.moved[ringed] ?? 0) * lift, chart.y[ringed] / 1000);
     if (ring) {
@@ -495,7 +504,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       const p = project(chart.x[k] / 1000, Math.max(0, chart.moved[k]) * lift, chart.y[k] / 1000);
       if (!p || p[0] < 0 || p[1] < 8 || p[0] > W - 40 || p[1] > H - 8 || fade(p[2]) < 0.3) continue;
       const text = name(chart.words[k]), wide = text && ctx.measureText(text).width;
-      if (!text || p[0] + 8 + wide > W - 4 || !clear(p[0] + 8, p[1], wide) || !claim(p[0] + 8, p[1], wide)) continue;
+      if (!text || p[0] + 8 + wide > W - 4 || !clear(p[0] + 8, p[1], wide) || !claim(p[0] + 8, p[1], wide, 14)) continue;
       const paper = dayAt(...p) > 0.5;
       ctx.fillStyle = paper ? css["--ink-3"] : css["--on-deep-2"];
       ctx.globalAlpha = paper ? 1 : (routes.length ? 0.6 : 0.82) * fade(p[2]);
@@ -505,6 +514,59 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     ctx.globalAlpha = 1;
     const p = hovered >= 0 && project(chart.x[hovered] / 1000, Math.max(0, chart.moved[hovered]) * lift, chart.y[hovered] / 1000);
     if (p) (ctx.beginPath(), ctx.arc(p[0], p[1], 8, 0, 7), (ctx.strokeStyle = dayAt(...p) > 0.5 ? css["--ink"] : css["--on-deep"]), (ctx.lineWidth = 2), ctx.stroke());
+  }
+
+  // The hero's two notes (`notes(said)`), drawn like marginalia on a chart once the first route has sailed, and fading
+  // once the reader moves on (`notes(null)`): from the light that moved most in the open water, a line down to the
+  // water ("higher: moved more"), and from the middle of the route, a leader to what the route is.
+  const notes = { said: null, at: 0, gone: 0 };
+  const noteAlpha = () => !notes.said || explore || depth > 0.02 ? 0 : held ? +!notes.gone
+    : Math.min(1, (performance.now() - notes.at) / 600) * (notes.gone ? Math.max(0, 1 - (performance.now() - notes.gone) / 600) : 1);
+  function note(first, taken, css) {
+    const alpha = noteAlpha();
+    if (!alpha) return;
+    const free = (k) => k[0] > 4 && k[2] < W - 4 && k[1] > 4 && k[3] < H - 4 && !taken.some((o) => k[0] < o[2] && k[2] > o[0] && k[1] < o[3] && k[3] > o[1]);
+    const inOpen = ([x, y]) => x > pad[3] + 8 && x < W - pad[1] - 8 && y > pad[0] && y < H - pad[2];
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = `600 12px ${css["--type"]}`;
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = css["--on-deep-2"];
+    /** A note's text with a halo of the deep under it, so that no light shows through it. */
+    const write = (text, x, y) => {
+      ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.strokeStyle = css["--deep-2"]; ctx.strokeText(text, x, y);
+      ctx.fillStyle = css["--on-deep"]; ctx.fillText(text, x, y); ctx.lineWidth = 1; ctx.strokeStyle = css["--on-deep-2"];
+    };
+    // The route: a leader from its middle port, down or up to where there is room.
+    const r = first?.r, sailed = first && first.here.done >= r.legs.length - 1.01;
+    if (r && sailed && r.legs.length > 2) {
+      const mid = r.legs[Math.floor(r.legs.length / 2)], at = project(mid.x, 0, mid.z), text = notes.said.route(name(r.id), periods[r.legs[0].p], periods[r.legs.at(-1).p]), wide = ctx.measureText(text).width;
+      for (const dy of [44, -44, 64, -64]) {
+        const y = at && at[1] + dy, x = at && Math.min(W - wide - 12, at[0] + 18), k = at && [x - 4, y - 10, x + wide + 4, y + 10];
+        if (!at || !inOpen(at) || !free(k)) continue;
+        ctx.beginPath(); ctx.moveTo(at[0], at[1] + Math.sign(dy) * 6); ctx.lineTo(at[0], y); ctx.lineTo(x - 4, y); ctx.stroke();
+        write(text, x, y + 1);
+        taken.push(k, [at[0] - 3, Math.min(at[1], y), at[0] + 3, Math.max(at[1], y)]);
+        break;
+      }
+    }
+    // The light that moved most, among the lit words in the open water: its height drawn as a line down to the water.
+    const lift = RISE * (1 - settle()), ids = new Set(routes.map((x) => x.id));
+    let best = -1, top = null, foot = null;
+    for (let k = 0; k < Math.min(n, NEAR); k++) {
+      if (level[k] < 4 || ids.has(chart.words[k]) || (best >= 0 && chart.moved[k] <= chart.moved[best])) continue;
+      const p = project(chart.x[k] / 1000, chart.moved[k] * lift, chart.y[k] / 1000), q = project(chart.x[k] / 1000, 0, chart.y[k] / 1000);
+      if (p && q && inOpen(p) && inOpen(q) && q[1] - p[1] > 14 && free([p[0] - 6, p[1] - 6, p[0] + 140, q[1] + 6])) [best, top, foot] = [k, p, q];
+    }
+    if (best >= 0) {
+      const text = notes.said.rise, y = (top[1] + foot[1]) / 2;
+      ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(top[0], top[1] + 7); ctx.lineTo(foot[0], foot[1]); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(foot[0] - 5, foot[1]); ctx.lineTo(foot[0] + 5, foot[1]); ctx.stroke();
+      ctx.beginPath(); ctx.arc(top[0], top[1], 7, 0, 7); ctx.stroke();
+      write(text, top[0] + 12, y + 1);
+      taken.push([top[0] - 8, top[1] - 8, top[0] + 16 + ctx.measureText(text).width, foot[1] + 4]);
+    }
+    ctx.restore();
   }
 
   // ---- the loop: running while the hero is on screen and the tab is shown; idle frames at half the rate --------
@@ -813,9 +875,21 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       if (yaw < -Math.PI / 2) yaw += Math.PI;
       yaw = Math.max(-0.6, Math.min(0.6, -yaw));
       const spread = Math.max(...ps.map((p) => Math.abs((p.x - mx) * Math.cos(yaw) - (p.z - mz) * Math.sin(yaw)))), open = (W - pad[1] - pad[3]) / W;
-      const t = Math.tan(((H > W ? 52 : 38) * Math.PI) / 360), dist = Math.max(0.32, Math.min(2.2, (spread * 2.4 + 0.12) / (2 * t * (W / H) * open)));
+      const t = Math.tan(((H > W ? 52 : 38) * Math.PI) / 360), dist = Math.max(held ? 0.2 : 0.32, Math.min(2.2, (spread * 2.4 + 0.12) / (2 * t * (W / H) * open)));
       const to = { ...aim, x: mx, z: mz, dist, yaw };  // the reader's tilt (exploring) stays as it is
       follow.x = follow.z = 0;
+      // Seen at a low angle, the near end of a route comes out larger than its spread says: back off until every
+      // port lies in the open water, with a margin.
+      const fits = () => {
+        const was = { ...aim };
+        Object.assign(aim, to);
+        place();
+        const ok = ps.every((p) => { const q = project(p.x, 0, p.z); return q && q[0] > pad[3] + 24 && q[0] < W - pad[1] - 24 && q[1] > pad[0] + 24 && q[1] < H - pad[2] - 24; });
+        Object.assign(aim, was);
+        place();
+        return ok;
+      };
+      for (let i = 0; i < 12 && !fits(); i++) to.dist = Math.min(3, to.dist * 1.15);
       if (!ms || held || !ready) return Object.assign(aim, to), redraw();
       Object.assign(glide, { from: { ...aim }, to, start: performance.now(), ms: ms * 1.4 });
       ask();
@@ -860,6 +934,14 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     },
     describe(text) {
       canvas.setAttribute("aria-label", text);
+    },
+    /** The hero's notes: {rise, route(word, from, to)} to draw them, null to let them fade. */
+    notes(said) {
+      if (said && !notes.said) Object.assign(notes, { said, at: performance.now(), gone: 0 });
+      else if (!said && notes.said && !notes.gone) notes.gone = performance.now();
+      labelsAt = "";
+      ask(700);
+      if (held) redraw();
     },
     end,
     /** The word nearest a point of the sea (by default its middle) and where it stands, in CSS pixels in the sea: for

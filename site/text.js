@@ -153,6 +153,20 @@ export const SITE = {
 // Words that sail one after another on the first page, until the reader chooses one.
 export const SHOWCASE = ["jokowi", "kpk", "prabowo", "ahok", "ibu kota", "nusantara", "konten", "gibran"]; // the first sails as the home page opens: the longest voyage of these
 
+// What the words of the first page are, for a reader who may not know: the names in both languages, the common
+// words in English. Shown beside a chip, under a word's title, and where a word sails on the first page.
+export const GLOSS = {
+  jokowi: { id: "Joko Widodo, presiden 2014–2024", en: "Joko Widodo, president of Indonesia 2014–2024" },
+  kpk: { id: "Komisi Pemberantasan Korupsi", en: "the Corruption Eradication Commission" },
+  prabowo: { id: "Prabowo Subianto, menteri pertahanan 2019–2024, presiden sejak 2024", en: "Prabowo Subianto, defence minister 2019–2024, president since 2024" },
+  ahok: { id: "Basuki Tjahaja Purnama, gubernur Jakarta 2014–2017", en: "Basuki Tjahaja Purnama, governor of Jakarta 2014–2017" },
+  gibran: { id: "Gibran Rakabuming Raka, wali kota Surakarta 2021–2024, wakil presiden sejak 2024", en: "Gibran Rakabuming Raka, mayor of Surakarta 2021–2024, vice-president since 2024" },
+  nusantara: { id: "kepulauan Indonesia; sejak 2022 juga nama ibu kota baru", en: "the archipelago; since 2022 also the name of the new capital" },
+  "ibu kota": { en: "capital city" }, konten: { en: "content (online)" }, transparan: { en: "transparent" }, mantan: { en: "former, ex-" },
+  situs: { en: "site: a web site, or a historic site" }, lengser: { en: "to step down from office" }, positif: { en: "positive; also, tested positive" },
+  daring: { en: "online (short for dalam jaringan)" }, goreng: { en: "to fry; also, to stir up an issue" }, rumah: { en: "house, home" },
+};
+
 export const FEATURED = ["transparan", "mantan", "situs", "lengser", "positif", "daring", "goreng", "jokowi", "ibu kota", "kpk", "nusantara", "rumah"];
 
 export const LENS_TEXT = {
@@ -209,7 +223,7 @@ export const NOTES = Object.fromEntries(
 
 export const TEXT = {
   id: {
-    hero_lede: "Peta 20 ribu kata dari berita Kompas, 2011–2024, tempat kata yang bergaul dengan kata-kata yang sama berlabuh berdekatan.",
+    hero_lede: "Peta 20 ribu kata dari harian Kompas, 2011–2024, tempat kata yang bergaul dengan kata-kata yang sama berlabuh berdekatan.",
     hero_try: "Coba:", hero_open: (word) => `Buka “${word}”`, hero_down: "Mulai dari cerita", hero_wait: "Memuat kata-kata…",
     featured_kicker: "Cerita", featured_title: "Tiga pelayaran untuk memulai", all_stories_n: (n) => `Semua ${n} cerita`,
     play_home_title: "Untuk dimainkan", all_play_n: (n) => `Semua ${n} mainan`,
@@ -369,8 +383,8 @@ export const TEXT = {
     traits_about: "Kata kerja dan kata sifat yang lebih sering daripada kebetulan muncul sehalaman dengan nama ini, masa demi masa; batang yang lebih panjang berarti lebih kuat. Daftar katanya disusun dengan tangan dan memuat pujian maupun tuduhan. Yang ditunjukkan adalah cara berita menulis, bukan siapa orang itu.",
     orbit_about: "Lingkar dalam: kata yang paling sering muncul bersama. Lingkar luar, bergaris putus: kata yang pergaulannya paling mirip. Yang berwarna baru masuk pada masa itu. Ketuk sebuah kata untuk membukanya.",
     path_about: "Kata-kata di sekitar tidak bergerak: masing-masing ditaruh di tempat rata-ratanya, pada bidang yang paling memisahkan mereka. Yang bergerak adalah kata ini, ditaruh di antara mereka sekali untuk tiap masa. Bila masanya banyak, tiap langkah dirata-ratakan dengan langkah di sebelahnya, sebab dari tahun ke tahun kata lebih banyak bergoyang daripada berpindah. Gambar ini ringkasan kasar dari 4.000 ukuran, direntangkan agar memenuhi bingkai: arah lebih dapat dipercaya daripada jarak.",
-    near_early: (p) => `pulau berlingkar: paling mirip pada ${p}`,
-    near_late: (p) => `pulau penuh: paling mirip pada ${p}`,
+    near_early: (p) => `teman terdekatnya pada ${p}`,
+    near_late: (p) => `teman terdekatnya pada ${p}`,
     peak: (period, share) => `puncak ${period}: ${share}`,
     random: "Kata acak ↻",
     million: "juta",
@@ -404,8 +418,8 @@ export const TEXT = {
     race_empty: "Tambahkan kata untuk memulai.",
     findings_lede: "Hal-hal yang ditemukan hitungan itu sendiri, tanpa daftar dari kami: siapa menggantikan siapa, kata yang datang lalu pergi, dan kata yang datang untuk tinggal.",
     swaps_title: "Yang menggantikan",
-    swaps_about: "Pasangan yang ditemukan otomatis: kata yang naik (garis magenta) kini bergaul dengan teman-teman yang dulu dimiliki kata yang turun (garis abu-abu). Kebanyakan adalah pengganti jabatan, penerus teknologi, atau ejaan baru.",
-    took_over: (word) => `menggantikan ${word}`,
+    swaps_about: "Pasangan yang ditemukan otomatis: kata yang naik (garis magenta) kini bergaul dengan teman-teman yang dulu dimiliki kata yang turun (garis abu-abu). Ini kesamaan pergaulan, bukan pergantian makna: ada pengganti jabatan dan ejaan baru, ada pula pergantian topik di satu rubrik.",
+    duet_label: (a, b, year) => `Garis “${a}” dan “${b}” dari masa ke masa${year ? `; “${a}” melewati “${b}” pada ${year}` : ""}.`,
     went_title: "Datang lalu pergi",
     went_about: "Kata yang tidak ada pada awal masa, memuncak, lalu nyaris hilang.",
     stayed_title: "Datang untuk tinggal",
@@ -462,6 +476,16 @@ export const TEXT = {
     quiz_next: "Lanjut",
     quiz_right: "Benar.",
     quiz_wrong: (answer) => `Bukan. Jawabannya ${answer}.`,
+    hero_dive: "Gulir: lautnya jadi peta", hero_key_light: "Satu cahaya, satu kata. Makin tinggi, makin jauh ia bergeser.", hero_key_route: "Rute sebuah kata: satu labuhan tiap tahun.",
+    note_rise: "makin tinggi, makin bergeser", note_route: (w, a, b) => `rute “${w}”, ${a}–${b}: satu titik tiap tahun`,
+    method_lede: "Bagaimana kata diukur, dari mana teksnya, dan seberapa peka ujinya.",
+    swaps_rule: (n, all, lead) => `Dari ${all} pasangan yang ditemukan, ${n} lolos satu aturan lagi: kata yang naik akhirnya lebih sering daripada kata yang turun (garisnya bersilang). Urutannya menurut kemiripan pergaulan; ${lead} teratas di sini.`,
+    in_company: (w) => `di lingkungan yang dulu milik “${w}”`, show_rest: (n) => `Tampilkan ${n} lainnya`, list_rule: (n, all) => `${n} teratas dari ${all}, menurut tinggi puncaknya.`,
+    map_hint_touch: "Usap untuk bergeser · cubit untuk mendekat · ketuk sebuah cahaya", map_hint_mouse: "Seret untuk bergeser · Ctrl dan gulir untuk mendekat · klik sebuah cahaya",
+    map_demo: (w) => `Contoh: rute “${w}”. Pilih kata sendiri untuk menggantinya.`,
+    quiz_log: "Pelayaranmu", quiz_tally: (r, n) => `${r} benar dari ${n}`, quiz_save: "Simpan skornya sebagai gambar", quiz_plate: (game, r, n) => `Kuis Jejak Kata, “${game}”: ${r} dari ${n} benar`,
+    save_csv: "Unduh datanya (CSV)", copy_embed: "Salin kode sematan", embed_open: "Baca ceritanya di Jejak Kata",
+    play_more: "Mainan lain", play_lead: "Mulai dari sini",
     not_found: "Kata ini tidak termasuk kata-kata tersering di sumber mana pun.",
     is_name: "Kata ini hampir selalu ditulis dengan huruf kapital dan tidak punya artikel di Wikipedia bahasa Indonesia, jadi dianggap nama diri yang bukan milik umum dan tidak ditampilkan.",
     no_data: "Data belum tersedia.",
@@ -473,7 +497,7 @@ export const TEXT = {
       <p>Cara ini diuji dengan menanam perubahan buatan pada data nyata, dan dengan daftar kata yang perubahannya sudah dituliskan sebelum hasilnya dilihat. Rincian, kode, dan hasil ujinya ada di repositori.</p>`,
   },
   en: {
-    hero_lede: "A chart of 20,000 words from Kompas news, 2011–2024, where words that keep the same company lie close together.",
+    hero_lede: "A chart of 20,000 words from Kompas, a national Indonesian daily, 2011–2024, where words that keep the same company lie close together.",
     hero_try: "Try:", hero_open: (word) => `Open “${word}”`, hero_down: "Start with a story", hero_wait: "Loading the words…",
     featured_kicker: "Stories", featured_title: "Three voyages to begin with", all_stories_n: (n) => `All ${n} stories`,
     play_home_title: "Things to play with", all_play_n: (n) => `All ${n} things to play with`,
@@ -633,8 +657,8 @@ export const TEXT = {
     traits_about: "The verbs and adjectives that share a page with this name more often than chance, period by period; a longer bar is a stronger tie. The word lists were made by hand and hold praise and blame alike. What is shown is how the news wrote, not who the person is.",
     orbit_about: "Inner ring: the words it most often appears with. Outer ring, dashed: the words whose company is most like its own. Coloured ones are new in that period. Tap a word to open it.",
     path_about: "The surrounding words do not move: each is put at its average place, on the plane that spreads them most. What moves is this word, placed among them once for each period. With many periods, each step is averaged with the steps next to it, because from year to year a word jitters more than it moves. The picture is a rough summary of 4,000 measurements, stretched to fill the frame: trust the direction more than the distance.",
-    near_early: (p) => `ringed islands: most alike in ${p}`,
-    near_late: (p) => `filled islands: most alike in ${p}`,
+    near_early: (p) => `its closest company in ${p}`,
+    near_late: (p) => `its closest company in ${p}`,
     peak: (period, share) => `peak ${period}: ${share}`,
     random: "A random word ↻",
     million: "million",
@@ -668,8 +692,8 @@ export const TEXT = {
     race_empty: "Add a word to begin.",
     findings_lede: "Things the counting found by itself, with no list from us: who took whose place, words that came and went, and words that came to stay.",
     swaps_title: "Who took whose place",
-    swaps_about: "Pairs found automatically: the rising word (magenta line) now keeps the company the falling word (grey line) used to keep. Most are successors in office, successors in technology, or new spellings.",
-    took_over: (word) => `took over from ${word}`,
+    swaps_about: "Pairs found automatically: the rising word (magenta line) now keeps the company the falling word (grey line) used to keep. This is shared company, not a change of meaning: some are successors in office or new spellings, some a change of topic within one section.",
+    duet_label: (a, b, year) => `The lines of “${a}” and “${b}” over time${year ? `; “${a}” passes “${b}” in ${year}` : ""}.`,
     went_title: "Came and went",
     went_about: "Words that were absent at the start, peaked, and all but vanished.",
     stayed_title: "Came to stay",
@@ -726,6 +750,16 @@ export const TEXT = {
     quiz_next: "Next",
     quiz_right: "Right.",
     quiz_wrong: (answer) => `No. It was ${answer}.`,
+    hero_dive: "Scroll: the sea becomes the chart", hero_key_light: "Each light is a word. The higher it floats, the more it moved.", hero_key_route: "A word's route: a port for every year.",
+    note_rise: "higher: moved more", note_route: (w, a, b) => `“${w}”, ${a}–${b}: a port each year`,
+    method_lede: "How words are measured, where the text comes from, and how sensitive the tests are.",
+    swaps_rule: (n, all, lead) => `Of the ${all} pairs found, ${n} pass one more rule: the rising word ends up more common than the falling one (their lines cross). In order of how alike their company is; the top ${lead} here.`,
+    in_company: (w) => `in the company “${w}” used to keep`, show_rest: (n) => `Show the other ${n}`, list_rule: (n, all) => `The top ${n} of ${all}, by the height of their peak.`,
+    map_hint_touch: "Swipe to move · pinch to come closer · tap a light", map_hint_mouse: "Drag to move · Ctrl and scroll to come closer · click a light",
+    map_demo: (w) => `An example: the route of “${w}”. Choose a word of your own to replace it.`,
+    quiz_log: "Your voyage", quiz_tally: (r, n) => `${r} right of ${n}`, quiz_save: "Save your score as an image", quiz_plate: (game, r, n) => `Jejak Kata quiz, “${game}”: ${r} of ${n} right`,
+    save_csv: "Download the data (CSV)", copy_embed: "Copy embed code", embed_open: "Read the story on Jejak Kata",
+    play_more: "More to play with", play_lead: "Start here",
     not_found: "This word is not among the most common words of any source.",
     is_name: "This word is almost always capitalised and has no article on Indonesian Wikipedia, so it is treated as a private name and not shown.",
     no_data: "The data is not available yet.",
