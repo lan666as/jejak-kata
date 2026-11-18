@@ -919,3 +919,30 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
   .hero h1 { color: #0c1d2e; }
   a { color: #0c1d2e; }
 }
+
+/* Sharing (app.js, sharer): a control that opens the device's share sheet, or where there is none a short list of
+   places under it, on paper and lifted (--lift); a story's cover has it beside "Mulai", each stage beside its count.
+   How to cite a story, folded, on its landing. */
+.share { position: relative; display: inline-block; margin: 0; }
+.share > summary { list-style: none; cursor: pointer; }
+.share > summary::-webkit-details-marker { display: none; }
+.share-to { position: absolute; z-index: 5; top: calc(100% + var(--s2)); left: 0; width: max-content; min-width: 16rem; padding: var(--s3); border: var(--hair) solid var(--line); border-radius: var(--r2);
+  background: var(--chart-2); box-shadow: var(--lift); color: var(--ink); font-size: var(--t-small); font-weight: 400; text-align: left; }
+.share-to p { margin: 0 0 var(--s2); font-size: var(--t-meta); color: var(--ink-3); }
+.share-to ul { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s1); margin: 0; padding: 0; list-style: none; }
+.share-to a { display: flex; align-items: center; min-height: var(--tap); padding: 0 var(--s3); border-radius: var(--r1); color: var(--ink); text-decoration: none; }
+.share-to a:hover { background: var(--chart); }
+.share-to li:last-child { grid-column: 1 / -1; }
+.share-to button { width: 100%; margin-top: var(--s1); }
+.share-mark { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cover .share { margin: var(--s2) 0 0 var(--s3); vertical-align: top; }
+.cover .share > summary { min-height: calc(var(--tap) + var(--s2)); color: var(--on-deep); background: var(--deep); border-color: var(--line-deep-2); }
+.cover .share > summary:hover { background: var(--deep-2); border-color: var(--on-deep); }
+.stage-meta .count { margin-left: auto; }
+.share.step > summary { width: var(--s6); height: var(--s5); min-height: 0; margin: calc(-1 * var(--s1)) calc(-1 * var(--s2)) calc(-1 * var(--s1)) 0; padding: 0; border: 0; background: none; color: inherit; }
+.share.step > summary:hover { color: var(--on-deep); background: none; }
+.share.step .share-to { top: auto; bottom: calc(100% + var(--s2)); left: auto; right: 0; }  /* opens over the figure, not past the screen */
+.cite { margin: 0 0 var(--s5); color: var(--ink-2); font-size: var(--t-small); }
+.cite > summary { cursor: pointer; color: var(--link); }
+.cite pre { overflow-x: auto; padding: var(--s3); border: var(--hair) solid var(--line); border-radius: var(--r1); background: var(--chart-2); font-size: var(--t-meta); white-space: pre; }
+@media print { .share { display: none !important; } }

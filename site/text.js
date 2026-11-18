@@ -7,10 +7,11 @@ const unit = {
 const unitOf = (language, lens) => unit[language][lens.lens.split("-")[1]];
 
 // Stories as their cards show them: the key number, the title and the teaser. The rest of each story (its intro,
-// what it cannot say, its scenes) is in story.js, which only a story's own page loads.
+// what it cannot say, its scenes) is in story.js, which only a story's own page loads. `published`: the day of the
+// first public build of the site that carried the story.
 export const STORIES = [
   {
-    slug: "penyesuaian",
+    slug: "penyesuaian", published: "2026-11-17",
     key: { number: "139 / 200", id: "“penyesuaian harga” yang kami baca berarti naik", en: "“price adjustments” we read mean a rise" },
     id: {
       title: "Harga naik, atau “disesuaikan”?",
@@ -22,7 +23,7 @@ export const STORIES = [
     },
   },
   {
-    slug: "oknum",
+    slug: "oknum", published: "2026-11-17",
     key: { number: "150 / 200", id: "“oknum” yang kami baca tidak disebut namanya", en: "“oknum” we read are not named" },
     id: {
       title: "Siapa yang disebut “oknum”?",
@@ -34,7 +35,7 @@ export const STORIES = [
     },
   },
   {
-    slug: "diamankan",
+    slug: "diamankan", published: "2026-11-17",
     key: { number: "5% → 15%", id: "halaman Kompas tentang tersangka yang memakai “diamankan”", en: "of Kompas pages about a suspect use “diamankan”" },
     id: {
       title: "Ditangkap, atau “diamankan”?",
@@ -46,7 +47,7 @@ export const STORIES = [
     },
   },
   {
-    slug: "viral-polisi",
+    slug: "viral-polisi", published: "2026-11-17",
     key: { number: "6–12%", id: "halaman tentang polisi memuat kata “viral”", en: "of pages about the police carry the word “viral”" },
     id: {
       title: "Tidak viral, tidak ada polisi?",
@@ -58,7 +59,7 @@ export const STORIES = [
     },
   },
   {
-    slug: "berhenti-dibicarakan",
+    slug: "berhenti-dibicarakan", published: "2026-11-17",
     key: { number: { id: "4,3×", en: "4.3×" }, id: "susutnya “harga bahan bakar” sesudah 2014, di tiap media", en: "the fall of “harga bahan bakar” after 2014, in every outlet" },
     id: {
       title: "Yang berhenti dibicarakan tiap ganti masa jabatan",
@@ -70,7 +71,7 @@ export const STORIES = [
     },
   },
   {
-    slug: "dilupakan",
+    slug: "dilupakan", published: "2026-11-17",
     key: { number: "19%", id: "SBY pada 2015, dari tahun terakhirnya menjabat, di Kompas", en: "SBY in 2015, of his last year in office, in Kompas" },
     id: {
       title: "Setahun sesudah turun, tinggal seperlima",
@@ -82,7 +83,7 @@ export const STORIES = [
     },
   },
   {
-    slug: "kata-korupsi",
+    slug: "kata-korupsi", published: "2026-11-17",
     key: { number: "17–25%", id: "halaman Demokrat memuat “korupsi” saat berkuasa", en: "of Demokrat's pages carried “korupsi” while it governed" },
     id: {
       title: "Partai mana yang ditulis bersama kata “korupsi”",
@@ -94,7 +95,7 @@ export const STORIES = [
     },
   },
   {
-    slug: "yang-hilang",
+    slug: "yang-hilang", published: "2026-11-17",
     key: { number: "KPK", id: "susut lebih dari separuh di tiga media, dari 2012 ke 2023", en: "shrank by more than half in three outlets, from 2012 to 2023" },
     id: {
       title: "KPK menyusut dari berita. Kata “tersangka” tidak",
@@ -106,7 +107,7 @@ export const STORIES = [
     },
   },
   {
-    slug: "prabowo",
+    slug: "prabowo", published: "2026-11-17",
     key: { number: "4% → 38%", id: "“menteri pertahanan” di samping namanya, 2019 ke 2020", en: "“menteri pertahanan” beside his name, 2019 to 2020" },
     id: {
       title: "Dari capres menjadi menteri pertahanan, dalam satu tahun",
@@ -118,7 +119,7 @@ export const STORIES = [
     },
   },
   {
-    slug: "kata-resmi",
+    slug: "kata-resmi", published: "2026-11-17",
     key: { number: { id: "Negara", en: "The state" }, id: "mengganti “Cina” dengan “Tiongkok”: Kompas menurut selama dua tahun, Tempo tidak pernah", en: "replaced “Cina” with “Tiongkok”: Kompas followed for two years, Tempo never did" },
     id: {
       title: "Negara memilih kata. Redaksi tidak selalu menurut",
@@ -130,7 +131,7 @@ export const STORIES = [
     },
   },
   {
-    slug: "umur-slogan",
+    slug: "umur-slogan", published: "2026-11-17",
     key: { number: "Slogan", id: "berapa lama kata-kata dari pemerintah bertahan di berita", en: "how long a government's words last in the news" },
     id: {
       title: "Umur sebuah slogan",
@@ -142,6 +143,12 @@ export const STORIES = [
     },
   },
 ];
+
+// The site as it names itself where it is shared, cited and found: no name but these.
+export const SITE = {
+  name: "Jejak Kata", url: "https://zidan.dev/jejak-kata/", author: "lan666as", authorUrl: "https://github.com/lan666as",
+  repository: "https://github.com/lan666as/jejak-kata", dataset: "https://huggingface.co/datasets/lan666as/jejak-kata",
+};
 
 // Words that sail one after another on the first page, until the reader chooses one.
 export const SHOWCASE = ["jokowi", "kpk", "prabowo", "ahok", "ibu kota", "nusantara", "konten", "gibran"]; // the first sails as the home page opens: the longest voyage of these
@@ -217,7 +224,7 @@ export const TEXT = {
     failed_title: "Datanya tidak termuat", failed: "Mungkin sambungan terputus. Muat ulang halaman ini; bila tetap gagal, coba lagi sebentar lagi.", reload: "Muat ulang",
     no_offers: (q) => `Tidak ada kata yang dimulai dengan “${q}”. Coba ejaan lain atau kata dasarnya.`,
     read_figure: "Cara membaca gambar ini",
-    doc_title: "Jejak Kata: tiap kata punya pelayarannya", doc_word: (w) => `“${w}”: pelayaran sebuah kata`,
+    doc_title: "Jejak Kata: tiap kata punya pelayarannya",
     desc_home: "Peta 20 ribu kata bahasa Indonesia dan rute tiap kata dari masa ke masa, dihitung dari buku, berita, blog, dan abstrak ilmiah.",
     desc_word: (w) => `Bagaimana kata “${w}” berganti teman dari masa ke masa: rutenya di peta kata, temannya, dan angka-angkanya.`,
     desc_play: "Permainan dan alat dari data yang sama: tebak angkanya, kuis, balapan nama, tabel pasang surut.",
@@ -420,6 +427,24 @@ export const TEXT = {
     save_image: "Simpan gambar",
     copy_link: "Salin tautan",
     copied: "Tersalin",
+    share: "Bagikan", share_step: "Bagikan langkah ini", share_label: "Bagikan ke", email: "Surel", share_text: (title) => `${title} — Jejak Kata`,
+    cite: "Kutip", cite_copy: "Salin kutipan", cite_bibtex: "BibTeX",
+    seo_home: "Perubahan kata bahasa Indonesia dari masa ke masa | Jejak Kata",
+    seo_story: (title) => `${title}${title.length < 40 ? " · Cerita data" : ""} | Jejak Kata`,
+    seo_stories: "Cerita data tentang kata dan berita Indonesia | Jejak Kata",
+    seo_play: "Permainan dari data kata dan berita Indonesia | Jejak Kata",
+    seo_chart: "Peta 20 ribu kata bahasa Indonesia | Jejak Kata",
+    seo_findings: "Temuan: kata yang datang dan pergi di berita | Jejak Kata",
+    seo_method: "Cara kerja: sumber, ukuran, dan uji | Jejak Kata",
+    seo_game: (name) => `${name} · Permainan data | Jejak Kata`,
+    seo_word: (w) => `Kata “${w}” dari masa ke masa: temannya di berita | Jejak Kata`,
+    word_company: (w, a, first, b, last) => `Di berita Kompas, “${w}” paling sering muncul bersama ${first} pada ${a}; pada ${b}, bersama ${last}.`,
+    word_shift: (n, flag) => `Pergeserannya yang terbesar antara dua masa: ${n}${flag ? ", di atas ambang" : ""}.`,
+    word_more: "Kata lain",
+    card_alt_home: "Peta kata sebagai laut malam: titik-titik cahaya di atas air, dan rute magenta kata “jokowi”.",
+    dataset_name: "Jejak Kata: hitungan dan ukuran kata bahasa Indonesia",
+    dataset_about: "Hitungan dan ukuran pergeseran kata dari buku (HathiTrust), berita dan blog di web (HPLT), dan abstrak ilmiah (OpenAlex). Yang diterbitkan hanya hitungan; tidak ada teks halaman.",
+    dataset_keywords: ["bahasa Indonesia", "perubahan makna", "linguistik korpus", "berita", "kookurensi kata"],
     plate_note: (unit) => `Bagian ${unit} yang memuat kata itu.`,
     plate_note_together: "Bagian dari halaman berita Kompas yang menyebut nama itu dan juga memuat kata ini.",
     portrait: "Potret",
@@ -463,7 +488,7 @@ export const TEXT = {
     failed_title: "The data did not load", failed: "The connection may have dropped. Reload this page; if it still fails, try again in a moment.", reload: "Reload",
     no_offers: (q) => `No word starts with “${q}”. Try another spelling or the root form.`,
     read_figure: "How to read this figure",
-    doc_title: "Jejak Kata: every word has its voyage", doc_word: (w) => `“${w}”: the voyage of a word`,
+    doc_title: "Jejak Kata: every word has its voyage",
     desc_home: "A chart of 20,000 Indonesian words and each word's route from period to period, counted in books, news, blogs and academic abstracts.",
     desc_word: (w) => `How the word “${w}” changed the company it keeps: its route on the chart of words, its company, and its numbers.`,
     desc_play: "Games and tools on the same data: guess the number, a quiz, a race of names, a tide table.",
@@ -666,6 +691,24 @@ export const TEXT = {
     save_image: "Save image",
     copy_link: "Copy link",
     copied: "Copied",
+    share: "Share", share_step: "Share this step", share_label: "Share on", email: "Email", share_text: (title) => `${title} — Jejak Kata`,
+    cite: "Cite", cite_copy: "Copy citation", cite_bibtex: "BibTeX",
+    seo_home: "How Indonesian words changed over time | Jejak Kata",
+    seo_story: (title) => `${title}${title.length < 40 ? " · A data story" : ""} | Jejak Kata`,
+    seo_stories: "Data stories on Indonesian words and news | Jejak Kata",
+    seo_play: "Games from data on Indonesian words and news | Jejak Kata",
+    seo_chart: "A chart of 20,000 Indonesian words | Jejak Kata",
+    seo_findings: "Findings: words that came and went in the news | Jejak Kata",
+    seo_method: "Method: sources, measures and tests | Jejak Kata",
+    seo_game: (name) => `${name} · A data game | Jejak Kata`,
+    seo_word: (w) => `The word “${w}” over time: its company in the news | Jejak Kata`,
+    word_company: (w, a, first, b, last) => `In Kompas news, “${w}” appeared most often with ${first} in ${a}; in ${b}, with ${last}.`,
+    word_shift: (n, flag) => `Its largest shift between two periods: ${n}${flag ? ", above the flag" : ""}.`,
+    word_more: "Other words",
+    card_alt_home: "The chart of words as a night sea: points of light on the water, and the magenta route of the word “jokowi”.",
+    dataset_name: "Jejak Kata: counts and measures of Indonesian words",
+    dataset_about: "Counts and measures of how words shift, from books (HathiTrust), news and blogs on the web (HPLT) and academic abstracts (OpenAlex). Only counts are published; no page text.",
+    dataset_keywords: ["Indonesian", "semantic change", "corpus linguistics", "news", "word co-occurrence"],
     plate_note: (unit) => `Share of ${unit} containing the word.`,
     plate_note_together: "Share of the Kompas news pages naming it that also contain this word.",
     portrait: "Portrait",

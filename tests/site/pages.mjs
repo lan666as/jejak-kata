@@ -27,12 +27,12 @@ const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport:
   await p.keyboard.press("Escape"); await p.waitForTimeout(400);
   const closed = await p.evaluate(() => ({ expanded: document.getElementById("menu-button").getAttribute("aria-expanded"), shown: document.getElementById("menu").getClientRects().length > 0, focus: document.activeElement.id }));
   log("Escape closes the menu", closed.expanded === "false" && !closed.shown && closed.focus === "menu-button", JSON.stringify(closed));
-  await p.click("#menu-button"); await p.waitForTimeout(400); await p.click("#menu nav a[href='#/main']"); await p.waitForTimeout(1500);
-  const went = await p.evaluate(() => ({ hash: location.hash, shown: document.getElementById("menu").getClientRects().length > 0, locked: getComputedStyle(document.documentElement).overflow === "hidden", current: document.querySelector("#menu nav a[aria-current]")?.getAttribute("href") }));
-  log("a link in the menu navigates and closes it", went.hash === "#/main" && !went.shown && !went.locked && went.current === "#/main", JSON.stringify(went));
+  await p.click("#menu-button"); await p.waitForTimeout(400); await p.click("#menu nav a[data-to='main']"); await p.waitForTimeout(1500);
+  const went = await p.evaluate(() => ({ at: location.pathname + location.hash, shown: document.getElementById("menu").getClientRects().length > 0, locked: getComputedStyle(document.documentElement).overflow === "hidden", current: document.querySelector("#menu nav a[aria-current]")?.dataset.to }));
+  log("a link in the menu navigates and closes it", went.at === "/main/" && !went.shown && !went.locked && went.current === "main", JSON.stringify(went));
   await p.click("#search-button"); await p.waitForTimeout(300); await p.keyboard.type("korup"); await p.waitForTimeout(1500);
   const offered = await p.locator("#suggestions a").count(); await p.locator("#suggestions a").first().click(); await p.waitForTimeout(1200);
-  log("search from the menu offers words and opens one", offered > 0 && (await p.evaluate(() => location.hash)).startsWith("#/kata/") && !(await p.evaluate(() => document.getElementById("menu").getClientRects().length)), `${offered} offers; address ${await p.evaluate(() => location.hash)}; errors ${p.errors.length}`); await p.close(); }
+  log("search from the menu offers words and opens one", offered > 0 && /^\/(#\/)?kata\//.test(await p.evaluate(() => location.pathname + location.hash)) && !(await p.evaluate(() => document.getElementById("menu").getClientRects().length)), `${offered} offers; address ${await p.evaluate(() => location.pathname + location.hash)}; errors ${p.errors.length}`); await p.close(); }
 { // back button
   const p = await fresh(); await p.goto(base + "#/cerita/kata-korupsi"); await p.waitForTimeout(2500); await p.mouse.wheel(0, 1800); await p.waitForTimeout(500);
   const before = await p.evaluate(() => scrollY); await p.evaluate(() => (location.hash = "#/kata/kpk")); await p.waitForTimeout(1500); await p.goBack(); await p.waitForTimeout(2500);
@@ -52,10 +52,10 @@ const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport:
   const p = await fresh({ viewport: { width: 360, height: 740 } }); await p.goto(base + "#/"); await p.waitForSelector(".hero .chart > canvas"); await p.waitForTimeout(2500);
   const first = await p.evaluate(() => document.querySelector(".hero .chart")?.dataset.route);
   await p.fill(".hero .suggest input", "prabowo"); await p.waitForTimeout(300); await p.keyboard.press("Enter"); await p.waitForTimeout(2500);
-  const sailed = await p.evaluate(() => ({ route: document.querySelector(".hero .chart").dataset.route, pressed: document.querySelector(".hero-try [aria-pressed='true']")?.textContent, hash: location.hash }));
-  log("hero field sails a route", first && sailed.route === "prabowo" && sailed.pressed === "prabowo" && sailed.hash === "#/", `first route ${first}; after typing: ${JSON.stringify(sailed)}; errors ${p.errors.length}`);
+  const sailed = await p.evaluate(() => ({ route: document.querySelector(".hero .chart").dataset.route, pressed: document.querySelector(".hero-try [aria-pressed='true']")?.textContent, at: location.pathname + location.hash }));
+  log("hero field sails a route", first && sailed.route === "prabowo" && sailed.pressed === "prabowo" && sailed.at === "/", `first route ${first}; after typing: ${JSON.stringify(sailed)}; errors ${p.errors.length}`);
   const card = p.locator(".featured .story-card").first(), to = await card.getAttribute("href"); await card.click(); await p.waitForSelector(".cover h1"); await p.waitForTimeout(500);
-  log("a featured story card opens its story", (await p.evaluate(() => location.hash)) === to && (await p.locator(".stage").count()) > 0, `${to} -> ${await p.evaluate(() => location.hash)}: ${await p.locator(".cover h1").innerText()}`);
+  log("a featured story card opens its story", (await p.evaluate(() => location.pathname + location.hash)) === to && (await p.locator(".stage").count()) > 0, `${to} -> ${await p.evaluate(() => location.pathname + location.hash)}: ${await p.locator(".cover h1").innerText()}`);
   await p.goto(base + "#/tidak-ada-di-sini"); await p.waitForTimeout(1200);
   const lost = await p.evaluate(() => ({ h1: document.querySelector(".lost h1")?.textContent, ways: document.querySelectorAll(".lost-ways a").length, title: document.title, wide: document.documentElement.scrollWidth > innerWidth + 1 }));
   log("an unknown address is a 404 with ways back", lost.h1 && lost.ways >= 3 && !lost.wide && !p.errors.length, JSON.stringify(lost)); await p.close(); }

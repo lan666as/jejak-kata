@@ -1,16 +1,19 @@
 // Jejak Kata: a static reader for the files written by `python -m idhist.export` and `idhist.highlights`.
 // No build step and no dependencies.
-// Routes: #/  #/kata/<word>[/<lens>]  #/potret/<name>  #/peta/<lens>/<word>...  #/balap/<lens>/<word>...
-//         #/cerita[/<slug>[/<scene>]]  #/main  #/kuis  #/tebak  #/menempel/<word>/<outlet>/<era>/<kind>
-//         #/pasang/<outlet>/<kind>  #/redaksi/<name>  #/lingkaran/<name>/<outlet>  #/tahun  #/temuan  #/bergeser  #/entitas  #/metode
+// Routes: /  kata/<word>[/<lens>]  potret/<name>  peta/<lens>/<word>...  balap/<lens>/<word>...
+//         cerita[/<slug>[/<scene>[/<step>]]]  main  kuis  tebak  menempel/<word>/<outlet>/<era>/<kind>
+//         pasang/<outlet>/<kind>  redaksi/<name>  lingkaran/<name>/<outlet>  tahun  temuan  bergeser  entitas  metode
+// How a route is written as an address (a real path where a page was generated for it, "#/..." otherwise, "en/"
+// for English) is address.js.
 
 import { seaChart } from "./chart.js";
-import { TEXT, LENS_TEXT, NOTES, FEATURED, SHOWCASE, STORIES } from "./text.js";
+import { TEXT, LENS_TEXT, NOTES, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
+import { address, routeOf, named, PAGES, PLAY } from "./address.js";
 
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
 // cold on a phone, does without them. `plating()` resolves once these names are there.
-let plate, strip, plates, savePlate, stripLeast, plated = null;
-const plating = () => (plated ||= import("./plate.js").then((m) => ({ plate, strip, plates, savePlate, stripLeast } = m)));
+let plate, strip, plates, savePlate, plateImage, stripLeast, plated = null;
+const plating = () => (plated ||= import("./plate.js").then((m) => ({ plate, strip, plates, savePlate, plateImage, stripLeast } = m)));
 
 const DATA = "data";
 const STEPS = [2, 4, 7, 12, 20]; // shift boundaries of the colour steps
@@ -88,7 +91,15 @@ const el = (html) => {
   return template.content.firstElementChild;
 };
 const escape = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-const href = (...parts) => "#/" + parts.map(encodeURIComponent).join("/");
+/** The site's root, where this file is: every address is relative to it, on whichever page a visit began (the
+ *  document's base says so too, so that data and files are found from any path). */
+const ROOT = new URL("./", import.meta.url);
+(document.querySelector("base") || document.head.appendChild(document.createElement("base"))).href = ROOT.href;
+const href = (...parts) => ROOT.pathname + address(parts, language);
+/** An address as a whole URL, as it is shared. */
+const whole = (to) => new URL(to, ROOT).href;
+/** Going to an address of the site: a new entry in the browser's history, and its page. */
+const visit = (to) => (history.pushState(null, "", to), moved());
 const link = (word) => `<a href="${href("kata", word)}">${word}</a>`;
 const number = (x, digits = 1) => x.toLocaleString(language, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 const percent = (share) => (share * 100).toLocaleString(language, { maximumSignificantDigits: 2 }) + "%";
@@ -160,7 +171,7 @@ async function shore(box, { words = [], count = 3, routes = null, name: named, l
   }
   if (!box.isConnected) return null;
   const label = routes.length ? t("sea_label_route", routes.map((r) => name(r.id)).join(", ")) : t("sea_label");
-  const sea = module.nightSea({ chart: first, name, pick: (id) => (location.hash = href("kata", name(id))), periods: first.periods, tip, label, hold: true, most: 2500, names: innerWidth < 600 ? Math.min(names, 6) : names });
+  const sea = module.nightSea({ chart: first, name, pick: (id) => visit(href("kata", name(id))), periods: first.periods, tip, label, hold: true, most: 2500, names: innerWidth < 600 ? Math.min(names, 6) : names });
   if (!sea) return null;
   holder.replaceChildren(sea.node);
   const rect = holder.getBoundingClientRect();
@@ -506,14 +517,14 @@ function pathFigure(lens, path) {
     label.textContent = lens.periods[steps[k].p];
   };
   node.querySelectorAll(".route-step").forEach((c) => c.addEventListener("click", () => (figure.goto || figure.show)(+c.dataset.k)));
-  node.querySelectorAll(".island-label").forEach((n) => n.addEventListener("click", () => (location.hash = href("kata", n.dataset.word))));
+  node.querySelectorAll(".island-label").forEach((n) => n.addEventListener("click", () => visit(href("kata", n.dataset.word))));
   return figure;
 }
 
 /** The chart of a lens with the routes of the given words on it. `pick(word)` is called when an island is clicked.
  *  With `night`, the chart is drawn for the deep (the home page's hero). With `sea` (sea.js) it is the 3D sea where
  *  WebGL2 is, and with `explore` that sea is the map's: the reader moves over it. */
-async function chartFigure(name, list, pick = (word) => (location.hash = href("kata", word)), height = "min(70vh, 560px)", { night = false, wait, sea, eager = false, explore = false } = {}) {
+async function chartFigure(name, list, pick = (word) => visit(href("kata", word)), height = "min(70vh, 560px)", { night = false, wait, sea, eager = false, explore = false } = {}) {
   const first = await json(`${name}/first.json`), label = new Map(first.words.map((id, k) => [id, first.names[k]]));
   // The whole lens comes later (after `wait`, if given); the chart is on screen before it.
   const meta = Promise.resolve(wait).then(() => lensNamed(name));
@@ -882,13 +893,13 @@ async function chartPage(name = MAIN, ...list) {
   list = list.filter((w) => lens.isEntry(lens.index.get(w))).slice(0, 4);
   const all = await allLenses();
   const select = el(`<select aria-label="${t("lens")}">${all.map((l) => `<option value="${l.lens}" ${l === lens ? "selected" : ""}>${lensText(l).title}</option>`).join("")}</select>`);
-  select.addEventListener("change", () => (location.hash = href("peta", select.value, ...list)));
+  select.addEventListener("change", () => visit(href("peta", select.value, ...list)));
   const below = el("<div></div>");
   // Where WebGL2 is, the map is the night sea, the width of the screen, and the reader moves over it (dragging,
   // turning, coming near, looking from above); elsewhere it is the chart on paper (chart.js).
   const gl = window.WebGL2RenderingContext ? (await import("./sea.js").catch(() => null))?.nightSea : null;
   const figure = await chartFigure(lens.lens, list, (word) => {
-    if (list.includes(word)) return (location.hash = href("kata", word));
+    if (list.includes(word)) return visit(href("kata", word));
     if (list.length >= 4) list.shift();
     list.push(word);
     update();
@@ -939,7 +950,7 @@ async function racePage(name = MAIN, ...list) {
   if (!list.length) list = (lens.lens === MAIN ? ["jokowi", "prabowo", "ahok", "anies baswedan", "gibran", "megawati"] : FEATURED).filter((w) => lens.isEntry(lens.index.get(w)));
   const all = (await allLenses()).filter((l) => l.periods.length >= 4);
   const select = el(`<select aria-label="${t("lens")}">${all.map((l) => `<option value="${l.lens}" ${l === lens ? "selected" : ""}>${lensText(l).title}</option>`).join("")}</select>`);
-  select.addEventListener("change", () => (location.hash = href("balap", select.value, ...list)));
+  select.addEventListener("change", () => visit(href("balap", select.value, ...list)));
   const holder = el("<div></div>");
   const draw = async () => {
     history.replaceState(null, "", href("balap", lens.lens, ...list));
@@ -1181,20 +1192,72 @@ function share(s, part) {
 }
 const SCENE_DATA = { together: "together.json", stuck: "together.json", yearly: "years.json", forget: "years.json", left: "years.json", fell: "stopped.json" };
 
-/** Buttons under a figure: save it as an image (a plate), copy its address, and where to check it. */
-function tools(address, { image, check = [], data } = {}) {
-  const row = el(`<p class="controls tools"></p>`);
+/** A button that copies `text()` and says so. */
+const copier = (label, text) => {
+  const copy = el(`<button type="button">${label}</button>`);
+  copy.addEventListener("click", async () => {
+    await navigator.clipboard?.writeText(text());
+    copy.textContent = t("copied");
+  });
+  return copy;
+};
+
+/** The figure an address shows, as an image file to share, made before it is asked for (a share sheet opens only
+ *  straight from the press: Safari will not wait for an image to be drawn). */
+const shareImages = new WeakMap();
+const sharedImage = (node, step) => {
+  const made = shareImages.get(node);
+  if (made?.step === step) return made;
+  const image = { step, file: null };
+  shareImages.set(node, image);
+  plating().then(() => plateImage(node)).then((blob) => (image.file = new File([blob], "jejak-kata.png", { type: "image/png" }))).catch(() => {});
+  return image;
+};
+
+/**
+ * Share an address: where the device has a share sheet, it opens with the title, a line and the whole address (and
+ * the figure as an image, where it can take files); elsewhere a short list of plain links to where people share, and
+ * the address to copy. No script of any of those sites is loaded. `what()` says what is shared at the moment of
+ * asking: { title, url, image } (image: the node a plate is shown in, and which step it is at).
+ */
+function sharer(label, what, cls = "") {
+  const box = el(`<details class="share${cls ? " " + cls : ""}"><summary class="button">${label}</summary><div class="share-to"><p>${t("share_label")}</p><ul></ul></div></details>`);
+  const summary = box.firstElementChild, ready = () => what().image && sharedImage(...what().image);
+  summary.addEventListener("pointerdown", ready);
+  summary.addEventListener("focus", ready);
+  summary.addEventListener("click", (e) => {
+    const { title, url, image } = what();
+    if (!box.open && navigator.share) {
+      e.preventDefault();
+      const data = { title, text: t("share_text", title), url }, file = image && sharedImage(...image).file;
+      if (file && navigator.canShare?.({ ...data, files: [file] })) data.files = [file];
+      return void navigator.share(data).catch(() => {});
+    }
+    const u = encodeURIComponent(url), said = encodeURIComponent(t("share_text", title));
+    box.querySelector("ul").replaceChildren(...[["WhatsApp", `https://wa.me/?text=${said}%20${u}`], ["X", `https://x.com/intent/post?text=${said}&url=${u}`],
+      ["Telegram", `https://t.me/share/url?url=${u}&text=${said}`], ["Facebook", `https://www.facebook.com/sharer/sharer.php?u=${u}`],
+      ["LinkedIn", `https://www.linkedin.com/sharing/share-offsite/?url=${u}`], ["Bluesky", `https://bsky.app/intent/compose?text=${said}%20${u}`]]
+      .map(([name, to]) => el(`<li><a href="${to}" target="_blank" rel="noopener">${name}</a></li>`)),
+      el(`<li><a href="mailto:?subject=${said}&amp;body=${u}">${t("email")}</a></li>`), el("<li></li>"));
+    box.querySelector("li:last-child").append(copier(t("copy_link"), () => url));
+  });
+  return box;
+}
+// A list of places to share closes when the reader turns elsewhere.
+document.addEventListener("click", (e) => document.querySelectorAll("details.share[open]").forEach((box) => box.contains(e.target) || (box.open = false)));
+addEventListener("keydown", (e) => e.key === "Escape" && document.querySelectorAll("details.share[open]").forEach((box) => ((box.open = false), box.firstElementChild.focus())));
+
+/** Buttons under a figure: save it as an image (a plate), share it (`share`: what sharer() is given), copy its
+ *  address, and where to check it. */
+function tools(address, { image, check = [], data, share } = {}) {
+  const row = el(`<div class="controls tools"></div>`);
   if (image) {
     const save = el(`<button type="button">${t("save_image")}</button>`);
     save.addEventListener("click", () => savePlate(typeof image === "function" ? image() : image, "jejak-kata"));
     row.append(save);
   }
-  const copy = el(`<button type="button">${t("copy_link")}</button>`);
-  copy.addEventListener("click", async () => {
-    await navigator.clipboard?.writeText(new URL(typeof address === "function" ? address() : address, location.href).href);
-    copy.textContent = t("copied");
-  });
-  row.append(copy);
+  if (share) row.append(sharer(t("share"), share));
+  row.append(copier(t("copy_link"), () => whole(typeof address === "function" ? address() : address)));
   const list = [].concat(data || []), files = list.map((file) => `<a href="${DATA}/${file}">${t("check_data")}${list.length > 1 ? ` (${file})` : ""}</a>`);
   if (check.length || files.length) row.append(el(`<span>${t("check")} ${[...check.map(link), ...files].join(", ")}</span>`));
   return row;
@@ -1208,7 +1271,6 @@ const storyCard = (story, large = false) => {
     <b class="card-title">${words.title}</b><span class="card-text">${words.teaser}</span></a></li>`;
 };
 const storyCards = (list, large = false) => `<ul class="cards doors story-cards${large ? " large" : ""}">${list.map((s) => storyCard(s, large)).join("")}</ul>`;
-const PLAY = ["tebak", "kuis", "menempel", "lingkaran", "redaksi", "pasang", "balap", "tahun", "bergeser", "entitas"];
 /** A mark for each thing to play with, drawn in a few strokes: what its figure looks like, at a glance. The route's
  *  colour marks the one thing in each that moves. */
 const PLAY_MARKS = {
@@ -1237,6 +1299,19 @@ const readingTime = (story) => {
   return Math.max(1, Math.round(words.join(" ").replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length / 200));
 };
 
+const SHARE_MARK = `<svg class="share-mark" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 13v6.5h14V13"/></svg>`;
+
+/** How to cite a story: a line to copy, and the same as BibTeX. Its author and its date are what the site states
+ *  (SITE, the story's `published`). */
+function cite(story, url) {
+  const title = story[language].title, year = story.published.slice(0, 4);
+  const line = `${SITE.author} (${year}). ${title}. ${SITE.name}. ${url}`;
+  const bibtex = `@misc{jejakkata-${story.slug},\n  author = {${SITE.author}},\n  title = {${title}},\n  year = {${year}},\n  howpublished = {${SITE.name}},\n  url = {${url}}\n}`;
+  const box = el(`<details class="cite"><summary>${t("cite")}</summary><p class="cite-line">${escape(line)}</p><pre>${escape(bibtex)}</pre><div class="controls"></div></details>`);
+  box.querySelector(".controls").append(copier(t("cite_copy"), () => line), copier(t("cite_bibtex"), () => bibtex));
+  return box;
+}
+
 /** Every story, led by its key number; the newest three large, on the deep. */
 function storiesPage() {
   view.replaceChildren(pageHead(t("nav_stories"), { kicker: t("stories_kicker", STORIES.length), lede: t("stories_lede") }), el(storyCards(STORIES.slice(0, 3), true)),
@@ -1258,7 +1333,7 @@ addEventListener("scrollend", () => voyage?.arrived());
  * what the data cannot tell. The cover and the stages are laid out before any figure is drawn, so nothing moves
  * once it is on screen; each figure is then drawn at the size its stage has.
  */
-async function storyPage(slug, scene) {
+async function storyPage(slug, scene, step) {
   if (!slug) return storiesPage();
   if (!STORIES.some((s) => s.slug === slug)) return lostPage();
   // Laid out full width from the first frame (index.html says so too), also while the plates and the story's body
@@ -1274,9 +1349,16 @@ async function storyPage(slug, scene) {
   let last = 0;  // the scene seen last: what the tools save and link to
   // On a phone the cover holds the title, the deck and "Mulai"; the intro opens the first scene instead.
   const stages = parts.map((part, k) => stage(part, k, parts.length, (j) => steer(k, j), k ? "" : words.intro));
+  // Shared: the story from its cover and its landing; from a stage, the step it is on (its address opens there),
+  // with the figure as an image.
+  const shared = () => ({ title: words.title, url: whole(href("cerita", slug)) });
+  cover.querySelector(".begin").after(sharer(t("share"), shared, "on-deep"));
+  stages.forEach((s, k) => s.stage.querySelector(".stage-meta").append(sharer(`${SHARE_MARK}<span class="hidden">${t("share_step")}</span>`,
+    () => ({ title: words.title, url: whole(href("cerita", slug, String(k), String(s.on()))), image: [s.room, s.on()] }), "step")));
   const landing = el(`<section class="landing">${tideLine()}<div class="limits"><h2>${t("limits_title")}</h2>${words.limits}</div></section>`);
-  landing.append(tools(() => href("cerita", slug, String(last)), { image: () => stages[last].room, check: [...new Set(parts.flatMap((part) => part.check || []))],
+  landing.append(tools(() => href("cerita", slug, String(last)), { image: () => stages[last].room, share: shared, check: [...new Set(parts.flatMap((part) => part.check || []))],
     data: [...new Set(parts.map((part) => (part.type === "asked" ? `pages/${part.name}.json` : SCENE_DATA[part.type])).filter(Boolean))] }),
+    cite(story, whole(href("cerita", slug))),
     el(`<a class="card next-story" href="${href("cerita", next.slug)}"><span class="kicker">${t("next_story")}</span><b class="card-title">${next[language].title}</b><span class="card-text">${next[language].teaser}</span></a>`),
     el(`<ul class="links"><li><a href="${href("cerita")}">${t("all_stories")}</a></li></ul>`));
   view.replaceChildren(cover, ...stages.map((s) => s.node), landing);
@@ -1341,7 +1423,7 @@ async function storyPage(slug, scene) {
     },
   };
   cover.querySelector(".begin").addEventListener("click", () => (steer(0, 0), stages[0].stage.focus({ preventScroll: true })));
-  if (scene && stages[+scene]) scrollTo(0, spot(+scene, 0));
+  if (scene && stages[+scene]) scrollTo(0, spot(+scene, Math.max(0, Math.min(stages[+scene].steps - 1, +step || 0))));
   frame();
 
   // The figures, each at the size of its stage, with the step each stage is on.
@@ -1409,7 +1491,7 @@ async function homePage() {
   hero.querySelector(".hero-ask").addEventListener("focusin", () => wanted());
   hero.querySelector(".hero-ask").append(suggest(lens, t("hero_ask"), t("hero_go"), async (word) => {
     const l = await lens;
-    if (!l?.isEntry(l.index.get(word))) return (location.hash = href("kata", word));
+    if (!l?.isEntry(l.index.get(word))) return visit(href("kata", word));
     sail(word);
   }));
   hero.querySelector(".hero-try").addEventListener("click", (e) => e.target.matches("button") && (wanted(), sail(e.target.textContent)));
@@ -1590,7 +1672,7 @@ async function quizPage() {
         const again = el(`<button type="button" class="primary">${t("quiz_again")}</button>`), share = el(`<button type="button">${t("copy_link")}</button>`), row = el(`<p class="controls"></p>`);
         again.addEventListener("click", () => ((right = round = 0), next()));
         share.addEventListener("click", async () => {
-          await navigator.clipboard?.writeText(`${t("quiz_share", right, ROUNDS)} ${new URL(href("kuis"), location.href).href}`);
+          await navigator.clipboard?.writeText(`${t("quiz_share", right, ROUNDS)} ${whole(href("kuis"))}`);
           share.textContent = t("copied");
         });
         row.append(again, share);
@@ -1633,7 +1715,7 @@ async function stuckPage(word = "tersangka", k = "0", era = "2", kind = "p") {
   const box = el(`<section></section>`);
   box.append(figure.node, tools(to(word, k, era, kind), { image: box, data: `${OUTLETS[+k]}/stick.json` }));
   const pick = el(`<p class="controls"><label>${t("stuck_word")} <select>${s.words.map((w) => `<option${w === word ? " selected" : ""}>${w}</option>`).join("")}</select></label></p>`);
-  pick.querySelector("select").addEventListener("change", (e) => (location.hash = to(e.target.value, k, era, kind)));
+  pick.querySelector("select").addEventListener("change", (e) => visit(to(e.target.value, k, era, kind)));
   view.replaceChildren(pageHead(t("play_menempel"), { ...fromPlay(), lede: t("stuck_lede") }), pick,
     el(choice(OUTLET, k, (i) => to(word, i, era, kind))), el(choice(ERAS_SHOWN, era, (i) => to(word, k, i, kind))), el(choice([t("people"), t("organisations")], kind === "p" ? 0 : 1, (i) => to(word, k, era, "po"[i]))),
     box, el(`<p class="note">${t("stuck_warning")}</p>`),
@@ -1669,7 +1751,7 @@ async function roomsPage(name = "pdip") {
   const rows = words.filter((w) => spread(w) >= 0).sort((a, b) => spread(b) - spread(a)).slice(0, 12);
   const names = [...new Set(all.flatMap((s) => s.names))].sort();
   const form = el(`<form class="controls"><input type="search" list="names" placeholder="${t("rooms_ask")}" aria-label="${t("rooms_ask")}"><datalist id="names">${names.map((n) => `<option>${n}</option>`).join("")}</datalist><button class="primary">${t("show")}</button></form>`);
-  form.addEventListener("submit", (e) => (e.preventDefault(), names.includes(form.firstElementChild.value.trim().toLowerCase()) && (location.hash = href("redaksi", form.firstElementChild.value.trim().toLowerCase()))));
+  form.addEventListener("submit", (e) => (e.preventDefault(), names.includes(form.firstElementChild.value.trim().toLowerCase()) && visit(href("redaksi", form.firstElementChild.value.trim().toLowerCase()))));
   view.replaceChildren(pageHead(t("play_redaksi"), { ...fromPlay(), lede: t("rooms_lede") }), form);
   if (!rows.length) return view.append(el(`<p>${t("rooms_none", escape(name))}</p>`));
   const figure = strip({ title: t("rooms_plate", name), states: ERAS_SHOWN, series: OUTLET, rows: rows.map((w) => ({ label: w, values: ERAS_SHOWN.map((_, p) => OUTLETS.map((_, k) => value(w, k, p))) })),
@@ -1683,7 +1765,7 @@ async function roomsPage(name = "pdip") {
 async function circlePage(name = "prabowo", k = "0") {
   const s = await stickOf(k), i = s.names.indexOf(name), names = s.names.filter((_, j) => s.kinds[j] === "p" && s.beside[j].some((list) => list.length));
   const form = el(`<form class="controls"><input type="search" list="names" placeholder="${t("circle_ask")}" aria-label="${t("circle_ask")}"><datalist id="names">${names.map((n) => `<option>${n}</option>`).join("")}</datalist><button class="primary">${t("show")}</button></form>`);
-  form.addEventListener("submit", (e) => (e.preventDefault(), s.names.includes(form.firstElementChild.value.trim().toLowerCase()) && (location.hash = href("lingkaran", form.firstElementChild.value.trim().toLowerCase(), k))));
+  form.addEventListener("submit", (e) => (e.preventDefault(), s.names.includes(form.firstElementChild.value.trim().toLowerCase()) && visit(href("lingkaran", form.firstElementChild.value.trim().toLowerCase(), k))));
   view.replaceChildren(pageHead(t("play_lingkaran"), { ...fromPlay(), lede: t("circle_lede") }), form, el(choice(OUTLET, k, (j) => href("lingkaran", name, String(j)))));
   if (i < 0) return view.append(el(`<p>${t("rooms_none", escape(name))}</p>`));
   const figure = circle(s, i);
@@ -1708,7 +1790,7 @@ async function guessPage() {
   let score = 0;
   const ask = (k) => {
     if (k === rounds.length) {
-      const said = t("guess_share", score, rounds.length * 100, location.href.split("#")[0] + "#/tebak");
+      const said = t("guess_share", score, rounds.length * 100, whole(href("tebak")));
       box.replaceChildren(el(`<p class="score">${score} / ${rounds.length * 100}</p>`), el(`<p>${t("guess_done")}</p>`), el(`<p class="controls"><button type="button">${t("copy_score")}</button><a role="button" class="primary" href="${href("tebak")}">${t("again")}</a></p>`));
       box.querySelector("button").addEventListener("click", async (e) => (await navigator.clipboard?.writeText(said), (e.target.textContent = t("copied"))));
       box.querySelector("a").addEventListener("click", (e) => (e.preventDefault(), guessPage()));
@@ -1767,14 +1849,21 @@ addEventListener("scroll", () => rendering || menuOpen() || places.set(history.s
 const shell = () => document.documentElement.style.setProperty("--head", masthead.offsetHeight + "px");
 addEventListener("resize", shell);
 
+/** The route on screen, and the address it was shown at (address.js). */
+let here = [], routed = "";
 function route() {
   tip(null);
-  if (!history.state?.id) history.replaceState({ id: Date.now() + Math.random() }, "");
+  // The address says the route, and the language where it says one (an old address at the root does not). It is
+  // then written as this route and language write it: a real path where there is a page, English under en/.
+  const said = routeOf(location.pathname.slice(ROOT.pathname.length) + location.hash);
+  if (said.language) language = said.language;
+  const [page, ...args] = (here = said.parts);
+  history.replaceState(history.state?.id ? history.state : { id: Date.now() + Math.random() }, "", href(...here));
+  routed = location.href;
   const place = places.get(history.state.id) || 0;
-  const [, page, ...args] = location.hash.split("/").map(decodeURIComponent);
   document.documentElement.lang = language;
   document.querySelectorAll("[data-t]").forEach((node) => (node.innerHTML = t(node.dataset.t)));
-  document.querySelectorAll(".menu nav a").forEach((a) => (a.getAttribute("href") === `#/${page}` ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
+  document.querySelectorAll(".masthead a[data-to]").forEach((a) => (a.setAttribute("href", href(...[a.dataset.to].filter(Boolean))), a.dataset.to && a.dataset.to === page ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
   const other = language === "id" ? "en" : "id", languageButton = document.getElementById("language");
   languageButton.textContent = other === "en" ? "English" : "Bahasa Indonesia";
   languageButton.lang = other;
@@ -1842,10 +1931,13 @@ addEventListener("pointermove", (e) => {
 
 /** The window's title and the page's description, from what the page shows: its title and its lede. */
 function describe(page, args) {
+  // A page with a name of its own is called what its generated page is called (address.js); any other, after its title and lede.
   const title = view.querySelector("h1")?.textContent.replace(/\s+/g, " ").trim(), lede = view.querySelector(".page-head .lede, .cover .deck, .lost .deck, .empty p");
-  const said = { kata: () => t("desc_word", args[0]), main: () => t("desc_play"), peta: () => t("desc_chart"), temuan: () => t("desc_findings"), metode: () => t("desc_method") }[page];
-  document.title = !page ? t("doc_title") : page === "kata" && title === args[0] ? t("doc_word", args[0]) : `${title || t("nav_label")} · Jejak Kata`;
-  document.querySelector('meta[name="description"]').content = (!page ? t("desc_home") : said ? said() : lede?.textContent.replace(/\s+/g, " ").trim()) || t("desc_home");
+  const own = view.querySelector(".lost") ? null : named([page, ...args], language);
+  document.title = own?.title || `${title || t("nav_label")} · Jejak Kata`;
+  document.querySelector('meta[name="description"]').content = own?.description || lede?.textContent.replace(/\s+/g, " ").trim() || t("desc_home");
+  // What a browser's own share button sends (Chrome on Android sends this, not the address bar).
+  document.querySelector('link[rel="canonical"]')?.setAttribute("href", whole(href(...[page, ...args].filter(Boolean))));
 }
 
 // ---- the header: search, and below 900px the menu sheet ---------------------
@@ -1901,7 +1993,7 @@ function search() {
   const go = (word) => {
     list.hidden = true;
     query.value = "";
-    if (word) location.hash = href("kata", word);
+    if (word) visit(href("kata", word));
   };
   query.addEventListener("input", async () => {
     const q = query.value.trim().toLowerCase();
@@ -1961,17 +2053,33 @@ document.addEventListener("click", (e) => {
   title.style.viewTransitionName = "title";
 }, true);
 
+// The other language is the same route at its own address (en/ or not), in the same entry of the history.
 document.getElementById("language").addEventListener("click", () => {
   language = language === "id" ? "en" : "id";
   kept("localStorage", "language", language);
   closeMenu();
+  history.replaceState(history.state, "", href(...here));
   route();
 });
-addEventListener("hashchange", () => {
+/** The address changed (a link, the back button, a fragment typed by hand): its page, once. */
+function moved() {
+  if (location.href === routed) return;
   document.getElementById("suggestions").hidden = true;
   document.getElementById("query").value = "";
   closeMenu();
   route();
+}
+addEventListener("hashchange", moved);
+addEventListener("popstate", moved);
+// A link to a page of the site is followed here, without loading the site again; files (data/...) and other sites
+// are left to the browser.
+document.addEventListener("click", (e) => {
+  const a = e.target.closest?.("a[href]");
+  if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target || a.hasAttribute("download")) return;
+  const to = new URL(a.href), [first] = to.pathname.slice(ROOT.pathname.length).replace(/^en\//, "").split("/");
+  if (to.origin !== location.origin || !to.pathname.startsWith(ROOT.pathname) || (first && !PAGES.includes(decodeURIComponent(first)))) return;
+  e.preventDefault();
+  visit(to.href);
 });
 search();
 route();

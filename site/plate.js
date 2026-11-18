@@ -204,8 +204,15 @@ export function plates(labels, make) {
 
 let typeface; // the site's typeface as a data address, fetched when an image is first saved
 
-/** The plate seen under `node` as a PNG file, twice its size on screen, in the site's own typeface. */
+/** The plate seen under `node` saved as a PNG file. */
 export async function savePlate(node, name) {
+  const url = URL.createObjectURL(await plateImage(node));
+  Object.assign(document.createElement("a"), { href: url, download: `${name}.png` }).click();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+/** The plate seen under `node` as a PNG image (a Blob), twice its size on screen, in the site's own typeface. */
+export async function plateImage(node) {
   const svg = node.querySelector(".plate:not(.off) svg").cloneNode(true), image = new Image();
   typeface ||= fetch("bricolage.woff2").then((r) => r.blob()).then((blob) => new Promise((done) => Object.assign(new FileReader(), { onload: (e) => done(e.target.result) }).readAsDataURL(blob)));
   const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
@@ -218,5 +225,5 @@ export async function savePlate(node, name) {
   await document.fonts.ready;
   const canvas = Object.assign(document.createElement("canvas"), { width: 2 * w, height: 2 * h });
   canvas.getContext("2d").drawImage(image, 0, 0, 2 * w, 2 * h);
-  Object.assign(document.createElement("a"), { href: canvas.toDataURL("image/png"), download: `${name}.png` }).click();
+  return new Promise((done, fail) => canvas.toBlob((blob) => (blob ? done(blob) : fail()), "image/png"));
 }

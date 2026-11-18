@@ -1,0 +1,16 @@
+{
+ "name": "Jejak Kata",
+ "short_name": "Jejak Kata",
+ "description": "Peta 20 ribu kata bahasa Indonesia dan rute tiap kata dari masa ke masa. A chart of 20,000 Indonesian words and each word's route through the years.",
+ "lang": "id",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#0a1f36",
+ "theme_color": "#0a1f36",
+ "icons": [
+  { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+  { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+  { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+ ]
+}

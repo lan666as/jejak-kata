@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<!-- page: what this address is called where it is shared and found; written again for every address by tests/site/publish.mjs -->
 <title>Jejak Kata</title>
 <meta name="description" content="Bagaimana kata-kata bahasa Indonesia berganti teman dari masa ke masa. How Indonesian words changed the company they keep.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a1f36'/%3E%3Cpath d='M6 25C11 25 10 13 16 13S21 8 25 7' fill='none' stroke='%23ea5aa6' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='25' cy='7' r='3.5' fill='%23f2b84a'/%3E%3C/svg%3E">
@@ -19,6 +21,10 @@
 <meta property="og:locale" content="id_ID">
 <meta property="og:locale:alternate" content="en_GB">
 <meta name="twitter:card" content="summary_large_image">
+<!-- /page -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>.prerender { display: none; }</style><noscript><style>.prerender { display: block; }</style></noscript>
 <meta name="theme-color" content="#0a1f36" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#06121f" media="(prefers-color-scheme: dark)">
 <link rel="preload" href="bricolage.woff2" as="font" type="font/woff2" crossorigin>
@@ -26,12 +32,13 @@
 <link rel="modulepreload" href="app.js">
 <link rel="modulepreload" href="chart.js">
 <link rel="modulepreload" href="text.js">
+<link rel="modulepreload" href="address.js">
 <link rel="preload" href="data/id-web-news-kompas/first.json" as="fetch" crossorigin>
 </head>
 <body>
 <header class="masthead">
   <a class="skip" id="skip" href="#/" data-t="skip">Langsung ke isi</a>
-  <a class="brand" href="#/">Jejak Kata</a>
+  <a class="brand" href="#/" data-to="">Jejak Kata</a>
   <button class="head-button" id="search-button" type="button" aria-controls="menu" aria-expanded="false">
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
     <span class="hidden" data-t="search_open">Cari</span>
@@ -42,11 +49,11 @@
   </button>
   <div class="menu" id="menu">
     <nav aria-label="Jejak Kata">
-      <a href="#/cerita" data-t="nav_stories">Cerita</a>
-      <a href="#/main" data-t="nav_play">Mainan</a>
-      <a href="#/peta" data-t="nav_chart">Peta</a>
-      <a href="#/temuan" data-t="nav_findings">Temuan</a>
-      <a href="#/metode" data-t="nav_method">Cara</a>
+      <a href="#/cerita" data-to="cerita" data-t="nav_stories">Cerita</a>
+      <a href="#/main" data-to="main" data-t="nav_play">Mainan</a>
+      <a href="#/peta" data-to="peta" data-t="nav_chart">Peta</a>
+      <a href="#/temuan" data-to="temuan" data-t="nav_findings">Temuan</a>
+      <a href="#/metode" data-to="metode" data-t="nav_method">Cara</a>
     </nav>
     <form id="search" role="search" autocomplete="off">
       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
@@ -56,7 +63,7 @@
     <button id="language" type="button">English</button>
   </div>
 </header>
-<main id="view" tabindex="-1"><script>/* the first page and a story are laid out full width from the start, so nothing moves when it arrives; where the sea can be 3D, the first page's hero is as tall as its dive, and the sea is fetched beside the rest */ { const main = document.currentScript.parentNode; const gl = !!window.WebGL2RenderingContext; if (gl && !matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("dives"); if (!/^#\/[^/]/.test(location.hash)) { main.className = "home"; if (gl) document.head.append(Object.assign(document.createElement("link"), { rel: "modulepreload", href: "sea.js" })); } else if (/^#\/cerita\/[^/]/.test(location.hash)) { main.className = "voyage"; for (const href of ["story.js", "plate.js"]) document.head.append(Object.assign(document.createElement("link"), { rel: "modulepreload", href })); } }</script><p class="loading">Memuat peta kata…</p></main>
+<main id="view" tabindex="-1"><script>/* the first page and a story are laid out full width from the start, so nothing moves when it arrives; where the sea can be 3D, the first page's hero is as tall as its dive, and the sea is fetched beside the rest */ { const main = document.currentScript.parentNode; const gl = !!window.WebGL2RenderingContext; if (gl && !matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("dives"); const route = /^#\/[a-z]/.test(location.hash) ? location.hash.slice(2) : location.pathname.slice(new URL(document.baseURI).pathname.length).replace(/^en(\/|$)/, ""); if (!route) { main.className = "home"; if (gl) document.head.append(Object.assign(document.createElement("link"), { rel: "modulepreload", href: "sea.js" })); } else if (/^cerita\/[^/]/.test(route)) { main.className = "voyage"; for (const href of ["story.js", "plate.js"]) document.head.append(Object.assign(document.createElement("link"), { rel: "modulepreload", href })); } }</script><p class="loading">Memuat peta kata…</p><!-- content --></main>
 <footer class="site-foot"><div data-t="footer"></div></footer>
 <div id="tip" role="status" hidden></div>
 <script type="module" src="app.js"></script>
