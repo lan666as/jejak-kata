@@ -227,7 +227,8 @@ A story keeps its place by step (not by pixels) across a language switch and the
   a phone the head is a line and the sea comes first, what steers it under it, the buttons in a row at its top.
   Without WebGL2 the flat chart on paper.
 - **Findings**: each list is the counting's own ranking, shown by a stated rule, never picked: of the pairs, only
-  those whose lines cross (the rising word ends up more common than the falling one), the top six as figures (both
+  those whose lines cross clearly (the rising word starts below the falling one and ends at least twice as common:
+  a drift of topic, where both words live on, does not pass), the top six as figures (both
   lines on one scale, each word named where its line is, the year they cross marked), the rest folded; of the words
   that came and went or came to stay, the top eight, the rest folded. The rule is written on the page beside a rule
   of `--beacon`. The page shows its first source as soon as that source has come, not after every source.

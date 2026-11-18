@@ -1029,15 +1029,16 @@ function duet(lens, rose, fell) {
 
 /** What the counting turned up by itself: who took whose place, what came and went, what came and stayed. Each list
  *  is the counting's own ranking (idhist/highlights.py); the page shows its top and folds the rest, and of the pairs
- *  only those whose lines cross (the rising word ends up more common than the falling one), and says so. */
-const LEAD = 6;
+ *  only those whose lines cross clearly (the rising word starts below the falling one and ends at least OVERTAKE
+ *  times as common: a drift of topic, where both live on, does not), and says so. */
+const LEAD = 6, OVERTAKE = 2;
 async function findingsPage() {
   // Which sources have pairs is read from their small lists alone: the page does not wait for every source's words.
   const names = await json("lenses.json");
   const found = (await Promise.all(names.map((name) => json(`${name}/highlights.json`).then((h) => (h.swaps?.length ? name : null)).catch(() => null)))).filter(Boolean);
   view.replaceChildren(pageHead(t("nav_findings"), { kicker: t("findings_kicker"), lede: t("findings_lede"), sea: { words: MOVED } }));
   const third = (e, end) => { const k = Math.max(1, Math.floor(e.share.length / 3)), part = end ? e.share.slice(-k) : e.share.slice(0, k); return part.reduce((x, y) => x + y, 0) / k; };
-  const crosses = (rose, fell) => third(rose, true) > third(fell, true) && third(rose, false) < third(fell, false);
+  const crosses = (rose, fell) => third(rose, true) >= OVERTAKE * third(fell, true) && third(rose, false) < third(fell, false);
   /** A list's top in full, the rest folded under it. */
   const folded = (list, top, make, rest = make) => {
     const box = el("<div></div>");
