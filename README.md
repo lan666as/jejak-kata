@@ -187,7 +187,10 @@ the story's own "what this data cannot say" panel, with what was left out and wh
 | `penyesuaian`, `oknum`, `diamankan` | every publisher whose text is kept |
 | `berhenti-dibicarakan` | the lists come from `stopped.json`, ranked by rule |
 
-`tests/site/numbers.mjs <data> <data>` lists every caption number the data does not give.
+`tests/site/captions.mjs [<data>]` holds every number a story writes to what its figure shows at that step (the same
+code works the figures out for the site and for the check: `site/scenes.js`), and lists each one that differs with what
+the data has; run it on new data before it replaces the old. A number no figure can give (a tally read by hand, a page
+count) is explained, one line each, in `tests/site/captions-allowed.tsv`.
 
 ## Layout
 
@@ -259,11 +262,12 @@ replaced monthly (hence `manifests/`).
 ### Checking the site
 
 `tests/site` uses the site like a reader, in a real browser (`cd tests/site && npm install` once); each check is
-`node tests/site/<name>.mjs` and fails with a non-zero exit. `./run.sh look` runs the first four, and `./run.sh deploy`
+`node tests/site/<name>.mjs` and fails with a non-zero exit. `./run.sh look` runs the first five, and `./run.sh deploy`
 runs `look` first.
 
 | Check | What it reads |
 |---|---|
+| `captions.mjs [<data>]` | every number in every caption, plate title and story card, in both languages, against the values its figure shows at that step (no browser): the rows the step brings forward, at its moment, rounded as the site rounds; ranges exactly the lowest and highest of what they cover; the same numbers in the same order in Indonesian and English; anything else explained in `captions-allowed.tsv` |
 | `stories.mjs` | every story, step by step, by key and by scroll, at 1280px and 360px and with reduced motion: the stage stuck, the caption, the figure on screen (no text under 12px, a strip's rows apart, a tall strip's named rows in its window), the band showing its step |
 | `pages.mjs` | language switch, back button, shared links, a slow line, the menu, search, the map, the games, a saved image |
 | `hero.mjs` | the home hero with WebGL, without, and with reduced motion; the dive; the quality ladder only stepping down and settling |

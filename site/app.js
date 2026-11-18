@@ -9,6 +9,7 @@
 import { seaChart } from "./chart.js";
 import { TEXT, LENS_TEXT, NOTES, GLOSS, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
 import { address, routeOf, named, canonical, EMBED, PAGES, PLAY } from "./address.js";
+import { figureOf, focused, lensFrom, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
 
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
 // cold on a phone, does without them. `plating()` resolves once these names are there.
@@ -22,14 +23,8 @@ const BEAT = 1500; // milliseconds a player stays on one period
 const MAIN = "id-web-news-kompas"; // the lens of the first page: yearly, one publisher, 2011-2024
 const LEG = 900; // milliseconds a ship takes from one period to the next (--d-leg)
 const BUCKET = 64; // entries per file of words and of paths, as idhist.export writes them (each lens's meta says so too)
-const OUTLETS = ["id-web-eras-kompas", "id-web-eras-tempo", "id-web-eras-tribun"]; // one publisher each, the same three periods
-const OUTLET = ["Kompas", "Tempo", "Tribunnews"];
-/** The publishers whose text is counted (idhist/pages.py), as the site calls them. */
-const PUBLISHER = { "kompas.com": "Kompas", "tempo.co": "Tempo", "tribunnews.com": "Tribunnews", "bisnis.com": "Bisnis", "okezone.com": "Okezone", "detik.com": "Detik", "liputan6.com": "Liputan6",
-  "polri.go.id": { id: "Situs Polri", en: "Police's site" }, "mil.id": { id: "Situs TNI", en: "Army's site" } };
-const said = (label) => label[language] || label;
+const said = (label) => saidIn(label, language);
 const ERAS_SHOWN = ["2010–2014", "2015–2019", "2020–2024"];
-const dash = (label) => String(label).replace("-", "–");
 const ROUTES = ["--route", "--route-2", "--ink", "--ink-3"]; // colours of the first, second ... chosen word
 const view = document.getElementById("view");
 const masthead = document.querySelector(".masthead");
@@ -66,11 +61,8 @@ const loaded = new Map();
 const lensNamed = (name) => {
   if (!loaded.has(name))
     loaded.set(name, json(`${name}/meta.json`).then((meta) => {
-      const hidden = new Set(meta.names);
-      const index = new Map(meta.words.map((w, i) => [w, i]));
       const articles = new Map(Object.entries(meta.entities).map(([i, article]) => [+i, article]));
-      const kind = (i) => meta.kinds[i] || "other";
-      return { ...meta, index, articles, kind, isEntry: (i) => i !== undefined && !hidden.has(i) };
+      return { ...lensFrom(meta), articles, kind: (i) => meta.kinds[i] || "other" };
     }).catch(() => undefined));
   return loaded.get(name);
 };
@@ -1151,103 +1143,46 @@ const figureSize = (room) => {
 };
 const thousands = (n) => Math.round(n).toLocaleString(language);
 
-/** The figures a story can show: each takes a scene's settings and the room it has, and returns a figure. */
-const SCENES = {
-  /** How often each word is on a page of the lens, period by period. */
-  lines: async (scene, w, h) => {
-    const l = await lensNamed(scene.lens), entries = await entriesOf(l, scene.words);
-    return plate({ title: scene[language].plate, periods: l.periods, series: entries.map((e) => ({ label: l.words[e.word], values: e.share })),
-      pages: (i) => t("pages_all", lensText(l).short, l.periods[i], thousands(l.units[i])) }, w, h);
-  },
-  /** Two words against each other: a plate per pair. */
-  pairs: async (scene, w, h) => {
-    const l = await lensNamed(scene.lens), rows = await Promise.all(scene.pairs.map((pair) => entriesOf(l, pair)));
-    return plates(scene.pairs.map((pair) => pair.join(" / ")), (i) => plate({ title: scene[language].plate(...scene.pairs[i]), periods: l.periods,
-      series: rows[i].map((e) => ({ label: l.words[e.word], values: e.share })), pages: (k) => t("pages_all", lensText(l).short, l.periods[k], thousands(l.units[k])) }, w, h));
-  },
-  /** People who left an office: what is left of their share of pages one, two and three years on, as a part of their
-   *  last year in office. A dot per outlet; none where that last year has fewer than 80 pages with the name. */
-  left: async (scene, w, h) => {
-    const y = await json("years.json"), after = [1, 2, 3];
-    const rows = scene.names.map(([word, left]) => ({ label: word, values: after.map((d) => OUTLETS.map((o) => {
-      const share = y.share[word][o], i = y.years.indexOf(left);
-      return share[i] * y.pages[o][i] >= 80 && share[i + d] != null ? share[i + d] / share[i] : null;
-    })) }));
-    return strip({ title: scene[language].plate, states: after.map((d) => "+" + d), series: OUTLET, rows, pages: () => t("forget_note") }, w, h);
-  },
-  /** Pairs of words for one thing: of the times either is on a page, the part that is the second word. A row per pair;
-   *  no dot for a year in which the two together are on fewer than 30 pages. */
-  split: async (scene, w, h) => {
-    const l = await lensNamed(scene.lens), found = await Promise.all(scene.pairs.map((pair) => Promise.all(pair.map((word) => entryOf(l, word)))));
-    const at = scene.periods.map((p) => l.periods.indexOf(p));
-    const rows = scene.pairs.map((pair, k) => ({ label: pair[1], values: at.map((i) => {
-      const [a, b] = found[k].map((e) => e.share[i] || 0);
-      return [(a + b) * l.units[i] >= 30 ? b / (a + b) : null];
-    }) }));
-    return strip({ title: scene[language].plate, states: scene.periods, series: [scene[language].series], rows, most: 1, pages: (k) => t("pages_all", lensText(l).short, scene.periods[k], thousands(l.units[at[k]])) }, w, h);
-  },
-  /** Of the pages naming one word, the share that also contain each of the others (idhist/together.py). */
-  together: async (scene, w, h) => {
-    const found = (await json("together.json"))[`${scene.lens}/${scene.word}`];
-    return plate({ title: scene[language].plate, periods: found.periods, series: scene.with.filter((x) => found.with[x]).map((x) => ({ label: x, values: found.with[x], off: found.off[x] })),
-      pages: (i) => t("pages_naming", thousands(found.pages[i]), scene.word, found.periods[i]) }, w, h);
-  },
-  /** Year by year in the three outlets, one plate per word; with `outlet`, the words of one outlet on one plate. */
-  yearly: async (scene, w, h) => {
-    const y = await json("years.json"), pages = (lens) => (i) => t("pages_year", y.years[i], OUTLETS.map((o, k) => `${OUTLET[k]} ${thousands(y.pages[o][i])}`).filter((_, k) => lens === undefined || k === lens).join(", "));
-    const one = (k, title) => plate({ title, periods: y.years.map(String), series: scene.words.map((word) => ({ label: word, values: y.share[word][OUTLETS[k]] })), pages: pages(k) }, w, h);
-    if (scene.by === "outlet") return plates(OUTLET, (k) => one(k, scene[language].plate[k]));
-    if (scene.outlet !== undefined) return one(scene.outlet, scene[language].plate);
-    return plates(scene.words, (i) => plate({ title: scene[language].plate(scene.words[i]), periods: y.years.map(String),
-      series: OUTLETS.map((o, k) => ({ label: OUTLET[k], values: y.share[scene.words[i]][o] })), pages: pages() }, w, h));
-  },
-  /** How much of a name is left in the years after it left office: its share of pages, as a part of the leaving year's. */
-  forget: async (scene, w, h) => {
-    const y = await json("years.json"), span = [-3, -2, -1, 0, 1, 2, 3, 4, 5];
-    return plates(OUTLET, (k) => plate({ title: scene[language].plate(OUTLET[k]), note: t("forget_note"), periods: span.map((d) => (d > 0 ? "+" + d : String(d).replace("-", "−"))),
-      series: scene.names.map(([word, left]) => {
-        const share = y.share[word][OUTLETS[k]], base = share[y.years.indexOf(left)];
-        return { label: word, values: span.map((d) => (share[y.years.indexOf(left + d)] === undefined ? null : share[y.years.indexOf(left + d)] / base)) };
-      }) }, w, h));
-  },
-  /** For some names, the share of their pages that hold one word: a dot per outlet, travelling from period to period. */
-  stuck: async (scene, w, h) => {
-    const found = await json("together.json"), of = (name, k) => found[`${OUTLETS[k]}/${name}`], periods = of(scene.rows[0], 0).periods;
-    const rows = scene.rows.map((name) => ({ label: name, values: periods.map((_, p) => OUTLETS.map((_, k) => of(name, k)?.with[scene.word]?.[p] ?? null)) }));
-    if (scene.all) rows.push({ label: t("all_pages"), values: periods.map((_, p) => OUTLETS.map((_, k) => of(scene.rows[0], k).all[scene.word][p])) });
-    const figure = strip({ title: scene[language].plate, states: periods.map(dash), series: OUTLET, rows, pages: (p) => t("pages_stuck", scene.rows[0], dash(periods[p]), OUTLETS.map((_, k) => `${OUTLET[k]} ${thousands(of(scene.rows[0], k).pages[p])}`).join(", ")) }, w, h);
-    return { ...figure, show: (i, focus) => figure.show(i, focus?.map((name) => (name === "*" ? t("all_pages") : name))) };
-  },
-  /** Words that fell between two periods in all three outlets, by how many times: the list is made by a rule (stopped.json). */
-  fell: async (scene, w, h) => {
-    const s = await json("stopped.json");
-    return plates(scene.spans, (i) => {
-      const [a, b] = scene.spans[i].split("-").map(Number), list = s.fell[scene.spans[i]].slice(0, FELL());
-      return strip({ title: scene[language].plate[i], states: [`${dash(s.periods[a])} → ${dash(s.periods[b])}`], series: OUTLET, format: (v) => "÷" + number(v),
-        rows: list.map((row) => ({ label: row.word, values: [row.share.map(([before, after]) => before / Math.max(after, 1e-6))] })),
-        pages: () => t("pages_fell", OUTLET.map((o, k) => `${o} ${thousands(s.pages[k][a])} → ${thousands(s.pages[k][b])}`).join(", ")) }, w, h);
-    });
-  },
-  /** Counts from the text (idhist/pages.py, data/pages/<name>.json): a row per publisher and a dot per share asked
-   *  for; or, with `rows: "shares"`, a row per share and a dot per publisher. The dots travel from period to period. */
-  asked: async (scene, w, h) => {
-    const d = await json(`pages/${scene.name}.json`), states = scene.periods || d.periods, column = states.map((p) => d.periods.indexOf(p));
-    const value = (key, publisher, c) => d.share[key][d.publishers.indexOf(publisher)][c] ?? null, names = scene.publishers.map((p) => said(PUBLISHER[p]));
-    const rows = scene.rows === "shares"
-      ? scene.shares.map(([key, label]) => ({ label: said(label), values: column.map((c) => scene.publishers.map((p) => value(key, p, c))) }))
-      : scene.publishers.map((p, k) => ({ label: names[k], values: column.map((c) => scene.shares.map(([key]) => value(key, p, c))) }));
-    const figure = strip({ title: scene[language].plate, states: states.map(dash), series: scene.rows === "shares" ? names : scene.shares.map(([, label]) => said(label)), rows, pages: (i) => scene[language].note(dash(states[i])) }, w, h);
-    return { ...figure, show: (i, focus) => figure.show(i, focus?.map((name) => said(PUBLISHER[name] || scene.shares.find(([key]) => key === name)?.[1] || name))) };  // a caption names a row by its address or its share
-  },
+/** The title of plate i of a scene: a sentence, one per plate, or made from the plate's name (or its pair). */
+const plateTitle = (scene, p, i) => {
+  const title = scene[language].plate;
+  return typeof title === "function" ? title(...(scene.type === "pairs" ? scene.pairs[i] : [p.name])) : Array.isArray(title) ? title[i] : title;
 };
-/** How many words a "fell" plate lists: fewer on a phone. */
-const FELL = () => (innerWidth > 760 ? 14 : 11);
+/** What a plate's note says at state i: over how many pages. */
+const PLATE_NOTES = {
+  lines: (f) => (i) => t("pages_all", lensText(f.source).short, f.source.periods[i], thousands(f.source.units[i])),
+  together: (f, scene) => (i) => t("pages_naming", thousands(f.source.pages[i]), scene.word, f.source.periods[i]),
+  yearly: (f, scene, k) => (i) => t("pages_year", f.source.years[i], OUTLETS.map((o, j) => `${OUTLET[j]} ${thousands(f.source.pages[o][i])}`)
+    .filter((_, j) => (scene.by === "outlet" ? j === k : scene.outlet === undefined || j === scene.outlet)).join(", ")),
+  forget: () => () => t("forget_note"),
+  split: (f, scene, k, p) => (i) => t("pages_all", lensText(f.source).short, scene.periods[i], thousands(f.source.units[p.at[i]])),
+  stuck: (f, scene) => (i) => t("pages_stuck", scene.rows[0], dash(f.source.periods[i]), f.source.pages(i).map((n, k) => `${OUTLET[k]} ${thousands(n)}`).join(", ")),
+  fell: (f, scene, k, p) => () => t("pages_fell", OUTLET.map((o, j) => `${o} ${thousands(f.source.pages[j][p.span[0]])} → ${thousands(f.source.pages[j][p.span[1]])}`).join(", ")),
+  asked: (f, scene, k, p) => (i) => scene[language].note(p.states[i]),
+};
+PLATE_NOTES.pairs = PLATE_NOTES.lines;
+PLATE_NOTES.left = PLATE_NOTES.forget;
+/**
+ * A story's figure (what it draws is scenes.js): lines on a plate or rows on a strip, one or, where its plates have
+ * names, several of which one is seen. Its `show(i, focus, mark)` takes the step's focus as the step names it.
+ */
+async function sceneFigure(scene, w, h) {
+  const f = await figureOf(scene, { json, lens: lensNamed, entry: entryOf }, language, { wide: innerWidth > 760 });
+  const make = (p, k) => {
+    const spec = { title: plateTitle(scene, p, k), pages: PLATE_NOTES[scene.type](f, scene, k, p) };
+    const made = f.draw === "plate"
+      ? plate({ ...spec, periods: p.states, series: p.rows.map((r) => ({ label: r.label, values: r.values.map((v) => v[0]), off: r.off?.map((v) => v[0]) })) }, w, h)
+      : strip({ ...spec, states: p.states, series: p.series, rows: p.rows, most: p.most, format: f.times ? (v) => "÷" + number(v) : undefined }, w, h);
+    return { ...made, show: (i, focus) => made.show(i, focused(p, focus)) };
+  };
+  return f.plates[0].name === null ? make(f.plates[0], 0) : plates(f.plates.map((p) => p.name), (k) => make(f.plates[k], k));
+}
 /** The rows and series of a scene drawn as a strip (plate.js), known before its data comes: what its stage must make
  *  room for. */
 const STRIPS = {
   stuck: (p) => [p.rows.length + (p.all ? 1 : 0), OUTLET],
   asked: (p) => (p.rows === "shares" ? [p.shares.length, p.publishers.map((x) => said(PUBLISHER[x]))] : [p.publishers.length, p.shares.map(([, label]) => said(label))]),
-  fell: () => [FELL(), OUTLET],
+  fell: () => [FELL(innerWidth > 760), OUTLET],
   left: (p) => [p.names.length, OUTLET],
   split: (p) => [p.pairs.length, [p[language].series]],
 };
@@ -1533,7 +1468,7 @@ async function storyPage(slug, scene, step, more) {
   // The figures, each at the size of its stage, with the step each stage is on.
   if (innerWidth < 900) stages.forEach((s, k) => share(s, parts[k]));
   await Promise.all(parts.map(async (part, k) => {
-    const [w, h, zoom] = figureSize(stages[k].room), made = await SCENES[part.type](part, w, stages[k].tall || h).catch(() => null);
+    const [w, h, zoom] = figureSize(stages[k].room), made = await sceneFigure(part, w, stages[k].tall || h).catch(() => null);
     if (!made) return stages[k].room.append(el(`<p class="sub">${t("no_data")}</p>`));
     made.node.querySelectorAll(".plate svg").forEach((svg) => (svg.style.width = svg.width.baseVal.value * zoom + "px"));
     stages[k].room.append(made.node);
@@ -1558,7 +1493,7 @@ async function embedPage(slug, k = "0", j = "0") {
   view.replaceChildren(box);
   const room = box.querySelector(".embed-figure"), caption = box.querySelector(".embed-caption"), count = box.querySelector(".count"), link = box.querySelector(".embed-open");
   const width = Math.min(760, room.clientWidth), height = Math.max(240, innerHeight - box.offsetHeight - 120);
-  const figure = await SCENES[part.type](part, width, height).catch(() => null);
+  const figure = await sceneFigure(part, width, height).catch(() => null);
   if (!figure) return room.append(el(`<p class="sub">${t("no_data")}</p>`));
   room.append(figure.node);
   const head = (at) => dash(part.steps[at - 1].head ?? part.steps[at - 1].mark ?? part.steps[at - 1].at);
