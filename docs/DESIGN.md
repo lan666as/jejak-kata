@@ -100,7 +100,8 @@ it.
   deep that runs edge to edge, with the night sea held still behind it (one frame; darker under the text) and the
   **tide line** under it, where the page's paper begins. The pattern is the same on every page; the sea is each
   family's own, seen from higher than the hero (a short band shows more of the chart) and framed in the water beside
-  the text (above it on a phone): the stories index sails the newest three stories' words; findings and the pages
+  the text (above it on a phone, where the head leaves the water room above its kicker and writes no name under the
+  text): the stories index sails the newest three stories' words; findings and the pages
   about change, the words that moved most; the play pages, the names or words their game asks about; a word's page,
   its own route; the method, the whole chart from above with its graticule; the 404, no route. Names on a held sea
   stay in its open water and never touch each other or a ship's pill (each takes a box; a pill moves a line up or

@@ -471,8 +471,9 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       const paper = dayAt(...at) > 0.5, inset = dot ? 14 : 0;
       ctx.font = `800 ${strong ? 15 : 13}px ${css["--type"]}`;
       const width = ctx.measureText(text).width + inset, box = (x, y) => [x - 3, y - 15, x + width + 17, y + 15];
-      const spots = [[at[0] + 14, at[1]], [at[0] - 28 - width, at[1]], [at[0] + 14, at[1] - 28], [at[0] + 14, at[1] + 28], [at[0] - 28 - width, at[1] - 28], [at[0] - 28 - width, at[1] + 28]];
-      const [x, y] = spots.find(([x, y]) => clear(x, y, width + 14, 24) && !overlaps(...box(x, y))) || spots[0];
+      const spots = [0, -28, 28, -56, 56].flatMap((dy) => [[at[0] + 14, at[1] + dy], [at[0] - 28 - width, at[1] + dy]]);
+      // In the open water if it can be; else anywhere it touches no other pill: a ship's name is never covered.
+      const [x, y] = spots.find(([x, y]) => clear(x, y, width + 14, 24) && !overlaps(...box(x, y))) || spots.find(([x, y]) => !overlaps(...box(x, y))) || spots[0];
       taken.push(box(x, y));
       if (y !== at[1]) (ctx.beginPath(), ctx.moveTo(at[0], at[1]), ctx.lineTo(x < at[0] ? x + width + 14 : x, y), (ctx.strokeStyle = paper ? css["--ink-3"] : css["--on-deep-2"]), (ctx.lineWidth = 1), ctx.stroke());
       ctx.fillStyle = paper ? css["--chart-2"] : css["--deep-2"];

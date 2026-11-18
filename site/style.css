@@ -243,6 +243,7 @@ a.kicker:hover::before { transform: translateX(calc(-1 * var(--s1))); }
 .page-head + section > h2:first-child, .page-head + h2 { margin-top: 0; }
 h2:first-child { margin-top: var(--s6); }
 @media (min-width: 900px) { .page-head { padding: var(--s8) 0 calc(var(--s7) + var(--tide-h)); } .page-head:has(.word-title) { padding-top: var(--s6); } }
+@media (max-width: 899.98px) { .page-head:has(> .shore-sea):not(.joined, .lost) { padding-top: calc(var(--s9) + var(--s4)); } }  /* on a phone the sea is above the text: room for it */
 
 /* buttons: secondary by default, .primary, .quiet */
 button, .button, a[role="button"] { display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); min-height: var(--tap); padding: 0 var(--s4);

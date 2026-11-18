@@ -174,12 +174,13 @@ async function shore(box, { words = [], count = 3, routes = null, name: named, l
   if (!sea) return null;
   holder.replaceChildren(sea.node);
   // By default the water is open beside the head's text from 900px (from its right edge), above it on a phone.
-  const rect = holder.getBoundingClientRect(), text = Math.max(0, ...[...box.children].filter((n) => !n.matches(".shore-sea, .tide-line")).map((n) => {
+  const rect = holder.getBoundingClientRect(), texts = [...box.children].filter((n) => !n.matches(".shore-sea, .tide-line")), text = Math.max(0, ...texts.map((n) => {
     const r = n.getBoundingClientRect(), range = document.createRange();
     range.selectNodeContents(n);  // the text's own extent, not its box's: a paragraph's box is as wide as its measure
     return Math.min(r.right, range.getBoundingClientRect().right) - rect.left;
-  }));
-  sea.inset(open ? open(rect) : innerWidth >= 900 ? [rect.height * 0.1, rect.width * 0.03, rect.height * 0.14, Math.max(rect.width * 0.42, text + 48)] : [rect.height * 0.04, 0, rect.height * 0.5, 0]);
+  })), top = Math.min(rect.height, ...texts.map((n) => n.getBoundingClientRect().top - rect.top));
+  // On a phone the water is above the text (the head leaves room for it), and no name is written under the text.
+  sea.inset(open ? open(rect) : innerWidth >= 900 ? [rect.height * 0.1, rect.width * 0.03, rect.height * 0.14, Math.max(rect.width * 0.42, text + 48)] : [rect.height * 0.04, 0, Math.max(rect.height * 0.5, rect.height - top + 8), 0]);
   if (routes.length) (sea.routes(routes), sea.time(first.periods.length - 1, 0), sea.frame(routes.map((r) => r.id), 0));
   else if (look) sea.look(look);
   box.classList.add("lit");
