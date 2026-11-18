@@ -211,7 +211,8 @@ A story keeps its place by step (not by pixels) across a language switch and the
 - **States**: an unknown address is a 404, a head of the deep like every other page's and as tall as the screen
   allows, with the ways back, the night sea held still beside its text, with no route on it. A word not on the chart, data that did not load and a search with no match each say what happened
   and what to do.
-- **Stories index**: page head, then cards led by the key number; the newest three large.
+- **Stories index**: page head, then cards led by the key number; the newest three large; the rest as an index, a
+  row each under a rule of ink, the number beside the title from 900px (two columns of rows).
 - **Story on a phone**: the cover holds kicker, title, deck and "Mulai"; the intro opens the first scene's caption.
 - **Word and portrait**: the word in display type rises in, letter by letter; behind it the sea with the word's
   route on the first page's lens (Kompas, year by year) when it has one there; what the word is in one line (`GLOSS`),
@@ -230,8 +231,8 @@ A story keeps its place by step (not by pixels) across a language switch and the
   Without WebGL2 the flat chart on paper.
 - **Findings**: each list is the counting's own ranking, shown by a stated rule, never picked: of the pairs, only
   those whose lines cross clearly (the rising word starts below the falling one and ends at least twice as common:
-  a drift of topic, where both words live on, does not pass), the top six as figures (both
-  lines on one scale, each word named where its line is, the year they cross marked), the rest folded; of the words
+  a drift of topic, where both words live on, does not pass), the top six as figures, the first leading
+  (two columns and two rows from 900px, drawn larger) (both lines on one scale, each word named where its line is, the year they cross marked), the rest folded; of the words
   that came and went or came to stay, the top eight, the rest folded. The rule is written on the page beside a rule
   of `--beacon`. The page shows its first source as soon as that source has come, not after every source.
 - **Play**: the first thing to play leads, on the deep, its picture large (two rows tall from 900px); the next two

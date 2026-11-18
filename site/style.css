@@ -539,6 +539,9 @@ text.route-year { font: 700 11.5px var(--type); fill: var(--route); paint-order:
 .duets { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); gap: var(--s4); margin: var(--s4) 0; padding: 0; list-style: none; }
 .duets a { display: flex; flex-direction: column; gap: var(--s1); height: 100%; padding: var(--s4) var(--s5) var(--s3); color: var(--ink); text-decoration: none; background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); transition: border-color var(--d-press) var(--sail); }
 .duets a:hover { border-color: var(--ink-2); }
+/* the first pair, the counting's top, leads: two columns and two rows from 900px, drawn larger */
+@media (min-width: 900px) { .duets { grid-template-columns: repeat(3, minmax(0, 1fr)); } .duets > li:first-child { grid-column: span 2; grid-row: span 2; }
+  .duets > li:first-child a { padding: var(--s5) var(--s6) var(--s4); justify-content: space-between; } .duets > li:first-child .duet-word { font-size: var(--t-h1); line-height: var(--l-h1); } }
 .duet-word { font: 800 var(--t-h2)/var(--l-h2) var(--type); font-stretch: 75%; color: var(--route); }
 .duet-was { font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
 .duet-figure { margin-top: var(--s2); }
@@ -887,6 +890,17 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .story-card.large .card-title { color: var(--on-deep); }
 .story-card.large .card-text { color: var(--on-deep-2); }
 .cards-head { margin-top: var(--s7); }
+/* the other stories as an index: a row each under a rule of ink, the number beside the title from 900px */
+.story-cards.index { grid-template-columns: minmax(0, 1fr); gap: 0 var(--s7); }
+.story-cards.index .story-card { padding: var(--s5) 0 var(--s6); background: none; border: 0; border-top: var(--rule) solid var(--ink); border-radius: 0; }
+.story-cards.index .key { padding: 0; border: 0; }
+.story-cards.index .key-number { font-size: min(var(--t-h1), 3rem); }
+.story-cards.index .story-card:hover .card-title { color: var(--route); }
+@media (min-width: 900px) {
+  .story-cards.index { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .story-cards.index .story-card { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); grid-template-rows: auto 1fr; gap: var(--s2) var(--s5); align-content: start; }
+  .story-cards.index .key { grid-row: span 2; }
+}
 /* the newest story leads: a wider card, its number larger */
 @media (min-width: 900px) { .story-cards.large { grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(0, 1fr)); } .story-card.large { padding: var(--s6); }
   .story-cards.large li:first-child .key-number { font-size: calc(var(--t-key) * 1.25); } .story-cards.large li:first-child .card-title { font-size: var(--t-h2); line-height: var(--l-h2); } }

@@ -1012,8 +1012,8 @@ async function yearsPage() {
 
 /** Two words over the periods, on one scale: the one that fell in grey, named where it starts; the one that rose in the
  *  route's colour, named where it ends; the year its line first runs above the other's, marked. */
-function duet(lens, rose, fell) {
-  const W = 340, H = 150, L = 10, R = 10, T = 26, B = 24, n = lens.periods.length, top = Math.max(...rose.share, ...fell.share) || 1;
+function duet(lens, rose, fell, W = 340, H = 150) {
+  const L = 10, R = 10, T = 26, B = 24, n = lens.periods.length, top = Math.max(...rose.share, ...fell.share) || 1;
   const x = (i) => L + ((W - L - R) * i) / (n - 1), y = (v) => H - B - ((H - T - B) * v) / top;
   const points = (e) => e.share.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
   const cross = rose.share.findIndex((v, i) => i > 0 && v > fell.share[i] && rose.share[i - 1] <= fell.share[i - 1]);
@@ -1055,7 +1055,7 @@ async function findingsPage() {
     const box = el("<div></div>");
     const pairs = (await Promise.all(swaps.map(([fell, rose]) => Promise.all([entry(lens, rose), entry(lens, fell)])))).filter(([r, f]) => r && f && crosses(r, f));
     box.append(el(`<h2>${t("swaps_title")}</h2>`), el(`<p class="sub">${t("swaps_about")}</p>`), el(`<p class="rule">${t("swaps_rule", pairs.length, swaps.length, Math.min(LEAD, pairs.length))}</p>`),
-      folded(pairs, LEAD, (list) => el(`<ul class="duets">${list.map(([r, f]) => `<li><a href="${href("kata", lens.words[r.word])}"><b class="duet-word">${lens.words[r.word]}</b><span class="duet-was">${escape(t("in_company", lens.words[f.word]))}</span>${duet(lens, r, f)}</a></li>`).join("")}</ul>`),
+      folded(pairs, LEAD, (list) => el(`<ul class="duets">${list.map(([r, f], k) => `<li><a href="${href("kata", lens.words[r.word])}"><b class="duet-word">${lens.words[r.word]}</b><span class="duet-was">${escape(t("in_company", lens.words[f.word]))}</span>${k ? duet(lens, r, f) : duet(lens, r, f, 560, 270)}</a></li>`).join("")}</ul>`),
         (list) => sparks(lens, list.map((p) => p[0]), list.map((p) => p[1]))));
     for (const kind of ["went", "stayed"]) {
       const entries = (await Promise.all(arrivals[kind].map(([w]) => entry(lens, w)))).filter(Boolean);
@@ -1310,7 +1310,8 @@ const storyCard = (story, large = false) => {
   return `<li><a class="card story-card${large ? " large" : ""}" href="${href("cerita", story.slug)}"><span class="key"><b class="key-number">${key.number}</b><span class="key-label">${key.label}</span></span>
     <b class="card-title">${words.title}</b><span class="card-text">${firstSentence(words.teaser)}</span></a></li>`;
 };
-const storyCards = (list, large = false) => `<ul class="cards doors story-cards${large ? " large" : ""}">${list.map((s) => storyCard(s, large)).join("")}</ul>`;
+/** Story cards: `large`, the newest three on the deep; else as an index, a row each under a rule, the number beside. */
+const storyCards = (list, large = false) => `<ul class="cards doors story-cards${large ? " large" : " index"}">${list.map((s) => storyCard(s, large)).join("")}</ul>`;
 /**
  * What each thing to play with draws, as a small picture of its own figure from its own data: a play card leads with
  * it. `d` is the data (Kompas's names and the words beside them by term, stick.json; the three publishers' yearly
