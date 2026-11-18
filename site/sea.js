@@ -6,6 +6,9 @@
 // chart seen from above, the lights settle onto the water and the night turns into the paper of the page below.
 // Same interface as the night chart of chart.js (routes, time, frame, inset, more, drawn, tilt), which stands in for
 // it where WebGL2 is not there. Colours, the curve and the leg come from the page's tokens.
+// Three ways to be on a page: the home hero (the swell, the arrival, the dive), held (one frame, drawn again only when
+// something changes: behind a page head, a story's cover, the footer) and `explore` (the map: dragged, turned, tilted
+// and zoomed by the reader, up to four routes, and drawn only while something moves).
 
 const STEPS = [2, 4, 7, 12, 20]; // shift boundaries of the six levels, as in app.js
 const NEAR = 1500; // the most frequent words are lit and can be named; the rest are the faint tail
@@ -33,6 +36,9 @@ function curve() {
   };
 }
 const mix = (a, b, t) => a + (b - a) * t;
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+// A route's colour at night, from its colour by day (as chart.js draws routes on the deep).
+const ON_DEEP = { "--route": "--route-on-deep", "--ink": "--on-deep", "--ink-3": "--on-deep-2" };
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
 // ---- shaders ----------------------------------------------------------------------------------------------------
@@ -166,12 +172,17 @@ void main() {
  * Returns null where WebGL2 cannot be had. Otherwise the node and: `routes(list)`, `time(p, ms)`, `frame(ids, ms)`,
  * `inset([top, right, bottom, left])`, `more(chart)`, `drawn()`, `tilt(x, y)` (pointer or device, -1..1), `dive(p)`
  * (0 at the top of the hero, 1 when the reader has scrolled out of it: seen from above, on paper), `still()` (draw one
- * frame and hold it), `describe(text)` (the canvas's text alternative).
+ * frame and hold it), `describe(text)` (the canvas's text alternative), `end()` (let the GPU go).
+ * `hold`: one frame, drawn again only when asked. `most`: carry at most this many words; `names`: name at most this
+ * many (a quiet backdrop names few). `look(to)` sets the camera of a sea with no route. `explore` (the map): the
+ * reader moves the camera, with `controls` {in, out, all, turn, above, level} naming its buttons.
  */
-export function nightSea({ chart, name, pick, periods, tip, label = "", hold = false }) {
+export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hold = false, most: carry = Infinity, names: named = Infinity, explore = false, controls = {} }) {
   const node = document.createElement("div");
-  node.className = "chart night gl";
-  node.innerHTML = `<canvas role="img" aria-label="${label}"></canvas><canvas aria-hidden="true"></canvas><div class="when" aria-hidden="true"></div><div class="tally" aria-hidden="true" hidden></div>`;
+  node.className = `chart night gl${explore ? " explore" : ""}`;
+  const button = (k, text) => `<button type="button" data-k="${k}" aria-label="${controls[k] || text}" title="${controls[k] || text}">${text}</button>`;
+  node.innerHTML = `<canvas ${explore ? `tabindex="0" role="application"` : `role="img"`} aria-label="${alt}"></canvas><canvas aria-hidden="true"></canvas><div class="when" aria-hidden="true"></div><div class="tally" aria-hidden="true" hidden></div>`
+    + (explore ? `<div class="zoom">${button("in", "+")}${button("out", "−")}${button("all", "⤢")}${button("turn", "↻")}<button type="button" data-k="above" aria-pressed="false">${controls.above || "⬒"}</button></div>` : "");
   const [canvas, names, when, tally] = node.children;
   const gl = canvas.getContext("webgl2", { antialias: false, depth: false, powerPreference: "low-power" });  // with alpha: an opaque WebGL canvas in a sticky box leaves holes in Chromium once the box scrolls on
   if (!gl) return null;
@@ -209,12 +220,14 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
   };
   const screen = buffer(water, [["a", 2]]);
   screen.fill(new Float32Array([-1, -1, 3, -1, -1, 3]));
-  const words = buffer(lights, [["word", 4]]), wake = buffer(ribbon, [["at", 4], ["side", 2]]), ports = buffer(marks, [["mark", 4]]);
+  const words = buffer(lights, [["word", 4]]), ports = buffer(marks, [["mark", 4]]);
   const maxSize = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1];
 
   // The words: as many as the device can carry, the most frequent first (the chart is in that order).
-  const most = innerWidth < 600 || (navigator.hardwareConcurrency || 4) <= 4 ? 7000 : 20000;
-  let n = 0, level = [], wakeLength = 0, wakeVertices = 0, legs = [], route = null, now = 0, head = 0, tailAt = -1e9;
+  const most = Math.min(carry, innerWidth < 600 || (navigator.hardwareConcurrency || 4) <= 4 ? 7000 : 20000);
+  // Up to four routes, each with its own ribbon: {id, colour (a token), legs (its ports), points, vertices, wake}.
+  let n = 0, level = [], routes = [], now = 0, head = 0, tailAt = -1e9;
+  const wakes = [0, 1, 2, 3].map(() => buffer(ribbon, [["at", 4], ["side", 2]]));
   // The arrival (`arrive`): where the front starts, how far it has spread, and the words it has lit so far.
   const arrival = { origin: [0, 0], reach: 99, start: 0, on: false, done: null, say: null, far: [] };
   const take = (next) => {
@@ -240,25 +253,32 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
     deep: rgb("--deep"), deep2: rgb("--deep-2"), grid: rgb("--line-deep"), paper: rgb("--chart"), paperGrid: rgb("--line"),
     haze: rgb("--deep-2").map((c, i) => mix(c, rgb("--light-0")[i], 0.22)),
     lights: [0, 1, 2, 3, 4, 5].flatMap((i) => rgb(`--light-${i}`)), dots: [rgb("--ink-3"), ...[1, 2, 3, 4, 5].map((i) => rgb(`--seq-${i}`))].flat(),
-    route: rgb("--route-on-deep"), routeDay: rgb("--route"), light: rgb("--on-deep"),
+    light: rgb("--on-deep"), routes: {},
     css: Object.fromEntries(["--on-deep", "--on-deep-2", "--deep-2", "--ink", "--ink-3", "--chart-2", "--route", "--route-on-deep", "--type"].map((k) => [k, root().getPropertyValue(k).trim()])),
   });
+  /** A route's colours, by its token: at night (as rgb and as CSS) and by day. */
+  const tint = (token) => (palette().routes[token] ||= { night: rgb(ON_DEEP[token] || token), day: rgb(token), css: [ON_DEEP[token] || token, token].map((k) => root().getPropertyValue(k).trim()) });
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => ((colours = null), ask()));
 
   let W = 0, H = 0, ratio = 1, quality = 1, wanted = null, pad = [0, 0, 0, 0], depth = 0, ready = false, waiting = [], held = hold || still();
+  // Exploring: the word ringed for the keyboard (keyed), whether the reader has moved the camera, the rise to above.
+  let ringed = -1, keyed = false, moved = false;
+  const rising = { from: 0, to: null, start: 0 };
   // Where the camera looks (aim), as it glides there (from, to, start, ms), the ship it follows, and the nudge.
-  const aim = { x: 0, z: 0, dist: 1.6, yaw: 0 }, glide = { from: null, to: null, start: 0, ms: 0 }, follow = { x: 0, z: 0 }, nudge = { x: 0, y: 0, to: [0, 0] };
+  // `aim.pitch` is the reader's (explore); the hero works its pitch out from where its text leaves the sea open.
+  const aim = { x: 0, z: 0, dist: 1.6, yaw: 0, pitch: 0.42 }, glide = { from: null, to: null, start: 0, ms: 0 }, follow = { x: 0, z: 0 }, nudge = { x: 0, y: 0, to: [0, 0] };
   const cam = { eye: [0, 0, 0], R: [1, 0, 0], U: [0, 1, 0], F: [0, 0, -1], lens: [1, 1, 0, 0], pitch: 0, ref: 1, fog: [1, 8] };
-  const wide = () => W >= 900;
-  /** The camera for the hero as it now stands, the dive and the nudge taken into account. */
+  const wide = () => W >= 900, fovOf = () => ((H > W ? 52 : 38) * Math.PI) / 180;
+  /** The camera as it now stands, the dive (or, exploring, the view from above) and the nudge taken into account. */
   function place() {
-    const e = ease(depth), tall = H > W, fov = (tall ? 52 : 38) * Math.PI / 180, t = Math.tan(fov / 2), asp = W / H;
+    const e = ease(depth), t = Math.tan(fovOf() / 2), asp = W / H;
     // The open part of the hero, beside or above the text: the camera looks at its middle; the horizon lies above it.
     const [top, right, bottom, left] = pad, cx = ((left + (W - right)) / W - 1) * (1 - e), cy = (1 - (top + (H - bottom)) / H) * (1 - e);
-    const horizon = wide() ? 0.5 : 0.86, pitch = mix(Math.max(0.15, Math.min(0.38, Math.atan((horizon - cy) * t))), Math.PI / 2 - 1e-3, e) - nudge.y * 0.035 * (1 - e);
-    const yaw = mix(aim.yaw, 0, e) + nudge.x * 0.07 * (1 - e);
-    // From above: the whole chart, as wide as the screen allows.
-    const over = 1.05 / t / Math.min(1, asp), tx = mix(aim.x + follow.x, -0.04, e), tz = mix(aim.z + follow.z, -0.03, e), dist = mix(aim.dist, over, e);
+    const horizon = wide() ? 0.5 : 0.86, low = explore ? aim.pitch : Math.max(0.15, Math.min(0.38, Math.atan((horizon - cy) * t)));
+    const pitch = mix(low, Math.PI / 2 - 1e-3, e) - nudge.y * 0.035 * (1 - e);
+    const yaw = (explore ? aim.yaw : mix(aim.yaw, 0, e)) + nudge.x * 0.07 * (1 - e);
+    // From above: the hero shows the whole chart, as wide as the screen allows; the map keeps the reader's place.
+    const over = 1.05 / t / Math.min(1, asp), tx = explore ? aim.x : mix(aim.x + follow.x, -0.04, e), tz = explore ? aim.z : mix(aim.z + follow.z, -0.03, e), dist = explore ? aim.dist : mix(aim.dist, over, e);
     const cp = Math.cos(pitch), sp = Math.sin(pitch), cy_ = Math.cos(yaw), sy = Math.sin(yaw);
     cam.eye = [tx + dist * sy * cp, dist * sp, tz + dist * cy_ * cp];
     cam.F = [-sy * cp, -sp, -cy_ * cp];
@@ -286,10 +306,9 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
       return { p: r.p, x: x / total, z: z / total };
     });
   }
-  /** The ribbon along the ports, through a smooth curve; each port's distance along it is kept for the ship. */
-  function lay() {
-    legs = route ? portsOf(route.route) : [];
-    const points = [];
+  /** A route's ribbon along its ports, through a smooth curve; each port's distance along it is kept for the ship. */
+  function lay(route, slot) {
+    const legs = portsOf(route.route), points = [];
     legs.forEach((s, k) => {
       if (!k) return points.push({ x: s.x, z: s.z, k: 0 });
       const [a, b, c, d] = [legs[k - 2] || legs[k - 1], legs[k - 1], s, legs[k + 1] || s];
@@ -303,17 +322,14 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
     points.forEach((p, i) => {
       if (i) along += Math.hypot(p.x - points[i - 1].x, p.z - points[i - 1].z);
       p.along = along;
-      const next = points[i + 1] || { x: 2 * p.x - points[i - 1].x, z: 2 * p.z - points[i - 1].z };
+      const next = points[i + 1] || (i ? { x: 2 * p.x - points[i - 1].x, z: 2 * p.z - points[i - 1].z } : p);
       for (const side of [-1, 1]) data.push(p.x, p.z, next.x, next.z, side, along);
     });
-    legs.points = points;
-    wakeLength = along;
-    wakeVertices = points.length > 1 ? points.length * 2 : 0;
-    wake.fill(new Float32Array(data));
+    wakes[slot].fill(new Float32Array(data));
+    return { id: route.id, colour: route.color || "--route", legs, points, vertices: points.length > 1 ? points.length * 2 : 0, wake: wakes[slot] };
   }
-  /** Where the ship is at time t (a period, possibly between two): on the curve, and how far along it. */
-  function ship(t) {
-    const pts = legs.points;
+  /** Where a route's ship is at time t (a period, possibly between two): on the curve, and how far along it. */
+  function ship({ legs, points: pts }, t) {
     if (!pts?.length) return null;
     const k = Math.max(0, legs.findLastIndex((s) => s.p <= t)), next = legs[k + 1], f = next ? Math.max(0, Math.min(1, (t - legs[k].p) / (next.p - legs[k].p))) : 0;
     const i = Math.min(pts.length - 1, Math.round((k + f) * 12)), p = pts[i];
@@ -331,7 +347,7 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
     if (names.width !== Math.round(W * r) || names.height !== Math.round(H * r)) [names.width, names.height] = [Math.round(W * r), Math.round(H * r)];
     ctx.setTransform(r, 0, 0, r, 0, 0);
     if (wanted) api.frame(...wanted);  // asked for before the sea had a size
-    else if (!glide.to && !route) frameAll();
+    else if (!glide.to && !routes.length && !moved) frameAll();
     return true;
   }
   const tide = () => smooth(0.5, 1, depth), settle = () => smooth(0, 0.6, depth);
@@ -350,8 +366,9 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
   };
   let started = performance.now(), labelsAt = "";
   function render(time) {
-    const c = palette(), seconds = held ? 12 : (time - started) / 1000;
+    const c = palette(), seconds = held || explore ? 12 : (time - started) / 1000;  // only the hero's sea swells
     place();
+    if (explore) ringed = keyed ? nearest(W / 2, H / 2, Math.min(W, H) / 3) : -1;
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.disable(gl.BLEND);
     camera(water);
@@ -364,46 +381,50 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     // Reflections first, then the route on the water, the lights above it, the ports and the ship.
     camera(lights);
-    gl.uniform1f(lights.u("ref"), cam.ref); gl.uniform1f(lights.u("rise"), RISE); gl.uniform1f(lights.u("quiet"), route ? 0.75 : 1);
+    gl.uniform1f(lights.u("ref"), cam.ref); gl.uniform1f(lights.u("rise"), RISE); gl.uniform1f(lights.u("quiet"), routes.length ? 0.75 : 1);
     gl.uniform1f(lights.u("fogNear"), cam.fog[0]); gl.uniform1f(lights.u("fogFar"), cam.fog[1]); gl.uniform1f(lights.u("time"), seconds); gl.uniform1f(lights.u("maxSize"), maxSize);
     gl.uniform3fv(lights.u("lights"), c.lights); gl.uniform3fv(lights.u("dots"), c.dots);
     gl.uniform2fv(lights.u("origin"), arrival.origin); gl.uniform1f(lights.u("reach"), arrival.reach); gl.uniform1f(lights.u("head"), head);
     gl.uniform1f(lights.u("tailIn"), held ? 1 : Math.min(1, (time - tailAt) / 600));
     gl.bindVertexArray(words.vao);
     if (settle() < 0.99 && tide() < 0.99) (gl.uniform1f(lights.u("mirror"), -1), gl.drawArrays(gl.POINTS, 0, Math.min(n, NEAR)));
-    const here = !arrival.on && route && ship(now);
-    if (here && wakeVertices) {
+    // Each route's ship, where it has sailed to; the last route is drawn first, so that the first lies on top.
+    const sailing = arrival.on ? [] : routes.map((r) => ({ r, here: ship(r, now) })).filter((s) => s.here).reverse();
+    for (const { r, here } of sailing) {
+      if (!r.vertices) continue;
+      const col = tint(r.colour);
       camera(ribbon);
       gl.uniform2f(ribbon.u("view"), canvas.width / 2, canvas.height / 2);
-      gl.uniform1f(ribbon.u("width"), 13); gl.uniform1f(ribbon.u("sailed"), here.along + 1e-4);
-      gl.uniform3fv(ribbon.u("colour"), c.route); gl.uniform3fv(ribbon.u("colourDay"), c.routeDay); gl.uniform3fv(ribbon.u("paper"), c.paper);
-      gl.bindVertexArray(wake.vao);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, wakeVertices);
+      gl.uniform1f(ribbon.u("width"), routes.length > 1 ? 10 : 13); gl.uniform1f(ribbon.u("sailed"), here.along + 1e-4);
+      gl.uniform3fv(ribbon.u("colour"), col.night); gl.uniform3fv(ribbon.u("colourDay"), col.day); gl.uniform3fv(ribbon.u("paper"), c.paper);
+      gl.bindVertexArray(r.wake.vao);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, r.vertices);
     }
     camera(lights);
     gl.uniform1f(lights.u("mirror"), 1);
     gl.bindVertexArray(words.vao);
     gl.drawArrays(gl.POINTS, 0, n);
-    if (here) {
-      const list = legs.filter((s, k) => k <= Math.floor(here.done)).flatMap((s) => [s.x, s.z, 7, 0]);
+    for (const { r, here } of sailing) {
+      const list = r.legs.filter((s, k) => k <= Math.floor(here.done)).flatMap((s) => [s.x, s.z, 7, 0]), col = tint(r.colour);
       list.push(here.x, here.z, 26, 2, here.x, here.z, 30, 1);
       camera(marks);
       gl.uniform1f(marks.u("maxSize"), maxSize);
-      for (const [k, v] of [["colour", c.route], ["colourDay", c.routeDay], ["light", c.light], ["paper", c.paper]]) gl.uniform3fv(marks.u(k), v);
+      for (const [k, v] of [["colour", col.night], ["colourDay", col.day], ["light", c.light], ["paper", c.paper]]) gl.uniform3fv(marks.u(k), v);
       ports.fill(new Float32Array(list), gl.DYNAMIC_DRAW);
       gl.bindVertexArray(ports.vao);
       gl.drawArrays(gl.POINTS, 0, list.length / 4);
     }
-    // The names, on their own canvas: drawn again only when the camera, the tide or the ship has moved.
-    const key = [...cam.eye, cam.pitch, now, n, W, H, tide(), hovered, arrival.reach, colours === c].map((v) => (typeof v === "number" ? v.toFixed(4) : v)).join();
-    if (key !== labelsAt) ((labelsAt = key), label(here));
-    const shown = route ? periods[Math.round(now)] : "";
+    // The names, on their own canvas: drawn again only when the camera, the tide or a ship has moved.
+    const key = [...cam.eye, cam.pitch, now, n, W, H, tide(), hovered, ringed, arrival.reach, colours === c].map((v) => (typeof v === "number" ? v.toFixed(4) : v)).join();
+    if (key !== labelsAt) ((labelsAt = key), label(sailing.reverse()));
+    const shown = routes.length ? periods[Math.round(now)] : "";
     if (when.textContent !== shown) when.textContent = shown;
     if (!ready) (ready = true), waiting.splice(0).forEach((done) => done());
   }
-  /** The ship's name and its first port's year; then the names of the words that moved most among the frequent
-   *  ones, as many as fit around them. Each in the colours of the night or of the paper, by the side of the tide. */
-  function label(here) {
+  /** Each ship's name, and the first route's first port's year; then the names of the words that moved most among
+   *  the frequent ones, as many as fit around them. Each in the colours of the night or of the paper, by the side of
+   *  the tide. With several routes a ship's name carries a dot of its route's colour. */
+  function label(sailing) {
     const { css } = palette(), fade = (w) => 1 - smooth(cam.fog[0], cam.fog[1], w), lift = RISE * (1 - settle());
     const taken = new Set(), cell = (x, y) => `${Math.floor(x / 84)},${Math.floor(y / 17)}`, claim = (x, y, width) => {
       const cells = [cell(x, y), cell(x + width, y), cell(x + width / 2, y)];
@@ -413,38 +434,51 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
     };
     ctx.clearRect(0, 0, W, H);
     ctx.textBaseline = "middle";
-    const at = here && project(here.x, 0, here.z), start = here && legs.length > 1 && project(legs[0].x, 0, legs[0].z);
-    if (at) {
-      const text = name(route.id), paper = dayAt(...at) > 0.5;
-      ctx.font = `800 15px ${css["--type"]}`;
-      const width = ctx.measureText(text).width;
+    /** A name in a pill beside a point; `dot` is the colour of its route, when there are several. */
+    const pill = (at, text, strong, dot) => {
+      const paper = dayAt(...at) > 0.5, inset = dot ? 14 : 0;
+      ctx.font = `800 ${strong ? 15 : 13}px ${css["--type"]}`;
+      const width = ctx.measureText(text).width + inset;
       claim(at[0] + 14, at[1] - 8, width + 14);
       claim(at[0] + 14, at[1] + 8, width + 14);
       ctx.fillStyle = paper ? css["--chart-2"] : css["--deep-2"];
       ctx.beginPath();
       ctx.roundRect ? ctx.roundRect(at[0] + 14, at[1] - 12, width + 14, 24, 12) : ctx.rect(at[0] + 14, at[1] - 12, width + 14, 24);
       ctx.fill();
-      ctx.fillStyle = paper ? css["--route"] : css["--on-deep"];
-      ctx.fillText(text, at[0] + 21, at[1] + 1);
+      if (dot) (ctx.beginPath(), ctx.arc(at[0] + 25, at[1], 4.5, 0, 7), (ctx.fillStyle = dot[paper ? 1 : 0]), ctx.fill());
+      ctx.fillStyle = paper ? css[strong ? "--route" : "--ink"] : css["--on-deep"];
+      ctx.fillText(text, at[0] + 21 + inset, at[1] + 1);
+    };
+    for (const { r, here } of sailing) {
+      const at = project(here.x, 0, here.z);
+      if (at) pill(at, name(r.id), true, routes.length > 1 && tint(r.colour).css);
     }
+    const first = sailing[0]?.r, start = first?.legs.length > 1 && project(first.legs[0].x, 0, first.legs[0].z);
     if (start) {
       ctx.font = `700 12px ${css["--type"]}`;
-      const text = periods[legs[0].p];
+      const text = periods[first.legs[0].p];
       claim(start[0] + 9, start[1] - 12, ctx.measureText(text).width);
       ctx.fillStyle = dayAt(...start) > 0.5 ? css["--route"] : css["--route-on-deep"];
       ctx.fillText(text, start[0] + 9, start[1] - 12);
     }
+    // Exploring, the word nearest the middle of the screen is ringed and named: Enter chooses it.
+    const ring = ringed >= 0 && project(chart.x[ringed] / 1000, Math.max(0, chart.moved[ringed] ?? 0) * lift, chart.y[ringed] / 1000);
+    if (ring) {
+      ctx.beginPath(); ctx.arc(ring[0], ring[1], 10, 0, 7); ctx.strokeStyle = dayAt(...ring) > 0.5 ? css["--ink"] : css["--on-deep"]; ctx.lineWidth = 2; ctx.stroke();
+      pill([ring[0] + 2, ring[1] - 18], name(chart.words[ringed]), false);
+    }
     ctx.font = `500 12px ${css["--type"]}`;
     let written = 0;
-    for (let k = 0; k < Math.min(n, NEAR) && written < (W < 600 ? 14 : 30); k++) {
-      if (level[k] < 2 || chart.words[k] === route?.id || Math.hypot(chart.x[k] / 1000 - arrival.origin[0], chart.y[k] / 1000 - arrival.origin[1]) > arrival.reach - 0.03) continue;
+    const ids = new Set(routes.map((r) => r.id));
+    for (let k = 0; k < Math.min(n, NEAR) && written < Math.min(named, W < 600 ? 14 : explore ? 44 : 30); k++) {
+      if (level[k] < 2 || ids.has(chart.words[k]) || k === ringed || Math.hypot(chart.x[k] / 1000 - arrival.origin[0], chart.y[k] / 1000 - arrival.origin[1]) > arrival.reach - 0.03) continue;
       const p = project(chart.x[k] / 1000, Math.max(0, chart.moved[k]) * lift, chart.y[k] / 1000);
       if (!p || p[0] < 0 || p[1] < 8 || p[0] > W - 40 || p[1] > H - 8 || fade(p[2]) < 0.3) continue;
       const text = name(chart.words[k]);
       if (!text || !claim(p[0] + 8, p[1], ctx.measureText(text).width)) continue;
       const paper = dayAt(...p) > 0.5;
       ctx.fillStyle = paper ? css["--ink-3"] : css["--on-deep-2"];
-      ctx.globalAlpha = paper ? 1 : (route ? 0.6 : 0.82) * fade(p[2]);
+      ctx.globalAlpha = paper ? 1 : (routes.length ? 0.6 : 0.82) * fade(p[2]);
       ctx.fillText(text, p[0] + 8, p[1]);
       written++;
     }
@@ -457,19 +491,25 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
   let frame = 0, last = 0, busyUntil = 0, seen = true, slow = 0, times = [];
   const ask = (ms = 50) => {
     busyUntil = Math.max(busyUntil, performance.now() + ms);
-    if (!frame && seen && !document.hidden) frame = requestAnimationFrame(loop);
+    if (!frame && seen && !document.hidden && !ended) frame = requestAnimationFrame(loop);
   };
   function loop(t) {
     frame = 0;
     if (!node.isConnected) return ready && end();
     if (!W && !size()) return;
-    const busy = t < busyUntil || glide.to || moving() || arrival.on || t - tailAt < 700;
-    if (!held) frame = requestAnimationFrame(loop);
-    if (!busy && ready && !held && (t - last < 30 || tide() >= 1)) return;  // the swell alone: about 30 frames a second, and none once all is paper
+    const busy = t < busyUntil || glide.to || moving() || arrival.on || t - tailAt < 700 || rising.to !== null;
+    // Exploring, nothing moves unless the reader moves it: the loop sleeps until it is asked again.
+    if (!held && (busy || !explore)) frame = requestAnimationFrame(loop);
+    if (!busy && ready && !held && (explore || t - last < 30 || tide() >= 1)) return;  // the swell alone: about 30 frames a second, and none once all is paper
     if (glide.to) {
       const f = Math.min(1, (t - glide.start) / glide.ms), e = ease(f);
-      for (const k of ["x", "z", "dist", "yaw"]) aim[k] = mix(glide.from[k], glide.to[k], e);
+      for (const k of ["x", "z", "dist", "yaw", "pitch"]) aim[k] = mix(glide.from[k], glide.to[k], e);
       if (f >= 1) glide.to = null;
+    }
+    if (rising.to !== null) {
+      const f = Math.min(1, (t - rising.start) / LEG);
+      depth = mix(rising.from, rising.to, f);  // the dive's own curve (place) eases it
+      if (f >= 1) rising.to = null;
     }
     steer();
     if (arrival.on) {
@@ -497,13 +537,17 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
   function steer() {
     nudge.x += (nudge.to[0] - nudge.x) * 0.08;
     nudge.y += (nudge.to[1] - nudge.y) * 0.08;
-    const here = route && ship(now);
+    const here = routes.length && !explore && ship(routes[0], now);
     if (here && !held) {
       follow.x += ((here.x - aim.x) * 0.35 - follow.x) * 0.05;
       follow.z += ((here.z - aim.z) * 0.35 - follow.z) * 0.05;
     }
   }
+  let ended = false;
   function end() {
+    if (ended) return;
+    ended = true;
+    cancelAnimationFrame(frame);
     gl.getExtension("WEBGL_lose_context")?.loseContext();
     io.disconnect();
     resize.disconnect();
@@ -531,7 +575,7 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
     return best;
   }
   canvas.addEventListener("pointermove", (e) => {
-    if (e.pointerType !== "mouse") return;
+    if (e.pointerType !== "mouse" || drag) return;
     const box = canvas.getBoundingClientRect(), k = nearest(e.clientX - box.left, e.clientY - box.top);
     canvas.style.cursor = k >= 0 ? "pointer" : "";
     if (k !== hovered) ((hovered = k), (labelsAt = ""), ask(), held && render(performance.now()));
@@ -539,13 +583,105 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
   });
   canvas.addEventListener("pointerleave", () => ((hovered = -1), (labelsAt = ""), tip(null), ask()));
   canvas.addEventListener("click", (e) => {
+    if (dragged) return void (dragged = false);
     const box = canvas.getBoundingClientRect(), k = nearest(e.clientX - box.left, e.clientY - box.top, e.pointerType === "mouse" ? 16 : 24);
     if (k >= 0) pick(chart.words[k]);
   });
 
   const redraw = () => (held ? W && render(performance.now()) : ask());
   /** The whole chart in view, before any route is chosen. */
-  const frameAll = () => Object.assign(aim, { x: -0.04, z: 0.1, dist: 2.4, yaw: 0 });
+  const WHOLE = { x: 0, z: 0.05, dist: 2.3, yaw: 0, pitch: 0.5 };  // the hero's camera works its own pitch out
+  const frameAll = () => Object.assign(aim, WHOLE);
+
+  // ---- exploring (the map): drag to move over the sea, with the right button or Shift to turn and tilt, Ctrl and
+  // the wheel (or a pinch on a trackpad) or the buttons to come nearer; the keys do the same --------------------------
+  let drag = null, dragged = false;
+  /** Glide the camera to `to` (a part of aim), or cut there with reduced motion. */
+  const move = (to, ms = LEG * 0.6) => {
+    moved = true;
+    to = { ...aim, ...to, dist: clamp(to.dist ?? aim.dist, 0.08, 3.2), pitch: clamp(to.pitch ?? aim.pitch, 0.1, 1.45), x: clamp(to.x ?? aim.x, -1.4, 1.4), z: clamp(to.z ?? aim.z, -1.4, 1.4) };
+    canvas.style.touchAction = to.dist < 1.2 ? "none" : "pan-y";  // a finger scrolls the page until the sea is come near
+    labelsAt = "";
+    if (!ms || held) return Object.assign(aim, to), redraw();
+    Object.assign(glide, { from: { ...aim }, to, start: performance.now(), ms });
+    ask();
+  };
+  /** The point of the water under a point of the screen (CSS pixels), or the camera's target if the ray misses it. */
+  const ground = (px, py) => {
+    const nx = (px / W) * 2 - 1, ny = 1 - (py / H) * 2, a = (nx - cam.lens[2]) / cam.lens[0], b = (ny - cam.lens[3]) / cam.lens[1];
+    const ray = [0, 1, 2].map((i) => cam.F[i] + cam.R[i] * a + cam.U[i] * b);
+    return ray[1] < -1e-3 ? { x: cam.eye[0] - (ray[0] * cam.eye[1]) / ray[1], z: cam.eye[2] - (ray[2] * cam.eye[1]) / ray[1] } : { x: aim.x, z: aim.z };
+  };
+  /** Move over the water by a number of pixels: across the screen and, foreshortened, into it. */
+  const pan = (dx, dy, from = aim, ms = 0) => {
+    const unit = (2 * from.dist * Math.tan(fovOf() / 2)) / H, into = unit / Math.max(0.25, Math.sin(cam.pitch)), [rx, rz] = [cam.R[0], cam.R[2]];
+    move({ x: from.x - rx * dx * unit + rz * dy * into, z: from.z - rz * dx * unit - rx * dy * into }, ms);
+  };
+  const zoom = (f, at = [W / 2, H / 2], ms) => {
+    const g = ground(...at);
+    move({ dist: aim.dist * f, x: aim.x + (g.x - aim.x) * (1 - f), z: aim.z + (g.z - aim.z) * (1 - f) }, ms);
+  };
+  const turn = (dYaw, dPitch, from = aim, ms) => move({ yaw: from.yaw + dYaw, pitch: from.pitch + dPitch }, ms);
+  /** From above, the sea becomes the chart on paper (the hero's dive, as a choice); and back down to the water. */
+  const above = (on) => {
+    if (on === depth > 0.5) return;
+    const b = node.querySelector('[data-k="above"]');
+    b.setAttribute("aria-pressed", on);
+    node.classList.toggle("above", on);  // what the page's legend reads: the colours of the night or of the paper
+    b.textContent = controls[on ? "level" : "above"] || (on ? "⬓" : "⬒");
+    if (held) return (depth = on ? 1 : 0), redraw();
+    Object.assign(rising, { from: depth, to: on ? 1 : 0, start: performance.now() });
+    ask();
+  };
+  if (explore) {
+    canvas.style.touchAction = "pan-y";
+    canvas.addEventListener("contextmenu", (e) => e.preventDefault());  // the right button turns the sea
+    canvas.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "mouse" && canvas.style.touchAction !== "none") return;
+      drag = { x: e.clientX, y: e.clientY, from: { ...aim }, turning: e.button === 2 || e.shiftKey, moved: false };
+      canvas.setPointerCapture(e.pointerId);
+      tip(null);
+    });
+    canvas.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      drag.moved ||= Math.abs(dx) + Math.abs(dy) > 4;
+      if (!drag.moved) return;
+      canvas.style.cursor = drag.turning ? "move" : "grabbing";
+      drag.turning ? turn(dx * 0.006, -dy * 0.004, drag.from, 0) : pan(dx, dy, drag.from, 0);
+    });
+    const release = () => ((dragged = !!drag?.moved), (drag = null), (canvas.style.cursor = ""));
+    canvas.addEventListener("pointerup", release);
+    canvas.addEventListener("pointercancel", release);
+    canvas.addEventListener("wheel", (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;  // a plain wheel scrolls the page
+      e.preventDefault();
+      const box = canvas.getBoundingClientRect();
+      zoom(Math.exp(clamp(e.deltaY, -60, 60) * 0.01), [e.clientX - box.left, e.clientY - box.top], 0);
+    }, { passive: false });
+    canvas.addEventListener("focus", () => ((keyed = canvas.matches(":focus-visible")), (labelsAt = ""), redraw()));
+    canvas.addEventListener("blur", () => ((keyed = false), (ringed = -1), (labelsAt = ""), redraw()));
+    canvas.addEventListener("keydown", (e) => {
+      const arrow = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+      if (arrow && e.shiftKey) turn(arrow[0] * 0.26, -arrow[1] * 0.12);
+      else if (arrow) pan(-arrow[0] * W * 0.12, -arrow[1] * H * 0.12, aim, LEG * 0.3);
+      else if (e.key === "+" || e.key === "=") zoom(1 / 1.5);
+      else if (e.key === "-") zoom(1.5);
+      else if (e.key === "0") move(WHOLE);
+      else if (e.key === "Enter" && ringed >= 0) return pick(chart.words[ringed]);
+      else return;
+      e.preventDefault();
+      keyed = true;
+    });
+    node.querySelector(".zoom").addEventListener("click", (e) => {
+      const k = e.target.closest("button")?.dataset.k;
+      if (k === "in") zoom(1 / 1.6);
+      else if (k === "out") zoom(1.6);
+      else if (k === "all") move(WHOLE);
+      else if (k === "turn") turn(Math.PI / 4, 0);
+      else if (k === "above") above(depth < 0.5);
+    });
+  }
   const api = {
     node,
     has: (id) => chart.words.indexOf(id) >= 0,
@@ -555,8 +691,7 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
       redraw();
     },
     routes(list) {
-      route = list.find((r) => r.route.some(Boolean)) || null;
-      lay();
+      routes = list.filter((r) => r.route.some(Boolean)).slice(0, 4).map(lay);
       labelsAt = "";
       redraw();
     },
@@ -576,7 +711,7 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
     frame(ids, ms = LEG) {
       wanted = W || size() ? null : [ids, ms];
       if (wanted) return;
-      const ps = [...(legs.length ? legs : []), ...ids.map((id) => chart.words.indexOf(id)).filter((k) => k >= 0).map((k) => ({ x: chart.x[k] / 1000, z: chart.y[k] / 1000 }))];
+      const ps = [...routes.flatMap((r) => r.legs), ...ids.map((id) => chart.words.indexOf(id)).filter((k) => k >= 0).map((k) => ({ x: chart.x[k] / 1000, z: chart.y[k] / 1000 }))];
       if (!ps.length) return;
       const mx = ps.reduce((s, p) => s + p.x, 0) / ps.length, mz = ps.reduce((s, p) => s + p.z, 0) / ps.length;
       // The route's main direction; the camera looks across it, turning no more than about 35 degrees.
@@ -599,6 +734,11 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
       pad = list;
       redraw();
     },
+    look(to) {
+      moved = true;
+      Object.assign(aim, WHOLE, to);
+      redraw();
+    },
     drawn: () => new Promise((done) => (ready ? done() : (waiting.push(done), ask()))),
     tilt(x, y) {
       if (held) return;
@@ -609,7 +749,7 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
     /** The arrival: the sea starts dark and its words come on from the first route's word outwards, a tally beside
      *  the year counting them in words (say(n)); resolves once all that has come is lit. */
     arrive(say) {
-      const k = route ? chart.words.indexOf(route.id) : -1;
+      const k = routes.length ? chart.words.indexOf(routes[0].id) : -1;
       if (held) return Promise.resolve();
       arrival.origin = k >= 0 ? [chart.x[k] / 1000, chart.y[k] / 1000] : [aim.x, aim.z];
       take(chart);
@@ -631,8 +771,10 @@ export function nightSea({ chart, name, pick, periods, tip, label = "", hold = f
     describe(text) {
       canvas.setAttribute("aria-label", text);
     },
-    /** How the sea is being drawn, for the checks: frames held still, coarser for a slow screen. */
-    state: () => ({ held, quality: +quality.toFixed(2), coarser: slow, points: n, pixels: [canvas.width, canvas.height], depth }),
+    end,
+    /** How the sea is being drawn, for the checks: frames held still, coarser for a slow screen, where the camera is. */
+    state: () => ({ held, quality: +quality.toFixed(2), coarser: slow, points: n, pixels: [canvas.width, canvas.height], depth, routes: routes.length, ended,
+      aim: Object.fromEntries(Object.entries(aim).map(([k, v]) => [k, +v.toFixed(3)])), ringed: ringed >= 0 ? name(chart.words[ringed]) : null }),
   };
   node.sea = api;  // for the checks (tests/site): how the sea is being drawn
   return api;
