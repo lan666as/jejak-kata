@@ -1,7 +1,7 @@
 {
  "name": "Jejak Kata",
  "short_name": "Jejak Kata",
- "description": "Peta 20 ribu kata bahasa Indonesia dan rute tiap kata dari masa ke masa. A chart of 20,000 Indonesian words and each word's route through the years.",
+ "description": "Peta 20 ribu kata dari harian Kompas, 2011–2024, dan rute tiap kata dari tahun ke tahun. A chart of 20,000 words from the Indonesian daily Kompas, 2011–2024, and each word's route year by year.",
  "lang": "id",
  "start_url": "./",
  "scope": "./",
