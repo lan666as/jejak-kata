@@ -239,14 +239,17 @@ async function frames(name, viewport, scale, touch) {
   const sink = encoder ? spawn(encoder, ["-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(FPS), "-i", "-", "-c:v", "libx264", "-preset", "slow", "-crf", "16",
     "-pix_fmt", "yuv420p", "-movflags", "+faststart", file], { stdio: ["pipe", "inherit", "inherit"] }) : (mkdirSync(dir, { recursive: true }), null);
   const closed = sink && new Promise((ok) => sink.on("close", ok));
-  let count = 0, image = null, held = 0;
+  let count = 0, image = null, held = 0, stuck = 0;
+  const within = (promise, ms) => { let timer; return Promise.race([promise.then((r) => r ?? true), new Promise((ok) => (timer = setTimeout(ok, ms, false)))]).finally(() => clearTimeout(timer)); };
   /** One frame: the page's clock moves on 1/60 s, then the frame is drawn and kept (the last one again if nothing changed). */
   const frame = async () => {
     if (count >= LIMIT) throw new Done();
     const expired = once("Emulation.virtualTimeBudgetExpired");
     await send("Emulation.setVirtualTimePolicy", { policy: "pauseIfNetworkFetchesPending", budget: FRAME });
-    await expired;
-    const drawn = await send("HeadlessExperimental.beginFrame", { frameTimeTicks: start + (count + 1) * FRAME, interval: FRAME, screenshot: { format: "png" } });
+    // A fetch that never ends would hold the clock for ever: after 20 s of real time the frame goes on without it.
+    if (!(await within(expired, 20000))) (stuck++ || say(`${name}: frame ${count} waited 20 s on a fetch; the clock goes on without it`), await send("Emulation.setVirtualTimePolicy", { policy: "advance", budget: FRAME }), await expired);
+    const drawn = await within(send("HeadlessExperimental.beginFrame", { frameTimeTicks: start + (count + 1) * FRAME, interval: FRAME, screenshot: { format: "png" } }), 120000);
+    if (!drawn) throw new Error(`frame ${count} was not drawn in two minutes`);
     if (drawn.screenshotData) image = Buffer.from(drawn.screenshotData, "base64"); else held++;
     if (image) sink ? sink.stdin.write(image) || (await new Promise((ok) => sink.stdin.once("drain", ok))) : writeFileSync(join(dir, `${String(count).padStart(6, "0")}.png`), image);
     count++;
