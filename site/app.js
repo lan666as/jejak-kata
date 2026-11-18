@@ -99,7 +99,7 @@ const href = (...parts) => ROOT.pathname + address(parts, language);
 /** An address as a whole URL, as it is shared. */
 const whole = (to) => new URL(to, ROOT).href;
 /** Going to an address of the site: a new entry in the browser's history, and its page. */
-const visit = (to) => (history.pushState(null, "", to), moved());
+const visit = (to) => (whole(to) !== location.href && history.pushState(null, "", to), moved());
 const link = (word) => `<a href="${href("kata", word)}">${word}</a>`;
 const number = (x, digits = 1) => x.toLocaleString(language, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 const percent = (share) => (share * 100).toLocaleString(language, { maximumSignificantDigits: 2 }) + "%";
