@@ -432,34 +432,39 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       cells.forEach((c) => taken.add(c));
       return true;
     };
+    // Nothing is named under what lies over the sea: its buttons and the year, with a margin around them.
+    const box = canvas.getBoundingClientRect(), keep = [...node.querySelectorAll(".zoom, .when")].map((n) => n.getBoundingClientRect()).filter((r) => r.width && r.height)
+      .map((r) => [r.left - box.left - 8, r.top - box.top - 8, r.right - box.left + 8, r.bottom - box.top + 8]);
+    const clear = (x, y, width, height = 18) => !keep.some(([l, t, r, b]) => x < r && x + width > l && y + height / 2 > t && y - height / 2 < b);
     ctx.clearRect(0, 0, W, H);
     ctx.textBaseline = "middle";
-    /** A name in a pill beside a point; `dot` is the colour of its route, when there are several. */
+    /** A name in a pill beside a point, to its left where its right is not clear; `dot` is the colour of its route,
+     *  when there are several. */
     const pill = (at, text, strong, dot) => {
       const paper = dayAt(...at) > 0.5, inset = dot ? 14 : 0;
       ctx.font = `800 ${strong ? 15 : 13}px ${css["--type"]}`;
-      const width = ctx.measureText(text).width + inset;
-      claim(at[0] + 14, at[1] - 8, width + 14);
-      claim(at[0] + 14, at[1] + 8, width + 14);
+      const width = ctx.measureText(text).width + inset, x = clear(at[0] + 14, at[1], width + 14, 24) ? at[0] + 14 : at[0] - 28 - width;
+      claim(x, at[1] - 8, width + 14);
+      claim(x, at[1] + 8, width + 14);
       ctx.fillStyle = paper ? css["--chart-2"] : css["--deep-2"];
       ctx.beginPath();
-      ctx.roundRect ? ctx.roundRect(at[0] + 14, at[1] - 12, width + 14, 24, 12) : ctx.rect(at[0] + 14, at[1] - 12, width + 14, 24);
+      ctx.roundRect ? ctx.roundRect(x, at[1] - 12, width + 14, 24, 12) : ctx.rect(x, at[1] - 12, width + 14, 24);
       ctx.fill();
-      if (dot) (ctx.beginPath(), ctx.arc(at[0] + 25, at[1], 4.5, 0, 7), (ctx.fillStyle = dot[paper ? 1 : 0]), ctx.fill());
+      if (dot) (ctx.beginPath(), ctx.arc(x + 11, at[1], 4.5, 0, 7), (ctx.fillStyle = dot[paper ? 1 : 0]), ctx.fill());
       ctx.fillStyle = paper ? css[strong ? "--route" : "--ink"] : css["--on-deep"];
-      ctx.fillText(text, at[0] + 21 + inset, at[1] + 1);
+      ctx.fillText(text, x + 7 + inset, at[1] + 1);
     };
     for (const { r, here } of sailing) {
       const at = project(here.x, 0, here.z);
       if (at) pill(at, name(r.id), true, routes.length > 1 && tint(r.colour).css);
     }
     const first = sailing[0]?.r, start = first?.legs.length > 1 && project(first.legs[0].x, 0, first.legs[0].z);
-    if (start) {
-      ctx.font = `700 12px ${css["--type"]}`;
-      const text = periods[first.legs[0].p];
-      claim(start[0] + 9, start[1] - 12, ctx.measureText(text).width);
+    ctx.font = `700 12px ${css["--type"]}`;
+    const year = start && periods[first.legs[0].p], wide = year && ctx.measureText(year).width;
+    if (start && clear(start[0] + 9, start[1] - 12, wide)) {
+      claim(start[0] + 9, start[1] - 12, wide);
       ctx.fillStyle = dayAt(...start) > 0.5 ? css["--route"] : css["--route-on-deep"];
-      ctx.fillText(text, start[0] + 9, start[1] - 12);
+      ctx.fillText(year, start[0] + 9, start[1] - 12);
     }
     // Exploring, the word nearest the middle of the screen is ringed and named: Enter chooses it.
     const ring = ringed >= 0 && project(chart.x[ringed] / 1000, Math.max(0, chart.moved[ringed] ?? 0) * lift, chart.y[ringed] / 1000);
@@ -474,8 +479,8 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       if (level[k] < 2 || ids.has(chart.words[k]) || k === ringed || Math.hypot(chart.x[k] / 1000 - arrival.origin[0], chart.y[k] / 1000 - arrival.origin[1]) > arrival.reach - 0.03) continue;
       const p = project(chart.x[k] / 1000, Math.max(0, chart.moved[k]) * lift, chart.y[k] / 1000);
       if (!p || p[0] < 0 || p[1] < 8 || p[0] > W - 40 || p[1] > H - 8 || fade(p[2]) < 0.3) continue;
-      const text = name(chart.words[k]);
-      if (!text || !claim(p[0] + 8, p[1], ctx.measureText(text).width)) continue;
+      const text = name(chart.words[k]), wide = text && ctx.measureText(text).width;
+      if (!text || !clear(p[0] + 8, p[1], wide) || !claim(p[0] + 8, p[1], wide)) continue;
       const paper = dayAt(...p) > 0.5;
       ctx.fillStyle = paper ? css["--ink-3"] : css["--on-deep-2"];
       ctx.globalAlpha = paper ? 1 : (routes.length ? 0.6 : 0.82) * fade(p[2]);
@@ -582,9 +587,12 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     tip(k < 0 ? null : `${name(chart.words[k])}${chart.moved[k] === null ? "" : " · " + chart.moved[k]}`, e);
   });
   canvas.addEventListener("pointerleave", () => ((hovered = -1), (labelsAt = ""), tip(null), ask()));
+  // A click or a tap chooses the nearest word, a finger's within a larger reach (Safari's click says not which it was).
+  let finger = false;
+  canvas.addEventListener("pointerdown", (e) => (finger = e.pointerType !== "mouse"));
   canvas.addEventListener("click", (e) => {
     if (dragged) return void (dragged = false);
-    const box = canvas.getBoundingClientRect(), k = nearest(e.clientX - box.left, e.clientY - box.top, e.pointerType === "mouse" ? 16 : 24);
+    const box = canvas.getBoundingClientRect(), k = nearest(e.clientX - box.left, e.clientY - box.top, finger ? 24 : 16);
     if (k >= 0) pick(chart.words[k]);
   });
 
@@ -594,15 +602,14 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
   const frameAll = () => Object.assign(aim, WHOLE);
 
   // ---- exploring (the map): drag to move over the sea, with the right button or Shift to turn and tilt, Ctrl and
-  // the wheel (or a pinch on a trackpad) or the buttons to come nearer; the keys do the same --------------------------
+  // the wheel (or a pinch on a trackpad) or the buttons to come nearer; the keys do the same; and fingers (below) --------
   let drag = null, dragged = false;
   /** Glide the camera to `to` (a part of aim), or cut there with reduced motion. */
   const move = (to, ms = LEG * 0.6) => {
     moved = true;
     to = { ...aim, ...to, dist: clamp(to.dist ?? aim.dist, 0.08, 3.2), pitch: clamp(to.pitch ?? aim.pitch, 0.1, 1.45), x: clamp(to.x ?? aim.x, -1.4, 1.4), z: clamp(to.z ?? aim.z, -1.4, 1.4) };
-    canvas.style.touchAction = to.dist < 1.2 ? "none" : "pan-y";  // a finger scrolls the page until the sea is come near
     labelsAt = "";
-    if (!ms || held) return Object.assign(aim, to), redraw();
+    if (!ms || held) return Object.assign(aim, to), place(), redraw();  // placed at once: the next move of a gesture starts from here
     Object.assign(glide, { from: { ...aim }, to, start: performance.now(), ms });
     ask();
   };
@@ -634,15 +641,18 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     ask();
   };
   if (explore) {
-    canvas.style.touchAction = "pan-y";
+    // The sea takes the finger: the page scrolls from the band around it (style.css leaves room for that on a phone).
+    canvas.style.touchAction = "none";
     canvas.addEventListener("contextmenu", (e) => e.preventDefault());  // the right button turns the sea
     canvas.addEventListener("pointerdown", (e) => {
-      if (e.pointerType !== "mouse" && canvas.style.touchAction !== "none") return;
-      drag = { x: e.clientX, y: e.clientY, from: { ...aim }, turning: e.button === 2 || e.shiftKey, moved: false };
       canvas.setPointerCapture(e.pointerId);
       tip(null);
+      if (!fingers.size && !drag) dragged = false;
+      if (e.pointerType !== "mouse") return touch(e, true);
+      drag = { x: e.clientX, y: e.clientY, from: { ...aim }, turning: e.button === 2 || e.shiftKey, moved: false };
     });
     canvas.addEventListener("pointermove", (e) => {
+      if (e.pointerType !== "mouse") return touch(e);
       if (!drag) return;
       const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       drag.moved ||= Math.abs(dx) + Math.abs(dy) > 4;
@@ -650,9 +660,53 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       canvas.style.cursor = drag.turning ? "move" : "grabbing";
       drag.turning ? turn(dx * 0.006, -dy * 0.004, drag.from, 0) : pan(dx, dy, drag.from, 0);
     });
-    const release = () => ((dragged = !!drag?.moved), (drag = null), (canvas.style.cursor = ""));
+    const release = (e) => {
+      if (e.pointerType !== "mouse") return touch(e, false);
+      dragged = !!drag?.moved;
+      drag = null;
+      canvas.style.cursor = "";
+    };
     canvas.addEventListener("pointerup", release);
     canvas.addEventListener("pointercancel", release);
+    // Fingers, as on a map: one moves over the water; two pinch to come nearer and twist to turn, or, moved up or down
+    // together, tilt (up lays the sea flatter, down looks from higher). Each move is taken from where the fingers were
+    // a moment before, so a finger that joins or lifts never makes the sea jump; what two fingers do is settled once,
+    // as they start to move. A tap is a click (above).
+    const fingers = new Map();
+    let hand = null;  // {last: the fingers' places at the last move, start: where this hold began, mode, moved}
+    const local = (e) => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    const middle = (ps) => [(ps[0][0] + ps[1][0]) / 2, (ps[0][1] + ps[1][1]) / 2];
+    const apart = (ps) => Math.hypot(ps[1][0] - ps[0][0], ps[1][1] - ps[0][1]), angle = (ps) => Math.atan2(ps[1][1] - ps[0][1], ps[1][0] - ps[0][0]);
+    function touch(e, down) {
+      if (down === true) fingers.set(e.pointerId, local(e));
+      else if (down === false) fingers.delete(e.pointerId);
+      else if (fingers.has(e.pointerId)) fingers.set(e.pointerId, local(e));
+      else return;
+      const now = [...fingers.values()].slice(0, 2);
+      if (down !== undefined || !hand) {  // a finger came or went: hold again from here
+        hand = now.length ? { last: now, start: now, mode: null, moved: hand?.moved || false } : null;
+        if (!hand) canvas.style.cursor = "";
+        return;
+      }
+      const { last, start } = hand;
+      hand.last = now;
+      hand.moved ||= now.some((p, i) => Math.hypot(p[0] - start[i][0], p[1] - start[i][1]) > 10);
+      dragged ||= hand.moved;
+      if (!hand.moved) return;
+      if (now.length === 1) return pan(now[0][0] - last[0][0], now[0][1] - last[0][1], aim, 0);
+      // Two fingers tilt when both went the same way up or down, mostly upright, and stayed as far apart; that is
+      // settled once both have moved (or one alone far: a pinch).
+      if (!hand.mode) {
+        const d = now.map((p, i) => [p[0] - start[i][0], p[1] - start[i][1]]), far = d.map(([x, y]) => Math.hypot(x, y));
+        if (Math.min(...far) < 8 && Math.max(...far) < 24) return;
+        hand.mode = d[0][1] * d[1][1] > 0 && d.every(([x, y]) => Math.abs(y) > 2 * Math.abs(x)) && Math.abs(apart(now) - apart(start)) < 0.5 * Math.min(...d.map(([, y]) => Math.abs(y))) ? "tilt" : "pinch";
+      }
+      const [c, c0] = [middle(now), middle(last)];
+      if (hand.mode === "tilt") return turn(0, (c[1] - c0[1]) * 0.005, aim, 0);
+      zoom(apart(last) / Math.max(1, apart(now)), c0, 0);
+      turn(angle(now) - angle(last), 0, aim, 0);  // the sea turns with the fingers (a larger yaw turns it clockwise)
+      pan(c[0] - c0[0], c[1] - c0[1], aim, 0);
+    }
     canvas.addEventListener("wheel", (e) => {
       if (!e.ctrlKey && !e.metaKey) return;  // a plain wheel scrolls the page
       e.preventDefault();
@@ -681,6 +735,16 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       else if (k === "turn") turn(Math.PI / 4, 0);
       else if (k === "above") above(depth < 0.5);
     });
+  } else if (!hold) {
+    // The hero: a swipe up or down scrolls the page and two fingers zoom it, as anywhere else; a finger moved sideways
+    // turns the view the few degrees a mouse does, and lets it settle back when it lifts. A tap sails the nearest word.
+    canvas.style.touchAction = "pan-y pinch-zoom";
+    let from = null;
+    const go = () => from !== null && ((from = null), (nudge.to = [0, 0]), ask());
+    canvas.addEventListener("pointerdown", (e) => e.pointerType !== "mouse" && (from = e.clientX));
+    canvas.addEventListener("pointermove", (e) => from !== null && !held && ((nudge.to = [clamp((e.clientX - from) / (W / 2), -1, 1), 0]), ask()));
+    canvas.addEventListener("pointerup", go);
+    canvas.addEventListener("pointercancel", go);
   }
   const api = {
     node,
@@ -724,7 +788,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       yaw = Math.max(-0.6, Math.min(0.6, -yaw));
       const spread = Math.max(...ps.map((p) => Math.abs((p.x - mx) * Math.cos(yaw) - (p.z - mz) * Math.sin(yaw)))), open = (W - pad[1] - pad[3]) / W;
       const t = Math.tan(((H > W ? 52 : 38) * Math.PI) / 360), dist = Math.max(0.32, Math.min(2.2, (spread * 2.4 + 0.12) / (2 * t * (W / H) * open)));
-      const to = { x: mx, z: mz, dist, yaw };
+      const to = { ...aim, x: mx, z: mz, dist, yaw };  // the reader's tilt (exploring) stays as it is
       follow.x = follow.z = 0;
       if (!ms || held || !ready) return Object.assign(aim, to), redraw();
       Object.assign(glide, { from: { ...aim }, to, start: performance.now(), ms: ms * 1.4 });
@@ -773,6 +837,12 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     },
     end,
     /** How the sea is being drawn, for the checks: frames held still, coarser for a slow screen, where the camera is. */
+    /** The word nearest a point of the sea (by default its middle) and where it stands, in CSS pixels in the sea: for
+     *  the checks, to tap it. */
+    spot(x = W / 2, y = H / 2) {
+      const k = nearest(x, y, Math.min(W, H) / 3), p = k >= 0 && project(chart.x[k] / 1000, Math.max(0, chart.moved[k] ?? 0) * RISE * (1 - settle()), chart.y[k] / 1000);
+      return p ? { word: name(chart.words[k]), at: [p[0], p[1]] } : null;
+    },
     state: () => ({ held, quality: +quality.toFixed(2), coarser: slow, points: n, pixels: [canvas.width, canvas.height], depth, routes: routes.length, ended,
       aim: Object.fromEntries(Object.entries(aim).map(([k, v]) => [k, +v.toFixed(3)])), ringed: ringed >= 0 ? name(chart.words[ringed]) : null }),
   };

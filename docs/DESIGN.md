@@ -203,7 +203,12 @@ text has been painted. What is on screen is the data and nothing else:
   word nearest the middle is ringed and named: Enter chooses it. Up to four routes, each ribbon in its route's colour
   by night and by day, each ship named in a pill with a dot of its colour; the player sails all of them through the
   years. Nothing moves unless the reader moves it: no swell, and no frame drawn while nothing changes. A plain wheel
-  scrolls the page; on a touch screen a finger scrolls the page until the reader has come near.
+  scrolls the page. By touch, as on a map: one finger moves over the water, two fingers pinch to come nearer and twist
+  to turn, two fingers moved up or down together tilt (up lays the sea flatter), and a tap chooses the nearest word
+  (within 24px). The sea takes the finger; the page scrolls from the band around it. No name is drawn under the buttons
+  or the year.
+- **Touch on the hero**: a swipe up or down scrolls the page and a pinch zooms it, as anywhere; a finger moved sideways
+  turns the view the few degrees a mouse does and lets it settle back; a tap sails the nearest word.
 - Covers, heads and the footer hold one frame of a sea that is no larger than the chart's first screen: a quiet
   backdrop that still shows only data (the lights, and only the routes of words the page is about), named sparingly.
 
