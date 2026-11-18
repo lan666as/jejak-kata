@@ -20,6 +20,8 @@
   --person: #2a78d6; --organisation: #1baf7a; --place: #eda100; --other: #8a8f96;
   --seq-0: #d3e0de; --seq-1: #b4cfe9; --seq-2: #86b3e6; --seq-3: #4f92dc; --seq-4: #2468b8; --seq-5: #0d366b;
   --lift: 0 18px 40px -16px rgb(6 18 31 / .38), 0 2px 6px rgb(6 18 31 / .12);
+  /* a figure's series, up to eight, in this order (plate.js): checked for colour-blind separation on the paper of each mode */
+  --cat-1: var(--route); --cat-2: var(--route-2); --cat-3: #1baf7a; --cat-4: #eda100; --cat-5: #2a78d6; --cat-6: #008300; --cat-7: #6250d6; --cat-8: #e34948;
   /* names the figures read (chart.js, plate.js), defined from the roles */
   --sea: var(--chart); --shoal: var(--chart-3); --paper: var(--chart-2);
 
@@ -41,6 +43,7 @@
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 72px; --s9: 112px;
   --gutter: var(--s4); --content: 1120px; --measure: 38rem;
   --tap: 44px; --chip: 36px; --head-h: 56px; --hair: 1px; --rule: 2px; --mark: 3px;
+  --tide-h: clamp(14px, 2.2vw, 30px);  /* the tide line's height: where the deep gives way to the paper */
 
   /* shape */
   --r1: 6px; --r2: 14px; --pill: 999px;
@@ -62,6 +65,7 @@
     --person: #3987e5; --organisation: #199e70; --place: #c98500; --other: #8f96a0;
     --seq-0: #1d3346; --seq-1: #104281; --seq-2: #1c5cab; --seq-3: #2a78d6; --seq-4: #6da7ec; --seq-5: #cde2fb;
     --lift: 0 18px 40px -12px rgb(0 0 0 / .6), 0 2px 6px rgb(0 0 0 / .4);
+    --cat-3: #199e70; --cat-4: #c98500; --cat-5: #3987e5; --cat-6: #0ca30c; --cat-7: #9085e9; --cat-8: #e66767;
   }
 }
 @media (min-width: 900px) { :root { --gutter: var(--s6); } }
@@ -98,7 +102,7 @@ summary { min-height: var(--tap); display: flex; align-items: center; cursor: po
 
 /* ==== 3. layout ================================================================================================ */
 
-main { display: block; max-width: calc(var(--content) + 2 * var(--gutter)); min-height: 100vh; margin: 0 auto; padding: 0 var(--gutter) var(--s9); overflow-x: clip; }
+main { display: block; min-height: 100vh; padding: 0 max(var(--gutter), (100% - var(--content)) / 2) var(--s9); overflow-x: clip; }  /* the page's width: its padding keeps the column, so a band on the deep can run edge to edge */
 main:focus { outline: none; }
 .skip { position: absolute; z-index: 20; left: var(--s2); top: var(--s2); padding: var(--s3) var(--s4); background: var(--chart-2); color: var(--ink); border-radius: var(--r1); transform: translateY(-200%); }
 .skip:focus { transform: none; }
@@ -166,8 +170,11 @@ main:focus { outline: none; }
 
 /* ==== 5. footer ================================================================================================ */
 
-.site-foot { background: var(--deep); color: var(--on-deep-2); border-top: var(--hair) solid var(--line-deep); font-size: var(--t-small); line-height: var(--l-small); --focus: var(--route-on-deep);
-  padding: var(--s8) max(var(--gutter), (100% - var(--content)) / 2) var(--s7); }
+.site-foot { position: relative; overflow: clip; background: var(--deep); color: var(--on-deep-2); font-size: var(--t-small); line-height: var(--l-small); --focus: var(--route-on-deep);
+  padding: 0 max(var(--gutter), (100% - var(--content)) / 2) var(--s7); }
+/* the page closes with the sea: the tide line, then the night sea held still, fading into the deep of the footer */
+.foot-shore { position: relative; isolation: isolate; height: clamp(150px, 20vw, 280px); margin-bottom: var(--s5); }
+.foot-shore .shore-sea::after { background: linear-gradient(to bottom, transparent 40%, var(--deep)); }
 .foot { display: grid; gap: var(--s6); }
 .foot p, .foot ul { margin: 0 0 var(--s3); max-width: 30rem; }
 .foot ul { padding: 0; list-style: none; }
@@ -181,10 +188,42 @@ main:focus { outline: none; }
 
 /* ==== 6. components ============================================================================================ */
 
-/* page head: kicker, h1, lede; the same on every page */
-.page-head { padding: var(--s7) 0 var(--s6); margin-bottom: var(--s6); border-bottom: var(--hair) solid var(--line); }
-.page-head h1 { margin: 0; max-width: 18ch; }
-.page-head .lede { margin: var(--s4) 0 0; }
+/* page head: kicker, h1, lede, the same on every page: a band of the deep, edge to edge, with the night sea held still
+   behind it (app.js, shore) and the tide line under it, where the paper begins */
+.page-head { position: relative; isolation: isolate; padding: var(--s7) 0 calc(var(--s7) + var(--tide-h)); margin-bottom: var(--s6); color: var(--on-deep);
+  background: var(--deep); box-shadow: 0 0 0 100vmax var(--deep); clip-path: inset(0 -100vmax -2px); --focus: var(--route-on-deep); }
+.page-head h1 { margin: 0; max-width: 18ch; color: var(--on-deep); }
+.page-head .lede { margin: var(--s4) 0 0; color: var(--on-deep-2); }
+.page-head .kicker, .page-head a.kicker::before { color: var(--on-deep-2); }
+.page-head a.kicker:hover { color: var(--on-deep); }
+.page-head.joined { margin-bottom: 0; padding-bottom: var(--s5); }  /* runs on into a band of the deep (the map) */
+.head-notes { max-width: var(--measure); margin-top: var(--s4); }
+.head-notes .note { margin: var(--s3) 0 0; padding: 0 0 0 var(--s4); background: none; border: 0; border-left: var(--rule) solid var(--line-deep-2); border-radius: 0; color: var(--on-deep-2); }
+.head-notes a { color: var(--on-deep); }
+
+/* the shore: the night sea behind a head on the deep, darker where the text lies; the graticule until it is there */
+.shore-sea { position: absolute; z-index: -1; top: 0; bottom: 0; left: calc(50% - 50vw); width: 100vw; overflow: hidden; pointer-events: none; }
+.shore-sea > .chart { position: absolute; inset: 0; height: 100%; background: none; border: 0; border-radius: 0; pointer-events: auto; animation: fade calc(var(--d-leg) * 1.5) var(--sail) both; }
+.shore-sea .chart .when, .shore-sea .chart .tally { display: none; }
+.shore-sea::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, var(--deep) 30%, color-mix(in srgb, var(--deep) 70%, transparent) 55%, transparent 85%); }
+@media (min-width: 900px) { .shore-sea::after { background: linear-gradient(to right, var(--deep) calc((100% - var(--content)) / 2 + 26rem), color-mix(in srgb, var(--deep) 55%, transparent) calc((100% - var(--content)) / 2 + 38rem), transparent 75%); } }
+
+/* the tide line: the curve of the home hero's dive, the paper on one side, a thread of foam along it */
+.tide-line { position: absolute; left: calc(50% - 50vw); bottom: -1px; width: 100vw; max-width: none; height: var(--tide-h); overflow: visible; pointer-events: none; }
+.tide-line.above { top: -1px; bottom: auto; }
+.tide-paper { fill: var(--chart); }
+.tide-foam { fill: none; stroke: color-mix(in srgb, var(--on-deep-2) 50%, transparent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+
+/* a title rises into place, word by word (letter by letter for a word's page), once, as the page turns (app.js, rise) */
+@keyframes rise { from { opacity: 0; transform: translateY(.3em); } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes surface { from { opacity: 0; transform: translateY(var(--s5)); } }
+@keyframes grow { from { transform: scaleX(0); } }
+.rising .part { display: inline-block; white-space: nowrap; }
+.rising .part > span { display: inline-block; animation: rise var(--d-leg) var(--sail) both; animation-delay: calc(var(--i) * 70ms + 60ms); }
+.word-title.rising .part > span { animation-delay: calc(var(--i) * 40ms + 60ms); }
+.page-head > :is(.kicker, .lede, .head-notes), .cover-text > :is(.cover-kicker, .cover-body) { animation: surface var(--d-leg) var(--sail) both; }
+.page-head > .lede, .page-head > .head-notes, .cover-text > .cover-body { animation-delay: calc(var(--d-turn) * .8); }
 .kicker { display: inline-flex; align-items: center; gap: var(--s2); margin: 0 0 var(--s3); font-size: var(--t-small); font-weight: 600; color: var(--ink-2); }
 a.kicker { min-height: var(--tap); margin: calc(-1 * var(--s3)) 0 0; text-decoration: none; }
 a.kicker::before { content: "←"; font-size: var(--t-lede); line-height: 1; color: var(--ink-3); transition: transform var(--d-press) var(--sail); }
@@ -192,7 +231,7 @@ a.kicker:hover { color: var(--ink); }
 a.kicker:hover::before { transform: translateX(calc(-1 * var(--s1))); }
 .page-head + section > h2:first-child, .page-head + h2 { margin-top: 0; }
 h2:first-child { margin-top: var(--s6); }
-@media (min-width: 900px) { .page-head { padding: var(--s8) 0 var(--s6); } }
+@media (min-width: 900px) { .page-head { padding: var(--s8) 0 calc(var(--s7) + var(--tide-h)); } .page-head:has(.word-title) { padding-top: var(--s6); } }
 
 /* buttons: secondary by default, .primary, .quiet */
 button, .button, a[role="button"] { display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); min-height: var(--tap); padding: 0 var(--s4);
@@ -353,6 +392,50 @@ svg text { fill: var(--ink-2); font: 12px var(--type); }
 .chart .zoom button { width: var(--tap); padding: 0; font-size: var(--t-lede); background: var(--chart-2); }
 .chart .when { position: absolute; left: var(--s4); bottom: var(--s2); font: 800 var(--t-display)/1 var(--type); font-stretch: 75%; color: var(--ink); opacity: .2; pointer-events: none; }
 
+/* the map: a band of the deep, edge to edge, holding the sea (sea.js, explore) and what steers it; on the deep the
+   fields, the player and the legend take the night's colours, and the legend the colours of what the sea shows */
+.map-deep { position: relative; isolation: isolate; padding: 0 0 calc(var(--s6) + var(--tide-h)); margin-bottom: var(--s6); color: var(--on-deep-2);
+  background: var(--deep); box-shadow: 0 0 0 100vmax var(--deep); clip-path: inset(0 -100vmax -2px); --focus: var(--route-on-deep); }
+.map-steer { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0 var(--s4); }
+.map-steer > * { min-width: 0; max-width: 100%; }
+.map-steer > .controls { margin: 0; }
+.page-head.joined > .lede { font-size: var(--t-body); line-height: var(--l-body); }
+.map-steer .picked { margin-top: 0; } .map-steer .picked:empty { display: none; }
+.map-steer .suggest { margin: 0; }
+@media (min-width: 900px) {
+  .page-head.joined { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--s8); align-items: end; padding-top: var(--s7); }
+  .page-head.joined > .kicker { grid-column: 1 / -1; }
+  .page-head.joined > .lede { margin: 0; max-width: 34rem; font-size: var(--t-body); line-height: var(--l-body); }
+}
+.map-deep .chart.gl { margin: var(--s4) calc(50% - 50vw) 0; height: min(74svh, 760px); background: radial-gradient(120% 80% at 60% 20%, var(--deep-2), var(--deep) 70%); border: 0; border-radius: 0; }
+.map-deep :is(input[type="search"], select) { color: var(--on-deep); background-color: var(--deep-2); border-color: var(--line-deep-2); }
+.map-deep :is(input[type="search"], select):hover { border-color: var(--on-deep-2); }
+.map-deep select { background-image: linear-gradient(45deg, transparent 50%, var(--on-deep-2) 50%), linear-gradient(135deg, var(--on-deep-2) 50%, transparent 50%); }
+.map-deep input::placeholder { color: var(--on-deep-2); }
+.map-deep .primary { color: var(--deep); background: var(--route-on-deep); border-color: var(--route-on-deep); }
+.map-deep .primary:hover { border-color: var(--on-deep); }
+.map-deep .picked li { background: var(--on-deep); color: var(--deep); } .map-deep .picked li.k3 { background: var(--on-deep-2); }
+.map-deep .picked li.k0 { background: var(--route-on-deep); color: var(--deep); }
+.map-deep .player button { background: var(--on-deep); color: var(--deep); border-color: var(--on-deep); }
+.map-deep .player button:hover { background: var(--route-on-deep); border-color: var(--route-on-deep); color: var(--deep); }
+.map-deep .player output { color: var(--on-deep); }
+.map-deep :is(.sub, .legend) { color: var(--on-deep-2); }
+.map-deep .about summary { color: var(--on-deep); }
+.map-deep .legend { gap: var(--s1) var(--s3); }
+.map-deep .legend i.s0 { background: var(--light-0); } .map-deep .legend i.s1 { background: var(--light-1); } .map-deep .legend i.s2 { background: var(--light-2); }
+.map-deep .legend i.s3 { background: var(--light-3); } .map-deep .legend i.s4 { background: var(--light-4); } .map-deep .legend i.s5 { background: var(--light-5); }
+.map-deep:has(.gl.above) .legend i.s0 { background: var(--ink-3); } .map-deep:has(.gl.above) .legend i.s1 { background: var(--seq-1); } .map-deep:has(.gl.above) .legend i.s2 { background: var(--seq-2); }
+.map-deep:has(.gl.above) .legend i.s3 { background: var(--seq-3); } .map-deep:has(.gl.above) .legend i.s4 { background: var(--seq-4); } .map-deep:has(.gl.above) .legend i.s5 { background: var(--seq-5); }
+.chart.explore > canvas:first-child { cursor: grab; }
+.chart.explore > canvas:focus-visible { outline-offset: calc(-1 * var(--s1)); }
+.chart.night.explore .zoom { display: flex; top: var(--s4); bottom: auto; right: max(var(--gutter), (100% - var(--content)) / 2); align-items: flex-end; }
+.chart.night.explore .zoom button { width: var(--tap); padding: 0; color: var(--on-deep); background: var(--deep-2); border-color: var(--line-deep-2); }
+.chart.night.explore .zoom button:hover { border-color: var(--on-deep); background: var(--deep-2); }
+.chart.night.explore .zoom [data-k="above"] { width: auto; padding: 0 var(--s3); margin-top: var(--s2); font-size: var(--t-meta); }
+.chart.night.explore .zoom [aria-pressed="true"] { color: var(--deep); background: var(--on-deep); border-color: var(--on-deep); }
+.chart.night.explore .when { top: auto; bottom: var(--s4); left: max(var(--gutter), (100% - var(--content)) / 2); right: auto; font-size: var(--t-h1); opacity: .9; }
+.chart.night.explore.above .when { color: var(--ink-3); }
+
 /* orbit: a word and its company */
 .orbit { position: relative; width: min(100%, 560px); aspect-ratio: 1; margin: var(--s2) auto; }
 .orbit::before, .orbit::after { content: ""; position: absolute; inset: 20%; border: var(--hair) dashed var(--line-2); border-radius: 50%; }
@@ -473,9 +556,6 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .graticule { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; max-width: none; fill: none; stroke: var(--line-deep); stroke-width: 1; vector-effect: non-scaling-stroke;
   mask-image: radial-gradient(ellipse 80% 90% at 70% 40%, #000 30%, transparent 85%); }
 .graticule path { vector-effect: non-scaling-stroke; }
-.graticule .sailed { stroke: var(--route-on-deep); stroke-width: var(--rule); stroke-dasharray: 2 7; stroke-linecap: round; opacity: .55; }
-@media (max-width: 899.98px) { .graticule .sailed, .graticule circle { display: none; } }  /* on a phone the title fills the cover: only the graticule */
-.graticule circle { fill: var(--deep); stroke: var(--on-deep-2); stroke-width: var(--rule); opacity: .6; }
 .cover a.kicker { align-self: flex-start; color: var(--on-deep-2); }
 .cover a.kicker::before { color: var(--on-deep-2); }
 .cover a.kicker:hover { color: var(--on-deep); }
@@ -485,7 +565,10 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .cover h1.long { max-width: 16ch; font-size: calc((var(--t-h1) + var(--t-display)) / 2); }
 .cover .deck { margin: 0 0 var(--s5); font-size: var(--t-lede); line-height: var(--l-lede); color: var(--on-deep); }
 .cover-intro { color: var(--on-deep-2); }
-@media (max-width: 899.98px) { .cover-intro { display: none; } }  /* on a phone the intro opens the first scene's caption */
+@media (max-width: 899.98px) { .cover-intro { display: none; } .cover { justify-content: flex-end; } }  /* on a phone the intro opens the first scene's caption; the sea lies above the title */
+.cover .shore-sea { left: 0; width: 100%; }
+@media (max-width: 899.98px) { .cover .shore-sea::after { background: linear-gradient(to top, var(--deep) 55%, color-mix(in srgb, var(--deep) 60%, transparent) 68%, transparent 82%); } }
+.cover-text { position: relative; }
 .begin { min-height: calc(var(--tap) + var(--s2)); margin-top: var(--s2); padding: 0 var(--s5); font-size: var(--t-body); }
 .begin svg, .stage-nav svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 @media (min-width: 900px) {
@@ -499,9 +582,9 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .stage { position: sticky; top: var(--head, var(--head-h)); z-index: 1; display: grid; grid-template: "figure" auto "side" minmax(0, 1fr) / minmax(0, 1fr); gap: var(--s3);
   height: var(--stage-h); padding: var(--s3) var(--gutter); background: var(--deep); color: var(--on-deep); --focus: var(--route-on-deep); }
 .stage:focus { outline: none; }
-.stage-figure { grid-area: figure; display: grid; place-items: center; height: calc(var(--stage-h) / 2); min-width: 0; }
+.stage-figure { grid-area: figure; display: grid; place-items: center; height: var(--fig, calc(var(--stage-h) / 2)); min-width: 0; }  /* --fig: the figure's share on a phone, by need (app.js, share) */
 .stage-figure > * { grid-area: 1 / 1; max-width: 100%; }
-.stage-figure .plate svg { max-height: calc(var(--stage-h) / 2); border-color: transparent; }
+.stage-figure .plate svg { max-height: var(--fig, calc(var(--stage-h) / 2)); border-color: transparent; }
 .stage-figure .sub { color: var(--on-deep-2); }
 .stage-side { grid-area: side; display: flex; flex-direction: column; gap: var(--s2); min-height: 0; }
 .stage-meta { display: flex; justify-content: space-between; gap: var(--s3); max-width: none; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); font-weight: 600; color: var(--on-deep-2); font-variant-numeric: tabular-nums; }
@@ -556,7 +639,8 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 }
 
 /* 3. the landing, on the chart: what the data cannot say, the tools, the next story */
-.landing { max-width: calc(var(--content) + 2 * var(--gutter)); margin: 0 auto; padding: var(--s8) var(--gutter) var(--s9); scroll-snap-align: start; }
+.landing { position: relative; z-index: 2; max-width: calc(var(--content) + 2 * var(--gutter)); margin: 0 auto; padding: var(--s8) var(--gutter) var(--s9); scroll-snap-align: start; }
+.landing > .tide-line { top: calc(1px - var(--tide-h)); bottom: auto; transform-origin: 50% 100%; }  /* the voyage comes ashore: the deep gives way to the paper along the tide line */
 .limits { max-width: calc(var(--measure) + 2 * var(--s6)); padding: var(--s2) var(--s5) var(--s4); background: var(--chart-2); border: var(--hair) solid var(--line-2); border-radius: var(--r2); }
 .limits h2 { margin-top: var(--s4); }
 .next-story { max-width: calc(var(--measure) + 2 * var(--s6)); margin-top: var(--s7); padding: var(--s6); gap: var(--s3); }
@@ -715,14 +799,12 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .lost-ways .primary { color: var(--deep); background: var(--route-on-deep); border-color: var(--route-on-deep); }
 .lost-ways .primary:hover { border-color: var(--on-deep); }
 @media (min-width: 900px) { .lost { padding: var(--s9) var(--s8) var(--s8); } }
-.lost .lost-sea { position: absolute; inset: 0; z-index: -1; height: 100%; background: none; border: 0; border-radius: 0; opacity: .7; }  /* the night sea, still, with no route on it */
-.lost .lost-sea .when, .lost .lost-sea .tally { display: none; }
-.lost::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(to right, var(--deep) 20%, color-mix(in srgb, var(--deep) 40%, transparent) 70%, transparent); }
+.lost .shore-sea { left: 0; width: 100%; }  /* the night sea, still, with no route on it */
+.lost .shore-sea::after { background: linear-gradient(to right, var(--deep) 20%, color-mix(in srgb, var(--deep) 40%, transparent) 70%, transparent); }
 
 /* a word's own pages: the word is the subject, set in display type; its notes quiet, beside a rule */
 .page-head h1.word-title { letter-spacing: 0; font-size: var(--t-display); line-height: var(--l-display); max-width: none; overflow-wrap: anywhere; }
-.page-head:has(.word-title) ~ .note { padding: 0 0 0 var(--s4); background: none; border: 0; border-left: var(--rule) solid var(--line-2); border-radius: 0; }
-.lens-section > .lens-about { margin: 0 0 var(--s1); }
+.lens-section > .lens-about { margin: var(--s6) 0 var(--s1); }
 .lens-section > .about { margin-top: 0; }
 .play-cards:not(.row) .play-card { display: grid; grid-template-columns: 64px minmax(0, 1fr); column-gap: var(--s4); row-gap: var(--s1); align-content: start; }
 .play-cards:not(.row) .play-mark { grid-row: span 2; margin: 0; }
@@ -739,9 +821,48 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .caveats ul { padding-left: var(--s5); max-width: var(--measure); margin: 0; }
 .caveats li { margin-bottom: var(--s2); }
 
-/* ==== 10. page turns and reduced motion ======================================================================== */
+/* ==== 10. figures that draw in, the passages, page turns, and reduced motion ================================== */
 
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--d-turn); animation-timing-function: var(--sail); }
+/* A figure draws itself in once, as it first comes near the screen (app.js holds it .unseen until then): lines are
+   drawn along their length, areas and points follow, bars grow from their axis, cells come up column by column (by
+   the period they stand for), cards and small charts surface one after another. Only what is already there moves. */
+.unseen, .unseen * { animation-play-state: paused !important; }
+.area, .spark-area { animation: fade var(--d-leg) var(--sail) calc(var(--d-turn) * .6) both; }
+.pt { animation: fade var(--d-turn) var(--sail) var(--d-leg) both; }
+.plate .series .draw { animation-delay: calc(var(--k) * 120ms); } .plate .band { animation: fade var(--d-leg) var(--sail) both; }
+.plate .row { animation: surface var(--d-turn) var(--sail) calc(var(--k) * 35ms) both; }
+:is(.race, .bars, .duel) .bar { transform-origin: 0 50%; animation: grow var(--d-leg) var(--sail) both; }
+.duel .left .bar { transform-origin: 100% 50%; }
+.cell { animation: fade var(--d-turn) var(--sail) calc(var(--i, 0) * 45ms) both; }
+.tide td { animation: fade var(--d-turn) var(--sail) calc(var(--i, 0) * 40ms) both; }
+:is(.cards, .sparks) > li, .wall > .poster { animation: surface var(--d-leg) var(--sail) calc(var(--i, 0) * 50ms) both; }
+
+/* The passages of a story, tied to the scroll and nothing else (where the browser can): leaving the cover, its words
+   drift up and fade while the sea behind sinks away; the first stage's figure surfaces as its stage comes up; at the
+   landing the tide line swells and settles as the paper comes in. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes ebb { to { transform: translateY(-12vh); opacity: .1; } }
+    @keyframes sink { to { transform: translateY(8vh) scale(1.1); opacity: .3; } }
+    @keyframes swell { from { transform: scaleY(3.2); } }
+    .cover > .cover-text { animation: ebb linear both; animation-timeline: view(); animation-range: exit 0% exit 90%; }
+    .cover > .shore-sea { animation: sink linear both; animation-timeline: view(); animation-range: exit 0% exit 100%; }
+    .voyage .scene:first-of-type { view-timeline: --first block; }
+    .voyage .scene:first-of-type .stage-figure { animation: surface linear both; animation-timeline: --first; animation-range: entry 5% entry 70%; }
+    .landing > .tide-line { animation: swell linear both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
+    .page-head > .shore-sea { animation: sink linear both; animation-timeline: view(); animation-range: exit 0% exit 100%; }
+  }
+}
+
+/* A page turn: the header stays; the old page lifts away and the new one surfaces (--d-turn, --d-leg); the title is
+   carried over from the old page's title, or from the card that was chosen (app.js names it). */
+.masthead { view-transition-name: masthead; }
+.page-head h1, .cover h1 { view-transition-name: title; }
+@keyframes page-out { to { opacity: 0; transform: translateY(calc(-1 * var(--s4))); } }
+@keyframes page-in { from { opacity: 0; transform: translateY(var(--s6)); } }
+::view-transition-old(root) { animation: page-out var(--d-turn) var(--sail) both; }
+::view-transition-new(root) { animation: page-in var(--d-leg) var(--sail) both; }
+::view-transition-group(title) { animation-duration: var(--d-leg); animation-timing-function: var(--sail); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }

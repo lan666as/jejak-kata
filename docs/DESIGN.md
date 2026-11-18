@@ -61,11 +61,23 @@ Motion: one curve, `--sail: cubic-bezier(.45,.05,.25,1)`. Three durations: `--d-
 Things that carry data travel; chrome only turns. Unprompted, only the home hero moves, and only in three ways: the
 swell of the night sea (slow, ambient, never moving anything that carries data: no light, label or route moves with
 it); once per visit, the arrival (the words come on as their data arrives, then the first route is drawn once); and
-the ship sailing that route. Everything else answers the reader: the pointer or the tilt of a phone nudges the camera
-a few degrees, the scroll dives, a chosen word sails. The scroll is never taken over: the dive is a position, not an
-animation. `prefers-reduced-motion` turns travel into a cut, holds the sea as one still frame and removes the dive.
-Controls answer a press in one way (`--d-press`, down a pixel); key numbers settle in once as they first come into
-view; a large story card leans a few degrees towards a mouse with a glint crossing its number.
+the ship sailing that route. Every other sea is still: held as one frame, or (the map) drawn only while the reader
+moves it. Everything else answers the reader: the pointer or the tilt of a phone nudges the camera a few degrees, the
+scroll dives, a chosen word sails, a page turn brings its page in. The scroll is never taken over: the dive and the
+story's passages are positions, not animations (native scroll, CSS scroll-driven animations where the browser has
+them, nothing where it has not). `prefers-reduced-motion` turns travel into a cut, holds every sea as one still frame,
+removes the dive and the passages, and shows titles and figures in place.
+
+What answers a page turn, once: the old page lifts away (`--d-turn`) and the new one surfaces (`--d-leg`) while the
+header stays (View Transitions where the browser has them); the title is carried over from the old title, or from the
+card that was chosen (a story card's title becomes the cover's title); the new title rises word by word (letter by
+letter on a word's own page); the kicker, lede and notes surface after it. What answers the scroll: a figure draws
+itself in once as it first comes near the screen (lines along their length, then areas and points; bars grow from
+their axis; cells come up column by column, in the order of the periods they stand for; cards and small charts
+surface one after another); key numbers settle in once. Controls answer a press in one way (`--d-press`, down a
+pixel); a large story card leans a few degrees towards a mouse with a glint crossing its number. On a plate the marks
+travel one after another (a series or row 45 ms after the one before), its lines draw in when the stage first shows
+it.
 
 ## Components
 
@@ -76,29 +88,43 @@ view; a large story card leans a few degrees towards a mouse with a glint crossi
 - **Buttons**: primary (route fill, on-route text), secondary (hairline, ink), quiet (text only). Height 44px on touch.
   Chips are pills. One focus ring: 2px `--route`, 2px offset, on everything focusable.
 - **Field**: 44px, `--chart-2`, hairline; on the deep, `--deep-2` with no border.
-- **Page head**: kicker (meta, uppercase is not used; a short plain label), h1, lede. Same on every page.
+- **Page head** (the shore): kicker (meta, uppercase is not used; a short plain label), h1, lede, on a band of the
+  deep that runs edge to edge, with the night sea held still behind it (one frame; darker under the text) and the
+  **tide line** under it, where the page's paper begins. Same on every page. The tide line is the curve along which
+  the home hero's dive turns the night into paper (the shader's `edge()`), drawn across the width with a thread of
+  foam; it is the one boundary between the deep and the chart everywhere: under every head, where a story comes
+  ashore at its landing, under the map's band, and over the footer.
 - **Card**: `--chart-2`, hairline, `--r2`, padding `--s5`; a story card leads with its key number in display type
   and a one-line label (`key` in `site/text.js`). The large story card (the three newest, on home and on the
   stories index) is on `--deep` with the number in `--beacon`; a route-coloured line draws across its top on hover,
   and with a fine pointer it leans towards it (at most 2.5 degrees) while a lighter band of the beacon crosses the number.
   A play card leads with a small drawn mark of its figure, the moving part in `--route`.
 - **Figure plate**: paper `--chart-2` on the chart, and on the stage; title is a sentence with the number in it.
-- **Footer**: on `--deep`: what the data is, licence, links; quiet.
+- **Footer**: every page closes with the sea: the tide line (paper above, the deep below), a band of the night sea
+  held still (made once, when the footer first comes near, and kept from page to page), then on `--deep` what the data
+  is, licence, links; quiet.
 
 ## The story
 
 A story is a voyage in three parts.
 
 1. **Cover**, one screen on the deep: kicker ("Cerita" and reading time), the title in display type, the deck
-   (teaser), and a "Mulai" control. The chart's graticule faintly behind.
+   (teaser), and a "Mulai" control. Behind it, the night sea held still with the route of the story's own word (the
+   first of the words the story asks the reader to check that is on the chart's first screen) sailed to its last
+   port, named in its pill: to the right of the title from 900px, above it on a phone (the text then sits low). The
+   graticule stands in where there is no WebGL2. **Passages** (scroll-driven, native scroll): leaving the cover, its
+   words drift up and fade while the sea sinks away; the first stage's figure surfaces as its stage comes up; at the
+   landing the tide line swells and settles as the paper comes in.
 2. **Scenes.** Each scene is a **stage**: the figure holds the screen and the caption sits in a fixed place beside
    it (from 900px: a column at the right; below: a band under the figure). Captions do not scroll past as boxes:
    the stage stays, the caption turns (`--d-turn`), the figure's marks travel (`--d-leg`). Scroll, swipe, the arrow
    keys, space, or the next/previous controls all move one step; scrolling settles on a step (scroll snap,
    proximity). Step 0 of a scene opens it: the scene's title and text, so the reader knows the figure before it
    moves. The caption shows its head, the text, and "3 / 6"; a row of ticks shows the steps and takes a tap.
-   Nothing is ever cut: on a phone the figure takes half the height under the header and the caption band the
-   rest, and a long caption scrolls inside its band. Under each sticky stage lies a run of invisible beats, one
+   Nothing is ever cut: on a phone the stage shares its height by need (`--fig`): the figure gets at least half,
+   more when it is a strip of many rows (enough to keep the rows 24px apart, `stripLeast` in plate.js) or when the
+   caption is short; the caption band keeps room for its tallest step or, for a long one, five lines, and the rest
+   scrolls inside it. A strip never sets its rows closer than 24px on a phone (22px on a wide plate). Under each sticky stage lies a run of invisible beats, one
    per step, that the scroll snaps to; the scroll position chooses the step.
 3. **Landing**, on the chart: "What this data cannot say" as a bordered panel, the tools (save image, copy link,
    check for yourself), and the next story as a card.
@@ -118,12 +144,23 @@ A story keeps its place by step (not by pixels) across a language switch and the
   and what to do.
 - **Stories index**: page head, then cards led by the key number; the newest three large.
 - **Story on a phone**: the cover holds kicker, title, deck and "Mulai"; the intro opens the first scene's caption.
-- **Word, portrait, map, findings, method, play pages**: the page head pattern, the same cards, fields, chips and
-  tables; figures on plates.
+- **Word and portrait**: the word in display type rises in, letter by letter; behind it the sea with the word's
+  route on the first page's lens (Kompas, year by year) when it has one there; what we know about the word (that it
+  is a name and what it names, our note) stands under it in the head. Below the tide line the lens chips, then the
+  figure tabs and the figure (on a 1440x900 screen the figure begins on the first screen), then what the lens is.
+- **Map**: the head runs on into a band of the deep, edge to edge, that holds the sea itself (below), the lens, the
+  words picked (up to four, in the route colours, as chips that match their routes), the player that sails every
+  ship through the years, and the legend in the colours the sea shows (the lights by night, the dots by day); the
+  tide line under it; on paper the tools and, for two words, the comparison. Without WebGL2 the flat chart on paper.
+- **Findings, method, play pages, stories index**: the page head pattern, the same cards, fields, chips and tables;
+  figures on plates.
 
 ## The night sea (`site/sea.js`)
 
-The home hero is the chart of words in WebGL2, seen across the water at a low angle toward a horizon. Raw WebGL2 in
+One engine, three ways to be on a page: **the hero** (below: the swell, the arrival, the dive); **held** (one frame,
+drawn again only when its size, the scheme or the hover changes: behind every page head, a story's cover, the 404 and
+the footer; the chart's first screen of 2,500 words, made once the page has painted, its GPU let go when the page
+turns); and **explore** (the map). The home hero is the chart of words in WebGL2, seen across the water at a low angle toward a horizon. Raw WebGL2 in
 one module, no library: four small programs (water, lights, the route's ribbon, the ship and its ports), no matrices,
 colours, the curve and the leg read from the tokens. It is fetched beside the data and made only after the hero's
 text has been painted. What is on screen is the data and nothing else:
@@ -153,10 +190,19 @@ text has been painted. What is on screen is the data and nothing else:
 - **Fallbacks**: without WebGL2 the flat night chart of `chart.js`, one screen tall; with reduced motion one still
   frame, no dive, no arrival. The canvas is `role="img"` with a text alternative that names the route; the status
   line under the field says what sails.
-- Story covers keep the faint SVG graticule: a second GPU scene on the page that is read longest bought less than it
-  cost, and the cover's title needs the quiet.
+- **Explore** (the map): the reader moves the camera: drag to move over the water, the right button or Shift to turn
+  and tilt, Ctrl (or a trackpad's pinch) with the wheel to come nearer to the pointer, buttons for nearer, further,
+  everything, a quarter turn, and **from above**: the hero's dive as a choice, the sea glides up into the chart on
+  paper and back. The keys do the same (arrows move, Shift and arrows turn and tilt, plus and minus, zero), and the
+  word nearest the middle is ringed and named: Enter chooses it. Up to four routes, each ribbon in its route's colour
+  by night and by day, each ship named in a pill with a dot of its colour; the player sails all of them through the
+  years. Nothing moves unless the reader moves it: no swell, and no frame drawn while nothing changes. A plain wheel
+  scrolls the page; on a touch screen a finger scrolls the page until the reader has come near.
+- Covers, heads and the footer hold one frame of a sea that is no larger than the chart's first screen: a quiet
+  backdrop that still shows only data (the lights, and only the routes of words the page is about), named sparingly.
 
 ## Quality bar
 
-Phone first (360px), then 1440px. Light and dark. Keyboard reaches everything. AA contrast. No layout shift above
+Phone first (360px), then 1440px. Light and dark. Every WebGL scene has a fallback (the flat chart, the graticule)
+and a reduced-motion still. Keyboard reaches everything. AA contrast. No layout shift above
 0.05. First screen interactive under 2 s on a cold load. `tests/site` holds the checks and `./run.sh deploy` runs them.

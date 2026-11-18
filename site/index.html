@@ -57,7 +57,7 @@
   </div>
 </header>
 <main id="view" tabindex="-1"><script>/* the first page and a story are laid out full width from the start, so nothing moves when it arrives; where the sea can be 3D, the first page's hero is as tall as its dive, and the sea is fetched beside the rest */ { const main = document.currentScript.parentNode; const gl = !!window.WebGL2RenderingContext; if (gl && !matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("dives"); if (!/^#\/[^/]/.test(location.hash)) { main.className = "home"; if (gl) document.head.append(Object.assign(document.createElement("link"), { rel: "modulepreload", href: "sea.js" })); } else if (/^#\/cerita\/[^/]/.test(location.hash)) main.className = "voyage"; }</script><p class="loading">Memuat peta kata…</p></main>
-<footer class="site-foot" data-t="footer"></footer>
+<footer class="site-foot"><div data-t="footer"></div></footer>
 <div id="tip" role="status" hidden></div>
 <script type="module" src="app.js"></script>
 </body>

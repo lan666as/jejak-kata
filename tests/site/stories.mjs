@@ -2,7 +2,8 @@
 // width in dark, and fails on any problem. Down: "Mulai", then one key press per step (arrow keys, space, page down), to
 // the landing. Up: one scroll per step, back to the cover, and between every two steps a look at the position halfway.
 // At every step the stage must be stuck under the header, show the step's caption and counter, have its figure wholly on
-// screen at the step's moment, and keep its caption band on screen (a caption longer than the band must scroll in it).
+// screen at the step's moment with a strip's rows at least 17px apart on screen, and keep its caption band on screen (a
+// caption longer than the band must scroll in it).
 // Then the step buttons and the ticks, and the whole story once more with reduced motion.
 import { STORIES, TEXT } from "../../site/text.js";
 import { base, browser, done } from "./serve.mjs";
@@ -23,6 +24,7 @@ const look = () => {
     plates: shown.length, stuck: Math.round(stage.getBoundingClientRect().top - head),
     fig: fig && [fig.top - head, vh - fig.bottom, fig.left, vw - fig.right].map(Math.round), moment: shown[0]?.querySelector(".state, .marker text")?.textContent || "",
     cap: [c.top - head, vh - c.bottom].map(Math.round), capHeight: Math.round(c.height), longer: cap.scrollHeight > cap.clientHeight + 1, scrolls: ["auto", "scroll"].includes(getComputedStyle(cap).overflowY),
+    pitch: (() => { const ys = [...(shown[0]?.querySelectorAll(".row > line") || [])].map((t) => t.getBoundingClientRect().top); return ys.length > 1 ? Math.round(Math.min(...ys.slice(1).map((y, i) => y - ys[i]))) : null; })(),
     text: cap.querySelector(".turn:not(.out)")?.textContent.replace(/\s+/g, " ").trim() || "", count: stage.querySelector(".count").textContent,
     tick: [...stage.querySelectorAll(".ticks button")].findIndex((b) => b.getAttribute("aria-current") === "step") };
 };
@@ -57,6 +59,7 @@ function judge(story, k, j, s) {
     const moment = step.mark ?? (s.stack ? null : step.at);
     if (moment !== null && dash(s.moment) !== dash(moment)) wrong.push(`the figure is at "${s.moment}", the step at "${moment}"`);
   }
+  if (s.pitch !== null && s.pitch < 17) wrong.push(`the figure's rows are ${s.pitch}px apart on screen`);
   if (s.cap.some((d) => d < -1)) wrong.push(`the caption band is off screen (top, bottom: ${s.cap.join(", ")})`);
   if (s.longer && !s.scrolls) wrong.push("the caption is longer than its band and the band does not scroll");
   if (s.capHeight < 60) wrong.push(`the caption band is ${s.capHeight}px tall`);

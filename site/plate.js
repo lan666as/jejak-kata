@@ -4,19 +4,49 @@
 // when the moment changes: the marks move.
 
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-const COLOURS = ["--route", "--route-2", "--link", "--ink", "--ink-3", "--organisation"];
+// Up to eight series, each its own hue in light and dark (style.css, --cat-1..8: magenta first, then orange).
+const COLOURS = ["--cat-1", "--cat-2", "--cat-3", "--cat-4", "--cat-5", "--cat-6", "--cat-7", "--cat-8"];
 const SITE = "Jejak Kata · zidan.dev/jejak-kata";
-const MOVE = "transition:transform .6s cubic-bezier(.45,.05,.25,1),opacity .3s";
+// Marks travel on the site's curve, one after another (--k: the series or row they belong to), as a leg (--d-leg).
+const MOVE = "transition:transform var(--d-leg) var(--sail) calc(var(--k, 0) * 45ms),opacity var(--d-turn) var(--sail)";
 const percent = (v) => (v * 100).toLocaleString(document.documentElement.lang, { maximumSignificantDigits: 2 }) + "%";
 const points = (v) => (v * 100).toLocaleString(document.documentElement.lang, { maximumSignificantDigits: v < 0.0095 ? 1 : 2 });  // percentage points
 const at = (node, x, y) => (node.style.transform = `translate(${x}px,${y}px)`);
 
-/** The paper, the title broken into lines, the note and the site's name; `body(top)` draws between them. */
-function sheet(spec, width, height, body) {
-  const W = Math.round(Math.max(300, Math.min(760, width))), H = Math.round(Math.max(250, height || W * 0.62)), narrow = W < 480;
+/** A plate's width, and its title broken into lines at that width: how much room the title takes (`top`). */
+function heading(title, width) {
+  const W = Math.round(Math.max(300, Math.min(760, width))), narrow = W < 480;
   const size = narrow ? 16 : 21, room = Math.floor((W - 24) / (size * 0.57)), lines = [""];
-  for (const word of spec.title.split(" ")) (lines.at(-1) + " " + word).trim().length > room ? lines.push(word) : (lines[lines.length - 1] = (lines.at(-1) + " " + word).trim());
-  const top = 14 + lines.length * size * 1.14;
+  for (const word of title.split(" ")) (lines.at(-1) + " " + word).trim().length > room ? lines.push(word) : (lines[lines.length - 1] = (lines.at(-1) + " " + word).trim());
+  return { W, narrow, size, lines, top: 14 + lines.length * size * 1.14 };
+}
+/** A strip's legend, a dot and a name per series, wrapped into as many lines as the plate's width needs (on a wide
+ *  plate the moment shown keeps the end of the first line). */
+function key(series, W, narrow) {
+  let x = 12, line = 0;
+  const marks = series.map((name) => {
+    const width = 22 + name.length * 7;
+    if (x > 12 && x + width - 8 > W - 12 - (narrow || line ? 0 : 130)) (x = 12), line++;
+    const mark = { name, x, line };
+    x += width;
+    return mark;
+  });
+  return { marks, lines: line + 1 };
+}
+// A strip's rows stand this far apart where they can (a name too long for its column then takes two lines), and never
+// closer than the floor (the name then a little smaller instead); above and below them, the strip's own margins.
+const PITCH = { narrow: 26, wide: 22, floor: 18 };
+const stripRoom = (top, narrow, lines) => top + (narrow ? 50 : 34) + (lines - 1) * 16 + 76;
+/** How tall a strip of `rows` rows, titled `title` with these `series`, must be at `width`: `pitch` px apart. */
+export const stripLeast = (title, rows, width, series = [], pitch = null) => {
+  const { W, top, narrow } = heading(title, width);
+  return Math.ceil(stripRoom(top, narrow, key(series, W, narrow).lines) + rows * (pitch || PITCH[narrow ? "narrow" : "wide"]));
+};
+
+/** The paper, the title broken into lines, the note and the site's name; `body(top)` draws between them. At least
+ *  `least` tall. */
+function sheet(spec, width, height, body, least = 0) {
+  const { W, narrow, size, lines, top } = heading(spec.title, width), H = Math.round(Math.max(250, least, height || W * 0.62));
   const ink = css("--ink"), soft = css("--ink-2"), paper = css("--paper");
   const node = document.createElement("div");
   node.className = "plate";
@@ -46,9 +76,13 @@ function sheet(spec, width, height, body) {
 export function plate(spec, width, height) {
   const n = spec.periods.length, B = 84, L = 40;
   const most = Math.max(...spec.series.flatMap((s) => s.values.map((v, i) => (v || 0) + (s.off?.[i] || 0)))) * 1.08 || 1;
-  let x, y, R, T;
+  let x, y, R, T, tag;
   const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line }) => {
-    [R, T] = [narrow ? W * 0.43 : 190, top + 22];
+    // The names at the right are as wide as the longest name with its value needs: on a phone up to half the plate,
+    // and a little smaller beyond that rather than cut.
+    const long = Math.max(...spec.series.map((s) => s.label.length + (s.off ? 12 : 8)));
+    [R, T] = [narrow ? Math.min(W * 0.5, Math.max(W * 0.36, 20 + 6.6 * long)) : Math.min(260, Math.max(190, 22 + 7.2 * long)), top + 22];
+    tag = narrow ? Math.max(10, Math.min(12, (R - 20) / (long * 0.55))) : 13;
     x = (i) => L + ((W - L - R) * i) / Math.max(1, n - 1);
     y = (v) => H - B - ((H - T - B) * v) / most;
     const every = Math.ceil(n / ((W - L - R) / 44));
@@ -61,8 +95,8 @@ export function plate(spec, width, height) {
       // Where a series says how far each value may be off, a band of that width lies under its line.
       const band = !s.off ? [] : s.values.reduce((acc, v, i) => (v === null ? acc.push([]) : acc.at(-1).push(i), acc), [[]]).filter((r) => r.length > 1)
         .map((r) => [...r.map((i) => `${x(i)},${y(s.values[i] + s.off[i])}`), ...r.reverse().map((i) => `${x(i)},${y(Math.max(0, s.values[i] - s.off[i]))}`)].join(" "));
-      return `<g class="series" style="transition:opacity .3s">${band.map((b) => `<polygon points="${b}" fill="${colour}" opacity="0.16"/>`).join("")}${runs.map((r) => `<polyline points="${r.join(" ")}" fill="none" stroke="${colour}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`).join("")}
-        <circle r="5" fill="${colour}" stroke="${paper}" stroke-width="2" style="${MOVE}"/><text x="${W - R + 9}" style="font-size:${narrow ? 12 : 13}px;font-weight:700;fill:${colour};${MOVE}"></text></g>`;
+      return `<g class="series" style="--k:${k};transition:opacity var(--d-turn) var(--sail)">${band.map((b) => `<polygon class="band" points="${b}" fill="${colour}" opacity="0.16"/>`).join("")}${runs.map((r) => `<polyline class="draw" pathLength="1" points="${r.join(" ")}" fill="none" stroke="${colour}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`).join("")}
+        <circle r="5" fill="${colour}" stroke="${paper}" stroke-width="2" style="${MOVE}"/><text x="${W - R + 9}" style="font-size:${tag}px;font-weight:700;fill:${ink};${MOVE}"><tspan fill="${colour}">● </tspan><tspan></tspan></text></g>`;
     }).join("")}`;
   });
   const marker = made.svg.querySelector(".marker"), groups = [...made.svg.querySelectorAll(".series")];
@@ -73,11 +107,13 @@ export function plate(spec, width, height) {
     // Names stand at the right, at the height of their value at the marker, pushed apart where they would touch.
     const rows = spec.series.map((s, k) => ({ k, v: s.values[i] })).filter((r) => r.v !== null && r.v !== undefined).sort((a, b) => b.v - a.v);
     rows.forEach((r, j) => (r.at = j ? Math.max(y(r.v), rows[j - 1].at + 15) : y(r.v)));
+    // ... and, where they ran past the foot of the plot, pushed back up together.
+    for (let j = rows.length - 1; j >= 0; j--) rows[j].at = Math.min(rows[j].at, j < rows.length - 1 ? rows[j + 1].at - 15 : y(0));
     groups.forEach((g, k) => {
       const row = rows.find((r) => r.k === k), [dot, text] = [g.querySelector("circle"), g.querySelector("text")];
       g.style.opacity = !row ? 0.25 : focus && !focus.includes(spec.series[k].label) ? 0.2 : 1;
       dot.style.opacity = row ? 1 : 0;
-      text.textContent = row ? `${spec.series[k].label} ${percent(row.v)}${spec.series[k].off?.[i] ? " ±" + points(spec.series[k].off[i]) : ""}` : spec.series[k].label;
+      text.lastElementChild.textContent = row ? `${spec.series[k].label} ${percent(row.v)}${spec.series[k].off?.[i] ? " ±" + points(spec.series[k].off[i]) : ""}` : spec.series[k].label;
       if (row) at(dot, x(i), y(row.v));
       at(text, 0, (row ? row.at : T + 15 * k) + 4);
     });
@@ -88,33 +124,38 @@ export function plate(spec, width, height) {
 
 /**
  * Rows on one scale. `spec`: {title, note, states: [labels], series: [names], rows: [{label, values: [state][series]}],
- * format: (v) => text, pages: (i) => text}. One dot per series in every row; `show(i, focus)` moves the dots to
+ * format: (v) => text, pages: (i) => text, most: the value at the right edge (else just past the largest)}. One dot per series in every row; `show(i, focus)` moves the dots to
  * state i and leaves a ring where they were at the first state; rows not named in `focus` fade.
  */
 export function strip(spec, width, height) {
   const format = spec.format || percent, rows = spec.rows.length;
-  const most = Math.max(...spec.rows.flatMap((r) => r.values.flat().map((v) => v || 0))) * 1.05 || 1;
+  const most = spec.most || Math.max(...spec.rows.flatMap((r) => r.values.flat().map((v) => v || 0))) * 1.05 || 1;
   let x, y;
   const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line }) => {
-    const longest = Math.max(...spec.rows.map((r) => r.label.length)), L = narrow ? Math.min(W * 0.42, 16 + 7.2 * longest) : 178, R = narrow ? 80 : 84;
-    const T = top + (narrow ? 50 : 34), B = 76, gap = (H - T - B) / rows;
+    const longest = Math.max(...spec.rows.map((r) => r.label.length)), L = narrow ? Math.min(W * 0.45, 16 + 7 * longest) : 178, R = narrow ? 80 : 84;
+    const legend = key(spec.series, W, narrow), extra = (legend.lines - 1) * 16;
+    const T = top + (narrow ? 50 : 34) + extra, B = 76, gap = (H - T - B) / rows;  // the margins stripRoom counts
     x = (v) => L + ((W - L - R) * v) / most;
     y = (k) => T + gap * (k + 0.5);
-    const size = Math.max(12, Math.min(13, gap * 0.9));
-    let legend = 12;
-    return `${spec.series.map((name, k) => {
-      const here = legend;
-      legend += 22 + name.length * 7;
-      return `<circle cx="${here + 5}" cy="${top + 10}" r="4.5" fill="${css(COLOURS[k])}"/><text x="${here + 14}" y="${top + 14}" style="font-size:12px;fill:${soft}">${name}</text>`;
-    }).join("")}
-    <text class="state" x="${narrow ? 12 : W - 12}" y="${top + (narrow ? 32 : 15)}" text-anchor="${narrow ? "start" : "end"}" style="font-size:14px;font-weight:800;fill:${ink}"></text>
+    const size = Math.max(12, Math.min(13, gap * 0.9)), fits = Math.floor((L - 14) / (size * 0.53));
+    // A name too long for its column: on two lines where the rows are far enough apart, else a little smaller.
+    const name = (label, k) => {
+      if (label.length <= fits) return `<text x="${L - 9}" y="${y(k) + size * 0.35}" text-anchor="end" style="font-size:${size}px;font-weight:600;fill:${ink}">${label}</text>`;
+      // Two lines broken at the space that leaves the longer line shortest, then as large as that line allows.
+      const cut = [...label].map((c, i) => (c === " " ? i : -1)).filter((i) => i > 0).sort((a, b) => Math.max(a, label.length - a) - Math.max(b, label.length - b))[0];
+      const parts = cut && gap >= size * 1.9 ? [label.slice(0, cut), label.slice(cut + 1)] : [label];
+      const small = Math.max(10, Math.min(size, (L - 14) / Math.max(...parts.map((p) => p.length)) / 0.53));
+      return `<text x="${L - 9}" y="${y(k) + small * 0.35 - (parts.length - 1) * small * 0.55}" text-anchor="end" style="font-size:${small}px;font-weight:600;fill:${ink}">${parts.map((part, i) => `<tspan x="${L - 9}" dy="${i ? small * 1.1 : 0}">${part}</tspan>`).join("")}</text>`;
+    };
+    return `${legend.marks.map((m, k) => `<circle cx="${m.x + 5}" cy="${top + 10 + m.line * 16}" r="4.5" fill="${css(COLOURS[k])}"/><text x="${m.x + 14}" y="${top + 14 + m.line * 16}" style="font-size:12px;fill:${soft}">${m.name}</text>`).join("")}
+    <text class="state" x="${narrow ? 12 : W - 12}" y="${top + (narrow ? 32 + extra : 15)}" text-anchor="${narrow ? "start" : "end"}" style="font-size:14px;font-weight:800;fill:${ink}"></text>
     ${[0, 0.5, 1].map((f) => `<line x1="${x(most * f)}" x2="${x(most * f)}" y1="${T - 4}" y2="${H - B + 2}" stroke="${line}"/><text x="${x(most * f)}" y="${H - B + 14}" text-anchor="middle" style="font-size:12px;fill:${soft}">${format(most * f)}</text>`).join("")}
-    ${spec.rows.map((row, k) => `<g class="row" style="transition:opacity .3s"><text x="${L - 9}" y="${y(k) + size * 0.35}" text-anchor="end" style="font-size:${size}px;font-weight:600;fill:${ink}">${row.label}</text>
+    ${spec.rows.map((row, k) => `<g class="row" style="--k:${k};transition:opacity var(--d-turn) var(--sail)">${name(row.label, k)}
       <line x1="${L}" x2="${W - R}" y1="${y(k)}" y2="${y(k)}" stroke="${line}" stroke-dasharray="1 3"/>
       ${spec.series.map((_, j) => (row.values[0][j] === null || spec.states.length < 2 ? "" : `<circle cx="${x(row.values[0][j])}" cy="${y(k)}" r="4" fill="none" stroke="${css(COLOURS[j])}" stroke-width="1.2" opacity=".65"/>`)).join("")}
       ${spec.series.map((_, j) => `<circle class="dot" r="${Math.min(5.5, gap * 0.36)}" fill="${css(COLOURS[j])}" stroke="${paper}" stroke-width="1.5" style="${MOVE}"/>`).join("")}
       <text class="value" x="${W - R + 8}" y="${y(k) + size * 0.35}" style="font-size:12px;font-weight:700;fill:${ink}"></text></g>`).join("")}`;
-  });
+  }, stripLeast(spec.title, rows, width, spec.series, PITCH.floor));
   const groups = [...made.svg.querySelectorAll(".row")], state = made.svg.querySelector(".state");
   const show = (i, focus) => {
     state.textContent = spec.states[i];
