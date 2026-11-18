@@ -273,6 +273,7 @@ runs `look` first.
 | `cold.mjs` | the home page cold on slow 4G and 4G: text and an answering chart within 2 s |
 | `meta.mjs [<built>]` | the published site as link previews and search engines read it (below): every generated page fetched with no script, its tags, JSON-LD, share image, canonical and language twins, the sitemap and the feeds; then each page opened, taken over by the app at its route |
 | `frames.mjs`, `capture.mjs`, `look.mjs`, `shot.mjs`, `sheet.mjs` | frame times, and screenshots to look at |
+| `gpu.mjs <url> <dir>`, `film.mjs <url> <dir>` | on a rented machine with a GPU: frame times and recordings of the live site; `film.mjs` presents it as to a jury (arrival, a word sailed, the dive, a story, the map, a word, the share sheet) with eased pointer moves, at 1440x900 and 390x844, as Playwright videos |
 
 ### One generation step: addresses of their own
 
@@ -284,7 +285,9 @@ and each word the first page shows, in Indonesian and in English (under `en/`), 
 address, language twins, Open Graph and X card tags, JSON-LD (Article, BreadcrumbList, Dataset), and the page's text
 in plain HTML for readers that run no script; the app takes the page over where scripts run. Beside it a share image,
 `og.jpg` (1200x630, under 300 kB): a story's key number and title on its own night sea, drawn by the app in the test
-browser. It also writes `404.html` (GitHub Pages serves it for any other path, and the app reads the path), `sitemap.xml`
+browser. Each story also gets `<story>/embed/`, the frame of one of its figures for other sites (`#/<scene>/<step>`
+after it): the story's own page, canonical to the story and kept out of the sitemap. Every title is 50 to 60
+characters and every description 120 to 160, unique per language. It also writes `404.html` (GitHub Pages serves it for any other path, and the app reads the path), `sitemap.xml`
 and the stories as feeds (`feed.xml`, Atom; `feed.json`, JSON Feed), and then `meta.mjs` checks all of it. Nothing it
 writes is kept in git: it is made from `site/` (`text.js`, `story.js`, `address.js` and the data) every time the site
 is published, so a published page cannot carry an old title, number or image. `address.js` says which routes have a

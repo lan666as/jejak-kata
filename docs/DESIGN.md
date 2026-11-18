@@ -79,7 +79,9 @@ is done, then play. Arriving at a page without a turn (the first page of a visit
 (letter by letter on a word's own page) and the kicker, lede and notes surface after it. What answers the scroll: a figure draws
 itself in once as it first comes near the screen (lines along their length, then areas and points; bars grow from
 their axis; cells come up column by column, in the order of the periods they stand for; cards and small charts
-surface one after another); key numbers settle in once. Controls answer a press in one way (`--d-press`, down a
+surface one after another); key numbers settle in once. Whether a figure has come near is looked at on every scroll,
+resize and change of the page, never left to an observer, and a figure reached by a jump (a fast wheel, a link lower
+down) is simply there: content never waits on an entrance. A section that waits for its data says "Memuat…" in its place. Controls answer a press in one way (`--d-press`, down a
 pixel); a large story card leans a few degrees towards a mouse with a glint crossing its number. On a plate the marks
 travel one after another (a series or row 45 ms after the one before), its lines draw in when the stage first shows
 it.
@@ -95,16 +97,28 @@ it.
 - **Field**: 44px, `--chart-2`, hairline; on the deep, `--deep-2` with no border.
 - **Page head** (the shore): kicker (meta, uppercase is not used; a short plain label), h1, lede, on a band of the
   deep that runs edge to edge, with the night sea held still behind it (one frame; darker under the text) and the
-  **tide line** under it, where the page's paper begins. Same on every page. The tide line is the curve along which
+  **tide line** under it, where the page's paper begins. The pattern is the same on every page; the sea is each
+  family's own, seen from higher than the hero (a short band shows more of the chart) and framed in the water beside
+  the text (above it on a phone): the stories index sails the newest three stories' words; findings and the pages
+  about change, the words that moved most; the play pages, the names or words their game asks about; a word's page,
+  its own route; the method, the whole chart from above with its graticule; the 404, no route. Names on a held sea
+  stay in its open water and never touch each other or a ship's pill (each takes a box; a pill moves a line up or
+  down, tied to its point, rather than cover another). The tide line is the curve along which
   the home hero's dive turns the night into paper (the shader's `edge()`), drawn across the width with a thread of
   foam; it is the one boundary between the deep and the chart everywhere: under every head, where a story comes
   ashore at its landing, under the map's band, and over the footer.
 - **Card**: `--chart-2`, hairline, `--r2`, padding `--s5`; a story card leads with its key number in display type
-  and a one-line label (`key` in `site/text.js`). The large story card (the three newest, on home and on the
-  stories index) is on `--deep` with the number in `--beacon`; a route-coloured line draws across its top on hover,
+  and a one-line label (`key` in `site/text.js`), and its text is the teaser's first sentence, whole (never cut inside
+  a number). The large story card (the three newest, on home and on the stories index; the newest wider, its number
+  larger) is on `--deep` with the number in `--beacon`; a route-coloured line draws across its top on hover,
   and with a fine pointer it leans towards it (at most 2.5 degrees) while a lighter band of the beacon crosses the number.
   A play card leads with a small drawn mark of its figure, the moving part in `--route`.
-- **Figure plate**: paper `--chart-2` on the chart, and on the stage; title is a sentence with the number in it.
+- **Figure plate**: paper `--chart-2` on the chart, and on the stage; title is a sentence with the number in it. The
+  numbers a step's caption names (its `focus`) stand on the beacon: a pill of `--beacon` behind the value, the text in
+  `--deep`. The tools under a figure save it as an image and download the numbers it draws as CSV (from what the
+  figure loaded: a row per period, or per row and state).
+- **Footer** on a phone folds "Data" and "Licence and code" (a line each, opened by a tap); from 900px they stand open.
+- **Menu sheet** (phone): the chart at night, its graticule faint behind the links.
 - **Footer**: every page closes with the sea: the tide line (paper above, the deep below), a band of the night sea
   held still (made once, when the footer first comes near, and kept from page to page), then on `--deep` what the data
   is, licence, links; quiet.
@@ -113,16 +127,19 @@ it.
 
 A story is a voyage in three parts.
 
-1. **Cover**, one screen on the deep: kicker ("Cerita" and reading time), the title in display type, the deck
-   (teaser), and a "Mulai" control. Behind it, the night sea held still with the route of the story's own word (the
+1. **Cover**, one screen on the deep (on a 1440x800 laptop too: the title's size follows the screen's height): kicker
+   ("Cerita" and reading time), the title in display type, the deck (teaser, the cover's one paragraph; the intro
+   opens the first scene's caption), and a "Mulai" control. Behind it, the night sea held still with the route of the story's own word (the
    first of the words the story asks the reader to check that is on the chart's first screen) sailed to its last
    port, named in its pill: to the right of the title from 900px, above it on a phone (the text then sits low).
-   From 900px the story's key number stands over the water in `--beacon` beside the deck, with its line. The
+   From 900px the story's key number stands over the water in `--beacon` beside the deck, with its line, and nothing
+   else. The
    graticule stands in where there is no WebGL2. **Passages** (scroll-driven, native scroll): leaving the cover, its
    words drift up and fade while the sea sinks away; the first stage's figure surfaces as its stage comes up; at the
    landing the tide line swells and settles as the paper comes in.
 2. **Scenes.** Each scene is a **stage**: the figure holds the screen and the caption sits in a fixed place beside
-   it (from 900px: a column at the right; below: a band under the figure). Captions do not scroll past as boxes:
+   it (from 900px: a column at the right, the stage on the page's 1120px grid like the header; below: a band under
+   the figure), the chart's graticule faint behind the figure. "Part 1 of 2" is said only where there are parts. Captions do not scroll past as boxes:
    the stage stays, the caption turns (`--d-turn`), the figure's marks travel (`--d-leg`). Scroll, swipe, the arrow
    keys, space, or the next/previous controls all move one step; scrolling settles on a step (scroll snap,
    proximity). Step 0 of a scene opens it: the scene's title and text, so the reader knows the figure before it
@@ -149,14 +166,20 @@ A story keeps its place by step (not by pixels) across a language switch and the
 - **Addresses.** Every story, main page, play page and word the first page shows has a real path (`cerita/oknum/`),
   English under `en/`; the rest of a route follows after `#/` (a story's step: `cerita/oknum/#/1/2`, which opens on
   that step). Routes without a page of their own stay `#/kata/batik`, and every old `#/...` link still works
-  (`site/address.js`). The address bar always shows the address of what is on screen, in its language.
+  (`site/address.js`). The address bar always shows the address of what is on screen, in its language. Each page is
+  called what a search engine shows whole: a title of 50 to 60 characters and a description of 120 to 160, unique,
+  in each language (`address.js` picks the first of a few wordings that fits; `tests/site/meta.mjs` holds it to it).
+- **A figure on another site**: `cerita/oknum/embed/#/1/2` frames the plate of scene 1 at step 2 for an iframe, with
+  its caption, the steps to move through and a link to the story (`target="_top"`); no header, no footer. Its
+  generated page is the story's own, canonical to it and not in the sitemap, so the story is never found twice.
 - **Share control** ("Bagikan"): a secondary button, beside "Mulai" on a story's cover (on the deep: `--deep`,
   `--line-deep-2` edge), in the landing's tools, and on each stage as a 24px mark (an arrow out of a tray, in
   `--on-deep-2`) at the right of the count, which shares that step. Where the device has a share sheet it opens straight
   away, with the title, a line and the address, and on a stage the step's plate as a PNG where the sheet takes files.
   Elsewhere it unfolds a sheet of paper (`--chart-2`, hairline, `--r2`, `--lift`): "Bagikan ke", then WhatsApp, X,
   Telegram, Facebook, LinkedIn, Bluesky and email in two columns, each a plain link (no script of those sites is ever
-  loaded), and "Salin tautan" across the bottom. A stage's sheet opens upward over the figure. It closes on Escape or a
+  loaded), "Salin tautan" across the bottom, and on a stage and the landing "Salin kode sematan" (the frame above as
+  an iframe). A stage's sheet and the cover's open upward, over the figure or the deck, never past the edge below. It closes on Escape or a
   press elsewhere. Not printed.
 - **Share images** (`og.jpg`, 1200x630, under 300 kB, made by `tests/site/publish.mjs` at deploy): a card on the
   night sea of the page itself (a story's cover sea with its own word's route, a word's head sea, else the first
@@ -169,23 +192,47 @@ A story keeps its place by step (not by pixels) across a language switch and the
 ## Pages
 
 - **Home**: hero on the deep, full height: the map of words as a night sea with one route sailed (below); headline
-  in display type; one field ("Ketik kata, lihat rutenya") and a few chips. Then, on the chart: three featured stories
+  in display type; one field ("Ketik kata, lihat rutenya") and a few chips, their label above them from 900px (on a
+  phone a row that scrolls and fades at its right edge). What the reader needs in the first ten seconds is on the
+  sea: a legend of two glyphs (a light and its height, a route and its ports) in its sky; once the first route has
+  sailed, two notes drawn like marginalia (from the light that moved most in the open water a line down to the water,
+  "higher: moved more"; from the route's middle a leader, "jokowi, 2012–2024: a port each year"), which fade when
+  the reader picks a word; the year as a marker that counts as the ship sails, over a line from the first year to the
+  last; and at the foot of the first screen the dive signposted ("Scroll: the sea becomes the chart"). Under the field,
+  the word sailing and what it is (`GLOSS` in text.js: the names in both languages, the common words in English); the
+  chips carry the same in their label. The lede says what Kompas is. Then, on the chart: three featured stories
   with their key numbers; things to play with; how it is measured (sources, pages counted, what the tests say), in
   three short columns, every number read from the data.
-- **States**: an unknown address is a 404 on the deep with the ways back, the night sea held still behind it, with no
-  route on it. A word not on the chart, data that did not load and a search with no match each say what happened
+- **States**: an unknown address is a 404, a head of the deep like every other page's and as tall as the screen
+  allows, with the ways back, the night sea held still beside its text, with no route on it. A word not on the chart, data that did not load and a search with no match each say what happened
   and what to do.
 - **Stories index**: page head, then cards led by the key number; the newest three large.
 - **Story on a phone**: the cover holds kicker, title, deck and "Mulai"; the intro opens the first scene's caption.
 - **Word and portrait**: the word in display type rises in, letter by letter; behind it the sea with the word's
-  route on the first page's lens (Kompas, year by year) when it has one there; what we know about the word (that it
-  is a name and what it names, our note) stands under it in the head. Below the tide line the lens chips, then the
+  route on the first page's lens (Kompas, year by year) when it has one there; what the word is in one line (`GLOSS`),
+  then what we know about it (that it is a name and what it names, our note) stands under it in the head. The
+  voyage among its neighbours is on paper like a plate: the route with its years along it (each port clear of the
+  last one named), a legend in plain words ("its closest company in 2011", ringed; "in 2024", filled), and from 900px
+  the two lists of neighbours beside it. Below the tide line the lens chips, then the
   figure tabs and the figure (on a 1440x900 screen the figure begins on the first screen), then what the lens is.
 - **Map**: the head runs on into a band of the deep, edge to edge, that holds the sea itself (below), the lens, the
   words picked (up to four, in the route colours, as chips that match their routes), the player that sails every
   ship through the years, and the legend in the colours the sea shows (the lights by night, the dots by day); the
-  tide line under it; on paper the tools and, for two words, the comparison. Without WebGL2 the flat chart on paper.
-- **Findings, method, play pages, stories index**: the page head pattern, the same cards, fields, chips and tables;
+  tide line under it; on paper the tools and, for two words, the comparison. Opened with no word, the map shows the
+  first page's word sailed as an example (said so under the field) until the reader picks one; a hint on the sea
+  says how to move over it, and goes at the first touch. From 900px the title stands on its lede's last baseline; on
+  a phone the head is a line and the sea comes first, what steers it under it, the buttons in a row at its top.
+  Without WebGL2 the flat chart on paper.
+- **Findings**: each list is the counting's own ranking, shown by a stated rule, never picked: of the pairs, only
+  those whose lines cross (the rising word ends up more common than the falling one), the top six as figures (both
+  lines on one scale, each word named where its line is, the year they cross marked), the rest folded; of the words
+  that came and went or came to stay, the top eight, the rest folded. The rule is written on the page beside a rule
+  of `--beacon`. The page shows its first source as soon as that source has come, not after every source.
+- **Play**: the first thing to play leads, on the deep, its mark drawn large and moving; the next two beside it; the
+  rest under "more", smaller. A game is a board: the round on paper, and beside it the game's voyage so far (a port
+  per round: filled where right, a ring where wrong, the ship on the round now); at the end the score as a plate
+  to save as an image.
+- **Method, stories index, other play pages**: the page head pattern, the same cards, fields, chips and tables;
   figures on plates.
 
 ## The night sea (`site/sea.js`)

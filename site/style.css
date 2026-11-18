@@ -137,6 +137,9 @@ main:focus { outline: none; }
   .menu { display: none; }
   .menu.open { position: fixed; inset: var(--head-h) 0 0; z-index: 9; display: flex; flex-direction: column; gap: var(--s6);
     padding: var(--s5) var(--gutter) var(--s8); overflow-y: auto; overscroll-behavior: contain; background: var(--deep);
+    /* the sheet is the chart at night: its graticule, faint, fading towards the links */
+    background-image: linear-gradient(to bottom, var(--deep) 35%, transparent), linear-gradient(var(--line-deep) 0 1px, transparent 1px), linear-gradient(90deg, var(--line-deep) 0 1px, transparent 1px);
+    background-size: 100% 100%, 64px 64px, 64px 64px; background-position: 0 0, 0 -1px, -1px 0;
     transition: opacity var(--d-turn) var(--sail), transform var(--d-turn) var(--sail); }
   @starting-style { .menu.open { opacity: 0; transform: translateY(calc(-1 * var(--s3))); } }
   .menu nav { display: flex; flex-direction: column; }
@@ -182,6 +185,13 @@ main:focus { outline: none; }
 .foot h2 { margin: 0 0 var(--s3); font: 600 var(--t-meta)/var(--l-meta) var(--type); color: var(--on-deep); letter-spacing: .02em; }
 .foot-brand { font: 800 var(--t-h2)/var(--l-h2) var(--type); font-stretch: 75%; color: var(--on-deep); }
 .foot a { color: var(--on-deep); }
+.foot-fold { margin: 0; border-top: var(--hair) solid var(--line-deep); }
+.foot-fold > summary { min-height: var(--tap); list-style: none; color: var(--on-deep); }
+.foot-fold > summary::-webkit-details-marker { display: none; }
+.foot-fold > summary::after { content: "+"; margin-left: auto; font-size: var(--t-lede); color: var(--on-deep-2); }
+.foot-fold[open] > summary::after { content: "−"; }
+.foot-fold > summary h2 { margin: 0; }
+@media (min-width: 900px) { .foot-fold { border: 0; } .foot-fold > summary { pointer-events: none; min-height: 0; margin-bottom: var(--s3); } .foot-fold > summary::after { content: none; } }
 .foot-links li { padding: 0; }
 .foot-links a { display: inline-flex; align-items: center; min-height: var(--tap); }
 @media (min-width: 900px) { .foot { grid-template-columns: 1.3fr 1fr 1fr; gap: var(--s7); } }
@@ -200,6 +210,7 @@ main:focus { outline: none; }
 .head-notes { max-width: var(--measure); margin-top: var(--s4); }
 .head-notes .note { margin: var(--s3) 0 0; padding: 0 0 0 var(--s4); background: none; border: 0; border-left: var(--rule) solid var(--line-deep-2); border-radius: 0; color: var(--on-deep-2); }
 .head-notes a { color: var(--on-deep); }
+.head-notes .gloss { margin: 0; font-size: var(--t-lede); line-height: var(--l-lede); color: var(--on-deep); }
 
 /* the shore: the night sea behind a head on the deep, darker where the text lies; the graticule until it is there */
 .shore-sea { position: absolute; z-index: -1; top: 0; bottom: 0; left: calc(50% - 50vw); width: 100vw; overflow: hidden; pointer-events: none; }
@@ -491,7 +502,19 @@ svg text { fill: var(--ink-2); font: 12px var(--type); }
 .leader { stroke: var(--ink-3); stroke-width: 1; }
 text.island-label { font-size: 13px; fill: var(--ink); paint-order: stroke; stroke: var(--chart); stroke-width: 4px; stroke-linejoin: round; cursor: pointer; }
 text.island-label:hover { fill: var(--route); }
-text.when-label { font: 800 13px var(--type); fill: var(--route); paint-order: stroke; stroke: var(--chart); stroke-width: 4px; }
+text.when-label { font: 800 13px var(--type); fill: var(--route); paint-order: stroke; stroke: var(--chart-2); stroke-width: 4px; }
+text.route-year { font: 700 11.5px var(--type); fill: var(--route); paint-order: stroke; stroke: var(--chart-2); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+/* a word's voyage among its neighbours, on paper like a story's plate, the neighbours listed beside it */
+.path-plate { padding: var(--s4) var(--s5) var(--s5); background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); --chart: var(--chart-2); }
+.path-plate > .legend { margin: 0 0 var(--s3); }
+.path-body { display: grid; gap: var(--s5); align-items: start; }
+@media (min-width: 900px) { .path-body { grid-template-columns: minmax(0, auto) minmax(0, 1fr); } }
+.path-near { padding-left: var(--s5); border-left: var(--hair) solid var(--line); font-size: var(--t-small); line-height: var(--l-small); }
+.path-near h3 { display: flex; align-items: center; gap: var(--s2); margin: 0 0 var(--s1); font-size: var(--t-h3); }
+.path-near h3 i { width: 12px; height: 12px; border-radius: 50%; } .path-near i.early { border: var(--rule) solid var(--ink); } .path-near i.late { background: var(--ink); }
+.path-near h3:not(:first-child) { margin-top: var(--s5); }
+.path-near a { color: var(--ink); }
+.legend i.route-key { width: 18px; height: var(--mark); border-radius: var(--pill); background: var(--route); }
 
 /* duel and bars: adjectives and verbs */
 .duel { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--s1) var(--s3); align-items: center; font-size: var(--t-small); }
@@ -547,8 +570,23 @@ text.when-label { font: 800 13px var(--type); fill: var(--route); paint-order: s
 .tx { background: none; outline: var(--hair) dashed var(--line); outline-offset: -1px; }
 .legend i.t0, .legend i.t1, .legend i.t2, .legend i.t3, .legend i.t4, .legend i.t5 { width: 18px; height: 12px; border-radius: 2px; }
 
-/* games: the quiz and guess the number */
+/* games: the quiz and guess the number. A round on paper; beside it, from 900px, the game's voyage so far */
 .quiz { margin: var(--s5) 0; }
+.quiz-board { display: grid; gap: var(--s5); margin: var(--s5) 0; align-items: start; }
+.quiz-card { margin: 0; padding: var(--s5) var(--s5) var(--s4); background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); }
+.quiz-log { padding: var(--s4) var(--s5); border: var(--hair) solid var(--line); border-radius: var(--r2); }
+.quiz-log h3 { margin: 0 0 var(--s2); font-size: var(--t-small); font-stretch: 100%; font-weight: 600; color: var(--ink-2); }
+.quiz-tally { margin: var(--s2) 0 0; font: 800 var(--t-h3)/1 var(--type); font-stretch: 75%; font-variant-numeric: tabular-nums; }
+.voyage-mark { width: 100%; height: auto; overflow: visible; }
+.voyage-mark .sea-line { stroke: var(--line-2); } .voyage-mark .sailed { stroke: var(--route); }
+.voyage-mark .right { fill: var(--route); } .voyage-mark .wrong { fill: var(--chart-2); stroke: var(--ink); stroke-width: 2; }
+.voyage-mark .now { fill: var(--ink); } .voyage-mark .next { fill: var(--line-2); } .voyage-mark text { fill: var(--ink-2); }
+@media (prefers-reduced-motion: no-preference) { .voyage-mark .now { animation: hop var(--d-leg) var(--sail) infinite alternate; transform-box: fill-box; transform-origin: center; } }
+.quiz-card .plate svg { width: 100%; margin: var(--s4) 0 var(--s2); }
+@media (min-width: 900px) { .quiz-board { grid-template-columns: minmax(0, 1fr) 20rem; gap: var(--s6); } .quiz-log { position: sticky; top: calc(var(--head-h) + var(--s5)); } }
+.quiz .choices button { box-shadow: inset 0 calc(-1 * var(--mark)) 0 transparent; }
+.quiz .choices button:hover:not(:disabled) { box-shadow: inset 0 calc(-1 * var(--mark)) 0 var(--route); }  /* the route drawn along the answer one is about to give */
+.quiz .choices .chosen, .quiz .choices .chosen:disabled { border-style: dashed; opacity: 1; }
 .quiz .words li { font-size: var(--t-body); }
 .quiz .score { font: 800 var(--t-display)/var(--l-display) var(--type); font-stretch: 75%; margin: var(--s5) 0; }
 .quiz .choices { display: flex; flex-wrap: wrap; gap: var(--s2); margin: var(--s5) 0; }
@@ -907,6 +945,18 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .lens-section > .about { margin-top: 0; }
 .play-cards:not(.row) .play-card { display: grid; grid-template-columns: 64px minmax(0, 1fr); column-gap: var(--s4); row-gap: var(--s1); align-content: start; }
 .play-cards:not(.row) .play-mark { grid-row: span 2; margin: 0; }
+/* the play page: the first thing to play leads, on the deep, its mark large and moving; two beside it; the rest smaller */
+.play-top { grid-template-columns: minmax(0, 1fr); }
+.play-top .play-card.lead { display: flex; flex-direction: column; gap: var(--s2); padding: var(--s6); background: var(--deep); border-color: var(--line-deep); color: var(--on-deep); --focus: var(--route-on-deep); }
+.play-top .lead .kicker { margin: 0; color: var(--beacon); }
+.play-top .lead .play-mark { width: 192px; height: 132px; margin: var(--s3) 0 var(--s4); color: var(--on-deep-2); stroke-width: 1.4; }
+.play-top .lead .play-mark .on { stroke: var(--route-on-deep); } .play-top .lead .play-mark .on.fill { fill: var(--route-on-deep); }
+.play-top .lead .card-title { font-size: var(--t-h2); line-height: var(--l-h2); font-weight: 800; font-stretch: 75%; }
+.play-top .lead .card-text { max-width: 30rem; color: var(--on-deep-2); font-size: var(--t-body); line-height: var(--l-body); }
+@keyframes guess { 0%, 100% { transform: translateX(0); } 45% { transform: translateX(-14px); } 75% { transform: translateX(6px); } }
+@media (prefers-reduced-motion: no-preference) { .play-top .lead .play-mark .on { animation: guess calc(var(--d-leg) * 4) var(--sail) infinite; } }
+.play-more .card { padding: var(--s4); } .play-more .card-title { font-size: var(--t-body); line-height: 1.25; font-stretch: 85%; }
+@media (min-width: 900px) { .play-top { grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(0, 1fr)); } .play-top .play-card:not(.lead) { grid-template-columns: minmax(0, 1fr); } .play-top .play-card:not(.lead) .play-mark { grid-row: auto; width: 96px; height: 66px; margin-bottom: var(--s3); } }
 
 /* a figure's long note, folded */
 .about { margin: var(--s2) 0 var(--s4); max-width: var(--measure); }
@@ -969,6 +1019,21 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   html.voyaging { scroll-snap-type: none; }
 }
+
+/* One figure framed for another site (app.js, embedPage): no header or footer, the plate, its caption, the steps and
+   the way to the story, filling the frame. */
+html.embedded .masthead, html.embedded .site-foot, html.embedded #skip { display: none; }
+main.embed { min-height: 0; padding: var(--s4) var(--gutter); }
+.embed-box { display: grid; gap: var(--s3); max-width: 760px; margin: 0 auto; }
+.embed-title { margin: 0; font: 700 var(--t-h3)/var(--l-h3) var(--type); font-stretch: 80%; }
+.embed-title a { color: var(--ink); text-decoration: none; } .embed-title a:hover { text-decoration: underline; }
+.embed-figure .plate svg { width: 100%; }
+.embed-caption { max-height: 7.5em; overflow-y: auto; font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
+.embed-caption p { margin: 0; } .embed-caption b { color: var(--ink); }
+.embed-foot { display: flex; align-items: center; gap: var(--s2); max-width: none; margin: 0; font-size: var(--t-small); }
+.embed-foot .count { min-width: 4.5em; text-align: center; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.embed-foot .step { min-width: var(--tap); padding: 0; font-size: var(--t-lede); }
+.embed-open { margin-left: auto; font-weight: 600; }
 
 /* ==== 11. print: a story as its figures, each followed by its captions, on white ================================ */
 

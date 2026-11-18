@@ -8,7 +8,7 @@
 
 import { seaChart } from "./chart.js";
 import { TEXT, LENS_TEXT, NOTES, GLOSS, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
-import { address, routeOf, named, PAGES, PLAY } from "./address.js";
+import { address, routeOf, named, canonical, EMBED, PAGES, PLAY } from "./address.js";
 
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
 // cold on a phone, does without them. `plating()` resolves once these names are there.
@@ -373,7 +373,7 @@ function stage(part, k, of, steer, intro = "") {
   back.addEventListener("click", () => steer(at - 1));
   ahead.addEventListener("click", () => steer(at + 1));
   go(0);
-  return { node, stage: box, room, caption, said, steps: n + 1, on: () => at, go, slide, hold: (made) => ((figure = made), box.classList.contains("tall") ? reach() : show()) };
+  return { node, stage: box, room, caption, said, steps: n + 1, on: () => at, go, slide, figure: () => figure, hold: (made) => ((figure = made), box.classList.contains("tall") ? reach() : show()) };
 }
 
 // ---- figures --------------------------------------------------------------
@@ -489,7 +489,8 @@ function orbit(lens, e) {
  * side away from it, each tied to its island by a thin line.
  */
 function pathFigure(lens, path) {
-  const W = Math.max(300, Math.min(960, room())), H = Math.round(Math.min(W * 0.8, 560)), P = 30, SIDE = Math.round(Math.min(180, W * 0.22)); // room at the sides for the names
+  // On a wide screen the figure keeps to 720px and its two lists of neighbours stand beside it.
+  const beside = room() >= 900, W = Math.max(300, Math.min(beside ? 720 : 960, room() - (beside ? 300 : 0))), H = Math.round(Math.min(W * 0.78, 540)), P = 34, SIDE = Math.round(Math.min(170, W * 0.22)); // room at the sides for the names
   const raw = path.path.map((xy, p) => xy && { p, xy }).filter(Boolean);
   const smooth = (k, d) => (raw.length > 6 && k > 0 && k < raw.length - 1 ? (raw[k - 1].xy[d] + 2 * raw[k].xy[d] + raw[k + 1].xy[d]) / 4 : raw[k].xy[d]);
   const moved = raw.map((r, k) => [smooth(k, 0), smooth(k, 1)]);
@@ -522,16 +523,28 @@ function pathFigure(lens, path) {
           b.ly -= push;
         }
   marks.forEach((m) => (m.ly = Math.max(12, Math.min(H - 6, m.ly))));
-  const node = el(`<div><div class="legend"><span><i class="early"></i>${t("near_early", lens.periods[steps[0].p])}</span>
-    <span><i class="late"></i>${t("near_late", lens.periods[steps.at(-1).p])}</span></div>
-    <svg viewBox="0 0 ${W} ${H}" width="${W}" role="img" aria-label="${t("path")}">
+  // The years along the route: each port that stands clear of the last one named, on the side away from the
+  // route's turn, with the first and the last always named.
+  const years = [];
+  steps.forEach((s, k) => {
+    const last = years.at(-1), end = k === 0;  // the last port is named by the ship's own label (when-label)
+    if (!end && last && Math.hypot(s.x - last.x, s.y - last.y) < 40) return;
+    const [a, b] = [at(k - 1), at(k + 1)], dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+    years.push({ k, x: s.x, y: s.y, tx: s.x + (-dy / len) * 15, ty: s.y + (dx / len) * 15 + 4, text: end ? lens.periods[s.p] : "’" + String(lens.periods[s.p]).slice(-2) });
+  });
+  const near = (late) => marks.filter((m) => m.late === late).map((m) => lens.isEntry(m.id) ? link(lens.words[m.id]) : lens.words[m.id]);
+  const node = el(`<div class="path-plate"><div class="legend"><span><i class="early"></i>${t("near_early", lens.periods[steps[0].p])}</span>
+    <span><i class="late"></i>${t("near_late", lens.periods[steps.at(-1).p])}</span><span><i class="route-key"></i>${t("path_key")}</span></div>
+    <div class="path-body"><svg viewBox="0 0 ${W} ${H}" width="${W}" role="img" aria-label="${t("path")}">
     <defs><marker id="head" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--route)"/></marker></defs>
     ${marks.map((m) => `<line class="leader" x1="${m.x}" y1="${m.y}" x2="${m.lx}" y2="${m.ly}"/><circle class="island ${m.late ? "late" : ""}" cx="${m.x}" cy="${m.y}" r="5"/>`).join("")}
     <path class="casing" d="${d}"/><path class="route-line draw" pathLength="1" marker-end="url(#head)" d="${d}"/>
     ${steps.map((s, k) => `<circle class="route-step" data-k="${k}" cx="${s.x}" cy="${s.y}" r="4.5"><title>${lens.periods[s.p]}</title></circle>`).join("")}
+    ${years.map((v) => `<text class="route-year" x="${v.tx.toFixed(1)}" y="${v.ty.toFixed(1)}" text-anchor="middle">${v.text}</text>`).join("")}
     ${marks.map((m) => `<text class="island-label" data-word="${escape(lens.words[m.id])}" x="${m.lx + (m.right ? 4 : -4)}" y="${m.ly + 4}" text-anchor="${m.right ? "start" : "end"}">${lens.words[m.id]}</text>`).join("")}
     <circle class="ship" r="9" cx="${steps[0].x}" cy="${steps[0].y}"/><text class="when-label" text-anchor="middle"></text>
-  </svg></div>`);
+  </svg>${beside ? `<aside class="path-near"><h3><i class="early"></i>${lens.periods[steps[0].p]}</h3><p>${near(false).join(", ")}</p>
+    <h3><i class="late"></i>${lens.periods[steps.at(-1).p]}</h3><p>${near(true).join(", ")}</p></aside>` : ""}</div></div>`);
   const ship = node.querySelector(".ship"), label = node.querySelector(".when-label");
   const figure = { node, labels: steps.map((s) => lens.periods[s.p]) };
   figure.show = (k) => {
@@ -889,6 +902,8 @@ async function wordPage(word, opened) {
       ${same.size ? t("also_written", [...same].map(link).join(", ")) : ""}</p>`;
   }
   if (NOTES[word]) notes += `<p class="note">${NOTES[word][language]}</p>`;
+  // What the word is, in one line, where a reader may not know (text.js, GLOSS).
+  if (gloss(word)) notes = `<p class="gloss">${escape(gloss(word))}</p>` + notes;
   view.replaceChildren(pageHead(escape(word), { kicker: named ? `<span class="dot ${kind}"></span>${t("name")}${kind === "other" ? "" : ` · ${t("kind_one_" + kind)}`}` : t("word"), cls: "word-title",
     more: notes && `<div class="head-notes">${notes}</div>`, sea: wordSea(all.find((lens) => lens.lens === MAIN), word) }));
   if (!found.length) {
@@ -1294,7 +1309,7 @@ function sharer(label, what, cls = "") {
   summary.addEventListener("pointerdown", ready);
   summary.addEventListener("focus", ready);
   summary.addEventListener("click", (e) => {
-    const { title, url, image } = what();
+    const { title, url, image, embed } = what();
     if (!box.open && navigator.share) {
       e.preventDefault();
       const data = { title, text: t("share_text", title), url }, file = image && sharedImage(...image).file;
@@ -1308,6 +1323,9 @@ function sharer(label, what, cls = "") {
       .map(([name, to]) => el(`<li><a href="${to}" target="_blank" rel="noopener">${name}</a></li>`)),
       el(`<li><a href="mailto:?subject=${said}&amp;body=${u}">${t("email")}</a></li>`), el("<li></li>"));
     box.querySelector("li:last-child").append(copier(t("copy_link"), () => url));
+    // Where a figure can stand on another site: the code of a frame that shows it (embedPage), to copy.
+    if (embed) box.querySelector("ul").append(el("<li></li>")), box.querySelector("li:last-child").append(copier(t("copy_embed"),
+      () => `<iframe src="${embed}" title="${escape(`${title} · Jejak Kata`)}" width="100%" height="700" style="border:0;max-width:760px" loading="lazy"></iframe>`));
   });
   return box;
 }
@@ -1315,14 +1333,28 @@ function sharer(label, what, cls = "") {
 document.addEventListener("click", (e) => document.querySelectorAll("details.share[open]").forEach((box) => box.contains(e.target) || (box.open = false)));
 addEventListener("keydown", (e) => e.key === "Escape" && document.querySelectorAll("details.share[open]").forEach((box) => ((box.open = false), box.firstElementChild.focus())));
 
-/** Buttons under a figure: save it as an image (a plate), share it (`share`: what sharer() is given), copy its
- *  address, and where to check it. */
-function tools(address, { image, check = [], data, share } = {}) {
+/** A table (rows of cells, the first the header) as CSV text: numbers as they are, text quoted where it must be. */
+const csv = (rows) => rows.map((row) => row.map((v) => (v === null || v === undefined ? "" : typeof v === "number" ? String(v) : /[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v)).join(",")).join("\n") + "\n";
+
+/** Buttons under a figure: save it as an image (a plate), download the numbers it draws as CSV (`table()`: what the
+ *  figure loaded, plate.js), share it (`share`: what sharer() is given), copy its address, and where to check it. */
+function tools(address, { image, table, check = [], data, share } = {}) {
   const row = el(`<div class="controls tools"></div>`);
   if (image) {
     const save = el(`<button type="button">${t("save_image")}</button>`);
     save.addEventListener("click", () => savePlate(typeof image === "function" ? image() : image, "jejak-kata"));
     row.append(save);
+  }
+  if (table) {
+    const get = el(`<button type="button">${t("save_csv")}</button>`);
+    get.addEventListener("click", () => {
+      const rows = table();
+      if (!rows) return;
+      const url = URL.createObjectURL(new Blob([csv(rows)], { type: "text/csv;charset=utf-8" }));
+      Object.assign(document.createElement("a"), { href: url, download: "jejak-kata.csv" }).click();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    });
+    row.append(get);
   }
   if (share) row.append(sharer(t("share"), share));
   row.append(copier(t("copy_link"), () => whole(typeof address === "function" ? address() : address)));
@@ -1403,9 +1435,10 @@ addEventListener("scrollend", () => voyage?.arrived());
  * what the data cannot tell. The cover and the stages are laid out before any figure is drawn, so nothing moves
  * once it is on screen; each figure is then drawn at the size its stage has.
  */
-async function storyPage(slug, scene, step) {
+async function storyPage(slug, scene, step, more) {
   if (!slug) return storiesPage();
   if (!STORIES.some((s) => s.slug === slug)) return lostPage();
+  if (scene === EMBED) return embedPage(slug, step, more);
   // Laid out full width from the first frame (index.html says so too), also while the plates and the story's body
   // (story.js: its intro, limits and scenes; the cards need only text.js) are on their way.
   view.classList.add("voyage");
@@ -1424,9 +1457,10 @@ async function storyPage(slug, scene, step) {
   const shared = () => ({ title: words.title, url: whole(href("cerita", slug)) });
   cover.querySelector(".begin").after(sharer(t("share"), shared, "on-deep"));
   stages.forEach((s, k) => s.stage.querySelector(".stage-meta").append(sharer(`${SHARE_MARK}<span class="hidden">${t("share_step")}</span>`,
-    () => ({ title: words.title, url: whole(href("cerita", slug, String(k), String(s.on()))), image: [s.room, s.on()] }), "step")));
+    () => ({ title: words.title, url: whole(href("cerita", slug, String(k), String(s.on()))), image: [s.room, s.on()], embed: whole(href("cerita", slug, "embed", String(k), String(s.on()))) }), "step")));
   const landing = el(`<section class="landing">${tideLine()}<div class="limits"><h2>${t("limits_title")}</h2>${words.limits}</div></section>`);
-  landing.append(tools(() => href("cerita", slug, String(last)), { image: () => stages[last].room, share: shared, check: [...new Set(parts.flatMap((part) => part.check || []))],
+  landing.append(tools(() => href("cerita", slug, String(last)), { image: () => stages[last].room, table: () => stages[last].figure()?.table?.(),
+    share: () => ({ ...shared(), embed: whole(href("cerita", slug, "embed", String(last), String(stages[last].on()))) }), check: [...new Set(parts.flatMap((part) => part.check || []))],
     data: [...new Set(parts.map((part) => (part.type === "asked" ? `pages/${part.name}.json` : SCENE_DATA[part.type])).filter(Boolean))] }),
     cite(story, whole(href("cerita", slug))),
     el(`<a class="card next-story" href="${href("cerita", next.slug)}"><span class="kicker">${t("next_story")}</span><b class="card-title">${next[language].title}</b><span class="card-text">${next[language].teaser}</span></a>`),
@@ -1506,6 +1540,43 @@ async function storyPage(slug, scene, step) {
     stages[k].hold(made);
     frame();  // a strip that slides takes its place
   }));
+}
+
+/**
+ * One figure of a story, framed for another site (an iframe): the plate of scene k at step j, its caption, the steps
+ * to move through, and the way to the story itself. No header, no footer; it fills the frame it is given. Its
+ * address names the story as its canonical address (address.js), and the generated page says so too.
+ */
+async function embedPage(slug, k = "0", j = "0") {
+  document.documentElement.classList.add("embedded");
+  view.classList.add("embed");
+  const story = (await Promise.all([import("./story.js"), plating()]))[0].STORIES.find((s) => s.slug === slug), words = story[language];
+  const part = story.scenes[+k] || story.scenes[(k = "0")], n = part.steps.length, open = (at) => whole(href("cerita", slug, String(k), String(at)));
+  const box = el(`<article class="embed-box"><h1 class="embed-title"><a href="${open(0)}" target="_top">${words.title}</a></h1><div class="embed-figure"></div><div class="embed-caption" aria-live="polite"></div>
+    <p class="embed-foot"><button type="button" class="step back" aria-label="${t("step_back")}">‹</button><span class="count"></span><button type="button" class="step on" aria-label="${t("step_on")}">›</button>
+      <a class="embed-open" href="${open(0)}" target="_top">${t("embed_open")} →</a></p></article>`);
+  view.replaceChildren(box);
+  const room = box.querySelector(".embed-figure"), caption = box.querySelector(".embed-caption"), count = box.querySelector(".count"), link = box.querySelector(".embed-open");
+  const width = Math.min(760, room.clientWidth), height = Math.max(240, innerHeight - box.offsetHeight - 120);
+  const figure = await SCENES[part.type](part, width, height).catch(() => null);
+  if (!figure) return room.append(el(`<p class="sub">${t("no_data")}</p>`));
+  room.append(figure.node);
+  const head = (at) => dash(part.steps[at - 1].head ?? part.steps[at - 1].mark ?? part.steps[at - 1].at);
+  const go = (at) => {
+    at = Math.max(0, Math.min(n, at));
+    const step = part.steps[Math.max(0, at - 1)], i = figure.labels.indexOf(step.at);
+    if (i >= 0) figure.show(i, at ? step.focus : undefined, step.mark);
+    caption.innerHTML = at ? `<p><b>${head(at)}.</b> ${part.steps[at - 1][language]}</p>` : `<p><b>${part[language].title}.</b> ${part[language].text || ""}</p>`;
+    count.textContent = at ? `${at} / ${n}` : t("steps_n", n);
+    link.href = open(at);
+    box.querySelector(".back").disabled = !at;
+    box.querySelector(".on").disabled = at === n;
+    history.replaceState(history.state, "", href("cerita", slug, EMBED, String(k), String(at)));
+    j = at;
+  };
+  box.querySelector(".back").addEventListener("click", () => go(+j - 1));
+  box.querySelector(".on").addEventListener("click", () => go(+j + 1));
+  go(+j || 0);
 }
 
 /**
@@ -1718,7 +1789,35 @@ async function portraitPage(word) {
     el(`<ul class="links"><li><a href="${href("lingkaran", word)}">${t("play_lingkaran")}</a></li><li><a href="${href("redaksi", word)}">${t("play_redaksi")}</a></li></ul>`), tools(href("potret", word), { check: [word] }));
 }
 
-/** Two games: name the year from its own words; name the person or institution from its verbs and adjectives. */
+/** A game's voyage, one port per round: answered right (filled in the route's colour), wrong (a ring), the round on
+ *  now (the ship) and those to come (small dots); under each answered port, its answer. With `inline`, its colours
+ *  are written into it, so that it can be saved as an image (plate.js reads no stylesheet). */
+function voyageMark(results, rounds, { inline = false, width = 300 } = {}) {
+  const W = width, H = 92, x = (k) => 16 + ((W - 32) * k) / Math.max(1, rounds - 1), y = (k) => 38 + 10 * Math.sin(k * 1.3);
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(), c = (name, attr) => (inline ? ` ${attr}="${css(name)}"` : "");
+  const path = [...Array(rounds)].map((_, k) => `${k ? "L" : "M"}${x(k).toFixed(1)},${y(k).toFixed(1)}`).join("");
+  const done = results.length, sailed = [...Array(Math.max(1, done))].map((_, k) => `${k ? "L" : "M"}${x(k).toFixed(1)},${y(k).toFixed(1)}`).join("");
+  return `<svg class="voyage-mark" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">
+    <path class="sea-line" d="${path}" fill="none" stroke-dasharray="2 4"${c("--line-2", "stroke")}/>${done > 1 ? `<path class="sailed" d="${sailed}" fill="none" stroke-width="3" stroke-linecap="round"${c("--route", "stroke")}/>` : ""}
+    ${[...Array(rounds)].map((_, k) => {
+      const r = results[k], cls = !r ? (k === done ? "now" : "next") : r.ok ? "right" : "wrong";
+      const fill = { right: c("--route", "fill"), wrong: c("--chart-2", "fill"), now: c("--ink", "fill"), next: c("--line-2", "fill") }[cls], stroke = cls === "wrong" ? c("--ink", "stroke") : "";
+      return `<circle class="${cls}" cx="${x(k).toFixed(1)}" cy="${y(k).toFixed(1)}" r="${{ right: 7, wrong: 6, now: 8, next: 3.5 }[cls]}"${fill}${stroke}${cls === "wrong" ? ' stroke-width="2"' : ""}/>
+        ${r ? `<text x="${x(k).toFixed(1)}" y="${(y(k) + 26).toFixed(1)}" text-anchor="middle" style="font-size:11px;font-weight:700"${c(r.ok ? "--ink" : "--ink-3", "fill")}>${escape(String(r.label))}</text>` : ""}`;
+    }).join("")}</svg>`;
+}
+
+/** A finished game as a plate to save and share: its score as the title, its voyage, the site's name. */
+function scorePlate(title, results, rounds) {
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(), W = 640, H = 196;
+  return el(`<div class="plate"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${escape(title)}" style="font-family:${css("--type").replace(/"/g, "'")}">
+    <rect width="${W}" height="${H}" fill="${css("--paper")}"/><text x="16" y="38" style="font-size:24px;font-weight:800;fill:${css("--ink")}">${escape(title)}</text>
+    <g transform="translate(10 62)">${voyageMark(results, rounds, { inline: true, width: W - 20 }).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g>
+    <text x="16" y="${H - 14}" style="font-size:12px;font-weight:700;fill:${css("--ink")}">Jejak Kata · zidan.dev/jejak-kata</text></svg></div>`);
+}
+
+/** Two games: name the year from its own words; name the person or institution from its verbs and adjectives. Each a
+ *  board: the round on paper, and beside it the game's voyage so far; at the end, the score as a plate to save. */
 async function quizPage() {
   const lens = await lensNamed(MAIN), { peaks } = await highlights(lens), ROUNDS = 8;
   const pick = (list, n) => [...list].sort(() => Math.random() - 0.5).slice(0, n);
@@ -1740,38 +1839,44 @@ async function quizPage() {
     },
   };
   view.replaceChildren(pageHead(t("nav_quiz"), { ...fromPlay(), lede: t("quiz_lede"), sea: { words: names } }));
-  const play = (kind) => {
-    const box = el(`<div class="quiz"></div>`);
-    let right = 0, round = 0;
+  const play = (kind, label) => {
+    const board = el(`<div class="quiz-board"><div class="quiz quiz-card"></div><aside class="quiz-log"><h3>${t("quiz_log")}</h3><div class="quiz-voyage"></div><p class="quiz-tally"></p></aside></div>`);
+    const box = board.querySelector(".quiz"), log = board.querySelector(".quiz-voyage"), tally = board.querySelector(".quiz-tally");
+    let results = [];
+    const sailed = () => ((log.innerHTML = voyageMark(results, ROUNDS)), (tally.textContent = t("quiz_tally", results.filter((r) => r.ok).length, results.length)));
     const next = async () => {
-      if (round === ROUNDS) {
+      sailed();
+      if (results.length === ROUNDS) {
+        const right = results.filter((r) => r.ok).length, plate = scorePlate(t("quiz_plate", label, right, ROUNDS), results, ROUNDS);
         box.innerHTML = `<p class="score">${t("quiz_score", right, ROUNDS)}</p>`;
         const again = el(`<button type="button" class="primary">${t("quiz_again")}</button>`), share = el(`<button type="button">${t("copy_link")}</button>`), row = el(`<p class="controls"></p>`);
-        again.addEventListener("click", () => ((right = round = 0), next()));
+        const save = el(`<button type="button">${t("quiz_save")}</button>`);
+        again.addEventListener("click", () => ((results = []), next()));
         share.addEventListener("click", async () => {
           await navigator.clipboard?.writeText(`${t("quiz_share", right, ROUNDS)} ${whole(href("kuis"))}`);
           share.textContent = t("copied");
         });
-        row.append(again, share);
-        return box.append(row);
+        save.addEventListener("click", async () => (await plating(), savePlate(box, "jejak-kata-kuis")));
+        row.append(again, save, share);
+        return box.append(plate, row);
       }
       const q = await games[kind]();
-      round++;
-      box.innerHTML = `<p class="step">${round} / ${ROUNDS}</p><p class="ask">${q.ask}</p>${q.clue}<p class="choices">${q.choices.map((c) => `<button type="button">${c}</button>`).join("")}</p><p class="verdict" role="status"></p>`;
+      box.innerHTML = `<p class="step">${results.length + 1} / ${ROUNDS}</p><p class="ask">${q.ask}</p>${q.clue}<p class="choices">${q.choices.map((c) => `<button type="button">${c}</button>`).join("")}</p><p class="verdict" role="status"></p>`;
       box.querySelectorAll(".choices button").forEach((b) =>
         b.addEventListener("click", () => {
           const ok = b.textContent === q.answer;
-          right += ok;
-          box.querySelectorAll(".choices button").forEach((x) => ((x.disabled = true), x.classList.toggle("right", x.textContent === q.answer)));
+          results.push({ ok, label: kind === "year" ? q.answer : q.answer.split(" ")[0] });
+          sailed();
+          box.querySelectorAll(".choices button").forEach((x) => ((x.disabled = true), x.classList.toggle("right", x.textContent === q.answer), x.classList.toggle("chosen", x === b && !ok)));
           box.querySelector(".verdict").innerHTML = `<span>${ok ? t("quiz_right") : t("quiz_wrong", q.answer)}</span> <button type="button" class="primary">${t("quiz_next")}</button>`;
           box.querySelector(".verdict button").addEventListener("click", next);
         }),
       );
     };
     next();
-    return box;
+    return board;
   };
-  view.append(switcher([t("quiz_year"), t("quiz_who")], (i) => play(i ? "who" : "year")));
+  view.append(switcher([t("quiz_year"), t("quiz_who")], (i) => play(i ? "who" : "year", t(i ? "quiz_who" : "quiz_year"))));
 }
 
 /** How it works, and what the planted-change test found each lens can see. */
@@ -1790,7 +1895,7 @@ async function stuckPage(word = "tersangka", k = "0", era = "2", kind = "p") {
     rows: ranked.slice(0, innerWidth > 760 ? 16 : 12).map((i) => ({ label: s.names[i], values: ERAS_SHOWN.map((_, q) => [share[i][q] === null ? null : share[i][q] / 1000]) })) }, Math.min(room(), 720), innerWidth > 760 ? 520 : 440);
   figure.show(p);
   const box = el(`<section></section>`);
-  box.append(figure.node, tools(to(word, k, era, kind), { image: box, data: `${OUTLETS[+k]}/stick.json` }));
+  box.append(figure.node, tools(to(word, k, era, kind), { image: box, table: figure.table, data: `${OUTLETS[+k]}/stick.json` }));
   const pick = el(`<p class="controls"><label>${t("stuck_word")} <select>${s.words.map((w) => `<option${w === word ? " selected" : ""}>${w}</option>`).join("")}</select></label></p>`);
   pick.querySelector("select").addEventListener("change", (e) => visit(to(e.target.value, k, era, kind)));
   view.replaceChildren(pageHead(t("play_menempel"), { ...fromPlay(), lede: t("stuck_lede"), sea: { words: [word, ...ranked.map((i) => s.names[i])] } }), pick,
@@ -1834,7 +1939,7 @@ async function roomsPage(name = "pdip") {
   const figure = strip({ title: t("rooms_plate", name), states: ERAS_SHOWN, series: OUTLET, rows: rows.map((w) => ({ label: w, values: ERAS_SHOWN.map((_, p) => OUTLETS.map((_, k) => value(w, k, p))) })),
     pages: (p) => t("pages_stuck", name, ERAS_SHOWN[p], OUTLET.map((o, k) => `${o} ${at[k] < 0 ? "–" : thousands(all[k].pages[at[k]][p])}`).join(", ")) }, Math.min(room(), 720), 440);
   const box = el(`<section></section>`);
-  box.append(played(figure), tools(href("redaksi", name), { image: box, check: [name], data: `${OUTLETS[0]}/stick.json` }));
+  box.append(played(figure), tools(href("redaksi", name), { image: box, table: figure.table, check: [name], data: `${OUTLETS[0]}/stick.json` }));
   view.append(box, el(`<p class="note">${t("rooms_note")}</p>`));
 }
 
@@ -1862,14 +1967,20 @@ async function guessPage() {
     const [q] = pool.splice(Math.floor(Math.random() * pool.length), 1);
     if (!rounds.some((r) => r.name === q.name || r.w === q.w)) rounds.push(q);
   }
-  const box = el(`<section class="quiz"></section>`);
-  view.replaceChildren(pageHead(t("play_tebak"), { ...fromPlay(), lede: t("guess_lede"), sea: { words: GUESS_WORDS } }), box);
+  // The round on paper; beside it the game's voyage: a port per round, filled where the guess came within ten.
+  const board = el(`<div class="quiz-board"><section class="quiz quiz-card"></section><aside class="quiz-log"><h3>${t("quiz_log")}</h3><div class="quiz-voyage"></div><p class="quiz-tally"></p></aside></div>`);
+  const box = board.querySelector(".quiz"), results = [], sailed = () => ((board.querySelector(".quiz-voyage").innerHTML = voyageMark(results, rounds.length)), (board.querySelector(".quiz-tally").textContent = `${score} / ${rounds.length * 100}`));
+  view.replaceChildren(pageHead(t("play_tebak"), { ...fromPlay(), lede: t("guess_lede"), sea: { words: GUESS_WORDS } }), board);
   let score = 0;
   const ask = (k) => {
+    sailed();
     if (k === rounds.length) {
       const said = t("guess_share", score, rounds.length * 100, whole(href("tebak")));
-      box.replaceChildren(el(`<p class="score">${score} / ${rounds.length * 100}</p>`), el(`<p>${t("guess_done")}</p>`), el(`<p class="controls"><button type="button">${t("copy_score")}</button><a role="button" class="primary" href="${href("tebak")}">${t("again")}</a></p>`));
-      box.querySelector("button").addEventListener("click", async (e) => (await navigator.clipboard?.writeText(said), (e.target.textContent = t("copied"))));
+      box.replaceChildren(el(`<p class="score">${score} / ${rounds.length * 100}</p>`), el(`<p>${t("guess_done")}</p>`), scorePlate(`${t("play_tebak")}: ${score} / ${rounds.length * 100}`, results, rounds.length),
+        el(`<p class="controls"><button type="button">${t("copy_score")}</button><button type="button">${t("quiz_save")}</button><a role="button" class="primary" href="${href("tebak")}">${t("again")}</a></p>`));
+      const [copy, save] = box.querySelectorAll(".controls button");
+      copy.addEventListener("click", async (e) => (await navigator.clipboard?.writeText(said), (e.target.textContent = t("copied"))));
+      save.addEventListener("click", async () => (await plating(), savePlate(box, "jejak-kata-tebak")));
       box.querySelector("a").addEventListener("click", (e) => (e.preventDefault(), guessPage()));
       return;
     }
@@ -1886,6 +1997,8 @@ async function guessPage() {
       slider.disabled = true;
       const won = Math.max(0, 100 - 4 * Math.abs(q.v - slider.value));
       score += won;
+      results.push({ ok: Math.abs(q.v - slider.value) <= 10, label: `+${won}` });
+      sailed();
       truth.hidden = false;
       truth.style.transform = `translateX(${q.v * (scale.clientWidth / 100)}px)`;
       verdict.hidden = false;
@@ -1896,8 +2009,14 @@ async function guessPage() {
   ask(0);
 }
 
+/** The things to play with: the first leads, on the deep, its mark drawn large and moving; the next two beside it;
+ *  the rest under "more", smaller. */
 async function playPage() {
-  view.replaceChildren(pageHead(t("nav_play"), { kicker: t("play_kicker", PLAY.length), lede: t("play_lede"), sea: { words: QUIZ_NAMES, count: 4 } }), el(playDoors()));
+  const [lead, ...rest] = PLAY;
+  view.replaceChildren(pageHead(t("nav_play"), { kicker: t("play_kicker", PLAY.length), lede: t("play_lede"), sea: { words: QUIZ_NAMES, count: 4 } }),
+    el(`<ul class="cards doors play-cards play-top"><li><a class="card play-card lead" href="${href(lead)}"><span class="kicker">${t("play_lead")}</span><svg class="play-mark" viewBox="0 0 64 44" width="192" height="132" aria-hidden="true">${PLAY_MARKS[lead]}</svg>
+      <b class="card-title">${t(`play_${lead}`)}</b><span class="card-text">${t(`play_${lead}_about`)}</span></a></li>${rest.slice(0, 2).map(playCard).join("")}</ul>`),
+    el(`<h2 class="cards-head">${t("play_more")}</h2>`), el(`<ul class="cards doors play-cards play-more">${rest.slice(2).map(playCard).join("")}</ul>`));
 }
 
 async function methodPage() {
@@ -1922,6 +2041,9 @@ history.scrollRestoration = "manual";
 const places = new Map();
 let rendering = false, first = true;
 addEventListener("scroll", () => rendering || menuOpen() || places.set(history.state?.id, scrollY), { passive: true });
+/** On a phone the footer's data and licence are folded (a line each, opened by a tap); from 900px they stand open. */
+const foldFoot = () => document.querySelectorAll(".foot-fold").forEach((d) => (d.open = matchMedia("(min-width: 900px)").matches));
+matchMedia("(min-width: 900px)").addEventListener("change", foldFoot);
 /** The header stays on screen at every width; a story's stage is held just below it, at its height. */
 const shell = () => document.documentElement.style.setProperty("--head", masthead.offsetHeight + "px");
 addEventListener("resize", shell);
@@ -1940,6 +2062,7 @@ function route() {
   const place = places.get(history.state.id) || 0;
   document.documentElement.lang = language;
   document.querySelectorAll("[data-t]").forEach((node) => (node.innerHTML = t(node.dataset.t)));
+  foldFoot();
   document.querySelectorAll(".masthead a[data-to]").forEach((a) => (a.setAttribute("href", href(...[a.dataset.to].filter(Boolean))), a.dataset.to && a.dataset.to === page ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
   const other = language === "id" ? "en" : "id", languageButton = document.getElementById("language");
   languageButton.textContent = other === "en" ? "English" : "Bahasa Indonesia";
@@ -1957,8 +2080,8 @@ function route() {
     for (const node of view.querySelectorAll(".gl")) node.sea?.end();  // the old page's seas let the GPU go
     // A story is laid out across the whole width and snaps to its steps; any other page is neither.
     voyage = null;
-    view.classList.remove("voyage", "home");
-    document.documentElement.classList.remove("voyaging");
+    view.classList.remove("voyage", "home", "embed");
+    document.documentElement.classList.remove("voyaging", "embedded");
     masthead.style.removeProperty("--voyage");
     if (!place) scrollTo(0, 0);
     return Promise.resolve((page ? pages[page] || lostPage : homePage)(...args))
@@ -2016,7 +2139,7 @@ function describe(page, args) {
   const tag = (selector, html) => document.head.querySelector(selector) || document.head.appendChild(el(html));
   tag('meta[name="description"]', '<meta name="description">').content = own?.description || lede?.textContent.replace(/\s+/g, " ").trim() || t("desc_home");
   // What a browser's own share button sends (Chrome on Android sends this, not the address bar).
-  tag('link[rel="canonical"]', '<link rel="canonical">').setAttribute("href", whole(href(...[page, ...args].filter(Boolean))));
+  tag('link[rel="canonical"]', '<link rel="canonical">').setAttribute("href", whole(href(...canonical([page, ...args]).filter(Boolean))));
 }
 
 // ---- the header: search, and below 900px the menu sheet ---------------------

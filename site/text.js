@@ -240,11 +240,11 @@ export const TEXT = {
     read_figure: "Cara membaca gambar ini",
     doc_title: "Jejak Kata: tiap kata punya pelayarannya",
     desc_home: "Peta 20 ribu kata bahasa Indonesia dan rute tiap kata dari masa ke masa, dihitung dari buku, berita, blog, dan abstrak ilmiah.",
-    desc_word: (w) => `Bagaimana kata “${w}” berganti teman dari masa ke masa: rutenya di peta kata, temannya, dan angka-angkanya.`,
-    desc_play: "Permainan dan alat dari data yang sama: tebak angkanya, kuis, balapan nama, tabel pasang surut.",
-    desc_findings: "Hal-hal yang ditemukan hitungan sendiri: siapa menggantikan siapa, kata yang datang lalu pergi.",
-    desc_method: "Sumber, ukuran, dan uji di balik Jejak Kata.",
-    desc_chart: "Seluruh kosakata sebuah sumber pada satu peta, dengan rute kata-kata pilihanmu.",
+    desc_word: (w) => `Bagaimana kata “${w}” berganti teman dari masa ke masa: rutenya di peta kata berita Kompas, teman-temannya, dan angka-angkanya di tiap sumber.`,
+    desc_play: "Permainan dan alat dari data yang sama: tebak angkanya, kuis, balapan nama, tabel pasang surut. Tidak satu pun dipilih dengan tangan.",
+    desc_findings: "Hal-hal yang ditemukan hitungan sendiri, tanpa daftar dari kami: kata yang bertukar teman, kata yang datang lalu pergi, dan yang datang untuk tinggal.",
+    desc_method: "Sumber, ukuran, dan uji di balik Jejak Kata: dari mana teksnya, bagaimana pergeseran kata dihitung, dan seberapa peka tiap sumber menurut ujinya.",
+    desc_chart: "Seluruh kosakata sebuah sumber pada satu peta: 20 ribu kata sebagai cahaya di laut malam, dengan rute sampai empat kata pilihanmu dari masa ke masa.",
     sail_one: "Berlayarkan:", nav_stories: "Cerita", nav_play: "Mainan", loading: "Memuat…", more_stories: "Cerita lain", next: "Berikutnya", again: "Main lagi",
     stories_lede: "Tiap cerita berangkat dari pertanyaan yang diperdebatkan orang, berbelok pada sesuatu yang ditemukan hitungan, dan berakhir pada apa yang tidak dapat dikatakan data. Semua angka adalah hitungan halaman yang dapat diperiksa.",
     play_lede: "Data yang sama, untuk dimainkan. Tidak satu pun dipilih dengan tangan.",
@@ -300,14 +300,14 @@ export const TEXT = {
     nav_method: "Cara",
     footer: `<div class="foot">
       <div class="foot-about"><p class="foot-brand">Jejak Kata</p><p>Bagaimana kata-kata bahasa Indonesia berganti teman dari masa ke masa, dihitung dari buku, berita, blog, dan abstrak ilmiah. Angka-angka di sini adalah ukuran statistik atas teks, bukan kamus.</p></div>
-      <div><h2>Data</h2><ul>
+      <details class="foot-fold"><summary><h2>Data</h2></summary><ul>
         <li>HathiTrust Extracted Features (CC BY 4.0)</li>
         <li>HPLT 3.0, dari Common Crawl dan Internet Archive (kemasan CC0; teksnya milik penerbit)</li>
         <li>OpenAlex (CC0)</li>
         <li>Judul artikel Wikipedia bahasa Indonesia (CC BY-SA 4.0) dan Wikidata (CC0)</li></ul>
-        <p>Yang diterbitkan hanya hitungan; tidak ada teks halaman.</p></div>
-      <div><h2>Lisensi dan kode</h2><p>Kode: MIT. Hitungan, ukuran, dan data situs ini: CC BY 4.0, dengan atribusi sumber di atas.</p>
-        <ul class="foot-links"><li><a href="https://github.com/lan666as/jejak-kata">Kode sumber</a></li><li><a href="https://github.com/lan666as/jejak-kata/tree/gh-pages/data">Data situs (JSON)</a></li><li><a href="#/metode">Cara kerja dan ujinya</a></li></ul></div>
+        <p>Yang diterbitkan hanya hitungan; tidak ada teks halaman.</p></details>
+      <details class="foot-fold"><summary><h2>Lisensi dan kode</h2></summary><p>Kode: MIT. Hitungan, ukuran, dan data situs ini: CC BY 4.0, dengan atribusi sumber di atas.</p>
+        <ul class="foot-links"><li><a href="https://github.com/lan666as/jejak-kata">Kode sumber</a></li><li><a href="https://github.com/lan666as/jejak-kata/tree/gh-pages/data">Data situs (JSON)</a></li><li><a href="#/metode">Cara kerja dan ujinya</a></li></ul></details>
     </div>`,
     skip: "Langsung ke isi", menu: "Menu", menu_close: "Tutup", search_open: "Cari", search_label: "Cari kata atau nama", nav_label: "Halaman utama",
     stories_kicker: (n) => `${n} cerita`, play_kicker: (n) => `${n} mainan`, findings_kicker: "Dihitung, bukan dipilih", method_kicker: "Sumber, ukuran, dan uji", method_title: "Cara kerja",
@@ -443,15 +443,15 @@ export const TEXT = {
     copied: "Tersalin",
     share: "Bagikan", share_step: "Bagikan langkah ini", share_label: "Bagikan ke", email: "Surel", share_text: (title) => `${title} — Jejak Kata`,
     cite: "Kutip", cite_copy: "Salin kutipan", cite_bibtex: "BibTeX",
-    seo_home: "Perubahan kata bahasa Indonesia dari masa ke masa | Jejak Kata",
-    seo_story: (title) => `${title}${title.length < 40 ? " · Cerita data" : ""} | Jejak Kata`,
+    seo_home: "Kata-kata bahasa Indonesia dari masa ke masa | Jejak Kata",
+    seo_story: (title) => [`${title} | Jejak Kata`, `${title} · Cerita data | Jejak Kata`, `${title} · Cerita data dari berita | Jejak Kata`, `Cerita: ${title}`, title],
     seo_stories: "Cerita data tentang kata dan berita Indonesia | Jejak Kata",
     seo_play: "Permainan dari data kata dan berita Indonesia | Jejak Kata",
-    seo_chart: "Peta 20 ribu kata bahasa Indonesia | Jejak Kata",
+    seo_chart: "Peta 20 ribu kata bahasa Indonesia dan rutenya | Jejak Kata",
     seo_findings: "Temuan: kata yang datang dan pergi di berita | Jejak Kata",
-    seo_method: "Cara kerja: sumber, ukuran, dan uji | Jejak Kata",
-    seo_game: (name) => `${name} · Permainan data | Jejak Kata`,
-    seo_word: (w) => `Kata “${w}” dari masa ke masa: temannya di berita | Jejak Kata`,
+    seo_method: "Cara kerja: sumber, ukuran, dan uji tiap angka | Jejak Kata",
+    seo_game: (name) => [`${name}: permainan dari data kata dan berita | Jejak Kata`, `${name}: permainan dari data berita | Jejak Kata`, `${name} · Permainan data | Jejak Kata`],
+    seo_word: (w) => [`Kata “${w}” dari masa ke masa: temannya di berita | Jejak Kata`, `“${w}” dari masa ke masa: temannya di berita | Jejak Kata`, `Kata “${w}” dan temannya dari masa ke masa | Jejak Kata`, `“${w}” dan temannya dari masa ke masa | Jejak Kata`, `Kata “${w}” dari masa ke masa | Jejak Kata`],
     word_company: (w, a, first, b, last) => `Di berita Kompas, “${w}” paling sering muncul bersama ${first} pada ${a}; pada ${b}, bersama ${last}.`,
     word_shift: (n, flag) => `Pergeserannya yang terbesar antara dua masa: ${n}${flag ? ", di atas ambang" : ""}.`,
     word_more: "Kata lain",
@@ -485,7 +485,7 @@ export const TEXT = {
     map_demo: (w) => `Contoh: rute “${w}”. Pilih kata sendiri untuk menggantinya.`,
     quiz_log: "Pelayaranmu", quiz_tally: (r, n) => `${r} benar dari ${n}`, quiz_save: "Simpan skornya sebagai gambar", quiz_plate: (game, r, n) => `Kuis Jejak Kata, “${game}”: ${r} dari ${n} benar`,
     save_csv: "Unduh datanya (CSV)", copy_embed: "Salin kode sematan", embed_open: "Baca ceritanya di Jejak Kata",
-    play_more: "Mainan lain", play_lead: "Mulai dari sini",
+    play_more: "Mainan lain", play_lead: "Mulai dari sini", path_key: "rute kata ini: satu titik tiap masa",
     not_found: "Kata ini tidak termasuk kata-kata tersering di sumber mana pun.",
     is_name: "Kata ini hampir selalu ditulis dengan huruf kapital dan tidak punya artikel di Wikipedia bahasa Indonesia, jadi dianggap nama diri yang bukan milik umum dan tidak ditampilkan.",
     no_data: "Data belum tersedia.",
@@ -514,11 +514,11 @@ export const TEXT = {
     read_figure: "How to read this figure",
     doc_title: "Jejak Kata: every word has its voyage",
     desc_home: "A chart of 20,000 Indonesian words and each word's route from period to period, counted in books, news, blogs and academic abstracts.",
-    desc_word: (w) => `How the word “${w}” changed the company it keeps: its route on the chart of words, its company, and its numbers.`,
-    desc_play: "Games and tools on the same data: guess the number, a quiz, a race of names, a tide table.",
-    desc_findings: "What the counting found by itself: who took whose place, words that came and went.",
-    desc_method: "The sources, measures and tests behind Jejak Kata.",
-    desc_chart: "A source's whole vocabulary on one chart, with the routes of the words you pick.",
+    desc_word: (w) => `How the word “${w}” changed the company it keeps over the years: its route on the chart of Kompas news, its company, and its numbers in each source.`,
+    desc_play: "Games and tools on the same data: guess the number, a quiz, a race of names, a tide table. Nothing in them is picked by hand.",
+    desc_findings: "What the counting found by itself, with no list from us: pairs of words that traded company, words that came and went, and words that came to stay.",
+    desc_method: "The sources, measures and tests behind Jejak Kata: where the text comes from, how a word's shift is counted, and how sensitive each source is to planted change.",
+    desc_chart: "A source's whole vocabulary on one chart: 20,000 words as lights on a night sea, with the routes of up to four words you pick, period by period.",
     sail_one: "Set sail:", nav_stories: "Stories", nav_play: "Play", loading: "Loading…", more_stories: "More stories", next: "Next", again: "Play again",
     stories_lede: "Each story starts from a question people argue about, turns on something the counting found, and ends on what the data cannot tell. Every number is a count of pages that can be checked.",
     play_lede: "The same data, to play with. Nothing is chosen by hand.",
@@ -574,14 +574,14 @@ export const TEXT = {
     nav_method: "Method",
     footer: `<div class="foot">
       <div class="foot-about"><p class="foot-brand">Jejak Kata</p><p>How Indonesian words changed the company they keep, counted in books, news, blogs and scholarly abstracts. The numbers here are statistics over text, not a dictionary.</p></div>
-      <div><h2>Data</h2><ul>
+      <details class="foot-fold"><summary><h2>Data</h2></summary><ul>
         <li>HathiTrust Extracted Features (CC BY 4.0)</li>
         <li>HPLT 3.0, from Common Crawl and the Internet Archive (packaging CC0; the text is the publishers')</li>
         <li>OpenAlex (CC0)</li>
         <li>Article titles of Indonesian Wikipedia (CC BY-SA 4.0) and Wikidata (CC0)</li></ul>
-        <p>Only counts are published; no page text.</p></div>
-      <div><h2>Licence and code</h2><p>Code: MIT. The counts, measures and data of this site: CC BY 4.0, with the attributions above.</p>
-        <ul class="foot-links"><li><a href="https://github.com/lan666as/jejak-kata">Source code</a></li><li><a href="https://github.com/lan666as/jejak-kata/tree/gh-pages/data">Site data (JSON)</a></li><li><a href="#/metode">How it works, and its tests</a></li></ul></div>
+        <p>Only counts are published; no page text.</p></details>
+      <details class="foot-fold"><summary><h2>Licence and code</h2></summary><p>Code: MIT. The counts, measures and data of this site: CC BY 4.0, with the attributions above.</p>
+        <ul class="foot-links"><li><a href="https://github.com/lan666as/jejak-kata">Source code</a></li><li><a href="https://github.com/lan666as/jejak-kata/tree/gh-pages/data">Site data (JSON)</a></li><li><a href="#/metode">How it works, and its tests</a></li></ul></details>
     </div>`,
     skip: "Skip to content", menu: "Menu", menu_close: "Close", search_open: "Search", search_label: "Look up a word or a name", nav_label: "Main pages",
     stories_kicker: (n) => `${n} stories`, play_kicker: (n) => `${n} things to play with`, findings_kicker: "Counted, not chosen", method_kicker: "Sources, measures and tests", method_title: "How it works",
@@ -718,14 +718,14 @@ export const TEXT = {
     share: "Share", share_step: "Share this step", share_label: "Share on", email: "Email", share_text: (title) => `${title} — Jejak Kata`,
     cite: "Cite", cite_copy: "Copy citation", cite_bibtex: "BibTeX",
     seo_home: "How Indonesian words changed over time | Jejak Kata",
-    seo_story: (title) => `${title}${title.length < 40 ? " · A data story" : ""} | Jejak Kata`,
+    seo_story: (title) => [`${title} | Jejak Kata`, `${title} · A data story | Jejak Kata`, `${title} · A data story on the news | Jejak Kata`, `Story: ${title}`, title],
     seo_stories: "Data stories on Indonesian words and news | Jejak Kata",
     seo_play: "Games from data on Indonesian words and news | Jejak Kata",
-    seo_chart: "A chart of 20,000 Indonesian words | Jejak Kata",
+    seo_chart: "A sea chart of 20,000 Indonesian words | Jejak Kata",
     seo_findings: "Findings: words that came and went in the news | Jejak Kata",
-    seo_method: "Method: sources, measures and tests | Jejak Kata",
-    seo_game: (name) => `${name} · A data game | Jejak Kata`,
-    seo_word: (w) => `The word “${w}” over time: its company in the news | Jejak Kata`,
+    seo_method: "How it works: sources, measures and tests | Jejak Kata",
+    seo_game: (name) => [`${name}: a game on Indonesian words and news | Jejak Kata`, `${name}: a game on Indonesian news | Jejak Kata`, `${name}: a game on the news | Jejak Kata`, `${name} · A data game | Jejak Kata`],
+    seo_word: (w) => [`The word “${w}” over time: its company in the news | Jejak Kata`, `“${w}” over time: its company in the news | Jejak Kata`, `The word “${w}” and its company over time | Jejak Kata`, `The word “${w}” over time | Jejak Kata`],
     word_company: (w, a, first, b, last) => `In Kompas news, “${w}” appeared most often with ${first} in ${a}; in ${b}, with ${last}.`,
     word_shift: (n, flag) => `Its largest shift between two periods: ${n}${flag ? ", above the flag" : ""}.`,
     word_more: "Other words",
@@ -759,7 +759,7 @@ export const TEXT = {
     map_demo: (w) => `An example: the route of “${w}”. Choose a word of your own to replace it.`,
     quiz_log: "Your voyage", quiz_tally: (r, n) => `${r} right of ${n}`, quiz_save: "Save your score as an image", quiz_plate: (game, r, n) => `Jejak Kata quiz, “${game}”: ${r} of ${n} right`,
     save_csv: "Download the data (CSV)", copy_embed: "Copy embed code", embed_open: "Read the story on Jejak Kata",
-    play_more: "More to play with", play_lead: "Start here",
+    play_more: "More to play with", play_lead: "Start here", path_key: "this word's route: a port for each period",
     not_found: "This word is not among the most common words of any source.",
     is_name: "This word is almost always capitalised and has no article on Indonesian Wikipedia, so it is treated as a private name and not shown.",
     no_data: "The data is not available yet.",

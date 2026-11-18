@@ -1,7 +1,8 @@
 // node tests/site/meta.mjs [<built>]   The site as link previews and search engines see it. Serves the published site
 // (publish.mjs's output over site/; built into a temporary folder when none is given) under /jejak-kata/ as GitHub
 // Pages does (a folder without its slash is sent to it; any other missing path gets 404.html, with status 404), then:
-// fetches every generated page with no script, as a crawler does, and checks its tags, its JSON-LD (the properties
+// fetches every generated page with no script, as a crawler does, and checks its tags (a title of 50 to 60 characters
+// and a description of 120 to 160, each unique), its JSON-LD (the properties
 // Google requires of Article, BreadcrumbList and Dataset), its share image (JPEG, 1200x630, under 300 kB), canonical
 // and language twins that answer each other, unique titles and descriptions, its text, that every page is reached by
 // following links from the first; parses the sitemap and the feeds; and opens every page in the browser, where the
@@ -12,7 +13,7 @@ import { extname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { chromium } from "playwright-core";
 import { SITE, TEXT } from "../../site/text.js";
-import { address, named } from "../../site/address.js";
+import { address, named, TITLE, DESCRIPTION } from "../../site/address.js";
 import { publish, ROUTES } from "./publish.mjs";
 
 const SRC = new URL("../../site/", import.meta.url).pathname, ROOT = new URL(SITE.url).pathname, LANGUAGES = ["id", "en"];
@@ -66,8 +67,9 @@ for (const parts of ROUTES) for (const lang of LANGUAGES) {
   const title = html.match(/<title>([^<]*)<\/title>/g) || [];
   check(title.length === 1, `${name}: ${title.length} titles`);
   const t = attr(`<x a="${(title[0] || "").replace(/<\/?title>/g, "")}">`, "a"), d = one("description");
-  check(t?.length >= 25 && t.length <= 72 && t.endsWith("| Jejak Kata"), `${name}: title "${t}" (${t?.length})`);
-  check(d?.length >= 40 && d.length <= 170, `${name}: description (${d?.length})`);
+  // What a search engine shows whole (address.js): a title of 50 to 60 characters, a description of 120 to 160.
+  check(t?.length >= TITLE[0] && t.length <= TITLE[1], `${name}: title "${t}" (${t?.length}, not ${TITLE.join("–")})`);
+  check(d?.length >= DESCRIPTION[0] && d.length <= DESCRIPTION[1], `${name}: description (${d?.length}, not ${DESCRIPTION.join("–")})`);
   check(!html.includes("noindex"), `${name}: noindex`);
   (titles.get(t) || titles.set(t, []).get(t)).push(name);
   (descriptions.get(d) || descriptions.set(d, []).get(d)).push(name);
@@ -127,6 +129,13 @@ for (const lang of LANGUAGES) {
   check(await parse(atom) && (atom.match(/<entry>/g) || []).length === ROUTES.filter((r) => r[0] === "cerita" && r[1]).length, `${lang} feed.xml`);
   check(feed?.version === "https://jsonfeed.org/version/1.1" && feed.items?.length && feed.items.every((i) => i.id && absolute(i.url) && i.title && isDate(i.date_published)), `${lang} feed.json`);
 }
+// A story's frame for other sites: there, canonical to the story itself, and not in the sitemap (never found twice).
+const STORY_ROUTES = ROUTES.filter((r) => r[0] === "cerita" && r[1]);
+for (const [, slug] of STORY_ROUTES) for (const lang of LANGUAGES) {
+  const story = SITE.url + address(["cerita", slug], lang), url = SITE.url + address(["cerita", slug, "embed"], lang), res = await fetch(local(url)), html = await res.text();
+  const canonical = links(html, "canonical").map((l) => attr(l, "href"));
+  check(res.status === 200 && canonical.length === 1 && canonical[0] === story && !locs.includes(url), `${lang} embed of ${slug}: status ${res.status}, canonical ${canonical}`);
+}
 // Not found: a 404 that boots the app, and says not to index it.
 const lost = await fetch(`${host}${ROOT}tidak/ada/`), lostHtml = await lost.text();
 check(lost.status === 404 && lostHtml.includes("noindex") && lostHtml.includes("app.js"), `404: status ${lost.status}`);
@@ -155,6 +164,15 @@ for (const [from, to, h1] of [[`#/cerita/oknum`, "cerita/oknum/", null], [`#/cer
   check(seen.at === to && (!h1 || seen.h1 === h1), `old address ${from}: ${JSON.stringify(seen)}`);
   await p.close();
 }
+// The frame opens on its step, with the plate and caption and no header.
+const frame = await (await browser.newContext({ viewport: { width: 720, height: 620 } })).newPage(), frameErrors = [];
+frame.on("pageerror", (e) => frameErrors.push(e.message));
+await frame.goto(`${host}${ROOT}en/cerita/oknum/embed/#/1/2`);
+await frame.waitForSelector(".embed-figure .plate svg", { timeout: 20000 }).catch(() => {});
+const framed = await frame.evaluate(() => ({ plate: !!document.querySelector(".embed-figure .plate svg"), count: document.querySelector(".embed-foot .count")?.textContent, header: getComputedStyle(document.querySelector(".masthead")).display,
+  wide: document.documentElement.scrollWidth > innerWidth + 1, canonical: document.querySelector("link[rel=canonical]").href, link: document.querySelector(".embed-open")?.getAttribute("target") }));
+check(framed.plate && framed.count?.startsWith("2 /") && framed.header === "none" && !framed.wide && framed.canonical.endsWith("/en/cerita/oknum/") && framed.link === "_top" && !frameErrors.length, `embed in the browser: ${JSON.stringify(framed)} ${frameErrors[0] || ""}`);
+await frame.close();
 const step = await opened.newPage();
 await step.goto(`${host}${ROOT}cerita/oknum/#/1/2`);
 await step.waitForSelector(".stage .plate svg", { timeout: 20000 }).catch(() => {});

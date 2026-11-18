@@ -141,7 +141,10 @@ export function plate(spec, width, height) {
     });
   };
   show(n - 1);
-  return { node: made.node, labels: spec.periods, show };
+  // The numbers behind it, a row per period: what "download the data" writes (app.js, tools).
+  const table = () => [["period", ...spec.series.flatMap((x) => (x.off ? [x.label, `${x.label} ±`] : [x.label]))],
+    ...spec.periods.map((p, i) => [p, ...spec.series.flatMap((x) => (x.off ? [x.values[i], x.off[i]] : [x.values[i]]))])];
+  return { node: made.node, labels: spec.periods, show, table };
 }
 
 /**
@@ -198,7 +201,8 @@ export function strip(spec, width, height) {
     });
   };
   show(spec.states.length - 1);
-  return { node: made.node, labels: spec.states, show };
+  const table = () => [["row", "state", ...spec.series], ...spec.rows.flatMap((r) => spec.states.map((state, i) => [r.label, state, ...r.values[i]]))];
+  return { node: made.node, labels: spec.states, show, table };
 }
 
 /**
@@ -207,14 +211,16 @@ export function strip(spec, width, height) {
  */
 export function plates(labels, make) {
   const node = document.createElement("div"), made = labels.map((_, i) => make(i));
+  let shown = 0;
   node.className = "plates";
   node.append(...made.map((m) => m.node));
   const show = (i, focus, mark) => {
+    shown = i;
     made.forEach((m, k) => m.node.classList.toggle("off", k !== i));
     made[i].show(Math.max(0, mark === undefined ? made[i].labels.length - 1 : made[i].labels.indexOf(mark)), focus);
   };
   show(0);
-  return { node, labels, show };
+  return { node, labels, show, table: () => made[shown].table() };
 }
 
 let typeface; // the site's typeface as a data address, fetched when an image is first saved
