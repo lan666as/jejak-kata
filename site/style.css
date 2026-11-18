@@ -676,6 +676,10 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
   mask-image: radial-gradient(ellipse 60% 70% at 38% 50%, #000 20%, transparent 75%); }
 .stage { isolation: isolate; }  /* --fig: the figure's share on a phone, by need (app.js, share) */
 .stage-figure > * { grid-area: 1 / 1; max-width: 100%; }
+/* the stage is the deep in both schemes: its figure is drawn on it, in the night's inks (the dark scheme's own values;
+   plate.js reads them here, and saves the image on paper) */
+.stage-figure { --paper: transparent; --line: var(--line-deep); --ink: #e8eff0; --ink-2: #b3c3cc; --ink-3: #8497a3;
+  --cat-1: #ea5aa6; --cat-2: #d98a2b; --cat-3: #199e70; --cat-4: #c98500; --cat-5: #3987e5; --cat-6: #0ca30c; --cat-7: #9085e9; --cat-8: #e66767; --cat-9: #b3c3cc; }
 .stage-figure .plate svg { max-height: var(--fig, calc(var(--stage-h) / 2)); border-color: transparent; }
 .stage-figure .sub { color: var(--on-deep-2); }
 /* on a phone, a strip of more rows than its room keeps apart is drawn at its own height in a window of that room and
@@ -1078,7 +1082,7 @@ main.embed { min-height: 0; padding: var(--s4) var(--gutter); }
   .scene, .stage { background: none; color: #0c1d2e; }
   .stage { position: static; display: block; height: auto; padding: 0; }
   .stage-figure { height: auto; break-inside: avoid; }
-  .stage-figure .plate svg { max-height: none; border: 1px solid #cdd8d4; }
+  .stage-figure .plate svg { max-height: none; background: #0a1f36; print-color-adjust: exact; -webkit-print-color-adjust: exact; }  /* drawn in the night's inks */
   .beats { margin: 8pt 0 18pt; pointer-events: auto; }
   .beat { height: auto; break-inside: avoid; }
   .beat > .hidden { position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal; }

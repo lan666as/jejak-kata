@@ -3,7 +3,14 @@
 // travels) and `strip` (rows on one scale, dots that travel from one state to the next). Nothing is redrawn
 // when the moment changes: the marks move.
 
-const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+// A plate takes its inks from the page, or from the node it is drawn for (`inks`): a story's stage is the deep in both
+// schemes, and a plate on it is drawn in the night's inks on the stage itself (style.css, .stage-figure). Saved as an
+// image it is paper again, in the page's own inks (plateImage).
+let scope = document.documentElement;
+const css = (name, from = scope) => getComputedStyle(from).getPropertyValue(name).trim();
+const drawnOn = new WeakMap();  // a plate's svg -> the node whose inks it was drawn in, where that is not the page
+/** The plates made from now on take the inks of `node` (until it is called again with none). */
+export const inks = (node = document.documentElement) => (scope = node);
 // Up to nine series (the ninth in ink), each its own hue in light and dark (style.css, --cat-1..8: magenta first, then orange).
 const COLOURS = ["--cat-1", "--cat-2", "--cat-3", "--cat-4", "--cat-5", "--cat-6", "--cat-7", "--cat-8", "--cat-9"];
 const SITE = "Jejak Kata · zidan.dev/jejak-kata";
@@ -55,6 +62,7 @@ function sheet(spec, width, height, body, least = 0) {
   const ink = css("--ink"), soft = css("--ink-2"), paper = css("--paper");
   const node = document.createElement("div");
   node.className = "plate";
+  const page = document.documentElement;
   node.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${spec.title.replace(/"/g, "")}" style="font-family:${css("--type").replace(/"/g, "'")}">
     <rect width="${W}" height="${H}" fill="${paper}"/>
     <text y="${size + 6}" style="font-size:${size}px;font-weight:800;fill:${ink}">${lines.map((l, k) => `<tspan x="12" dy="${k ? size * 1.14 : 0}">${l}</tspan>`).join("")}</text>
@@ -70,7 +78,8 @@ function sheet(spec, width, height, body, least = 0) {
     node.querySelector(".note").innerHTML = rows.map((row, k) => `<tspan x="12" dy="${k ? 13 : -13 * (rows.length - 1)}">${row.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</tspan>`).join("");
   };
   note(spec.note || "");
-  return { node, svg: node.firstElementChild, W, H, narrow, top, note };
+  if (scope !== page) drawnOn.set(node.firstElementChild, scope);
+  return { node, svg: node.firstElementChild, W, H, narrow, top, note, hue: COLOURS.map((c) => css(c)), deep: css("--deep") };
 }
 
 /**
@@ -104,12 +113,12 @@ export function plate(spec, width, height) {
         <circle r="${narrow ? 5.5 : 6.5}" fill="${colour}" stroke="${paper}" stroke-width="2" style="${MOVE}"/><rect class="beacon" x="${W - R + 3}" rx="4" fill="${beacon}" opacity="0" style="${MOVE}"/><text x="${W - R + 9}" style="font-size:${tag}px;font-weight:700;fill:${ink};${MOVE}"></text></g>`;
     }).join("")}`;
   });
-  const marker = made.svg.querySelector(".marker"), groups = [...made.svg.querySelectorAll(".series")], { W } = made;
+  const marker = made.svg.querySelector(".marker"), groups = [...made.svg.querySelectorAll(".series")], { W, hue } = made, inked = css("--ink");
   /** A series' name (and value) after its dot, broken at spaces into as many lines as the column needs. */
   const name = (k, said) => {
     const dot = wide("● ", tag), room = R - 12 - dot, lines = [""];
     for (const word of said.split(" ")) wide((lines.at(-1) + " " + word).trim(), tag) > room && lines.at(-1) ? lines.push(word) : (lines[lines.length - 1] = (lines.at(-1) + " " + word).trim());
-    groups[k].querySelector("text").innerHTML = `<tspan fill="${css(COLOURS[k % COLOURS.length])}">● </tspan>` + lines.map((l, j) => `<tspan${j ? ` x="${W - R + 9 + dot}" dy="${tag + 2}"` : ""}>${escape(l)}</tspan>`).join("");
+    groups[k].querySelector("text").innerHTML = `<tspan fill="${hue[k % COLOURS.length]}">● </tspan>` + lines.map((l, j) => `<tspan${j ? ` x="${W - R + 9 + dot}" dy="${tag + 2}"` : ""}>${escape(l)}</tspan>`).join("");
     const pill = groups[k].querySelector(".beacon");
     pill.setAttribute("width", dot + Math.max(...lines.map((l) => wide(l, tag))) + 12);
     pill.setAttribute("height", (tag + 2) * lines.length + 6);
@@ -137,7 +146,7 @@ export function plate(spec, width, height) {
       // The number the caption names stands on the beacon: amber is the one number a figure wants you to see.
       at(pill, 0, (row ? row.at : T + 15 * k) + 4);
       pill.setAttribute("opacity", +named);
-      text.style.fill = css(named ? "--deep" : "--ink");
+      text.style.fill = named ? made.deep : inked;
     });
   };
   show(n - 1);
@@ -183,7 +192,7 @@ export function strip(spec, width, height) {
       <rect class="beacon" x="${W - R + 3}" y="${y(k) - 10}" height="20" rx="4" fill="${beacon}" opacity="0"/>
       <text class="value" x="${W - R + 8}" y="${y(k) + size * 0.35}" style="font-size:12px;font-weight:700;fill:${ink}"></text></g>`).join("")}`;
   }, stripLeast(spec.title, rows, width, spec.series, PITCH.floor));
-  const groups = [...made.svg.querySelectorAll(".row")], state = made.svg.querySelector(".state");
+  const groups = [...made.svg.querySelectorAll(".row")], state = made.svg.querySelector(".state"), inked = css("--ink");
   const show = (i, focus) => {
     state.textContent = spec.states[i];
     if (spec.pages) made.note(spec.pages(i));
@@ -197,7 +206,7 @@ export function strip(spec, width, height) {
       const named = !!focus?.includes(spec.rows[k].label) && known.length > 0;
       pill.setAttribute("width", wide(value.textContent, 12) + 10);
       pill.setAttribute("opacity", +named);
-      value.style.fill = css(named ? "--deep" : "--ink");
+      value.style.fill = named ? made.deep : inked;
     });
   };
   show(spec.states.length - 1);
@@ -223,6 +232,22 @@ export function plates(labels, make) {
   return { node, labels, show, table: () => made[shown].table() };
 }
 
+/** A plate drawn in the inks of `from` (a stage), in the page's inks instead: each ink it was drawn in, as written
+ *  (#hex, rgb() where a mark's style was set, transparent for the stage's paper), for the page's. */
+const INKS = ["--paper", "--ink", "--ink-2", "--ink-3", "--line", "--beacon", "--deep", ...COLOURS];
+function onPaper(text, from) {
+  if (!from) return text;
+  const swap = new Map();
+  for (const name of INKS) {
+    const night = css(name, from).toLowerCase(), day = css(name, document.documentElement);
+    if (!night || night === day.toLowerCase()) continue;
+    swap.set(night, day);
+    if (/^#[0-9a-f]{6}$/.test(night)) swap.set(`rgb(${[1, 3, 5].map((i) => parseInt(night.slice(i, i + 2), 16)).join(", ")})`, day);
+  }
+  const words = [...swap.keys()].map((k) => k.replace(/[()]/g, "\\$&"));
+  return words.length ? text.replace(new RegExp(words.join("|"), "gi"), (m) => swap.get(m.toLowerCase())) : text;
+}
+
 let typeface; // the site's typeface as a data address, fetched when an image is first saved
 
 /** The plate seen under `node` saved as a PNG file. */
@@ -234,14 +259,14 @@ export async function savePlate(node, name) {
 
 /** The plate seen under `node` as a PNG image (a Blob), twice its size on screen, in the site's own typeface. */
 export async function plateImage(node) {
-  const svg = node.querySelector(".plate:not(.off) svg").cloneNode(true), image = new Image();
+  const shown = node.querySelector(".plate:not(.off) svg"), svg = shown.cloneNode(true), image = new Image();
   typeface ||= fetch("bricolage.woff2").then((r) => r.blob()).then((blob) => new Promise((done) => Object.assign(new FileReader(), { onload: (e) => done(e.target.result) }).readAsDataURL(blob)));
   const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
   style.textContent = `@font-face{font-family:"Bricolage";src:url(${await typeface}) format("woff2");font-weight:200 800;font-stretch:75% 100%}`;
   svg.prepend(style);
   svg.querySelectorAll("[style]").forEach((n) => (n.style.transition = "none"));
   const [w, h] = [svg.width.baseVal.value, svg.height.baseVal.value];
-  image.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(svg));
+  image.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(onPaper(new XMLSerializer().serializeToString(svg), drawnOn.get(shown)));
   await image.decode();
   await document.fonts.ready;
   const canvas = Object.assign(document.createElement("canvas"), { width: 2 * w, height: 2 * h });

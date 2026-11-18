@@ -13,8 +13,8 @@ import { figureOf, focused, lensFrom, FELL, OUTLETS, OUTLET, PUBLISHER, said as 
 
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
 // cold on a phone, does without them. `plating()` resolves once these names are there.
-let plate, strip, plates, savePlate, plateImage, stripLeast, plated = null;
-const plating = () => (plated ||= import("./plate.js").then((m) => ({ plate, strip, plates, savePlate, plateImage, stripLeast } = m)));
+let plate, strip, plates, savePlate, plateImage, stripLeast, inks, plated = null;
+const plating = () => (plated ||= import("./plate.js").then((m) => ({ plate, strip, plates, savePlate, plateImage, stripLeast, inks } = m)));
 
 const DATA = "data";
 const STEPS = [2, 4, 7, 12, 20]; // shift boundaries of the colour steps
@@ -1168,7 +1168,7 @@ PLATE_NOTES.left = PLATE_NOTES.forget;
  * names, several of which one is seen. Its `show(i, focus, mark)` takes the step's focus as the step names it.
  */
 const ROOMY = 72;  // beside the caption a strip's rows stand at most this far apart: a strip of few rows is not stretched to the stage's height
-async function sceneFigure(scene, w, h) {
+async function sceneFigure(scene, w, h, on) {
   const f = await figureOf(scene, { json, lens: lensNamed, entry: entryOf }, language, { wide: innerWidth > 760 });
   const make = (p, k) => {
     const spec = { title: plateTitle(scene, p, k), pages: PLATE_NOTES[scene.type](f, scene, k, p) };
@@ -1178,7 +1178,9 @@ async function sceneFigure(scene, w, h) {
         innerWidth >= 900 ? Math.min(h, stripLeast(spec.title, p.rows.length, w, p.series, ROOMY)) : h);
     return { ...made, show: (i, focus) => made.show(i, focused(p, focus)) };
   };
-  return f.plates[0].name === null ? make(f.plates[0], 0) : plates(f.plates.map((p) => p.name), (k) => make(f.plates[k], k));
+  inks(on);  // on a stage (`on`), drawn in the night's inks
+  try { return f.plates[0].name === null ? make(f.plates[0], 0) : plates(f.plates.map((p) => p.name), (k) => make(f.plates[k], k)); }
+  finally { inks(); }
 }
 /** The rows and series of a scene drawn as a strip (plate.js), known before its data comes: what its stage must make
  *  room for. */
@@ -1597,7 +1599,7 @@ async function storyPage(slug, scene, step, more) {
   // The figures, each at the size of its stage, with the step each stage is on.
   if (innerWidth < 900) stages.forEach((s, k) => share(s, parts[k]));
   await Promise.all(parts.map(async (part, k) => {
-    const [w, h, zoom] = figureSize(stages[k].room), made = await sceneFigure(part, w, stages[k].tall || h).catch(() => null);
+    const [w, h, zoom] = figureSize(stages[k].room), made = await sceneFigure(part, w, stages[k].tall || h, stages[k].room).catch(() => null);
     if (!made) return stages[k].room.append(el(`<p class="sub">${t("no_data")}</p>`));
     made.node.querySelectorAll(".plate svg").forEach((svg) => (svg.style.width = svg.width.baseVal.value * zoom + "px"));
     stages[k].room.append(made.node);
