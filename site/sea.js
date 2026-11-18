@@ -168,7 +168,7 @@ void main() {
  * (0 at the top of the hero, 1 when the reader has scrolled out of it: seen from above, on paper), `still()` (draw one
  * frame and hold it), `describe(text)` (the canvas's text alternative).
  */
-export function nightSea({ chart, name, pick, periods, tip, label = "" }) {
+export function nightSea({ chart, name, pick, periods, tip, label = "", hold = false }) {
   const node = document.createElement("div");
   node.className = "chart night gl";
   node.innerHTML = `<canvas role="img" aria-label="${label}"></canvas><canvas aria-hidden="true"></canvas><div class="when" aria-hidden="true"></div><div class="tally" aria-hidden="true" hidden></div>`;
@@ -245,7 +245,7 @@ export function nightSea({ chart, name, pick, periods, tip, label = "" }) {
   });
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => ((colours = null), ask()));
 
-  let W = 0, H = 0, ratio = 1, quality = 1, wanted = null, pad = [0, 0, 0, 0], depth = 0, ready = false, waiting = [], held = still();
+  let W = 0, H = 0, ratio = 1, quality = 1, wanted = null, pad = [0, 0, 0, 0], depth = 0, ready = false, waiting = [], held = hold || still();
   // Where the camera looks (aim), as it glides there (from, to, start, ms), the ship it follows, and the nudge.
   const aim = { x: 0, z: 0, dist: 1.6, yaw: 0 }, glide = { from: null, to: null, start: 0, ms: 0 }, follow = { x: 0, z: 0 }, nudge = { x: 0, y: 0, to: [0, 0] };
   const cam = { eye: [0, 0, 0], R: [1, 0, 0], U: [0, 1, 0], F: [0, 0, -1], lens: [1, 1, 0, 0], pitch: 0, ref: 1, fog: [1, 8] };

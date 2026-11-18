@@ -1332,10 +1332,22 @@ function measured(section) {
   seen.observe(section);
 }
 
-/** An address that leads nowhere: said plainly, on the deep, with the ways back. */
-function lostPage() {
-  view.replaceChildren(el(`<section class="lost">${GRATICULE}<p class="cover-kicker">${t("lost_kicker")}</p><h1>${t("lost_title")}</h1><p class="deck">${t("lost_lede")}</p>
-    <p class="lost-ways"><a class="button primary" href="#/">${t("lost_home")}</a><a class="button" href="${href("cerita")}">${t("nav_stories")}</a><a class="button" href="${href("main")}">${t("nav_play")}</a><a class="button" href="${href("peta")}">${t("nav_chart")}</a></p></section>`));
+/** An address that leads nowhere: said plainly, on the deep, with the ways back. Behind it, where WebGL2 is there,
+ *  the night sea held still, with no route on it: every word on the chart, and not this page. */
+async function lostPage() {
+  const lost = el(`<section class="lost">${GRATICULE}<p class="cover-kicker">${t("lost_kicker")}</p><h1>${t("lost_title")}</h1><p class="deck">${t("lost_lede")}</p>
+    <p class="lost-ways"><a class="button primary" href="#/">${t("lost_home")}</a><a class="button" href="${href("cerita")}">${t("nav_stories")}</a><a class="button" href="${href("main")}">${t("nav_play")}</a><a class="button" href="${href("peta")}">${t("nav_chart")}</a></p></section>`);
+  view.replaceChildren(lost);
+  if (!window.WebGL2RenderingContext) return;
+  const [module, first] = await Promise.all([import("./sea.js"), json(`${MAIN}/first.json`), painted()]).catch(() => []);
+  const sea = first && lost.isConnected && module.nightSea({ chart: first, name: (id) => first.names[first.words.indexOf(id)], pick: (id) => (location.hash = href("kata", first.names[first.words.indexOf(id)])),
+    periods: first.periods, tip, label: t("sea_label"), hold: true });
+  if (!sea) return;
+  sea.node.classList.add("lost-sea");
+  lost.querySelector(".graticule").replaceWith(sea.node);
+  // The lights lie where the text is not: to its right on a wide screen, under it on a phone.
+  const box = lost.getBoundingClientRect();
+  sea.inset(innerWidth >= 900 ? [0, 0, 0, box.width * 0.55] : [box.height * 0.78, 0, 0, 0]);
 }
 
 /** Data that did not come: what happened and what to do, with a way to try again. */
@@ -1601,6 +1613,7 @@ function route() {
       .catch(failedPage)
       .then(() => {
         describe(page, args);
+        settle();
         if (place) scrollTo(0, voyage?.place() ?? place);
         rendering = false;
       });
@@ -1611,6 +1624,29 @@ function route() {
   else document.startViewTransition(() => Promise.race([render(), new Promise((done) => setTimeout(done, 240))]));
   first = false;
 }
+
+/** Key numbers settle into place once, as they first come into view; with reduced motion they are simply there. */
+const settling = new IntersectionObserver((list) => list.forEach((e) => e.isIntersecting && (settling.unobserve(e.target), e.target.classList.add("in"))), { rootMargin: "0px 0px -8% 0px" });
+function settle() {
+  if (still()) return;
+  for (const node of view.querySelectorAll(".key-number, .measure-number")) {
+    if (node.getBoundingClientRect().top < innerHeight) continue;  // on screen at once: already in place
+    node.classList.add("settle");
+    settling.observe(node);
+  }
+}
+
+// A large story card leans towards the mouse, a few degrees, and a glint crosses its key number.
+addEventListener("pointermove", (e) => {
+  const card = e.pointerType === "mouse" && e.target.closest?.(".story-card.large");
+  for (const other of document.querySelectorAll(".story-card.leaning")) if (other !== card) (other.classList.remove("leaning"), other.style.removeProperty("--rx"), other.style.removeProperty("--ry"));
+  if (!card || still()) return;
+  const box = card.getBoundingClientRect(), x = (e.clientX - box.left) / box.width, y = (e.clientY - box.top) / box.height;
+  card.classList.add("leaning");
+  card.style.setProperty("--ry", `${((x - 0.5) * 5).toFixed(2)}deg`);
+  card.style.setProperty("--rx", `${((0.5 - y) * 4).toFixed(2)}deg`);
+  card.style.setProperty("--gx", `${Math.round(x * 140 - 20)}%`);
+}, { passive: true });
 
 /** The window's title and the page's description, from what the page shows: its title and its lede. */
 function describe(page, args) {

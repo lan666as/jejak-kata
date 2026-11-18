@@ -197,7 +197,8 @@ h2:first-child { margin-top: var(--s6); }
 /* buttons: secondary by default, .primary, .quiet */
 button, .button, a[role="button"] { display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); min-height: var(--tap); padding: 0 var(--s4);
   font: 600 var(--t-small)/1.2 var(--type); color: var(--ink); text-decoration: none; background: transparent; border: var(--hair) solid var(--line-2); border-radius: var(--r1); cursor: pointer;
-  transition: background-color var(--d-press) var(--sail), border-color var(--d-press) var(--sail), color var(--d-press) var(--sail); }
+  transition: background-color var(--d-press) var(--sail), border-color var(--d-press) var(--sail), color var(--d-press) var(--sail), transform var(--d-press) var(--sail); }
+button:active:not(:disabled), .button:active, a[role="button"]:active, .chip:active { transform: translateY(1px) scale(.985); }  /* one press for every control */
 button:hover, .button:hover, a[role="button"]:hover { border-color: var(--ink-2); background: var(--chart-2); }
 button:disabled { cursor: default; opacity: .6; }
 button:disabled:hover { border-color: var(--line-2); background: transparent; }
@@ -655,6 +656,16 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .story-card.large:hover { border-color: var(--on-deep-2); }
 .story-card.large .key { border-color: var(--line-deep); }
 .story-card.large .key-number { font-size: var(--t-key); color: var(--beacon); }
+/* A large card leans a little towards a mouse (app.js sets --rx, --ry) and a glint crosses its number (--gx). */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .story-card.large { transform: perspective(60rem) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform var(--d-turn) var(--sail), border-color var(--d-press) var(--sail); }
+  .story-card.large.leaning { transition: transform var(--d-press) linear, border-color var(--d-press) var(--sail); }
+  .story-card.large.leaning .key-number { background: linear-gradient(100deg, var(--beacon) calc(var(--gx) - 14%), color-mix(in srgb, var(--beacon) 45%, var(--on-deep)) var(--gx), var(--beacon) calc(var(--gx) + 14%));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+}
+/* Key numbers settle into place once, when they first come into view (app.js adds .settle, then .in). */
+.settle { opacity: 0; transform: translateY(.18em); }
+.settle.in { opacity: 1; transform: none; transition: opacity var(--d-leg) var(--sail), transform var(--d-leg) var(--sail); }
 .story-card.large .key-label { color: var(--on-deep-2); }
 .story-card.large .card-title { color: var(--on-deep); }
 .story-card.large .card-text { color: var(--on-deep-2); }
@@ -699,11 +710,14 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .lost .deck { margin: 0 0 var(--s6); font-size: var(--t-lede); line-height: var(--l-lede); color: var(--on-deep-2); }
 .lost .cover-kicker { margin-top: 0; }
 .lost-ways { display: flex; flex-wrap: wrap; gap: var(--s3); max-width: none; margin: 0; }
-.lost-ways .button:not(.primary) { color: var(--on-deep); border-color: var(--line-deep-2); }
+.lost-ways .button:not(.primary) { color: var(--on-deep); background: var(--deep); border-color: var(--line-deep-2); }
 .lost-ways .button:not(.primary):hover { background: var(--deep-2); border-color: var(--on-deep); }
 .lost-ways .primary { color: var(--deep); background: var(--route-on-deep); border-color: var(--route-on-deep); }
 .lost-ways .primary:hover { border-color: var(--on-deep); }
 @media (min-width: 900px) { .lost { padding: var(--s9) var(--s8) var(--s8); } }
+.lost .lost-sea { position: absolute; inset: 0; z-index: -1; height: 100%; background: none; border: 0; border-radius: 0; opacity: .7; }  /* the night sea, still, with no route on it */
+.lost .lost-sea .when, .lost .lost-sea .tally { display: none; }
+.lost::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(to right, var(--deep) 20%, color-mix(in srgb, var(--deep) 40%, transparent) 70%, transparent); }
 
 /* a word's own pages: the word is the subject, set in display type; its notes quiet, beside a rule */
 .page-head h1.word-title { letter-spacing: 0; font-size: var(--t-display); line-height: var(--l-display); max-width: none; overflow-wrap: anywhere; }
