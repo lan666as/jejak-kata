@@ -1114,7 +1114,8 @@ main.embed { min-height: 0; padding: var(--s4) var(--gutter); }
 .cover .share .share-to { top: auto; bottom: calc(100% + var(--s2)); }  /* opens upward, over the deck: below lies the cover's edge */
 .cover .share > summary { min-height: calc(var(--tap) + var(--s2)); color: var(--on-deep); background: var(--deep); border-color: var(--line-deep-2); }
 .cover .share > summary:hover { background: var(--deep-2); border-color: var(--on-deep); }
-.stage-meta .count { margin-left: auto; }
+.stage-meta .count { margin-left: auto; white-space: nowrap; }
+.stage-part { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }  /* the scene, named: the one count is the step's */
 .share.step > summary { width: var(--s6); height: var(--s5); min-height: 0; margin: calc(-1 * var(--s1)) calc(-1 * var(--s2)) calc(-1 * var(--s1)) 0; padding: 0; border: 0; background: none; color: inherit; }
 .share.step > summary:hover { color: var(--on-deep); background: none; }
 .share.step .share-to { top: auto; bottom: calc(100% + var(--s2)); left: auto; right: 0; }  /* opens over the figure, not past the screen */

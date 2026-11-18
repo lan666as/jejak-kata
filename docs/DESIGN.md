@@ -147,7 +147,7 @@ A story is a voyage in three parts.
    it (from 900px: a column at the right, the stage on the page's 1120px grid like the header; from 1100px the figure
    owns the stage: the stage takes the wide grid, the caption a column of 26 to 30rem at its right, and the plate is
    shown up to 1.5 times its drawn size, with larger marks and type, a strip's rows at most 72px apart so that a strip
-   of few rows is not stretched; below 900px: a band under the figure), the chart's graticule faint behind the figure. "Part 1 of 2" is said only where there are parts. Captions do not scroll past as boxes:
+   of few rows is not stretched; below 900px: a band under the figure), the chart's graticule faint behind the figure. Where a story has several scenes, the scene's title stands above the caption as a label; the one count is the step's. Captions do not scroll past as boxes:
    the stage stays, the caption turns (`--d-turn`), the figure's marks travel (`--d-leg`). Scroll, swipe, the arrow
    keys, space, or the next/previous controls all move one step; scrolling settles on a step (scroll snap,
    proximity). Step 0 of a scene opens it: the scene's title and text, so the reader knows the figure before it
