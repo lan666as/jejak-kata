@@ -486,10 +486,16 @@ function pathFigure(lens, path) {
   const raw = path.path.map((xy, p) => xy && { p, xy }).filter(Boolean);
   const smooth = (k, d) => (raw.length > 6 && k > 0 && k < raw.length - 1 ? (raw[k - 1].xy[d] + 2 * raw[k].xy[d] + raw[k + 1].xy[d]) / 4 : raw[k].xy[d]);
   const moved = raw.map((r, k) => [smooth(k, 0), smooth(k, 1)]);
+  // The view is fitted to the route and the islands near it: an island far out (more than half the route's own extent
+  // beyond it) stands at the edge, an arrow pointing on to where it lies, so that one far word does not shrink the
+  // route into a corner.
   const all = [...path.at, ...moved];
   const scale = (d, size, pad) => {
-    const low = Math.min(...all.map((xy) => xy[d])), high = Math.max(...all.map((xy) => xy[d]));
-    return (v) => pad + ((size - 2 * pad) * (v - low)) / (high - low || 1);
+    const lo = Math.min(...moved.map((xy) => xy[d])), hi = Math.max(...moved.map((xy) => xy[d])), span = Math.max(hi - lo, 1e-9);
+    const low = Math.max(lo - span / 2, Math.min(...all.map((xy) => xy[d]))), high = Math.min(hi + span / 2, Math.max(...all.map((xy) => xy[d])));
+    const f = (v) => pad + ((size - 2 * pad) * (Math.max(low, Math.min(high, v)) - low)) / (high - low || 1);
+    f.out = (v) => (v < low ? -1 : v > high ? 1 : 0);
+    return f;
   };
   const x = scale(0, W, SIDE), y = scale(1, H, P);
   const steps = moved.map((xy, k) => ({ p: raw[k].p, x: x(xy[0]), y: y(xy[1]) }));
@@ -499,22 +505,11 @@ function pathFigure(lens, path) {
     return `C${p1.x + (p2.x - p0.x) / 6},${p1.y + (p2.y - p0.y) / 6} ${p2.x - (p3.x - p1.x) / 6},${p2.y - (p3.y - p1.y) / 6} ${p2.x},${p2.y}`;
   }).join(" ");
   const d = `M${steps[0].x},${steps[0].y} ${curve}`;
-  // Names go on the side of each island away from the middle of the route, then apart from each other.
+  // Each name takes a box beside its island, on the side away from the middle of the route where it can, else a line
+  // or more above or below (a leader ties it to its island), else on the other side: no name touches another, a year
+  // of the route, or the plate's edge.
   const mid = { x: steps.reduce((s, p) => s + p.x, 0) / steps.length, y: steps.reduce((s, p) => s + p.y, 0) / steps.length };
-  const marks = path.near.map((id, k) => {
-    const [ix, iy] = [x(path.at[k][0]), y(path.at[k][1])];
-    const away = Math.hypot(ix - mid.x, iy - mid.y) || 1;
-    return { id, late: k >= path.early, x: ix, y: iy, right: ix >= mid.x, lx: ix + (14 * (ix - mid.x)) / away, ly: iy + (14 * (iy - mid.y)) / away };
-  });
-  for (let round = 0; round < 40; round++)
-    for (const a of marks)
-      for (const b of marks)
-        if (a !== b && a.right === b.right && Math.abs(a.lx - b.lx) < 110 && Math.abs(a.ly - b.ly) < 15) {
-          const push = a.ly <= b.ly ? -1 : 1;
-          a.ly += push;
-          b.ly -= push;
-        }
-  marks.forEach((m) => (m.ly = Math.max(12, Math.min(H - 6, m.ly))));
+  const marks = path.near.map((id, k) => ({ id, late: k >= path.early, x: x(path.at[k][0]), y: y(path.at[k][1]), out: [x.out(path.at[k][0]), y.out(path.at[k][1])] }));
   // The years along the route: each port that stands clear of the last one named, on the side away from the
   // route's turn, with the first and the last always named.
   const years = [];
@@ -524,16 +519,31 @@ function pathFigure(lens, path) {
     const [a, b] = [at(k - 1), at(k + 1)], dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
     years.push({ k, x: s.x, y: s.y, tx: s.x + (-dy / len) * 15, ty: s.y + (dx / len) * 15 + 4, text: end ? lens.periods[s.p] : "’" + String(lens.periods[s.p]).slice(-2) });
   });
+  // What a name may not cover: the years, the route itself (a point every few pixels along it) and the ship's year at
+  // the last port.
+  const along = steps.slice(1).flatMap((p, k) => [...Array(Math.ceil(Math.hypot(p.x - steps[k].x, p.y - steps[k].y) / 6))].map((_, i, a) => [steps[k].x + ((p.x - steps[k].x) * i) / a.length, steps[k].y + ((p.y - steps[k].y) * i) / a.length]));
+  const end = steps.at(-1), taken = years.map((v) => [v.tx - 14, v.ty - 12, v.tx + 14, v.ty + 3]).concat(along.map(([px, py]) => [px - 4, py - 4, px + 4, py + 4]), [[end.x - 22, end.y - 32, end.x + 22, end.y + 10]]);
+  // A spot's cost: past the plate's edge never, else how many things it would touch (the first with none is taken).
+  const cost = ([l, t, r, b]) => (l < 2 || r > W - 2 || t < 2 || b > H - 2 ? 1e3 : 0) + taken.filter((k) => l < k[2] && r > k[0] && t < k[3] && b > k[1]).length;
+  for (const m of [...marks].sort((a, b) => a.y - b.y)) {
+    const width = 7.2 * lens.words[m.id].length + 4, side = m.x >= mid.x ? 1 : -1, beside = (sd) => (sd > 0 ? m.x + 10 : m.x - 10 - width);
+    const middle = Math.max(2, Math.min(W - 2 - width, m.x - width / 2));
+    const spots = [...[side, -side].flatMap((sd) => [0, -16, 16, -32, 32, -48, 48, -64, 64, -80, 80].map((dy) => [beside(sd), m.y + dy])), ...[-18, 22, -34, 38, -50, 54, -66, 70].map((dy) => [middle, m.y + dy])];
+    const box = ([lx, ly]) => [lx, ly - 10, lx + width, ly + 5];
+    const [lx, ly] = spots.reduce((best, sp) => (cost(box(sp)) < cost(box(best)) ? sp : best));
+    taken.push(box([lx, ly]), [m.x - 6, m.y - 6, m.x + 6, m.y + 6]);
+    Object.assign(m, { lx, ly, tie: Math.max(lx, Math.min(lx + width, m.x)) });
+  }
   const near = (late) => marks.filter((m) => m.late === late).map((m) => lens.isEntry(m.id) ? link(lens.words[m.id]) : lens.words[m.id]);
   const node = el(`<div class="path-plate"><div class="legend"><span><i class="early"></i>${t("near_early", lens.periods[steps[0].p])}</span>
     <span><i class="late"></i>${t("near_late", lens.periods[steps.at(-1).p])}</span><span><i class="route-key"></i>${t("path_key")}</span></div>
     <div class="path-body"><svg viewBox="0 0 ${W} ${H}" width="${W}" role="img" aria-label="${t("path")}">
-    <defs><marker id="head" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--route)"/></marker></defs>
-    ${marks.map((m) => `<line class="leader" x1="${m.x}" y1="${m.y}" x2="${m.lx}" y2="${m.ly}"/><circle class="island ${m.late ? "late" : ""}" cx="${m.x}" cy="${m.y}" r="5"/>`).join("")}
+    <defs><marker id="head" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--route)"/></marker><marker id="far" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-3)"/></marker></defs>
+    ${marks.map((m) => `<line class="leader" x1="${m.x}" y1="${m.y}" x2="${m.tie}" y2="${m.ly - 3}"/><circle class="island ${m.late ? "late" : ""}" cx="${m.x}" cy="${m.y}" r="5"/>${m.out[0] || m.out[1] ? `<path class="leader" d="M${m.x + 7 * m.out[0]},${m.y + 7 * m.out[1]}l${8 * m.out[0]},${8 * m.out[1]}" marker-end="url(#far)"/>` : ""}`).join("")}
     <path class="casing" d="${d}"/><path class="route-line draw" pathLength="1" marker-end="url(#head)" d="${d}"/>
     ${steps.map((s, k) => `<circle class="route-step" data-k="${k}" cx="${s.x}" cy="${s.y}" r="4.5"><title>${lens.periods[s.p]}</title></circle>`).join("")}
     ${years.map((v) => `<text class="route-year" x="${v.tx.toFixed(1)}" y="${v.ty.toFixed(1)}" text-anchor="middle">${v.text}</text>`).join("")}
-    ${marks.map((m) => `<text class="island-label" data-word="${escape(lens.words[m.id])}" x="${m.lx + (m.right ? 4 : -4)}" y="${m.ly + 4}" text-anchor="${m.right ? "start" : "end"}">${lens.words[m.id]}</text>`).join("")}
+    ${marks.map((m) => `<text class="island-label" data-word="${escape(lens.words[m.id])}" x="${m.lx + 2}" y="${m.ly + 1}">${lens.words[m.id]}</text>`).join("")}
     <circle class="ship" r="9" cx="${steps[0].x}" cy="${steps[0].y}"/><text class="when-label" text-anchor="middle"></text>
   </svg>${beside ? `<aside class="path-near"><h3><i class="early"></i>${lens.periods[steps[0].p]}</h3><p>${near(false).join(", ")}</p>
     <h3><i class="late"></i>${lens.periods[steps.at(-1).p]}</h3><p>${near(true).join(", ")}</p></aside>` : ""}</div></div>`);

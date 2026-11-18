@@ -503,7 +503,7 @@ svg text { fill: var(--ink-2); font: 12px var(--type); }
 text.island-label { font-size: 13px; fill: var(--ink); paint-order: stroke; stroke: var(--chart); stroke-width: 4px; stroke-linejoin: round; cursor: pointer; }
 text.island-label:hover { fill: var(--route); }
 text.when-label { font: 800 13px var(--type); fill: var(--route); paint-order: stroke; stroke: var(--chart-2); stroke-width: 4px; }
-text.route-year { font: 700 11.5px var(--type); fill: var(--route); paint-order: stroke; stroke: var(--chart-2); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: stroke; stroke: var(--chart-2); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
 /* a word's voyage among its neighbours, on paper like a story's plate, the neighbours listed beside it */
 .path-plate { padding: var(--s4) var(--s5) var(--s5); background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); --chart: var(--chart-2); }
 .path-plate > .legend { margin: 0 0 var(--s3); }
