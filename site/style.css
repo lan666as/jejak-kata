@@ -1114,10 +1114,11 @@ main.embed { min-height: 0; padding: var(--s4) var(--gutter); }
   background: var(--chart-2); box-shadow: var(--lift); color: var(--ink); font-size: var(--t-small); font-weight: 400; text-align: left; }
 .share-to p { margin: 0 0 var(--s2); font-size: var(--t-meta); color: var(--ink-3); }
 .share-to ul { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s1); margin: 0; padding: 0; list-style: none; }
-.share-to a { display: flex; align-items: center; min-height: var(--tap); padding: 0 var(--s3); border-radius: var(--r1); color: var(--ink); text-decoration: none; }
+.share-to a { display: flex; align-items: center; gap: var(--s3); min-height: var(--tap); padding: 0 var(--s3); border-radius: var(--r1); color: var(--ink); text-decoration: none; }
 .share-to a:hover { background: var(--chart); }
-.share-to li:last-child { grid-column: 1 / -1; }
-.share-to button { width: 100%; margin-top: var(--s1); }
+.share-to .share-mark { flex: none; color: var(--ink-3); }
+.share-to .copy { display: grid; gap: var(--s2); grid-column: 1 / -1; margin-top: var(--s2); padding-top: var(--s3); border-top: var(--hair) solid var(--line); }
+.share-to button { width: 100%; gap: var(--s2); }
 .share-mark { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .cover .share { margin: var(--s2) 0 0 var(--s3); vertical-align: top; }
 .cover .share .share-to { top: auto; bottom: calc(100% + var(--s2)); }  /* opens upward, over the deck: below lies the cover's edge */
@@ -1128,6 +1129,11 @@ main.embed { min-height: 0; padding: var(--s4) var(--gutter); }
 .share.step > summary { width: var(--s6); height: var(--s5); min-height: 0; margin: calc(-1 * var(--s1)) calc(-1 * var(--s2)) calc(-1 * var(--s1)) 0; padding: 0; border: 0; background: none; color: inherit; }
 .share.step > summary:hover { color: var(--on-deep); background: none; }
 .share.step .share-to { top: auto; bottom: calc(100% + var(--s2)); left: auto; right: 0; }  /* opens over the figure, not past the screen */
+/* on a phone the list is a sheet from the screen's foot, over a veil of the deep */
+@media (max-width: 899.98px) {
+  .share[open] > .share-to { position: fixed; z-index: 30; top: auto; right: 0; bottom: 0; left: 0; width: auto; min-width: 0; padding: var(--s5) var(--gutter) calc(var(--s5) + env(safe-area-inset-bottom));
+    border-width: var(--hair) 0 0; border-radius: var(--r2) var(--r2) 0 0; box-shadow: var(--lift), 0 0 0 100vmax rgb(6 18 31 / .5); }
+}
 .cite { margin: 0 0 var(--s5); color: var(--ink-2); font-size: var(--t-small); }
 .cite > summary { cursor: pointer; color: var(--link); }
 .cite pre { overflow-x: auto; padding: var(--s3); border: var(--hair) solid var(--line); border-radius: var(--r1); background: var(--chart-2); font-size: var(--t-meta); white-space: pre; }

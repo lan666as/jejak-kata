@@ -187,10 +187,12 @@ A story keeps its place by step (not by pixels) across a language switch and the
   `--on-deep-2`) at the right of the count, which shares that step. Where the device has a share sheet it opens straight
   away, with the title, a line and the address, and on a stage the step's plate as a PNG where the sheet takes files.
   Elsewhere it unfolds a sheet of paper (`--chart-2`, hairline, `--r2`, `--lift`): "Bagikan ke", then WhatsApp, X,
-  Telegram, Facebook, LinkedIn, Bluesky and email in two columns, each a plain link (no script of those sites is ever
-  loaded), "Salin tautan" across the bottom, and on a stage and the landing "Salin kode sematan" (the frame above as
-  an iframe). A stage's sheet and the cover's open upward, over the figure or the deck, never past the edge below. It closes on Escape or a
-  press elsewhere. Not printed.
+  Telegram, Facebook, LinkedIn, Bluesky and email in two columns, each a plain link with a small mark of a few strokes
+  (inline SVG; no script, image or font of those sites is ever loaded), then under a hairline "Salin tautan", and on a
+  stage and the landing "Salin kode sematan" (the frame above as an iframe). It is the one way to copy the address
+  where there is a share control (the landing's tools have no second "copy link"). From 900px a stage's sheet and the
+  cover's open upward, over the figure or the deck, never past the edge below; on a phone the sheet rises from the
+  screen's foot over a veil of the deep. It closes on Escape or a press elsewhere. Not printed.
 - **Share images** (`og.jpg`, 1200x630, under 300 kB, made by `tests/site/publish.mjs` at deploy): a card on the
   night sea of the page itself (a story's cover sea with its own word's route, a word's head sea, else the first
   page's), shaded from `--deep` on the left: the mark and "Jejak Kata" at the top; at the bottom a kicker with its

@@ -1263,6 +1263,15 @@ const sharedImage = (node, step) => {
  * the address to copy. No script of any of those sites is loaded. `what()` says what is shared at the moment of
  * asking: { title, url, image } (image: the node a plate is shown in, and which step it is at).
  */
+/** A small mark for each place to share, drawn in a few strokes (no script, image or font of those sites). */
+const SHARE_ICONS = {
+  WhatsApp: `<path d="M5 19l1.2-3.6A7.5 7.5 0 1 1 9 18.2z"/>`, X: `<path d="M5 5l14 14M19 5L5 19"/>`, Telegram: `<path d="M4 11.5l16-6.5-3 14-5-4-2.5 3v-4.5L17 7"/>`,
+  Facebook: `<path d="M14 20v-7h3l.5-3H14V8.5c0-1 .5-1.5 1.5-1.5H18V4h-3c-2.5 0-4 1.5-4 4v2H8v3h3v7"/>`, LinkedIn: `<path d="M6 10v9M6 6v.5M10 19v-9M10 14c0-2.5 1.5-4 3.5-4s3.5 1 3.5 4v5"/>`,
+  Bluesky: `<path d="M12 11C10 7 6 4.5 5 6c-1 2 0 6 3 6.5-3 .5-3 4 0 5s3.5-3 4-5.5c.5 2.5 1 6.5 4 5.5s3-4.5 0-5c3-.5 4-4.5 3-6.5-1-1.5-5 1-7 5z"/>`,
+  email: `<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 8l8 5 8-5"/>`, link: `<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>`,
+  embed: `<path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/>`,
+};
+const icon = (name) => `<svg class="share-mark" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">${SHARE_ICONS[name]}</svg>`;
 function sharer(label, what, cls = "") {
   const box = el(`<details class="share${cls ? " " + cls : ""}"><summary class="button">${label}</summary><div class="share-to"><p>${t("share_label")}</p><ul></ul></div></details>`);
   const summary = box.firstElementChild, ready = () => what().image && sharedImage(...what().image);
@@ -1279,12 +1288,11 @@ function sharer(label, what, cls = "") {
     const u = encodeURIComponent(url), said = encodeURIComponent(t("share_text", title));
     box.querySelector("ul").replaceChildren(...[["WhatsApp", `https://wa.me/?text=${said}%20${u}`], ["X", `https://x.com/intent/post?text=${said}&url=${u}`],
       ["Telegram", `https://t.me/share/url?url=${u}&text=${said}`], ["Facebook", `https://www.facebook.com/sharer/sharer.php?u=${u}`],
-      ["LinkedIn", `https://www.linkedin.com/sharing/share-offsite/?url=${u}`], ["Bluesky", `https://bsky.app/intent/compose?text=${said}%20${u}`]]
-      .map(([name, to]) => el(`<li><a href="${to}" target="_blank" rel="noopener">${name}</a></li>`)),
-      el(`<li><a href="mailto:?subject=${said}&amp;body=${u}">${t("email")}</a></li>`), el("<li></li>"));
-    box.querySelector("li:last-child").append(copier(t("copy_link"), () => url));
-    // Where a figure can stand on another site: the code of a frame that shows it (embedPage), to copy.
-    if (embed) box.querySelector("ul").append(el("<li></li>")), box.querySelector("li:last-child").append(copier(t("copy_embed"),
+      ["LinkedIn", `https://www.linkedin.com/sharing/share-offsite/?url=${u}`], ["Bluesky", `https://bsky.app/intent/compose?text=${said}%20${u}`], [t("email"), `mailto:?subject=${said}&amp;body=${u}`, "email"]]
+      .map(([name, to, mark = name]) => el(`<li><a href="${to}"${to.startsWith("mailto") ? "" : ' target="_blank" rel="noopener"'}>${icon(mark)}${name}</a></li>`)), el(`<li class="copy"></li>`));
+    // The one way to copy the address; and where a figure can stand on another site, the code of a frame that shows it (embedPage).
+    box.querySelector(".copy").append(copier(`${icon("link")}${t("copy_link")}`, () => url));
+    if (embed) box.querySelector(".copy").append(copier(`${icon("embed")}${t("copy_embed")}`,
       () => `<iframe src="${embed}" title="${escape(`${title} · Jejak Kata`)}" width="100%" height="700" style="border:0;max-width:760px" loading="lazy"></iframe>`));
   });
   return box;
@@ -1316,8 +1324,8 @@ function tools(address, { image, table, check = [], data, share } = {}) {
     });
     row.append(get);
   }
-  if (share) row.append(sharer(t("share"), share));
-  row.append(copier(t("copy_link"), () => whole(typeof address === "function" ? address() : address)));
+  // Shared, the address is copied from the list of places to share; else by a button of its own: one way to copy it.
+  row.append(share ? sharer(t("share"), share) : copier(t("copy_link"), () => whole(typeof address === "function" ? address() : address)));
   const list = [].concat(data || []), files = list.map((file) => `<a href="${DATA}/${file}">${t("check_data")}${list.length > 1 ? ` (${file})` : ""}</a>`);
   if (check.length || files.length) row.append(el(`<span>${t("check")} ${[...check.map(link), ...files].join(", ")}</span>`));
   return row;
