@@ -191,7 +191,7 @@ main:focus { outline: none; }
 .foot-fold > summary::after { content: "+"; margin-left: auto; font-size: var(--t-lede); color: var(--on-deep-2); }
 .foot-fold[open] > summary::after { content: "−"; }
 .foot-fold > summary h2 { margin: 0; }
-@media (min-width: 900px) { .foot-fold { border: 0; } .foot-fold > summary { pointer-events: none; min-height: 0; margin-bottom: var(--s3); } .foot-fold > summary::after { content: none; } }
+@media (min-width: 900px) { .foot-fold { border: 0; } .foot-fold > summary { pointer-events: none; min-height: 0; margin-bottom: var(--s3); } .foot-fold > summary::after, .foot-fold[open] > summary::after { content: none; } }
 .foot-links li { padding: 0; }
 .foot-links a { display: inline-flex; align-items: center; min-height: var(--tap); }
 @media (min-width: 900px) { .foot { grid-template-columns: 1.3fr 1fr 1fr; gap: var(--s7); } }
