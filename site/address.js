@@ -9,6 +9,9 @@ import { STORIES, SHOWCASE, FEATURED, TEXT } from "./text.js";
 
 /** Every page of the app, as the first part of a route. */
 export const PAGES = ["cerita", "kata", "potret", "peta", "balap", "main", "kuis", "tebak", "menempel", "pasang", "redaksi", "lingkaran", "tahun", "temuan", "bergeser", "entitas", "metode"];
+/** Other names a page is reached by, as the menu calls it ("Mainan", "Cara"): each leads to its page, whose address
+ *  stays its own (the app writes it in the address bar; the generated page names it as canonical). */
+export const ALIASES = { mainan: "main", cara: "metode" };
 /** The words that have a page of their own: those the first page shows. */
 export const WORDS = [...new Set([...SHOWCASE, ...FEATURED])];
 
@@ -36,6 +39,7 @@ export function routeOf(relative) {
   const [path, fragment = ""] = relative.split("#"), split = (s) => s.split("/").filter(Boolean).map(decodeURIComponent);
   const parts = split(path.split("?")[0]), more = fragment.startsWith("/") ? split(fragment) : [];
   const language = parts[0] === "en" ? (parts.shift(), "en") : parts.length ? "id" : null;
+  if (ALIASES[parts[0]]) parts[0] = ALIASES[parts[0]];
   return { language, parts: PAGES.includes(more[0]) ? more : [...parts, ...more] };
 }
 

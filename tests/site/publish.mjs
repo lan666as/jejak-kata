@@ -6,7 +6,8 @@
 //                         language twins, Open Graph and X card, JSON-LD, and the page's text in plain HTML for readers
 //                         that run no script (crawlers, link previews); the app takes the page over where scripts run
 //   <address>/og.jpg      its share image, 1200x630: a story's key number and title on its own night sea
-// and index.html (the first page), 404.html (GitHub Pages serves it for any other path; the app reads the path),
+// and index.html (the first page), mainan/ and cara/ (the menu's names for main/ and metode/, address.js ALIASES),
+// 404.html (GitHub Pages serves it for any other path; the app reads the path),
 // sitemap.xml, and the stories as feeds (feed.xml Atom, feed.json JSON Feed) in each language. Each story also has a
 // frame for other sites, <story>/embed/ (address.js, EMBED): the story's own page, whose canonical address it is, kept
 // out of the sitemap, so that it is never found twice. The images are drawn
@@ -18,7 +19,7 @@ import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { TEXT, SITE } from "../../site/text.js";
 import { STORIES } from "../../site/story.js";
-import { address, named, cut, EMBED, PLAY, WORDS } from "../../site/address.js";
+import { address, named, cut, EMBED, PLAY, WORDS, ALIASES } from "../../site/address.js";
 
 const REPO = new URL("../../", import.meta.url).pathname, SRC = join(REPO, "site");
 const ROOT = new URL(SITE.url).pathname, LANGUAGES = ["id", "en"], LOCALE = { id: "id_ID", en: "en_GB" };
@@ -295,6 +296,8 @@ export async function publish(out, { drawn = true } = {}) {
   const write = async (to, text) => (await mkdir(dirname(to), { recursive: true }), writeFile(to, text));
   for (const parts of ROUTES) for (const lang of LANGUAGES) await write(file(out, parts, lang), page(template, parts, lang, facts));
   for (const story of STORIES) for (const lang of LANGUAGES) await write(file(out, ["cerita", story.slug, EMBED], lang), page(template, ["cerita", story.slug], lang, facts));
+  // The names the menu calls two pages by (address.js, ALIASES): the page itself, canonical to its own address.
+  for (const [alias, to] of Object.entries(ALIASES)) for (const lang of LANGUAGES) await write(join(out, lang === "en" ? "en" : "", alias, "index.html"), page(template, [to], lang, facts));
   await write(join(out, "404.html"), page(template, ["404"], "id", facts, { lost: true }));
   await write(join(out, "sitemap.xml"), sitemap(facts));
   for (const lang of LANGUAGES) {
