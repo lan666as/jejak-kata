@@ -581,6 +581,7 @@ text.route-year { font: 700 11.5px var(--type); fill: var(--route); paint-order:
 .voyage-mark .sea-line { stroke: var(--line-2); } .voyage-mark .sailed { stroke: var(--route); }
 .voyage-mark .right { fill: var(--route); } .voyage-mark .wrong { fill: var(--chart-2); stroke: var(--ink); stroke-width: 2; }
 .voyage-mark .now { fill: var(--ink); } .voyage-mark .next { fill: var(--line-2); } .voyage-mark text { fill: var(--ink-2); }
+@keyframes hop { 40% { transform: translateY(-3px); } }
 @media (prefers-reduced-motion: no-preference) { .voyage-mark .now { animation: hop var(--d-leg) var(--sail) infinite alternate; transform-box: fill-box; transform-origin: center; } }
 .quiz-card .plate svg { width: 100%; margin: var(--s4) 0 var(--s2); }
 @media (min-width: 900px) { .quiz-board { grid-template-columns: minmax(0, 1fr) 20rem; gap: var(--s6); } .quiz-log { position: sticky; top: calc(var(--head-h) + var(--s5)); } }
@@ -890,30 +891,29 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 @media (min-width: 900px) { .story-cards.large { grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(0, 1fr)); } .story-card.large { padding: var(--s6); }
   .story-cards.large li:first-child .key-number { font-size: calc(var(--t-key) * 1.25); } .story-cards.large li:first-child .card-title { font-size: var(--t-h2); line-height: var(--l-h2); } }
 
-.play-card { gap: var(--s2); }
-.play-mark { width: 64px; height: 44px; margin-bottom: var(--s2); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; color: var(--ink-2); transition: color var(--d-press) var(--sail); }
-.play-mark .fill { fill: currentColor; stroke: none; }
-.play-mark .on { stroke: var(--route); } .play-mark .on.fill { fill: var(--route); stroke: none; }
-.play-mark .person { fill: var(--person); } .play-mark .organisation { fill: var(--organisation); } .play-mark .place { fill: var(--place); }
-.play-card:hover .play-mark { color: var(--ink); }
-/* a play card answers the pointer as a story card does (the route drawn across its top), and the moving part of its
-   mark moves once: a hop, or for a route, drawn again */
-.play-card { position: relative; overflow: hidden; }
+/* a play card leads with a small picture of its own figure, drawn from its data (app.js, PICTURES) in the plate's inks,
+   with a note of what it shows; the route's colour marks what the game asks about */
+.play-card { position: relative; overflow: hidden; gap: var(--s2); }
+.play-pic { --p-ink: var(--ink); --p-soft: var(--ink-3); --p-line: var(--line); --p-dot: var(--ink-3); --p-on: var(--route); --p-on-ink: var(--on-route); --p-ground: var(--chart-2);
+  display: block; height: 136px; margin-bottom: var(--s1); }
+.play-pic svg { display: block; overflow: visible; font-family: var(--type); }
+.play-pic text { font-size: 13px; font-weight: 600; fill: var(--p-ink); }
+.play-pic .strong { font-weight: 800; } .play-pic .soft { font-size: 12px; font-weight: 400; fill: var(--p-soft); }
+.play-pic .word { font-size: 16px; font-weight: 800; font-stretch: 80%; }
+.play-pic .big { font-weight: 800; font-stretch: 75%; fill: var(--p-ink); } .play-pic .faint { opacity: .25; }
+.play-pic .halo { paint-order: stroke; stroke: var(--p-ground); stroke-width: 4px; stroke-linejoin: round; }
+.play-pic .line { fill: none; stroke: var(--p-line); stroke-width: 1.5; } .play-pic .dotted { stroke-dasharray: 1 3; stroke-linecap: round; }
+.play-pic .mute { fill: var(--p-dot); } .play-pic .on { fill: var(--p-on); } .play-pic .on-line { stroke: var(--p-on); fill: none; }
+.play-pic .on-text { fill: var(--p-on-ink); }
+.play-pic .c1 { fill: var(--cat-1); } .play-pic .c2 { fill: var(--cat-2); } .play-pic .c3 { fill: var(--cat-3); }
+.play-pic .person { fill: var(--person); } .play-pic .organisation { fill: var(--organisation); } .play-pic .place { fill: var(--place); }
+.play-pic .s0 { fill: var(--seq-0); opacity: .45; } .play-pic .s1 { fill: var(--seq-1); } .play-pic .s2 { fill: var(--seq-2); } .play-pic .s3 { fill: var(--seq-3); } .play-pic .s4 { fill: var(--seq-4); } .play-pic .s5 { fill: var(--seq-5); }
+.play-note { min-height: calc(var(--t-meta) * var(--l-meta)); margin-bottom: var(--s2); font-size: var(--t-meta); line-height: var(--l-meta); color: var(--ink-3); }
+.play-note i { display: inline-block; width: 8px; height: 8px; margin: 0 var(--s1) 0 var(--s2); border-radius: 50%; } .play-note i:first-child { margin-left: 0; }
+.play-note .c1 { background: var(--cat-1); } .play-note .c2 { background: var(--cat-2); } .play-note .c3 { background: var(--cat-3); }
+/* a play card answers the pointer as a story card does: the route drawn across its top */
 .play-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: var(--mark); background: var(--route); transform: scaleX(0); transform-origin: 0 50%; transition: transform var(--d-turn) var(--sail); }
 .play-card:is(:hover, :focus-visible)::before { transform: scaleX(1); }
-@keyframes hop { 40% { transform: translateY(-3px); } }
-@media (prefers-reduced-motion: no-preference) {
-  .play-card:is(:hover, :focus-visible) .play-mark .on { animation: hop var(--d-leg) var(--sail); transform-box: fill-box; }
-  .play-card:is(:hover, :focus-visible) .play-mark path.on[pathLength] { stroke-dasharray: 1; animation: draw var(--d-leg) var(--sail); }
-}
-.play-cards.row { display: flex; gap: var(--s3); margin: var(--s5) calc(-1 * var(--gutter)); padding: var(--s1) var(--gutter); overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter); scrollbar-width: none; }
-.play-cards.row::-webkit-scrollbar { display: none; }
-.play-cards.row li { flex: 0 0 min(15rem, 72%); scroll-snap-align: start; }
-.play-cards.row .card { padding: var(--s4); }
-.play-cards.row .card-title { font-size: var(--t-body); line-height: 1.25; font-stretch: 85%; }
-@media (min-width: 900px) {
-  .play-cards.row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-inline: 0; padding-inline: 0; overflow: visible; }
-}
 
 /* how it is measured: three short columns, each led by a number read from the data */
 .measure-cols { display: grid; gap: var(--s6); margin-top: var(--s5); }
@@ -950,20 +950,28 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .page-head h1.word-title { letter-spacing: 0; font-size: var(--t-display); line-height: var(--l-display); max-width: none; overflow-wrap: anywhere; }
 .lens-section > .lens-about { margin: var(--s6) 0 var(--s1); }
 .lens-section > .about { margin-top: 0; }
-.play-cards:not(.row) .play-card { display: grid; grid-template-columns: 64px minmax(0, 1fr); column-gap: var(--s4); row-gap: var(--s1); align-content: start; }
-.play-cards:not(.row) .play-mark { grid-row: span 2; margin: 0; }
-/* the play page: the first thing to play leads, on the deep, its mark large and moving; two beside it; the rest smaller */
-.play-top { grid-template-columns: minmax(0, 1fr); }
-.play-top .play-card.lead { display: flex; flex-direction: column; gap: var(--s2); padding: var(--s6); background: var(--deep); border-color: var(--line-deep); color: var(--on-deep); --focus: var(--route-on-deep); }
+/* the play page (and the first page's three): the first thing to play leads, on the deep, its picture large; two beside
+   it; the rest under "more", two of them wide */
+.play-top .play-card.lead { padding: var(--s6); background: var(--deep); border-color: var(--line-deep); color: var(--on-deep); --focus: var(--route-on-deep); }
 .play-top .lead .kicker { margin: 0; color: var(--beacon); }
-.play-top .lead .play-mark { width: 192px; height: 132px; margin: var(--s3) 0 var(--s4); color: var(--on-deep-2); stroke-width: 1.4; }
-.play-top .lead .play-mark .on { stroke: var(--route-on-deep); } .play-top .lead .play-mark .on.fill { fill: var(--route-on-deep); }
+.play-top .lead .play-pic { --p-ink: var(--on-deep); --p-soft: var(--on-deep-2); --p-line: var(--line-deep); --p-dot: var(--on-deep-2); --p-on: var(--route-on-deep); --p-on-ink: var(--deep); --p-ground: var(--deep);
+  height: clamp(150px, 42vw, 230px); margin: var(--s3) 0 0; }
+.play-top .lead .play-note { color: var(--on-deep-2); }
+.play-top .lead::before { background: var(--route-on-deep); }
 .play-top .lead .card-title { font-size: var(--t-h2); line-height: var(--l-h2); font-weight: 800; font-stretch: 75%; }
 .play-top .lead .card-text { max-width: 30rem; color: var(--on-deep-2); font-size: var(--t-body); line-height: var(--l-body); }
-@keyframes guess { 0%, 100% { transform: translateX(0); } 45% { transform: translateX(-14px); } 75% { transform: translateX(6px); } }
-@media (prefers-reduced-motion: no-preference) { .play-top .lead .play-mark .on { animation: guess calc(var(--d-leg) * 4) var(--sail) infinite; } }
-.play-more .card { padding: var(--s4); } .play-more .card-title { font-size: var(--t-body); line-height: 1.25; font-stretch: 85%; }
-@media (min-width: 900px) { .play-top { grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(0, 1fr)); } .play-top .play-card:not(.lead) { grid-template-columns: minmax(0, 1fr); } .play-top .play-card:not(.lead) .play-mark { grid-row: auto; width: 96px; height: 66px; margin-bottom: var(--s3); } }
+.play-more .card { padding: var(--s4) var(--s5) var(--s5); } .play-more .card-title { font-size: var(--t-body); line-height: 1.25; font-stretch: 85%; }
+@media (min-width: 640px) and (max-width: 899.98px) { .play-more { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 900px) {
+  .play-top { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); grid-template-rows: auto auto; }
+  .play-top li:first-child { grid-row: span 2; }
+  .play-top .lead { justify-content: flex-end; } .play-top .lead .play-pic { height: 250px; margin-bottom: var(--s2); }
+  .play-top .play-card:not(.lead) { display: grid; grid-template: "title pic" auto "text pic" 1fr "text note" auto / minmax(0, 1fr) minmax(0, 1.1fr); column-gap: var(--s5); }
+  .play-top .play-card:not(.lead) .play-pic { grid-area: pic; } .play-top .play-card:not(.lead) .play-note { grid-area: note; margin: 0; }
+  .play-top .play-card:not(.lead) .card-title { grid-area: title; } .play-top .play-card:not(.lead) .card-text { grid-area: text; }
+  .play-more { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: dense; }
+  .play-more .wide { grid-column: span 2; } .play-more .wide.right { grid-column: 2 / span 2; }
+}
 
 /* a figure's long note, folded */
 .about { margin: var(--s2) 0 var(--s4); max-width: var(--measure); }
@@ -989,7 +997,7 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .plate .row { animation: surface var(--d-turn) var(--sail) calc(var(--k) * 35ms) both; }
 :is(.race, .bars, .duel) .bar { transform-origin: 0 50%; animation: grow var(--d-leg) var(--sail) both; }
 .duel .left .bar { transform-origin: 100% 50%; }
-.cell { animation: fade var(--d-turn) var(--sail) calc(var(--i, 0) * 45ms) both; }
+.cell, .play-pic .in { animation: fade var(--d-turn) var(--sail) calc(var(--i, 0) * 45ms) both; }
 .tide td { animation: fade var(--d-turn) var(--sail) calc(var(--i, 0) * 40ms) both; }
 :is(.cards, .sparks) > li, .wall > .poster { animation: surface var(--d-leg) var(--sail) calc(var(--i, 0) * 50ms) both; }
 

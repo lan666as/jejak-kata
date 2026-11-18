@@ -1311,23 +1311,148 @@ const storyCard = (story, large = false) => {
     <b class="card-title">${words.title}</b><span class="card-text">${firstSentence(words.teaser)}</span></a></li>`;
 };
 const storyCards = (list, large = false) => `<ul class="cards doors story-cards${large ? " large" : ""}">${list.map((s) => storyCard(s, large)).join("")}</ul>`;
-/** A mark for each thing to play with, drawn in a few strokes: what its figure looks like, at a glance. The route's
- *  colour marks the one thing in each that moves. */
-const PLAY_MARKS = {
-  tebak: `<path d="M6 30h52"/><path d="M6 26v8M19 28v4M32 28v4M45 28v4M58 26v8"/><path class="on" d="M40 12v26"/><circle class="on fill" cx="40" cy="12" r="4"/><path d="M24 18v16" stroke-dasharray="3 3"/>`,
-  kuis: `<rect x="6" y="8" width="24" height="12" rx="6"/><rect class="on fill" x="34" y="8" width="24" height="12" rx="6"/><rect x="6" y="26" width="24" height="12" rx="6"/><rect x="34" y="26" width="24" height="12" rx="6"/>`,
-  menempel: `<path d="M6 10h52M6 22h52M6 34h52" stroke-dasharray="1 4"/><circle class="on fill" cx="46" cy="10" r="4"/><circle class="fill" cx="30" cy="22" r="4"/><circle class="fill" cx="16" cy="34" r="4"/>`,
-  lingkaran: `<circle cx="32" cy="22" r="17" stroke-dasharray="2 4"/><circle class="on fill" cx="32" cy="22" r="4"/><circle class="fill" cx="18" cy="12" r="3"/><circle class="fill" cx="47" cy="17" r="3"/><circle class="fill" cx="25" cy="37" r="3"/><circle class="fill" cx="44" cy="33" r="3"/>`,
-  redaksi: `<path d="M6 10h52M6 22h52M6 34h52"/><circle class="on fill" cx="14" cy="10" r="4"/><circle class="fill" cx="38" cy="10" r="4"/><circle class="fill" cx="50" cy="22" r="4"/><circle class="on fill" cx="22" cy="22" r="4"/><circle class="fill" cx="30" cy="34" r="4"/><circle class="on fill" cx="44" cy="34" r="4"/>`,
-  pasang: `${[0, 1, 2, 3].map((r) => [0, 1, 2, 3, 4, 5].map((c) => `<rect class="fill" x="${6 + c * 9}" y="${6 + r * 9}" width="7" height="7" rx="1" opacity="${[0.15, 0.35, 0.7, 1, 0.5, 0.2][(c + 2 * r) % 6]}"/>`).join("")).join("")}`,
-  balap: `<rect class="on fill" x="6" y="7" width="50" height="8" rx="1"/><rect class="fill" x="6" y="19" width="36" height="8" rx="1"/><rect class="fill" x="6" y="31" width="22" height="8" rx="1"/>`,
-  tahun: `<rect x="8" y="6" width="22" height="32" rx="2"/><rect class="on fill" x="24" y="10" width="22" height="30" rx="2"/><rect x="40" y="6" width="18" height="32" rx="2"/>`,
-  bergeser: `<path class="on" pathLength="1" d="M8 34C18 34 18 14 30 16S44 32 56 10"/><circle class="fill" cx="8" cy="34" r="3"/><circle class="on fill" cx="56" cy="10" r="4"/><circle cx="30" cy="16" r="3"/>`,
-  entitas: `<circle class="fill person" cx="14" cy="22" r="6"/><circle class="fill organisation" cx="32" cy="22" r="6"/><circle class="fill place" cx="50" cy="22" r="6"/><path d="M6 36h52"/>`,
+/**
+ * What each thing to play with draws, as a small picture of its own figure from its own data: a play card leads with
+ * it. `d` is the data (Kompas's names and the words beside them by term, stick.json; the three publishers' yearly
+ * shares and tides, years.json; the first page's chart, first.json), W and H the picture's size in pixels; each gives
+ * the inside of its SVG and a note that says what it shows. The route's colour marks what the game asks about; no text
+ * is under 12px.
+ */
+const KOMPAS = OUTLETS[0], TERM = ERAS_SHOWN.length - 1;
+const namesFor = (s, word, least) => s.names.map((_, i) => i).filter((i) => s.kinds[i] === "p" && s.pages[i][TERM] >= least && s.share[word][i][TERM] !== null)
+  .sort((a, b) => s.share[word][b][TERM] - s.share[word][a][TERM]);
+/** The words of years.json each with the year it peaked in Kompas and how far that peak stands above its mean. */
+const peaksOf = (y) => Object.entries(y.share).map(([w, by]) => {
+  const v = by[KOMPAS].map((x) => x || 0), top = Math.max(...v), mean = v.reduce((a, b) => a + b, 0) / v.length;
+  return { w, p: v.indexOf(top), stand: mean ? top / mean : 0 };
+}).sort((a, b) => b.stand - a.stand);
+const svgText = (x, y, text, cls = "", anchor = "start") => `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}"${cls ? ` class="${cls}"` : ""}${anchor === "start" ? "" : ` text-anchor="${anchor}"`}>${escape(String(text))}</text>`;
+/** Rows of names with a dot each on one scale, the first in the route's colour (menempel, bergeser). */
+const dotRows = (rows, W, H, value) => {
+  const n = rows.length, pitch = H / n, L = Math.min(W * 0.46, 10 + 7 * Math.max(...rows.map((r) => r.label.length))), R = 44, most = Math.max(...rows.map((r) => r.v)) * 1.04;
+  return rows.map((r, k) => {
+    const y = pitch * (k + 0.5), x = L + ((W - L - R) * r.v) / most;
+    return `<g class="in" style="--i:${k}">${svgText(L - 8, y + 4.5, r.label, k ? "" : "strong", "end")}<path class="line dotted" d="M${L} ${y}H${W - R}"/>
+      <circle class="${k ? "mute" : "on"}" cx="${x.toFixed(1)}" cy="${y}" r="5.5"/>${svgText(W - R + 8, y + 4.5, value(r.v), "soft")}</g>`;
+  }).join("");
 };
-const playCard = (page) => `<li><a class="card play-card" href="${href(page)}"><svg class="play-mark" viewBox="0 0 64 44" width="64" height="44" aria-hidden="true">${PLAY_MARKS[page]}</svg>
+const PICTURES = {
+  // Of 100 pages naming the person that "tersangka" sticks to most, how many hold it.
+  tebak: ({ stick: s }, W, H) => {
+    const word = "tersangka", i = namesFor(s, word, 1500)[0], n = Math.round(s.share[word][i][TERM] / 10), c = Math.min(H, W * 0.5) / 10;
+    const cells = [...Array(100)].map((_, k) => `<rect class="in ${k < n ? "on" : "mute faint"}" style="--i:${Math.floor(k / 10)}" x="${((k % 10) * c).toFixed(1)}" y="${(Math.floor(k / 10) * c).toFixed(1)}" width="${(c * 0.82).toFixed(1)}" height="${(c * 0.82).toFixed(1)}" rx="${(c * 0.16).toFixed(1)}"/>`).join("");
+    const size = Math.min(H * 0.5, (W - 10 * c) * 0.42);
+    return { svg: `${cells}<text class="big" x="${(10 * c + 18).toFixed(1)}" y="${(10 * c * 0.62).toFixed(1)}" style="font-size:${size.toFixed(0)}px">${n}</text>${svgText(10 * c + 20, 10 * c * 0.62 + 22, "/ 100", "soft")}`,
+      note: `“${word}” · ${s.names[i]} · Kompas ${ERAS_SHOWN[TERM]}` };
+  },
+  // A year's own words, and four years to choose from.
+  kuis: ({ years: y }, W, H) => {
+    const peaks = peaksOf(y).filter((x) => x.stand >= 2.5), count = (p) => peaks.filter((x) => x.p === p).length;
+    const p = y.years.map((_, i) => i).sort((a, b) => count(b) - count(a) || b - a)[0], clue = peaks.filter((x) => x.p === p).slice(0, 3).map((x) => x.w);
+    const choices = [...new Set([p - 6, p - 3, p, p + 3, p + 5].map((i) => Math.max(0, Math.min(y.years.length - 1, i))))].slice(0, 4).sort((a, b) => a - b);
+    const w = Math.min(72, (W - 24) / 4), h = 30, top = Math.min(H - h - 2, clue.length * 22 + 14);
+    return { svg: clue.map((word, k) => svgText(0, 18 + k * 22, word, k ? "" : "strong")).join("") + choices.map((c, k) => {
+      const x = k * (w + 8);
+      return `<g class="in" style="--i:${k}"><rect class="${c === p ? "on" : "line"}" x="${x.toFixed(1)}" y="${top}" width="${w.toFixed(1)}" height="${h}" rx="${h / 2}"/>${svgText(x + w / 2, top + h / 2 + 4.5, y.years[c], c === p ? "on-text" : "", "middle")}</g>`;
+    }).join(""), note: `Kompas ${y.years[p]}` };
+  },
+  // The names "tersangka" sticks to most.
+  menempel: ({ stick: s }, W, H) => {
+    const word = "tersangka", rows = namesFor(s, word, STUCK_PAGES).slice(0, Math.max(3, Math.min(5, Math.floor(H / 26)))).map((i) => ({ label: s.names[i], v: s.share[word][i][TERM] }));
+    return { svg: dotRows(rows, W, H, (v) => `${Math.round(v / 10)}%`), note: `“${word}” · Kompas ${ERAS_SHOWN[TERM]}` };
+  },
+  // Who shares a page with prabowo, nearer the more often.
+  lingkaran: ({ stick: s }, W, H) => {
+    const name = "prabowo", i = s.names.indexOf(name), list = s.beside[i][TERM].filter(([j]) => s.kinds[j] === "p").slice(0, 6), most = list[0][1];
+    const cx = W / 2, cy = H / 2 - 6, rx = Math.min(W / 2 - 16, H * 1.3), ry = H / 2 - 12, half = Math.ceil(list.length / 2);
+    const angle = (k) => ((k % 2 ? 90 : -90) + (half > 1 ? (Math.floor(k / 2) / (half - 1) - 0.5) * 110 : 0)) * (Math.PI / 180);
+    return { svg: `<ellipse class="line dotted" cx="${cx}" cy="${cy}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}"/>` + list.map(([, v], k) => {
+      const r = 0.98 - 0.42 * (v / most), x = cx + rx * r * Math.cos(angle(k)), y = cy + ry * r * Math.sin(angle(k));
+      return `<g class="in" style="--i:${k}"><path class="line" d="M${cx} ${cy}L${x.toFixed(1)} ${y.toFixed(1)}"/><circle class="mute" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(3 + 4 * (v / most)).toFixed(1)}"/>${W >= 300 && k < 4 ? svgText(x, y + (k % 2 ? 20 : -11), s.names[list[k][0]], "soft halo", "middle") : ""}</g>`;
+    }).join("") + `<circle class="on" cx="${cx}" cy="${cy}" r="7"/>${svgText(cx, cy + 26, name, "strong halo", "middle")}`,
+    note: `${name} · Kompas ${ERAS_SHOWN[TERM]}` };
+  },
+  // The words on which the three newsrooms differ most in the last year: a dot for each.
+  redaksi: ({ years: y }, W, H) => {
+    const last = y.years.length - 1, of = (w) => OUTLETS.map((o) => y.share[w][o][last]);
+    const rows = Object.keys(y.share).filter((w) => of(w).every((v) => v !== null)).map((w) => ({ w, v: of(w), spread: Math.max(...of(w)) - Math.min(...of(w)) }))
+      .sort((a, b) => b.spread - a.spread).slice(0, Math.max(3, Math.min(5, Math.floor(H / 26))));
+    const pitch = H / rows.length, L = Math.min(W * 0.4, 10 + 7 * Math.max(...rows.map((r) => r.w.length))), most = Math.max(...rows.flatMap((r) => r.v)) * 1.04;
+    return { svg: rows.map((r, k) => {
+      const yy = pitch * (k + 0.5);
+      return `<g class="in" style="--i:${k}">${svgText(L - 8, yy + 4.5, r.w, "", "end")}<path class="line dotted" d="M${L} ${yy}H${W - 6}"/>${r.v.map((v, j) => `<circle class="c${j + 1}" cx="${(L + ((W - L - 12) * v) / most).toFixed(1)}" cy="${yy}" r="5.5"/>`).join("")}</g>`;
+    }).join(""), note: `${OUTLET.map((o, j) => `<i class="c${j + 1}"></i>${o}`).join(" ")} · ${y.years[last]}` };
+  },
+  // A row per name, a column per year, each row shaded against its own best year: the names in the order of that year.
+  pasang: ({ years: y }, W, H) => {
+    const all = y.tide[KOMPAS].person.map((r) => ({ ...r, peak: Math.max(...r.share.map((v) => v || 0)) })).map((r) => ({ ...r, when: r.share.indexOf(r.peak) })).sort((a, b) => a.when - b.when || b.peak - a.peak);
+    const n = Math.floor(H / 13), rows = [...Array(n)].map((_, k) => all[Math.round((k * (all.length - 1)) / (n - 1))]), L = W >= 420 ? 104 : 0, cw = (W - L) / y.years.length, ch = H / n;
+    const level = (v, peak) => [0.08, 0.25, 0.45, 0.65, 0.85].filter((s) => v / peak >= s).length;
+    return { svg: rows.map((r, k) => (L ? svgText(L - 6, ch * (k + 0.5) + 4.5, r.word, "soft", "end") : "") + r.share.map((v, c) => `<rect class="in s${v === null ? 0 : level(v, r.peak)}" style="--i:${c}" x="${(L + c * cw + 1).toFixed(1)}" y="${(k * ch + 1).toFixed(1)}" width="${(cw - 2).toFixed(1)}" height="${(ch - 2).toFixed(1)}" rx="2"/>`).join("")).join(""),
+      note: `${t("kind_person")} · Kompas ${y.years[0]}–${y.years.at(-1)}` };
+  },
+  // Who was named most in the last year, as bars.
+  balap: ({ years: y }, W, H) => {
+    const last = y.years.length - 1, rows = ["jokowi", "prabowo", "ahok", "anies baswedan", "gibran", "megawati"].filter((w) => y.share[w]?.[KOMPAS][last]).map((w) => ({ w, v: y.share[w][KOMPAS][last] }))
+      .sort((a, b) => b.v - a.v).slice(0, Math.max(3, Math.min(5, Math.floor(H / 26)))), pitch = H / rows.length, top = rows[0].v;
+    const L = Math.min(W * 0.4, 10 + 7 * Math.max(...rows.map((r) => r.w.length))), room = W - L - 48;
+    return { svg: `<text class="big faint" x="${W}" y="${H - 4}" text-anchor="end" style="font-size:${Math.round(H * 0.42)}px">${y.years[last]}</text>` + rows.map((r, k) => {
+      const yy = pitch * k + 4, h = pitch - 8;
+      return `<g class="in" style="--i:${k}">${svgText(L - 8, yy + h / 2 + 4.5, r.w, k ? "" : "strong", "end")}<rect class="${k ? "mute" : "on"}" x="${L}" y="${yy.toFixed(1)}" width="${((room * r.v) / top).toFixed(1)}" height="${h.toFixed(1)}" rx="2"/>${svgText(L + (room * r.v) / top + 6, yy + h / 2 + 4.5, percent(r.v), "soft")}</g>`;
+    }).join(""), note: `Kompas ${y.years[last]}` };
+  },
+  // Each year in its own word: the word of years.json that stands highest in that year.
+  tahun: ({ years: y }, W, H) => {
+    const peaks = peaksOf(y).filter((x) => x.stand >= 2 && x.w.length <= 14), own = y.years.map((_, p) => peaks.find((x) => x.p === p)).map((x, p) => x && { p, w: x.w }).filter(Boolean);
+    const k = Math.max(2, Math.min(own.length, Math.floor(W / 112))), shown = [...Array(k)].map((_, j) => own[Math.round((j * (own.length - 1)) / (k - 1))]), w = (W - (k - 1) * 8) / k;
+    return { svg: shown.map((x, j) => `<g class="in" style="--i:${j}"><rect class="line" x="${(j * (w + 8)).toFixed(1)}" y="0.5" width="${w.toFixed(1)}" height="${H - 1}" rx="4"/>${j === k - 1 ? `<path class="on-line" d="M${(j * (w + 8) + 2).toFixed(1)} 1.5H${(j * (w + 8) + w - 2).toFixed(1)}" stroke-width="3"/>` : ""}
+      ${svgText(j * (w + 8) + 10, 22, y.years[x.p], "soft")}${x.w.split(" ").map((part, m) => svgText(j * (w + 8) + 10, H - 14 - (x.w.split(" ").length - 1 - m) * 18, part, "word")).join("")}</g>`).join(""),
+    note: `Kompas ${y.years[0]}–${y.years.at(-1)}` };
+  },
+  // The frequent words of the first page that moved most: lights as high as they moved, as on the night sea.
+  bergeser: ({ first: f }, W, H) => {
+    const k = Math.max(3, Math.min(6, Math.floor(W / 64))), names = MOVED(f).slice(0, k), v = names.map((w) => f.moved[f.names.indexOf(w)]), top = Math.max(...v), water = H - 36, gap = W / k;
+    return { svg: `<path class="line" d="M0 ${water}H${W}"/>` + names.map((w, j) => {
+      const x = gap * (j + 0.5), y = water - ((water - 14) * v[j]) / top;
+      return `<g class="in" style="--i:${j}"><path class="line dotted" d="M${x.toFixed(1)} ${water}V${y.toFixed(1)}"/><circle class="${j ? "mute" : "on"}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${j ? 5 : 6.5}"/>${svgText(x, j % 2 ? H - 2 : H - 18, w, j ? "" : "strong", "middle")}</g>`;
+    }).join(""), note: `Kompas ${f.periods[0]}–${f.periods.at(-1)}` };
+  },
+  // The names of the tide table by kind: a dot for each.
+  entitas: ({ years: y }, W, H) => {
+    const kinds = ["person", "organisation", "place"], col = W / 3, lines = Math.floor((H - 26) / 12);
+    return { svg: kinds.map((kind, j) => {
+      const list = y.tide[KOMPAS][kind], per = Math.ceil(list.length / lines), gap = Math.min(12, (col - 14) / per);
+      return list.map((_, k) => `<circle class="in ${kind}" style="--i:${Math.floor(k / per)}" cx="${(j * col + 5 + (k % per) * gap).toFixed(1)}" cy="${(5 + Math.floor(k / per) * 12).toFixed(1)}" r="${Math.min(4.5, gap * 0.4).toFixed(1)}"/>`).join("")
+        + svgText(j * col, H - 4, `${list.length} ${t("kind_" + kind)}`, "soft");
+    }).join(""), note: `Kompas ${y.years[0]}–${y.years.at(-1)}` };
+  },
+};
+/** The play cards' pictures, drawn once their data has come (when they come near the screen) and again when their
+ *  width changes; where the data cannot come, the card is text alone. */
+function pictured(box) {
+  const pics = [...box.querySelectorAll(".play-pic")];
+  const fill = async () => {
+    const [stick, years, first] = await Promise.all([stickOf(0), json("years.json"), json(`${MAIN}/first.json`)]), d = { stick, years, first };
+    for (const pic of pics) {
+      let width = 0;
+      new ResizeObserver(() => {
+        if (!pic.isConnected || Math.abs(pic.clientWidth - width) < 2) return;
+        width = pic.clientWidth;
+        const { svg, note } = PICTURES[pic.dataset.page](d, width, pic.clientHeight);
+        pic.innerHTML = `<svg viewBox="0 0 ${width} ${pic.clientHeight}" width="${width}" height="${pic.clientHeight}" aria-hidden="true">${svg}</svg>`;
+        pic.nextElementSibling.innerHTML = note;
+      }).observe(pic);
+    }
+  };
+  const seen = new IntersectionObserver((list) => list.some((e) => e.isIntersecting) && (seen.disconnect(), fill().catch(() => pics.forEach((pic) => pic.remove()))), { rootMargin: "400px 0px" });
+  seen.observe(box);
+  return box;
+}
+const WIDE = { pasang: "wide", tahun: "wide right" };  // on a wide screen these two take two columns of "more"
+const playCard = (page, lead = false) => `<li${WIDE[page] ? ` class="${WIDE[page]}"` : ""}><a class="card play-card${lead ? " lead" : ""}" href="${href(page)}">${lead ? `<span class="kicker">${t("play_lead")}</span>` : ""}<span class="play-pic" data-page="${page}"></span><span class="play-note"></span>
   <b class="card-title">${t(`play_${page}`)}</b><span class="card-text">${t(`play_${page}_about`)}</span></a></li>`;
-const playDoors = (row = false) => `<ul class="cards doors play-cards${row ? " row" : ""}">${PLAY.map(playCard).join("")}</ul>`;
+/** The first thing to play leads, on the deep, its picture large; the next two beside it. */
+const playTop = () => pictured(el(`<ul class="cards doors play-cards play-top">${PLAY.slice(0, 3).map((page, k) => playCard(page, !k)).join("")}</ul>`));
 
 /** The chart's graticule, faint: what lies behind a head on the deep until the night sea is there (or where it
  *  cannot be). Lines only; no route that no word sailed. */
@@ -1535,7 +1660,8 @@ async function homePage() {
   const featured = el(`<section class="featured" aria-labelledby="featured-title"><p class="kicker">${t("featured_kicker")}</p><h2 id="featured-title">${t("featured_title")}</h2>
     ${storyCards(STORIES.slice(0, 3), true)}<p class="more"><a class="button" href="${href("cerita")}">${t("all_stories_n", STORIES.length)}</a></p></section>`);
   const play = el(`<section class="play-home" aria-labelledby="play-title"><p class="kicker">${t("nav_play")}</p><h2 id="play-title">${t("play_home_title")}</h2><p class="sub">${t("play_lede")}</p>
-    ${playDoors(true)}<p class="more"><a class="button" href="${href("main")}">${t("all_play_n", PLAY.length)}</a></p></section>`);
+    <p class="more"><a class="button" href="${href("main")}">${t("all_play_n", PLAY.length)}</a></p></section>`);
+  play.querySelector(".more").before(playTop());
   const measure = el(`<section class="measure" aria-labelledby="measure-title"><p class="kicker">${t("measure_kicker")}</p><h2 id="measure-title">${t("measure_title")}</h2>
     <div class="measure-cols">${["sources", "text", "tests"].map((k) => `<div class="measure-col" data-k="${k}"><h3>${t(`measure_${k}_title`)}</h3><p class="measure-number">&nbsp;</p><p class="measure-label">&nbsp;</p><div class="measure-more"></div></div>`).join("")}</div>
     <p class="more"><a href="${href("metode")}">${t("measure_more")}</a></p></section>`);
@@ -1947,14 +2073,11 @@ async function guessPage() {
   ask(0);
 }
 
-/** The things to play with: the first leads, on the deep, its mark drawn large and moving; the next two beside it;
- *  the rest under "more", smaller. */
+/** The things to play with, each led by a picture of its own figure: the first leads, on the deep, its picture large;
+ *  the next two beside it; the rest under "more", two of them wide. */
 async function playPage() {
-  const [lead, ...rest] = PLAY;
-  view.replaceChildren(pageHead(t("nav_play"), { kicker: t("play_kicker", PLAY.length), lede: t("play_lede"), sea: { words: QUIZ_NAMES, count: 4 } }),
-    el(`<ul class="cards doors play-cards play-top"><li><a class="card play-card lead" href="${href(lead)}"><span class="kicker">${t("play_lead")}</span><svg class="play-mark" viewBox="0 0 64 44" width="192" height="132" aria-hidden="true">${PLAY_MARKS[lead]}</svg>
-      <b class="card-title">${t(`play_${lead}`)}</b><span class="card-text">${t(`play_${lead}_about`)}</span></a></li>${rest.slice(0, 2).map(playCard).join("")}</ul>`),
-    el(`<h2 class="cards-head">${t("play_more")}</h2>`), el(`<ul class="cards doors play-cards play-more">${rest.slice(2).map(playCard).join("")}</ul>`));
+  view.replaceChildren(pageHead(t("nav_play"), { kicker: t("play_kicker", PLAY.length), lede: t("play_lede"), sea: { words: QUIZ_NAMES, count: 4 } }), playTop(),
+    el(`<h2 class="cards-head">${t("play_more")}</h2>`), pictured(el(`<ul class="cards doors play-cards play-more">${PLAY.slice(3).map((page) => playCard(page)).join("")}</ul>`)));
 }
 
 async function methodPage() {

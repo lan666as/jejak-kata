@@ -113,7 +113,9 @@ it.
   a number). The large story card (the three newest, on home and on the stories index; the newest wider, its number
   larger) is on `--deep` with the number in `--beacon`; a route-coloured line draws across its top on hover,
   and with a fine pointer it leans towards it (at most 2.5 degrees) while a lighter band of the beacon crosses the number.
-  A play card leads with a small drawn mark of its figure, the moving part in `--route`.
+  A play card leads with a small picture of its own figure, drawn from its own data (`PICTURES` in app.js: Kompas's
+  names by term, the yearly shares, the first page's chart) in the plate's inks, with a meta line saying what it shows;
+  what the game asks about in `--route`.
 - **Figure plate**: paper `--chart-2` on the chart, and on the stage; title is a sentence with the number in it. The
   numbers a step's caption names (its `focus`) stand on the beacon: a pill of `--beacon` behind the value, the text in
   `--deep`. The tools under a figure save it as an image and download the numbers it draws as CSV (from what the
@@ -232,8 +234,9 @@ A story keeps its place by step (not by pixels) across a language switch and the
   lines on one scale, each word named where its line is, the year they cross marked), the rest folded; of the words
   that came and went or came to stay, the top eight, the rest folded. The rule is written on the page beside a rule
   of `--beacon`. The page shows its first source as soon as that source has come, not after every source.
-- **Play**: the first thing to play leads, on the deep, its mark drawn large and moving; the next two beside it; the
-  rest under "more", smaller. A game is a board: the round on paper, and beside it the game's voyage so far (a port
+- **Play**: the first thing to play leads, on the deep, its picture large (two rows tall from 900px); the next two
+  beside it, text and picture side by side; the rest under "more" in three columns, the tide table and the year posters
+  two columns wide. The first page shows the same first three. A game is a board: the round on paper, and beside it the game's voyage so far (a port
   per round: filled where right, a ring where wrong, the ship on the round now); at the end the score as a plate
   to save as an image.
 - **Method, stories index, other play pages**: the page head pattern, the same cards, fields, chips and tables;
