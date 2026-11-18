@@ -414,9 +414,13 @@ svg text { fill: var(--ink-2); font: 12px var(--type); }
 .map-steer .picked { margin-top: 0; } .map-steer .picked:empty { display: none; }
 .map-steer .suggest { margin: 0; }
 @media (min-width: 900px) {
-  .page-head.joined { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--s8); align-items: last baseline; padding-top: var(--s7); }
+  .page-head.joined { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--s8); align-items: last baseline; padding: var(--s5) 0 var(--s4); }
   .page-head.joined > .kicker { grid-column: 1 / -1; }
-  .page-head.joined > .lede { margin: 0; max-width: 34rem; font-size: var(--t-body); line-height: var(--l-body); }
+  .page-head.joined > .lede { margin: 0; max-width: 40rem; font-size: var(--t-body); line-height: var(--l-body); }
+  /* the sea owns the rest of the first screen; what steers it stands on the water, at its upper left */
+  .map-deep > .map-steer { position: absolute; z-index: 2; top: var(--s4); left: 0; max-width: min(36rem, 60%); padding: var(--s3) var(--s4);
+    border-radius: var(--r2); background: color-mix(in srgb, var(--deep) 84%, transparent); }
+  .map-deep .chart.gl.explore { margin-top: 0; height: max(30rem, calc(100svh - var(--head-h) - 10rem)); }
 }
 .map-deep .chart.gl { margin: var(--s4) calc(50% - 50vw) 0; height: min(74svh, 760px); background: radial-gradient(120% 80% at 60% 20%, var(--deep-2), var(--deep) 70%); border: 0; border-radius: 0; }
 .map-deep :is(input[type="search"], select) { color: var(--on-deep); background-color: var(--deep-2); border-color: var(--line-deep-2); }

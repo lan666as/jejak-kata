@@ -454,9 +454,9 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       taken.push(k);
       return true;
     };
-    // Nothing is named under what lies over the sea: its buttons, the year, a hint, with a margin around them; nor,
+    // Nothing is named under what lies over the sea: its buttons, the year, a hint, the map's fields, with a margin around them; nor,
     // in a held sea, outside its open water.
-    const box = canvas.getBoundingClientRect(), keep = [...node.querySelectorAll(".zoom, .when, .sea-hint")].map((n) => n.getBoundingClientRect()).filter((r) => r.width && r.height)
+    const box = canvas.getBoundingClientRect(), keep = [...node.querySelectorAll(".zoom, .when, .sea-hint"), ...(node.closest(".map-deep")?.querySelectorAll(".map-steer") || [])].map((n) => n.getBoundingClientRect()).filter((r) => r.width && r.height)
       .map((r) => [r.left - box.left - 8, r.top - box.top - 8, r.right - box.left + 8, r.bottom - box.top + 8]);
     const open = held && !explore ? [pad[3], pad[0], W - pad[1], H - pad[2]] : [-1e9, -1e9, 1e9, 1e9];
     const clear = (x, y, width, height = 18) => x >= open[0] && x + width <= open[2] && y - height / 2 >= open[1] && y + height / 2 <= open[3]

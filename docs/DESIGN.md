@@ -231,8 +231,10 @@ A story keeps its place by step (not by pixels) across a language switch and the
   ship through the years, and the legend in the colours the sea shows (the lights by night, the dots by day); the
   tide line under it; on paper the tools and, for two words, the comparison. Opened with no word, the map shows the
   first page's word sailed as an example (said so under the field) until the reader picks one; a hint on the sea
-  says how to move over it, and goes at the first touch. From 900px the title stands on its lede's last baseline; on
-  a phone the head is a line and the sea comes first, what steers it under it, the buttons in a row at its top.
+  says how to move over it, and goes at the first touch. From 900px the head is short (the title on its lede's last
+  baseline), the sea fills the rest of the first screen, and what steers it (lens, field, chips, player) stands on the
+  water at its upper left on a veil of the deep; on a phone the head is a line and the sea comes first, what steers it
+  under it, the buttons in a row at its top.
   Without WebGL2 the flat chart on paper.
 - **Findings**: each list is the counting's own ranking, shown by a stated rule, never picked: of the pairs, only
   those whose lines cross clearly (the rising word starts below the falling one and ends at least twice as common:
