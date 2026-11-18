@@ -136,12 +136,35 @@ A story is a voyage in three parts.
    nested scrolling: a swipe always moves the story. No text on a plate is under 12px: a line's name and value too
    long for the column wrap onto a second line. Under each sticky stage lies a run of invisible beats, one per step,
    that the scroll snaps to; the scroll position chooses the step.
-3. **Landing**, on the chart: "What this data cannot say" as a bordered panel, the tools (save image, copy link,
-   check for yourself), and the next story as a card.
+3. **Landing**, on the chart: "What this data cannot say" as a bordered panel, the tools (save image, share, copy
+   link, check for yourself), how to cite the story (folded: a line and BibTeX, each to copy), and the next story as a
+   card.
 
 Every caption stays in the document, in its beat, for screen readers and find-in-page; the visible caption is an
 `aria-live="polite"` region. With reduced motion the stage stays, steps cut instead of travelling and nothing snaps.
 A story keeps its place by step (not by pixels) across a language switch and the back button.
+
+## Addresses and sharing
+
+- **Addresses.** Every story, main page, play page and word the first page shows has a real path (`cerita/oknum/`),
+  English under `en/`; the rest of a route follows after `#/` (a story's step: `cerita/oknum/#/1/2`, which opens on
+  that step). Routes without a page of their own stay `#/kata/batik`, and every old `#/...` link still works
+  (`site/address.js`). The address bar always shows the address of what is on screen, in its language.
+- **Share control** ("Bagikan"): a secondary button, beside "Mulai" on a story's cover (on the deep: `--deep`,
+  `--line-deep-2` edge), in the landing's tools, and on each stage as a 24px mark (an arrow out of a tray, in
+  `--on-deep-2`) at the right of the count, which shares that step. Where the device has a share sheet it opens straight
+  away, with the title, a line and the address, and on a stage the step's plate as a PNG where the sheet takes files.
+  Elsewhere it unfolds a sheet of paper (`--chart-2`, hairline, `--r2`, `--lift`): "Bagikan ke", then WhatsApp, X,
+  Telegram, Facebook, LinkedIn, Bluesky and email in two columns, each a plain link (no script of those sites is ever
+  loaded), and "Salin tautan" across the bottom. A stage's sheet opens upward over the figure. It closes on Escape or a
+  press elsewhere. Not printed.
+- **Share images** (`og.jpg`, 1200x630, under 300 kB, made by `tests/site/publish.mjs` at deploy): a card on the
+  night sea of the page itself (a story's cover sea with its own word's route, a word's head sea, else the first
+  page's), shaded from `--deep` on the left: the mark and "Jejak Kata" at the top; at the bottom a kicker with its
+  route-coloured rule, then for a story its key number in `--beacon` at display weight (800, stretch 75%) with its line
+  in `--on-deep-2` and the title in heading type, for a word the word in display type and what its company was in the
+  first and last year; the site's address bottom right. The first page's image is the hero itself, after its first
+  route has sailed. Each in Indonesian and English.
 
 ## Pages
 

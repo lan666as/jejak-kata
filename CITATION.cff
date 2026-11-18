@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this code or its counts, please cite it as below. To cite one story, use the line on its page."
+type: software
+title: "Jejak Kata: how Indonesian words changed the company they keep"
+authors:
+  - alias: lan666as
+    website: "https://github.com/lan666as"
+repository-code: "https://github.com/lan666as/jejak-kata"
+url: "https://zidan.dev/jejak-kata/"
+license: MIT
+keywords:
+  - Indonesian
+  - semantic change
+  - corpus linguistics
+  - word co-occurrence
+references:
+  - type: dataset
+    title: "Jejak Kata: counts and measurements"
+    authors:
+      - alias: lan666as
+    url: "https://huggingface.co/datasets/lan666as/jejak-kata"
+    license: CC-BY-4.0
