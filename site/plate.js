@@ -31,16 +31,17 @@ function key(series, W, narrow) {
     x += width;
     return mark;
   });
-  return { marks, lines: line + 1 };
+  // On a phone the moment shown stands on the legend's line when that line is short enough (else under it).
+  return { marks, lines: line + 1, beside: narrow && !line && x + 130 < W - 12, end: x };
 }
 // A strip's rows stand this far apart where they can (a name too long for its column then takes two lines), and never
 // closer than the floor (the name then a little smaller instead); above and below them, the strip's own margins.
 const PITCH = { narrow: 26, wide: 22, floor: 18 };
-const stripRoom = (top, narrow, lines) => top + (narrow ? 50 : 34) + (lines - 1) * 16 + 76;
+const stripRoom = (top, narrow, { lines, beside }) => top + (narrow && !beside ? 50 : 34) + (lines - 1) * 16 + 76;
 /** How tall a strip of `rows` rows, titled `title` with these `series`, must be at `width`: `pitch` px apart. */
 export const stripLeast = (title, rows, width, series = [], pitch = null) => {
   const { W, top, narrow } = heading(title, width);
-  return Math.ceil(stripRoom(top, narrow, key(series, W, narrow).lines) + rows * (pitch || PITCH[narrow ? "narrow" : "wide"]));
+  return Math.ceil(stripRoom(top, narrow, key(series, W, narrow)) + rows * (pitch || PITCH[narrow ? "narrow" : "wide"]));
 };
 
 /** The paper, the title broken into lines, the note and the site's name; `body(top)` draws between them. At least
@@ -134,7 +135,8 @@ export function strip(spec, width, height) {
   const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line }) => {
     const longest = Math.max(...spec.rows.map((r) => r.label.length)), L = narrow ? Math.min(W * 0.45, 16 + 7 * longest) : 178, R = narrow ? 80 : 84;
     const legend = key(spec.series, W, narrow), extra = (legend.lines - 1) * 16;
-    const T = top + (narrow ? 50 : 34) + extra, B = 76, gap = (H - T - B) / rows;  // the margins stripRoom counts
+    legend.beside &&= legend.end + 9 * Math.max(...spec.states.map((s) => s.length)) < W - 12;
+    const below = narrow && !legend.beside, T = top + (below ? 50 : 34) + extra, B = 76, gap = (H - T - B) / rows;  // the margins stripRoom counts
     x = (v) => L + ((W - L - R) * v) / most;
     y = (k) => T + gap * (k + 0.5);
     const size = Math.max(12, Math.min(13, gap * 0.9)), fits = Math.floor((L - 14) / (size * 0.53));
@@ -148,7 +150,7 @@ export function strip(spec, width, height) {
       return `<text x="${L - 9}" y="${y(k) + small * 0.35 - (parts.length - 1) * small * 0.55}" text-anchor="end" style="font-size:${small}px;font-weight:600;fill:${ink}">${parts.map((part, i) => `<tspan x="${L - 9}" dy="${i ? small * 1.1 : 0}">${part}</tspan>`).join("")}</text>`;
     };
     return `${legend.marks.map((m, k) => `<circle cx="${m.x + 5}" cy="${top + 10 + m.line * 16}" r="4.5" fill="${css(COLOURS[k])}"/><text x="${m.x + 14}" y="${top + 14 + m.line * 16}" style="font-size:12px;fill:${soft}">${m.name}</text>`).join("")}
-    <text class="state" x="${narrow ? 12 : W - 12}" y="${top + (narrow ? 32 + extra : 15)}" text-anchor="${narrow ? "start" : "end"}" style="font-size:14px;font-weight:800;fill:${ink}"></text>
+    <text class="state" x="${below ? 12 : W - 12}" y="${top + (below ? 32 + extra : 15)}" text-anchor="${below ? "start" : "end"}" style="font-size:14px;font-weight:800;fill:${ink}"></text>
     ${[0, 0.5, 1].map((f) => `<line x1="${x(most * f)}" x2="${x(most * f)}" y1="${T - 4}" y2="${H - B + 2}" stroke="${line}"/><text x="${x(most * f)}" y="${H - B + 14}" text-anchor="middle" style="font-size:12px;fill:${soft}">${format(most * f)}</text>`).join("")}
     ${spec.rows.map((row, k) => `<g class="row" style="--k:${k};transition:opacity var(--d-turn) var(--sail)">${name(row.label, k)}
       <line x1="${L}" x2="${W - R}" y1="${y(k)}" y2="${y(k)}" stroke="${line}" stroke-dasharray="1 3"/>

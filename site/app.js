@@ -1133,9 +1133,9 @@ function share(s, part) {
   probe.remove();
   const titles = [].concat(part[language].plate).filter((x) => typeof x === "string"), [rows, series] = STRIPS[part.type]?.(part) || [0, []];
   const need = rows ? Math.max(...titles.map((title) => stripLeast(title, rows, s.room.clientWidth, series))) : 0;
-  // The band keeps five lines; for a strip that needs most of the stage, three, or two.
-  const keep = need > whole * 0.75 ? 2 : need > whole * 0.6 ? 3 : 5;
-  const fig = Math.max(whole / 2, Math.min(Math.max(need, whole - text - chrome), whole - chrome - Math.min(text, keep * line)));
+  // The band keeps five lines; for a strip that needs most of the stage, three, or (never less than 64px) two.
+  const keep = need > whole * 0.75 ? Math.max(64, 2 * line) : (need > whole * 0.6 ? 3 : 5) * line;
+  const fig = Math.max(whole / 2, Math.min(Math.max(need, whole - text - chrome), whole - chrome - Math.min(text, keep)));
   box.style.setProperty("--fig", Math.floor(fig) + "px");
 }
 const SCENE_DATA = { together: "together.json", stuck: "together.json", yearly: "years.json", forget: "years.json", left: "years.json", fell: "stopped.json" };
@@ -1221,6 +1221,9 @@ async function storyPage(slug, scene) {
   const story = STORIES.find((s) => s.slug === slug);
   if (!slug) return storiesPage();
   if (!story) return lostPage();
+  // Laid out full width from the first frame (index.html says so too), also while the plates are on their way.
+  view.classList.add("voyage");
+  document.documentElement.classList.add("voyaging");
   await plating();
   const words = story[language], next = STORIES[(STORIES.indexOf(story) + 1) % STORIES.length], parts = story.scenes;
   const cover = el(`<header class="cover shore"><div class="shore-sea">${GRATICULE}</div><div class="cover-text"><a class="kicker" href="${href("cerita")}">${t("nav_stories")}</a>
@@ -1235,8 +1238,6 @@ async function storyPage(slug, scene) {
     data: [...new Set(parts.map((part) => (part.type === "asked" ? `pages/${part.name}.json` : SCENE_DATA[part.type])).filter(Boolean))] }),
     el(`<a class="card next-story" href="${href("cerita", next.slug)}"><span class="kicker">${t("next_story")}</span><b class="card-title">${next[language].title}</b><span class="card-text">${next[language].teaser}</span></a>`),
     el(`<ul class="links"><li><a href="${href("cerita")}">${t("all_stories")}</a></li></ul>`));
-  view.classList.add("voyage");
-  document.documentElement.classList.add("voyaging");
   view.replaceChildren(cover, ...stages.map((s) => s.node), landing);
   rise(cover.querySelector("h1"));
   // Behind the cover, the night sea with the route of the story's own word (the first of the words it asks the

@@ -29,6 +29,10 @@ Colour roles (light / dark). Names used by the figures (`--sea --shoal --paper -
 | `--beacon` | `#f0ae2c` | `#f2b84a` | the key number; highlights on the deep |
 | `--link` | `#0f5c8c` | `#7fc0ea` | links in running text |
 
+A figure's series take `--cat-1..8` in that order (plate.js): magenta (`--route`), orange (`--route-2`), aqua, yellow,
+blue, green, violet, red, each with its own light and dark step, checked for colour-blind separation of neighbours on
+each mode's paper. Their names on a plate are set in ink beside a dot of their colour, never in the colour itself.
+
 At night (the home hero) the islands take `--light-0..5`, dim to bright by how far a word moved; control edges on
 the deep use `--line-deep-2` (3:1 against `--deep`).
 
