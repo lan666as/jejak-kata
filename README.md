@@ -279,6 +279,7 @@ runs `look` first.
 | `frames.mjs`, `capture.mjs`, `look.mjs`, `shot.mjs`, `sheet.mjs` | frame times, and screenshots to look at |
 | `stages.mjs <dir> [slug ...]` | every story's first and densest scene at 1440x900 and 1920x1080, light and dark: a screenshot each, and fails on a figure or caption past its stage, text under 12px or a page wider than the screen |
 | `gpu.mjs <url> <dir>`, `film.mjs <url> <dir>` | on a rented machine with a GPU: frame times and recordings of the live site; `film.mjs` presents it as to a jury (arrival, a word sailed, the dive, a story, the map, a word, the share sheet) with eased pointer moves, at 1440x900 and 390x844, as Playwright videos |
+| `film.mjs <url> <dir> [desktop\|phone] --frames [--seconds N]` | the same film at 60 frames a second, frame by frame: Chromium's headless shell with begin-frame control and virtual time (each frame the page's clock moves 1/60 s, so the result does not depend on the machine's speed), 1440x900 at 2x and 390x844 at 3x, encoded by ffmpeg as H.264, CRF 16, yuv420p (`<dir>/film-desktop.mp4`, `film-phone.mp4`). On the GPU machine: `npx playwright install chromium-headless-shell`, then `node tests/site/film.mjs https://zidan.dev/jejak-kata/ film --frames`; to check the setup first, add `--seconds 5`. ffmpeg from `$FFMPEG`, the PATH or `~/.cache/ffmpeg-static`; without it the frames are written as PNG with the command to encode them |
 
 ### One generation step: addresses of their own
 
