@@ -12,6 +12,8 @@ function values(scene, dir, focus) {
   if (scene.type === "together") { const e = together[`${scene.lens}/${scene.word}`]; return [...named(Object.keys(e.with)).flatMap((x) => flat(e.with[x])), ...flat(Object.values(e.all)), ...e.pages]; }
   if (scene.type === "stuck") return [...named(scene.rows).flatMap((name) => OUTLETS.flatMap((o) => flat(together[`${o}/${name}`]?.with[scene.word]))), ...OUTLETS.flatMap((o) => flat(together[`${o}/${scene.rows[0]}`].all[scene.word]))];
   if (scene.type === "yearly") return [...(scene.by === "outlet" || scene.outlet !== undefined ? named(scene.words) : scene.words).flatMap((w) => flat(Object.values(years.share[w]))), ...Object.values(years.pages).flat()];
+  if (scene.type === "left") return named(scene.names.map(([w]) => w)).flatMap((w) => { const left = scene.names.find(([x]) => x === w)[1], i = years.years.indexOf(left);
+    return OUTLETS.flatMap((o) => [1, 2, 3].map((d) => years.share[w][o][i + d] / years.share[w][o][i] * 100).filter(Number.isFinite)); });
   if (scene.type === "fell") return [...Object.values(stopped.fell).flat().filter((r) => !focus?.length || focus.includes(r.word)).map((r) => r.times), ...stopped.pages.flat()];
   return null;
 }
