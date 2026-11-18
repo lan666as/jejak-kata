@@ -4,8 +4,8 @@
 // when the moment changes: the marks move.
 
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-// Up to eight series, each its own hue in light and dark (style.css, --cat-1..8: magenta first, then orange).
-const COLOURS = ["--cat-1", "--cat-2", "--cat-3", "--cat-4", "--cat-5", "--cat-6", "--cat-7", "--cat-8"];
+// Up to nine series (the ninth in ink), each its own hue in light and dark (style.css, --cat-1..8: magenta first, then orange).
+const COLOURS = ["--cat-1", "--cat-2", "--cat-3", "--cat-4", "--cat-5", "--cat-6", "--cat-7", "--cat-8", "--cat-9"];
 const SITE = "Jejak Kata · zidan.dev/jejak-kata";
 // Marks travel on the site's curve, one after another (--k: the series or row they belong to), as a leg (--d-leg).
 const MOVE = "transition:transform var(--d-leg) var(--sail) calc(var(--k, 0) * 45ms),opacity var(--d-turn) var(--sail)";
