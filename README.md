@@ -171,6 +171,24 @@ and not chosen), the most shifted, names by kind, two words compared, and storie
 pieces. The path, the company and each period's own words measure no change and need no test; only the
 shift is a claim about change.
 
+### What a story is allowed to show
+
+A story's figure shows a list made by a stated rule, never a handful picked for the argument. The rule is written in
+the story's own "what this data cannot say" panel, with what was left out and why:
+
+| Story | The rule |
+|---|---|
+| `kata-korupsi` | every party with DPR seats in 2009–2024 (ten); parties without seats wherever an outlet has 80 pages naming them; names that mean two things are measured (`demokrat`, `pan`) or counted by their full name |
+| `viral-polisi` | 22 words for state offices and institutions, street-level and high; what is more viral outside the state is stated |
+| `dilupakan` | every holder of seven offices who left in 2012–2023, acting holders excluded; a dot needs 80 pages in the last year in office |
+| `kata-resmi` | 19 foreign words and their recommended Indonesian replacement, both in the Kompas vocabulary and with one meaning; four names for Papua's armed groups across nine publishers, the state's own sites included |
+| `umur-slogan` | 19 central-government slogans and programmes that are in the Kompas vocabulary |
+| `oknum` | the words that most often stand right after "oknum", found by counting in a third of the text, then counted in all of it |
+| `penyesuaian`, `oknum`, `diamankan` | every publisher whose text is kept |
+| `berhenti-dibicarakan` | the lists come from `stopped.json`, ranked by rule |
+
+`tests/site/numbers.mjs <data> <data>` lists every caption number the data does not give.
+
 ## Layout
 
 ```
