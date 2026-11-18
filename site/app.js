@@ -1240,7 +1240,7 @@ async function homePage() {
   if (!hero.isConnected) return;
   if (drawn) moor(first);
   hero.querySelector(".hero-sea .chart").replaceWith(figure.node);
-  const lit = arriving && drawn && figure.chart.arrive((n) => t("tally", thousands(n)));
+  const lit = arriving && drawn && figure.chart.arrive?.((n) => t("tally", thousands(n)));
   await figure.chart.drawn();
   if (lit) {
     // Lit when the front has crossed the chart and the rest of the words are in (or have not come in time).
