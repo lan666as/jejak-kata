@@ -87,7 +87,7 @@ export function plate(spec, width, height) {
     // a name and value longer than that go on two lines (show), never smaller than 12px.
     const long = Math.max(...spec.series.map((s) => s.label.length + (s.off ? 12 : 8)));
     [R, T] = [narrow ? Math.min(W * 0.5, Math.max(W * 0.36, 20 + 6.6 * long)) : Math.min(260, Math.max(190, 22 + 7.2 * long)), top + 22];
-    tag = narrow ? 12 : 13;
+    tag = narrow ? 12 : 14;
     x = (i) => L + ((W - L - R) * i) / Math.max(1, n - 1);
     y = (v) => H - B - ((H - T - B) * v) / most;
     const every = Math.ceil(n / ((W - L - R) / 44));
@@ -100,8 +100,8 @@ export function plate(spec, width, height) {
       // Where a series says how far each value may be off, a band of that width lies under its line.
       const band = !s.off ? [] : s.values.reduce((acc, v, i) => (v === null ? acc.push([]) : acc.at(-1).push(i), acc), [[]]).filter((r) => r.length > 1)
         .map((r) => [...r.map((i) => `${x(i)},${y(s.values[i] + s.off[i])}`), ...r.reverse().map((i) => `${x(i)},${y(Math.max(0, s.values[i] - s.off[i]))}`)].join(" "));
-      return `<g class="series" style="--k:${k};transition:opacity var(--d-turn) var(--sail)">${band.map((b) => `<polygon class="band" points="${b}" fill="${colour}" opacity="0.16"/>`).join("")}${runs.map((r) => `<polyline class="draw" pathLength="1" points="${r.join(" ")}" fill="none" stroke="${colour}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`).join("")}
-        <circle r="5.5" fill="${colour}" stroke="${paper}" stroke-width="2" style="${MOVE}"/><rect class="beacon" x="${W - R + 3}" rx="4" fill="${beacon}" opacity="0" style="${MOVE}"/><text x="${W - R + 9}" style="font-size:${tag}px;font-weight:700;fill:${ink};${MOVE}"></text></g>`;
+      return `<g class="series" style="--k:${k};transition:opacity var(--d-turn) var(--sail)">${band.map((b) => `<polygon class="band" points="${b}" fill="${colour}" opacity="0.16"/>`).join("")}${runs.map((r) => `<polyline class="draw" pathLength="1" points="${r.join(" ")}" fill="none" stroke="${colour}" stroke-width="${narrow ? 2.5 : 3}" stroke-linejoin="round" stroke-linecap="round"/>`).join("")}
+        <circle r="${narrow ? 5.5 : 6.5}" fill="${colour}" stroke="${paper}" stroke-width="2" style="${MOVE}"/><rect class="beacon" x="${W - R + 3}" rx="4" fill="${beacon}" opacity="0" style="${MOVE}"/><text x="${W - R + 9}" style="font-size:${tag}px;font-weight:700;fill:${ink};${MOVE}"></text></g>`;
     }).join("")}`;
   });
   const marker = made.svg.querySelector(".marker"), groups = [...made.svg.querySelectorAll(".series")], { W } = made;
@@ -114,7 +114,7 @@ export function plate(spec, width, height) {
     pill.setAttribute("width", dot + Math.max(...lines.map((l) => wide(l, tag))) + 12);
     pill.setAttribute("height", (tag + 2) * lines.length + 6);
     pill.setAttribute("y", -tag - 2);
-    return 15 + (tag + 2) * (lines.length - 1);  // the height it takes
+    return (tag > 12 ? tag + 4 : 15) + (tag + 2) * (lines.length - 1);  // the height it takes
   };
   const show = (i, focus) => {
     at(marker, x(i), 0);
@@ -157,13 +157,13 @@ export function strip(spec, width, height) {
   const most = spec.most || Math.max(...spec.rows.flatMap((r) => r.values.flat().map((v) => v || 0))) * 1.05 || 1;
   let x, y;
   const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line, beacon }) => {
-    const longest = Math.max(...spec.rows.map((r) => r.label.length)), L = narrow ? Math.min(W * 0.45, 16 + 7 * longest) : 178, R = narrow ? 80 : 84;
+    const longest = Math.max(...spec.rows.map((r) => r.label.length)), L = narrow ? Math.min(W * 0.45, 16 + 7 * longest) : 200, R = narrow ? 80 : 84;
     const legend = key(spec.series, W, narrow), extra = (legend.lines - 1) * 16;
     legend.beside &&= legend.end + 9 * Math.max(...spec.states.map((s) => s.length)) < W - 12;
     const below = narrow && !legend.beside, T = top + (below ? 50 : 34) + extra, B = 76, gap = (H - T - B) / rows;  // the margins stripRoom counts
     x = (v) => L + ((W - L - R) * v) / most;
     y = (k) => T + gap * (k + 0.5);
-    const size = Math.max(12, Math.min(13, gap * 0.9)), fits = Math.floor((L - 14) / (size * 0.53));
+    const size = Math.max(12, Math.min(narrow ? 13 : 14, gap * 0.9)), fits = Math.floor((L - 14) / (size * 0.53));
     // A name too long for its column: on two lines where the rows are far enough apart, else a little smaller.
     const name = (label, k) => {
       if (label.length <= fits) return `<text x="${L - 9}" y="${y(k) + size * 0.35}" text-anchor="end" style="font-size:${size}px;font-weight:600;fill:${ink}">${label}</text>`;
@@ -179,7 +179,7 @@ export function strip(spec, width, height) {
     ${spec.rows.map((row, k) => `<g class="row" style="--k:${k};transition:opacity var(--d-turn) var(--sail)">${name(row.label, k)}
       <line x1="${L}" x2="${W - R}" y1="${y(k)}" y2="${y(k)}" stroke="${line}" stroke-dasharray="1 3"/>
       ${spec.series.map((_, j) => (row.values[0][j] === null || spec.states.length < 2 ? "" : `<circle cx="${x(row.values[0][j])}" cy="${y(k)}" r="4" fill="none" stroke="${css(COLOURS[j])}" stroke-width="1.2" opacity=".65"/>`)).join("")}
-      ${spec.series.map((_, j) => `<circle class="dot" r="${Math.min(7, gap * 0.42)}" fill="${css(COLOURS[j])}" stroke="${paper}" stroke-width="1.5" style="${MOVE}"/>`).join("")}
+      ${spec.series.map((_, j) => `<circle class="dot" r="${Math.min(narrow ? 7 : 9, gap * 0.42)}" fill="${css(COLOURS[j])}" stroke="${paper}" stroke-width="1.5" style="${MOVE}"/>`).join("")}
       <rect class="beacon" x="${W - R + 3}" y="${y(k) - 10}" height="20" rx="4" fill="${beacon}" opacity="0"/>
       <text class="value" x="${W - R + 8}" y="${y(k) + size * 0.35}" style="font-size:12px;font-weight:700;fill:${ink}"></text></g>`).join("")}`;
   }, stripLeast(spec.title, rows, width, spec.series, PITCH.floor));

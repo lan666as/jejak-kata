@@ -41,7 +41,7 @@
 
   /* space */
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 72px; --s9: 112px;
-  --gutter: var(--s4); --content: 1120px; --measure: 38rem;
+  --gutter: var(--s4); --content: 1120px; --wide: 1600px; --measure: 38rem;
   --tap: 44px; --chip: 36px; --head-h: 56px; --hair: 1px; --rule: 2px; --mark: 3px;
   --tide-h: clamp(14px, 2.2vw, 30px);  /* the tide line's height: where the deep gives way to the paper */
 
@@ -730,6 +730,13 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
   .stage-nav .back { grid-area: back; } .stage-nav .on { grid-area: on; }
   .stage-nav .step span { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
   .stage-nav .back { padding-right: var(--s4); } .stage-nav .on { padding-left: var(--s4); }
+}
+/* from 1100px the figure owns the stage: the stage takes the wide grid (--wide, centred, the gutters at its edges) and
+   the plate is drawn larger (app.js, figureSize); the caption keeps a reading column of 26 to 30rem at its right */
+@media (min-width: 1100px) {
+  .voyage { --side: clamp(26rem, 18rem + 12vw, 30rem); }
+  .stage { padding-inline: max(var(--gutter), (100% - var(--wide)) / 2); }
+  .stage::before { mask-image: radial-gradient(ellipse 55% 75% at 33% 50%, #000 25%, transparent 80%); }
 }
 
 /* 3. the landing, on the chart: what the data cannot say, the tools, the next story */

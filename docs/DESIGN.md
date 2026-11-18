@@ -56,7 +56,8 @@ headings stretch 80% weight 700, text stretch 100% weight 400/600.
 | `--t-caption` | clamp(1.375rem, 1rem + .9vw, 1.875rem) | 1.38 | a story caption beside its figure, from 900px |
 
 Space: `--s1 4px, --s2 8px, --s3 12px, --s4 16px, --s5 24px, --s6 32px, --s7 48px, --s8 72px, --s9 112px`.
-Gutter 16px on phones, 32px from 900px. Content width 1120px; reading measure 38rem.
+Gutter 16px on phones, 32px from 900px. Content width 1120px; wide 1600px (a story's stage from 1100px); reading
+measure 38rem.
 Radius: `--r1 6px` (controls), `--r2 14px` (cards, stage, sheets), pill for chips. No drop shadows on the chart;
 one soft shadow (`--lift`) for things that float (menu, suggestions, tip).
 
@@ -138,8 +139,10 @@ A story is a voyage in three parts.
    words drift up and fade while the sea sinks away; the first stage's figure surfaces as its stage comes up; at the
    landing the tide line swells and settles as the paper comes in.
 2. **Scenes.** Each scene is a **stage**: the figure holds the screen and the caption sits in a fixed place beside
-   it (from 900px: a column at the right, the stage on the page's 1120px grid like the header; below: a band under
-   the figure), the chart's graticule faint behind the figure. "Part 1 of 2" is said only where there are parts. Captions do not scroll past as boxes:
+   it (from 900px: a column at the right, the stage on the page's 1120px grid like the header; from 1100px the figure
+   owns the stage: the stage takes the wide grid, the caption a column of 26 to 30rem at its right, and the plate is
+   shown up to 1.5 times its drawn size, with larger marks and type, a strip's rows at most 72px apart so that a strip
+   of few rows is not stretched; below 900px: a band under the figure), the chart's graticule faint behind the figure. "Part 1 of 2" is said only where there are parts. Captions do not scroll past as boxes:
    the stage stays, the caption turns (`--d-turn`), the figure's marks travel (`--d-leg`). Scroll, swipe, the arrow
    keys, space, or the next/previous controls all move one step; scrolling settles on a step (scroll snap,
    proximity). Step 0 of a scene opens it: the scene's title and text, so the reader knows the figure before it

@@ -277,6 +277,7 @@ runs `look` first.
 | `cold.mjs` | the home page cold on slow 4G and 4G: text and an answering chart within 2 s |
 | `meta.mjs [<built>]` | the published site as link previews and search engines read it (below): every generated page fetched with no script, its tags, JSON-LD, share image, canonical and language twins, the sitemap and the feeds; then each page opened, taken over by the app at its route |
 | `frames.mjs`, `capture.mjs`, `look.mjs`, `shot.mjs`, `sheet.mjs` | frame times, and screenshots to look at |
+| `stages.mjs <dir> [slug ...]` | every story's first and densest scene at 1440x900 and 1920x1080, light and dark: a screenshot each, and fails on a figure or caption past its stage, text under 12px or a page wider than the screen |
 | `gpu.mjs <url> <dir>`, `film.mjs <url> <dir>` | on a rented machine with a GPU: frame times and recordings of the live site; `film.mjs` presents it as to a jury (arrival, a word sailed, the dive, a story, the map, a word, the share sheet) with eased pointer moves, at 1440x900 and 390x844, as Playwright videos |
 
 ### One generation step: addresses of their own

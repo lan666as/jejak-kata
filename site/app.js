@@ -1134,11 +1134,11 @@ async function entitiesPage() {
 
 /** The room a figure has on its stage, measured on the stage: the width and height to draw it at, and the zoom
  *  to show it at. A plate is drawn at most 760px wide so that its text keeps its size; on a larger stage it is
- *  shown up to 1.35 times larger, never wider or taller than its room, and beside the caption never much taller
- *  than wide. */
+ *  shown up to 1.5 times larger (a 1920px screen's stage), never wider or taller than its room, and beside the
+ *  caption never much taller than wide. */
 const figureSize = (room) => {
   const width = room.clientWidth, height = innerWidth >= 900 ? Math.min(room.clientHeight, width * 0.9) : room.clientHeight;
-  const zoom = Math.min(1.35, Math.max(1, width / 760));
+  const zoom = Math.min(1.5, Math.max(1, width / 760));
   return [Math.floor(width / zoom), Math.floor(height / zoom), zoom];
 };
 const thousands = (n) => Math.round(n).toLocaleString(language);
@@ -1166,13 +1166,15 @@ PLATE_NOTES.left = PLATE_NOTES.forget;
  * A story's figure (what it draws is scenes.js): lines on a plate or rows on a strip, one or, where its plates have
  * names, several of which one is seen. Its `show(i, focus, mark)` takes the step's focus as the step names it.
  */
+const ROOMY = 72;  // beside the caption a strip's rows stand at most this far apart: a strip of few rows is not stretched to the stage's height
 async function sceneFigure(scene, w, h) {
   const f = await figureOf(scene, { json, lens: lensNamed, entry: entryOf }, language, { wide: innerWidth > 760 });
   const make = (p, k) => {
     const spec = { title: plateTitle(scene, p, k), pages: PLATE_NOTES[scene.type](f, scene, k, p) };
     const made = f.draw === "plate"
       ? plate({ ...spec, periods: p.states, series: p.rows.map((r) => ({ label: r.label, values: r.values.map((v) => v[0]), off: r.off?.map((v) => v[0]) })) }, w, h)
-      : strip({ ...spec, states: p.states, series: p.series, rows: p.rows, most: p.most, format: f.times ? (v) => "÷" + number(v) : undefined }, w, h);
+      : strip({ ...spec, states: p.states, series: p.series, rows: p.rows, most: p.most, format: f.times ? (v) => "÷" + number(v) : undefined }, w,
+        innerWidth >= 900 ? Math.min(h, stripLeast(spec.title, p.rows.length, w, p.series, ROOMY)) : h);
     return { ...made, show: (i, focus) => made.show(i, focused(p, focus)) };
   };
   return f.plates[0].name === null ? make(f.plates[0], 0) : plates(f.plates.map((p) => p.name), (k) => make(f.plates[k], k));
