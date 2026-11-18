@@ -11,7 +11,9 @@
     "oposisi",
     "mengkritik",
     "koalisi",
-    "kabinet"
+    "kabinet",
+    "presiden terpilih",
+    "presiden"
    ]
   },
   {
@@ -1445,6 +1447,111 @@
   {
    "lens": "id-web-eras-tribun",
    "word": "dosen",
+   "with": [
+    "viral"
+   ]
+  },
+  {
+   "lens": "id-web-news-kompas",
+   "word": "megawati",
+   "with": [
+    "oposisi"
+   ]
+  },
+  {
+   "lens": "id-web-news-kompas",
+   "word": "pdi perjuangan",
+   "with": [
+    "oposisi"
+   ]
+  },
+  {
+   "lens": "id-web-news-kompas",
+   "word": "demokrat",
+   "with": [
+    "oposisi"
+   ]
+  },
+  {
+   "lens": "id-web-news-kompas",
+   "word": "pks",
+   "with": [
+    "oposisi"
+   ]
+  },
+  {
+   "lens": "id-web-news-kompas",
+   "word": "sby",
+   "with": [
+    "oposisi"
+   ]
+  },
+  {
+   "lens": "id-web-news-kompas",
+   "word": "jokowi",
+   "with": [
+    "oposisi"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "ojol",
+   "with": [
+    "viral"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "satpam",
+   "with": [
+    "viral"
+   ]
+  },
+  {
+   "lens": "id-web-eras-kompas",
+   "word": "sopir",
+   "with": [
+    "viral"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "ojol",
+   "with": [
+    "viral"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "satpam",
+   "with": [
+    "viral"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tempo",
+   "word": "sopir",
+   "with": [
+    "viral"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "ojol",
+   "with": [
+    "viral"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "satpam",
+   "with": [
+    "viral"
+   ]
+  },
+  {
+   "lens": "id-web-eras-tribun",
+   "word": "sopir",
    "with": [
     "viral"
    ]
