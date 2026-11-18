@@ -280,7 +280,8 @@ text has been painted. What is on screen is the data and nothing else:
   screen (sticky) while the scroll position (`--dive`, 0..1) pitches the camera down to the whole chart seen from
   above; the lights sink onto the water; the text and its shade give way; from halfway a tide line rises up the
   screen, the night above it, the paper (`--chart`, `--line`, the day colours of the chart) below. At the end the sea
-  is the chart on paper, and the page comes up over it.
+  is the chart on paper, and the page comes up over it; the paper of the page fades in over the sea's lower edge
+  (`--s9`), so the chart never ends on a straight cut.
 - **Cost**: rendering stops when the hero is off screen or the tab is hidden, runs at about 30 frames a second when
   only the swell moves and not at all once all is paper; the device pixel ratio is capped at 1.5; small or few-core
   devices carry 7,000 words instead of 20,000.

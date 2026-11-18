@@ -787,6 +787,10 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
   --stage: calc(100svh - var(--head, var(--head-h))); --away: clamp(0, (var(--dive, 0) - .04) / .26, 1); --open: clamp(0, (var(--dive, 0) - .3) / .3, 1); }
 .dives .hero { padding-bottom: calc(var(--stage) * 1.75); margin-bottom: calc(-1 * var(--stage)); }  /* the page below comes up over the sea, now paper */
 .dives .home > section:not(.hero) { position: relative; background: var(--chart); box-shadow: 0 0 0 100vmax var(--chart); clip-path: inset(0 -100vmax); }
+/* where the page comes up over the sea (now paper), the sea fades into it instead of ending on a straight edge */
+.dives .home > section.featured { box-shadow: 0 100vmax 0 100vmax var(--chart); clip-path: inset(calc(-1 * var(--s9)) -100vmax 0); }
+.dives .home > section.featured::before { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 100%; width: 100vw; height: var(--s9); pointer-events: none;
+  background: linear-gradient(transparent, var(--chart)); }
 .hero-track { position: absolute; inset: 0; z-index: -1; }
 .hero-sea { position: sticky; top: var(--head, var(--head-h)); height: var(--stage); contain: strict; background: radial-gradient(120% 80% at 60% 20%, var(--deep-2), var(--deep) 70%); }
 .hero-sea .chart { position: absolute; inset: 0; height: 100%; background: none; border: 0; border-radius: 0; }
@@ -799,6 +803,7 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .chart.gl .when { display: grid; justify-items: end; gap: var(--s1); width: 8.5rem; font: 600 var(--t-meta)/var(--l-meta) var(--type); opacity: 1; font-variant-numeric: tabular-nums; }
 .chart.gl .when[hidden] { display: none; }
 .chart.gl .when b { font: 800 var(--t-h2)/1 var(--type); font-stretch: 75%; color: var(--on-deep); }
+.hero .chart.gl .when { opacity: calc(1 - var(--open)); }  /* drawn for the night: it gives way as the paper comes in, never a ghost on it */
 .when-bar { position: relative; width: 100%; height: var(--rule); background: var(--line-deep-2); border-radius: var(--pill); }
 .when-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--at, 1) * 100%); background: var(--route-on-deep); border-radius: inherit; }
 .when-bar i::after { content: ""; position: absolute; right: -4px; top: -3px; width: var(--s2); height: var(--s2); border-radius: 50%; background: var(--on-deep); }
