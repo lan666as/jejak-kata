@@ -232,11 +232,13 @@ function played(figure, start = figure.labels.length - 1) {
     clearInterval(timer);
     timer = null;
     button.textContent = "▶";
+    button.setAttribute("aria-label", t("play"));
   };
   button.addEventListener("click", () => {
     if (timer) return stop();
     if (+slider.value >= figure.labels.length - 1) go(0);
     button.textContent = "❚❚";
+    button.setAttribute("aria-label", t("pause"));
     timer = setInterval(() => (!bar.isConnected || +slider.value >= figure.labels.length - 1 ? stop() : go(+slider.value + 1)), BEAT);
   });
   slider.addEventListener("input", () => (stop(), go(+slider.value)));
@@ -324,7 +326,12 @@ function stage(part, k, of, steer, intro = "") {
     requestAnimationFrame(more);
   };
   // A caption longer than its band scrolls inside it; the band's lower edge fades while there is more below.
-  const more = () => caption.classList.toggle("more", caption.scrollTop + caption.clientHeight < caption.scrollHeight - 2);
+  // A long caption can also be reached and scrolled by keyboard.
+  const more = () => {
+    caption.classList.toggle("more", caption.scrollTop + caption.clientHeight < caption.scrollHeight - 2);
+    if (caption.scrollHeight > caption.clientHeight + 2) caption.tabIndex = 0;
+    else if (document.activeElement !== caption) caption.removeAttribute("tabindex");
+  };
   caption.addEventListener("scroll", more, { passive: true });
   ticks.forEach((b, m) => b.addEventListener("click", () => steer(m)));
   back.addEventListener("click", () => steer(at - 1));
@@ -719,7 +726,7 @@ function numbers(lens, e) {
           <p class="sub">${t("with")}</p>${words(lens, e.with[p], e.with[side ? a : b], side ? "new" : "gone")}
           <p class="sub">${t("like")}</p>${words(lens, e.like[p], e.like[side ? a : b], side ? "new" : "gone")}</div>`)
         .join("")}</div>`),
-      el(`<details><summary>${t("all_periods")}</summary><div class="table"><table>
+      el(`<details><summary>${t("all_periods")}</summary><div class="table" tabindex="0"><table>
         <tr><th>${t("period")}</th><th class="n">${t("share")}</th><th>${t("with")}</th><th>${t("like")}</th></tr>
         ${lens.periods.map((p, i) => `<tr><td>${p}</td><td class="n">${percent(e.share[i])}</td>
           <td>${e.with[i].map((w) => lens.words[w]).join(", ")}</td><td>${e.like[i].map((w) => lens.words[w]).join(", ")}</td></tr>`).join("")}
@@ -807,7 +814,7 @@ function suggest(lens, placeholder, button, chosen) {
 function picker(lens, list, changed, most = 12) {
   const box = el(`<div><ul class="picked"></ul></div>`);
   const draw = () => {
-    box.firstElementChild.innerHTML = list.map((w, k) => `<li class="k${k}">${w}<button type="button" data-k="${k}" aria-label="${t("remove")}">×</button></li>`).join("");
+    box.firstElementChild.innerHTML = list.map((w, k) => `<li class="k${k}">${w}<button type="button" data-k="${k}" aria-label="${t("remove")} ${w}">×</button></li>`).join("");
     box.querySelectorAll("li button").forEach((b) => b.addEventListener("click", () => (list.splice(+b.dataset.k, 1), draw(), changed())));
   };
   box.append(suggest(lens, t("add_word"), t("add"), (word) => {
@@ -1630,7 +1637,7 @@ async function stuckPage(word = "tersangka", k = "0", era = "2", kind = "p") {
   view.replaceChildren(pageHead(t("play_menempel"), { ...fromPlay(), lede: t("stuck_lede") }), pick,
     el(choice(OUTLET, k, (i) => to(word, i, era, kind))), el(choice(ERAS_SHOWN, era, (i) => to(word, k, i, kind))), el(choice([t("people"), t("organisations")], kind === "p" ? 0 : 1, (i) => to(word, k, era, "po"[i]))),
     box, el(`<p class="note">${t("stuck_warning")}</p>`),
-    el(`<div class="table"><table><tr><th>${t("name")}</th><th class="n">${t("stuck_share", word)}</th><th class="n">${t("pages")}</th><th></th></tr>${ranked.slice(0, 40).map((i) =>
+    el(`<div class="table" tabindex="0"><table><tr><th>${t("name")}</th><th class="n">${t("stuck_share", word)}</th><th class="n">${t("pages")}</th><th></th></tr>${ranked.slice(0, 40).map((i) =>
       `<tr><td>${link(s.names[i])}</td><td class="n">${number(share[i][p] / 10)}%</td><td class="n">${thousands(s.pages[i][p])}</td><td><a href="${href("redaksi", s.names[i])}">${t("three_rooms")}</a></td></tr>`).join("")}</table></div>`));
 }
 
@@ -1639,7 +1646,7 @@ async function tidePage(k = "0", kind = "person") {
   const y = await json("years.json"), lens = OUTLETS[+k] || OUTLETS[0];
   const rows = y.tide[lens][kind].map((r) => ({ ...r, peak: Math.max(...r.share.map((v) => v || 0)) })).map((r) => ({ ...r, when: r.share.indexOf(r.peak) })).sort((a, b) => a.when - b.when || b.peak - a.peak);
   const kinds = ["person", "organisation", "place"], level = (v, peak) => [0.08, 0.25, 0.45, 0.65, 0.85].filter((s) => v / peak >= s).length;
-  const table = el(`<div class="tide"><table><tr><th></th>${y.years.map((year) => `<th>${String(year).slice(2)}</th>`).join("")}</tr>${rows.map((r) =>
+  const table = el(`<div class="tide" tabindex="0"><table><tr><th></th>${y.years.map((year) => `<th>${String(year).slice(2)}</th>`).join("")}</tr>${rows.map((r) =>
     `<tr><th><a href="${href("potret", r.word)}">${r.word}</a></th>${r.share.map((v, i) => `<td style="--i:${i}" class="t${v === null ? "x" : level(v, r.peak)}" data-tip="${r.word} ${y.years[i]}: ${v === null ? "–" : number(v * 1000) + "‰"} ${t("of_pages", thousands(y.pages[lens][i]))}"></td>`).join("")}</tr>`).join("")}</table></div>`);
   table.addEventListener("pointermove", (e) => tip(e.target.dataset?.tip || null, e));
   table.addEventListener("pointerleave", () => tip(null));
@@ -1741,7 +1748,7 @@ async function methodPage() {
   view.append(
     el(`<h2>${t("tests_title")}</h2>`),
     el(`<p class="sub">${t("tests_about")}</p>`),
-    el(`<div class="table"><table><tr><th>${t("lens")}</th><th class="n">${t("units")}</th><th class="n">20%</th><th class="n">40%</th><th class="n">80%</th><th class="n">${t("false_alarms")}</th></tr>
+    el(`<div class="table" tabindex="0"><table><tr><th>${t("lens")}</th><th class="n">${t("units")}</th><th class="n">20%</th><th class="n">40%</th><th class="n">80%</th><th class="n">${t("false_alarms")}</th></tr>
       ${tested.map((lens) => `<tr><td>${lensText(lens).title}</td><td class="n">${lens.units.reduce((x, y) => x + y).toLocaleString(language)}</td>
         ${["0.2", "0.4", "0.8"].map((share) => `<td class="n">${found(lens, share)}</td>`).join("")}<td class="n">${percent(lens.sensitivity.false_alarms)}</td></tr>`).join("")}
     </table></div>`),
@@ -1850,7 +1857,7 @@ function menuLabels() {
   menuButton.querySelector("span").textContent = t(menuOpen() ? "menu_close" : "menu");
 }
 /** What can take focus in the header while the sheet is open: the bar and the sheet, nothing behind. */
-const focusable = () => [...masthead.querySelectorAll("a[href], button, input, [tabindex]:not([tabindex='-1'])")].filter((node) => node.getClientRects().length && !node.closest("[hidden]"));
+const focusable = () => [...masthead.querySelectorAll("a[href], button, input, [tabindex]:not([tabindex='-1'])")].filter((node) => node.getClientRects().length && !node.closest("[hidden], [inert]"));
 function openMenu(focus) {
   if (wideHeader.matches || menuOpen()) return focus?.focus();
   menu.classList.add("open");
