@@ -191,8 +191,25 @@ text has been painted. What is on screen is the data and nothing else:
   screen, the night above it, the paper (`--chart`, `--line`, the day colours of the chart) below. At the end the sea
   is the chart on paper, and the page comes up over it.
 - **Cost**: rendering stops when the hero is off screen or the tab is hidden, runs at about 30 frames a second when
-  only the swell moves and not at all once all is paper; the device pixel ratio is capped at 1.5 and drops by steps
-  while frames take longer than 28 ms; small or few-core devices carry 7,000 words instead of 20,000.
+  only the swell moves and not at all once all is paper; the device pixel ratio is capped at 1.5; small or few-core
+  devices carry 7,000 words instead of 20,000.
+- **The quality ladder** (`LADDER` in sea.js): a sea that moves (the hero, the map) starts on rung 0 and gives up one
+  thing per rung, the least seen first:
+
+  | Rung | Pixels (of the capped ratio) | Reflections | Words past the 1,500 lit ones | Swell |
+  |---|---|---|---|---|
+  | 0 | 100% | yes | all | yes |
+  | 1 | 75% | yes | all | yes |
+  | 2 | 75% | no | all | yes |
+  | 3 | 60% | no | 35% (the most frequent) | yes |
+  | 4 | 50% | no | 35% | no: the sea holds still between moves, and no frame is drawn for it |
+
+  Only frames drawn one after another count (the swell alone is drawn at half the rate on purpose, and is not a slow
+  frame). They are judged a quarter of a second at a time: a rung down while the median frame takes longer than 24 ms
+  (under about 40 frames a second), never a rung up. So the ladder settles within about a second (four quarters at
+  most) and never goes back and forth; a slow phone settles on its rung during the arrival. The rung of the sea that
+  moves is `window.seaRung` (and `rung` in a sea's `state()`); `tests/site/hero.mjs` checks that it only steps down
+  and settles within 1.5 s of its first step.
 - **Fallbacks**: without WebGL2 the flat night chart of `chart.js`, one screen tall; with reduced motion one still
   frame, no dive, no arrival. The canvas is `role="img"` with a text alternative that names the route; the status
   line under the field says what sails.

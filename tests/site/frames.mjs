@@ -1,6 +1,6 @@
 // node tests/site/frames.mjs [cpu slowdown]   Frame times on the home page's hero at 360x740, twice the pixels, with the
 // processor slowed (default 4x, a low-end phone): while the sea arrives and the first route draws itself, and while
-// the reader scrolls down through the dive. Also says how the sea ended up drawn (its resolution drops on a slow screen).
+// the reader scrolls down through the dive. Also says how the sea ended up drawn (its rung on the quality ladder).
 // On a machine without a GPU the browser draws WebGL in software (SwiftShader), on the processor: the numbers here are
 // then far worse than on any phone with a GPU, and say more about this machine than about the page.
 import { base, browser, done } from "./serve.mjs";

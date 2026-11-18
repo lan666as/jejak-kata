@@ -14,6 +14,20 @@ const STEPS = [2, 4, 7, 12, 20]; // shift boundaries of the six levels, as in ap
 const NEAR = 1500; // the most frequent words are lit and can be named; the rest are the faint tail
 const RISE = 0.0042; // height above the water per unit of shift (the chart is about 2 units across)
 const GRID = 0.125; // the graticule: a line every 125 chart units, as the 2D chart draws it
+// The quality ladder. A sea that moves starts on the top rung; each rung below gives up one more thing, the least seen
+// first: a quarter of the pixels, then the reflections, then more pixels and the faint tail of words past the lit ones
+// (`tail`: the part of it kept), then the swell (the sea then holds still between the reader's moves). The rung is set
+// by the time frames take while the sea is drawn every frame, judged a quarter of a second at a time: one rung down
+// while the median frame takes longer than BUDGET, and never back up. So it settles within about a second, four
+// quarters at most, and never goes back and forth. The device pixel ratio is capped at 1.5 on every rung.
+const LADDER = [
+  { scale: 1, reflections: true, tail: 1, swell: true },
+  { scale: 0.75, reflections: true, tail: 1, swell: true },
+  { scale: 0.75, reflections: false, tail: 1, swell: true },
+  { scale: 0.6, reflections: false, tail: 0.35, swell: true },
+  { scale: 0.5, reflections: false, tail: 0.35, swell: false },
+];
+const BUDGET = 24; // ms: slower than about 40 frames a second
 
 const root = () => getComputedStyle(document.documentElement);
 const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -260,7 +274,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
   const tint = (token) => (palette().routes[token] ||= { night: rgb(ON_DEEP[token] || token), day: rgb(token), css: [ON_DEEP[token] || token, token].map((k) => root().getPropertyValue(k).trim()) });
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => ((colours = null), ask()));
 
-  let W = 0, H = 0, ratio = 1, quality = 1, wanted = null, pad = [0, 0, 0, 0], depth = 0, ready = false, waiting = [], held = hold || still();
+  let W = 0, H = 0, ratio = 1, rung = 0, calm = 0, wanted = null, pad = [0, 0, 0, 0], depth = 0, ready = false, waiting = [], held = hold || still();
   // Exploring: the word ringed for the keyboard (keyed), whether the reader has moved the camera, the rise to above.
   let ringed = -1, keyed = false, moved = false;
   const rising = { from: 0, to: null, start: 0 };
@@ -340,7 +354,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
   function size() {
     const box = node.getBoundingClientRect();
     if (!box.width || !box.height) return false;
-    [W, H, ratio] = [box.width, box.height, Math.min(1.5, devicePixelRatio || 1) * quality];
+    [W, H, ratio] = [box.width, box.height, Math.min(1.5, devicePixelRatio || 1) * LADDER[rung].scale];
     const [w, h] = [Math.round(W * ratio), Math.round(H * ratio)];
     if (canvas.width !== w || canvas.height !== h) [canvas.width, canvas.height] = [w, h];
     const r = Math.min(2, devicePixelRatio || 1);
@@ -366,7 +380,8 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
   };
   let started = performance.now(), labelsAt = "";
   function render(time) {
-    const c = palette(), seconds = held || explore ? 12 : (time - started) / 1000;  // only the hero's sea swells
+    const { reflections, tail, swell } = LADDER[rung], drawn = tail < 1 ? Math.min(n, Math.max(NEAR, Math.round(n * tail))) : n;
+    const c = palette(), seconds = held || explore ? 12 : swell ? (time - started) / 1000 : calm;  // only the hero's sea swells
     place();
     if (explore) ringed = keyed ? nearest(W / 2, H / 2, Math.min(W, H) / 3) : -1;
     gl.viewport(0, 0, canvas.width, canvas.height);
@@ -387,7 +402,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     gl.uniform2fv(lights.u("origin"), arrival.origin); gl.uniform1f(lights.u("reach"), arrival.reach); gl.uniform1f(lights.u("head"), head);
     gl.uniform1f(lights.u("tailIn"), held ? 1 : Math.min(1, (time - tailAt) / 600));
     gl.bindVertexArray(words.vao);
-    if (settle() < 0.99 && tide() < 0.99) (gl.uniform1f(lights.u("mirror"), -1), gl.drawArrays(gl.POINTS, 0, Math.min(n, NEAR)));
+    if (reflections && settle() < 0.99 && tide() < 0.99) (gl.uniform1f(lights.u("mirror"), -1), gl.drawArrays(gl.POINTS, 0, Math.min(n, NEAR)));
     // Each route's ship, where it has sailed to; the last route is drawn first, so that the first lies on top.
     const sailing = arrival.on ? [] : routes.map((r) => ({ r, here: ship(r, now) })).filter((s) => s.here).reverse();
     for (const { r, here } of sailing) {
@@ -403,7 +418,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     camera(lights);
     gl.uniform1f(lights.u("mirror"), 1);
     gl.bindVertexArray(words.vao);
-    gl.drawArrays(gl.POINTS, 0, n);
+    gl.drawArrays(gl.POINTS, 0, drawn);
     for (const { r, here } of sailing) {
       const list = r.legs.filter((s, k) => k <= Math.floor(here.done)).flatMap((s) => [s.x, s.z, 7, 0]), col = tint(r.colour);
       list.push(here.x, here.z, 26, 2, here.x, here.z, 30, 1);
@@ -493,7 +508,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
   }
 
   // ---- the loop: running while the hero is on screen and the tab is shown; idle frames at half the rate --------
-  let frame = 0, last = 0, busyUntil = 0, seen = true, slow = 0, times = [];
+  let frame = 0, last = 0, busyUntil = 0, seen = true, times = [], since = 0, wasBusy = false;
   const ask = (ms = 50) => {
     busyUntil = Math.max(busyUntil, performance.now() + ms);
     if (!frame && seen && !document.hidden && !ended) frame = requestAnimationFrame(loop);
@@ -503,9 +518,10 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     if (!node.isConnected) return ready && end();
     if (!W && !size()) return;
     const busy = t < busyUntil || glide.to || moving() || arrival.on || t - tailAt < 700 || rising.to !== null;
-    // Exploring, nothing moves unless the reader moves it: the loop sleeps until it is asked again.
-    if (!held && (busy || !explore)) frame = requestAnimationFrame(loop);
-    if (!busy && ready && !held && (explore || t - last < 30 || tide() >= 1)) return;  // the swell alone: about 30 frames a second, and none once all is paper
+    // Exploring, or with the swell given up, nothing moves unless something is asked: the loop sleeps until then.
+    const swell = !explore && LADDER[rung].swell;
+    if (!held && (busy || swell)) frame = requestAnimationFrame(loop);
+    if (!busy && ready && !held && (!swell || t - last < 30 || tide() >= 1)) return (wasBusy = false);  // the swell alone: about 30 frames a second, and none once all is paper
     if (glide.to) {
       const f = Math.min(1, (t - glide.start) / glide.ms), e = ease(f);
       for (const k of ["x", "z", "dist", "yaw", "pitch"]) aim[k] = mix(glide.from[k], glide.to[k], e);
@@ -527,15 +543,25 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       tally.textContent = arrival.say(lo);
       if (f >= 1) ((arrival.on = false), (arrival.reach = 99), (labelsAt = ""), arrival.done());
     }
-    // The screen keeps up or the sea gets coarser: a quarter fewer pixels while frames take longer than 28 ms.
-    if (last && !held) times.push(t - last);
-    if (times.length >= 24) {
-      const mean = times.reduce((a, b) => a + b) / times.length;
+    // The screen keeps up, or the sea steps down its ladder: only frames drawn one after another count (the swell
+    // alone is drawn at half the rate, on purpose), judged a quarter of a second at a time.
+    if (busy && wasBusy && !held) (times.push(t - last), (since ||= t));
+    if (times.length >= 6 && t - since >= 250) {
+      const median = times.sort((a, b) => a - b)[times.length >> 1];
       times = [];
-      if (mean > 28 && quality > 0.5) ((quality = Math.max(0.5, quality * 0.8)), size(), slow++);
+      since = 0;
+      if (median > BUDGET && rung < LADDER.length - 1) step(t);
     }
+    wasBusy = busy;
     last = t;
     render(t);
+  }
+  /** One rung down the ladder, for good: fewer pixels at once, the rest at the next frame. */
+  function step(t) {
+    if (!LADDER[++rung].swell && LADDER[rung - 1].swell) calm = (t - started) / 1000;  // the swell stops where it is
+    labelsAt = "";
+    size();
+    if (!hold) window.seaRung = rung;
   }
   /** The nudge follows the pointer (or the tilt of the device), a little behind; the camera follows the ship. */
   const moving = () => Math.abs(nudge.to[0] - nudge.x) + Math.abs(nudge.to[1] - nudge.y) > 0.002;
@@ -836,16 +862,17 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       canvas.setAttribute("aria-label", text);
     },
     end,
-    /** How the sea is being drawn, for the checks: frames held still, coarser for a slow screen, where the camera is. */
     /** The word nearest a point of the sea (by default its middle) and where it stands, in CSS pixels in the sea: for
      *  the checks, to tap it. */
     spot(x = W / 2, y = H / 2) {
       const k = nearest(x, y, Math.min(W, H) / 3), p = k >= 0 && project(chart.x[k] / 1000, Math.max(0, chart.moved[k] ?? 0) * RISE * (1 - settle()), chart.y[k] / 1000);
       return p ? { word: name(chart.words[k]), at: [p[0], p[1]] } : null;
     },
-    state: () => ({ held, quality: +quality.toFixed(2), coarser: slow, points: n, pixels: [canvas.width, canvas.height], depth, routes: routes.length, ended,
+    /** How the sea is being drawn, for the checks: frames held still, the rung of the quality ladder, where the camera is. */
+    state: () => ({ held, rung, points: n, pixels: [canvas.width, canvas.height], depth, routes: routes.length, ended,
       aim: Object.fromEntries(Object.entries(aim).map(([k, v]) => [k, +v.toFixed(3)])), ringed: ringed >= 0 ? name(chart.words[ringed]) : null }),
   };
   node.sea = api;  // for the checks (tests/site): how the sea is being drawn
+  if (!held) window.seaRung = rung;  // the rung of the sea that moves (the hero, the map), for the checks
   return api;
 }
