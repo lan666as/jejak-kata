@@ -576,18 +576,33 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .home > section > .kicker { margin-bottom: var(--s2); }
 .home .more { margin: var(--s5) 0 0; }
 
-/* the hero: the chart fills it; the text lies over the chart's lower part on a phone, at its left from 900px */
-.hero { position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: flex-end; min-height: calc(100svh - var(--head, var(--head-h)));
-  overflow: hidden; background: radial-gradient(120% 80% at 60% 20%, var(--deep-2), var(--deep) 70%); color: var(--on-deep); --focus: var(--route-on-deep); }
-.hero-sea { position: absolute; inset: 0; z-index: -1; contain: strict; }
+/* the hero: the sea fills it; the text lies over the sea's lower part on a phone, at its left from 900px. Where the
+   sea is 3D (sea.js, html.dives), the hero runs on for three quarters of a screen past its text: the sea is held on
+   screen (sticky) while the camera dives (--dive, 0..1, set as the page scrolls) and the text gives way; then the page
+   comes up over it. */
+.hero { position: relative; isolation: isolate; overflow: clip; background: var(--deep); color: var(--on-deep); --focus: var(--route-on-deep);
+  --stage: calc(100svh - var(--head, var(--head-h))); --away: clamp(0, (var(--dive, 0) - .04) / .26, 1); --open: clamp(0, (var(--dive, 0) - .3) / .3, 1); }
+.dives .hero { padding-bottom: calc(var(--stage) * 1.75); margin-bottom: calc(-1 * var(--stage)); }  /* the page below comes up over the sea, now paper */
+.dives .home > section:not(.hero) { position: relative; background: var(--chart); box-shadow: 0 0 0 100vmax var(--chart); clip-path: inset(0 -100vmax); }
+.hero-track { position: absolute; inset: 0; z-index: -1; }
+.hero-sea { position: sticky; top: var(--head, var(--head-h)); height: var(--stage); contain: strict; background: radial-gradient(120% 80% at 60% 20%, var(--deep-2), var(--deep) 70%); }
 .hero-sea .chart { position: absolute; inset: 0; height: 100%; background: none; border: 0; border-radius: 0; }
-.hero-sea::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, var(--deep) 0, var(--deep) 30%, color-mix(in srgb, var(--deep) 70%, transparent) 48%, transparent 66%); }
+.hero-sea::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: calc(1 - var(--open));
+  background: linear-gradient(to top, var(--deep) 0, var(--deep) 30%, color-mix(in srgb, var(--deep) 70%, transparent) 48%, transparent 66%); }
 @media (max-width: 899.98px) { .hero-sea::after { background: linear-gradient(to top, var(--deep) 0, var(--deep) 44%, color-mix(in srgb, var(--deep) 78%, transparent) 60%, transparent 76%); } }  /* on a phone the text lies over the chart: the sea darkens under it */
 .hero-sea.failed::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, var(--line-deep) 0 1px, transparent 1px 25%), repeating-linear-gradient(0deg, var(--line-deep) 0 1px, transparent 1px 25%); opacity: .5; }
-.chart.night .when { top: var(--s4); right: var(--gutter); left: auto; bottom: auto; font-size: var(--t-h2); color: var(--on-deep-2); opacity: 1; font-variant-numeric: tabular-nums; }
+.chart.night .when { top: var(--s4); right: var(--gutter); left: auto; bottom: auto; font-size: var(--t-h2); color: var(--on-deep-2); opacity: calc(1 - var(--away)); font-variant-numeric: tabular-nums; }
 .chart.night .zoom { display: none; }
 .chart.night > canvas:focus-visible { outline-offset: calc(-1 * var(--s1)); }
-.hero-text { position: relative; padding: var(--s6) var(--gutter) var(--s4); pointer-events: none; will-change: transform; }  /* its own layer: the sea moving under it never repaints the text */
+.chart.gl > canvas { position: absolute; inset: 0; cursor: default; }
+.chart.gl .tally { position: absolute; top: calc(var(--s4) + var(--t-h2) + var(--s1)); right: var(--gutter); margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); font-weight: 600;
+  color: var(--on-deep-2); font-variant-numeric: tabular-nums; transition: opacity var(--d-turn) var(--sail) var(--d-leg); }  /* the arrival's count of words lit, under the year */
+.chart.gl .tally.done { opacity: 0; }
+.chart.gl > canvas + canvas { pointer-events: none; }
+.hero-text { position: relative; display: flex; flex-direction: column; justify-content: flex-end; min-height: var(--stage); padding: var(--s6) var(--gutter) var(--s4);
+  pointer-events: none; opacity: calc(1 - var(--away)); will-change: transform, opacity; }  /* its own layer: the sea moving under it never repaints the text */
+.hero-text:focus-within { opacity: 1; }
+.hero.away .hero-text > * { pointer-events: none; }
 .hero-text > * { pointer-events: auto; }
 .hero h1 { max-width: 11ch; margin: 0 0 var(--s4); font: 800 var(--t-display)/var(--l-display) var(--type); font-stretch: 75%; letter-spacing: 0; color: var(--on-deep); text-wrap: balance; }
 .hero-lede { max-width: 30rem; margin: 0 0 var(--s5); color: var(--on-deep-2); }
@@ -613,7 +628,7 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .hero-down svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--d-press) var(--sail); }
 .hero-down:hover svg { transform: translateY(var(--s1)); }
 @media (min-width: 900px) {
-  .hero { justify-content: center; }
+  .hero-text { justify-content: center; }
   .hero-sea::after { background: linear-gradient(to right, var(--deep) 0, var(--deep) calc((100% - var(--content)) / 2 + 30rem), color-mix(in srgb, var(--deep) 60%, transparent) calc((100% - var(--content)) / 2 + 40rem), transparent calc((100% - var(--content)) / 2 + 50rem)); }
   .hero-text { width: min(46rem, 58%); padding: var(--s8) 0 var(--s8) max(var(--gutter), (100% - var(--content)) / 2); }
   .hero h1 { margin-bottom: var(--s5); font-size: clamp(4rem, 7.4vw, 7rem); }
@@ -622,6 +637,7 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
   .hero-try .chips { margin: 0; padding: var(--s1); }
   .hero-foot { max-width: 32rem; margin-top: var(--s4); }
   .chart.night .when { top: auto; bottom: var(--s5); right: max(var(--gutter), (100% - var(--content)) / 2); font-size: var(--t-h1); }
+  .chart.gl .tally { top: auto; bottom: calc(var(--s5) + var(--t-h1)); right: max(var(--gutter), (100% - var(--content)) / 2); }
 }
 
 /* cards led by a number: stories (the key number) and play (a mark) */

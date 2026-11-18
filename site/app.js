@@ -402,15 +402,19 @@ function pathFigure(lens, path) {
 
 /** The chart of a lens with the routes of the given words on it. `pick(word)` is called when an island is clicked.
  *  With `night`, the chart is drawn for the deep (the home page's hero). */
-async function chartFigure(name, list, pick = (word) => (location.hash = href("kata", word)), height = "min(70vh, 560px)", { night = false, wait } = {}) {
+async function chartFigure(name, list, pick = (word) => (location.hash = href("kata", word)), height = "min(70vh, 560px)", { night = false, wait, sea, eager = false } = {}) {
   const first = await json(`${name}/first.json`), label = new Map(first.words.map((id, k) => [id, first.names[k]]));
   // The whole lens comes later (after `wait`, if given); the chart is on screen before it.
   const meta = Promise.resolve(wait).then(() => lensNamed(name));
   let lens = null;
-  const chart = seaChart({ chart: first, name: (id) => (lens ? lens.words[id] : label.get(id)), pick: async (id) => pick((await meta).words[id]), periods: first.periods, tip, label: t("chart_keys"), night });
-  Promise.all([meta, json(`${name}/chart.json`)]).then(([l, whole]) => ((lens = l), chart.more(whole)));
+  // At night, with `sea` (sea.js), the chart is the 3D sea; where WebGL2 is not there, the night chart of chart.js.
+  const given = { chart: first, name: (id) => (lens ? lens.words[id] : label.get(id)), pick: async (id) => pick((await meta).words[id]), periods: first.periods, tip, label: t("chart_keys"), night };
+  const chart = (sea && sea({ ...given, label: t("sea_label") })) || seaChart(given);
+  // The rest of the islands join the chart with the lens, or (`eager`, the hero's arrival) as soon as they come.
+  meta.then((l) => (lens = l)).catch(() => {});
+  const whole = json(`${name}/chart.json`), more = (eager ? whole : Promise.all([meta, whole]).then(([, w]) => w)).then((w) => chart.more(w)).catch(() => {});
   if (height) chart.node.style.height = height;
-  const figure = { node: chart.node, labels: first.periods, chart, show: (p) => chart.time(p) };
+  const figure = { node: chart.node, labels: first.periods, chart, show: (p) => chart.time(p), more };
   /** The route of a word of the first screen, before the whole lens is here: its number is on the first screen and
    *  its path in bucket number / BUCKET. A word that is not there, or not in that bucket, waits for the lens. */
   const quick = async (word) => {
@@ -1160,7 +1164,7 @@ async function storyPage(slug, scene) {
  */
 async function homePage() {
   const down = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>`;
-  const hero = el(`<section class="hero" aria-labelledby="hero-title"><div class="hero-sea"><div class="chart night"></div></div>
+  const hero = el(`<section class="hero" aria-labelledby="hero-title"><div class="hero-track"><div class="hero-sea"><div class="chart night"></div></div></div>
     <div class="hero-text"><h1 id="hero-title">${t("title")}</h1><p class="hero-lede">${t("hero_lede")}</p><div class="hero-ask"></div>
       <div class="hero-try"><span>${t("hero_try")}</span><ul class="chips">${SHOWCASE.map((w) => `<li><button type="button" aria-pressed="false">${w}</button></li>`).join("")}</ul></div>
       <div class="hero-foot"><p class="hero-now" role="status"></p><button type="button" class="hero-down quiet">${t("hero_down")}${down}</button></div></div></section>`);
@@ -1176,6 +1180,7 @@ async function homePage() {
   hero.querySelector(".hero-down").addEventListener("click", () => featured.scrollIntoView({ behavior: still() ? "instant" : "smooth" }));
   measured(measure);
 
+  const gl = document.documentElement.classList.contains("dives") || still() ? import("./sea.js").catch(() => null) : null;
   // The whole lens (half a megabyte) is asked for once the first route has been drawn, or as soon as the reader
   // types or picks a word: reading it would otherwise hold up the frames of the route drawing itself.
   let wanted, figure = null, sailing = null, pending = null;
@@ -1192,6 +1197,7 @@ async function homePage() {
   const moor = (word) => {
     figure.chart.time(0, 0);
     now.innerHTML = `<span class="hidden">${t("sailing", escape(word))}</span><a href="${href("kata", word)}">${t("hero_open", escape(word))}</a>`;
+    figure.chart.describe?.(t("sea_label_route", escape(word)));
   };
   const go = (word, intro = false) => {
     if (!figure.node.isConnected || sailing !== word) return;
@@ -1209,13 +1215,19 @@ async function homePage() {
   }));
   hero.querySelector(".hero-try").addEventListener("click", (e) => e.target.matches("button") && (wanted(), sail(e.target.textContent)));
 
-  figure = await chartFigure(MAIN, [], (word) => sail(word), null, { night: true, wait: want }).catch(() => null);
+  // The 3D sea is fetched beside the data, and made only once the hero's text has been painted.
+  const sea = (await Promise.all([gl, painted()]))[0]?.nightSea;
+  // The arrival, once a session: the sea starts dark and its words come on as they arrive, the route last.
+  const arriving = !!sea && !still() && !session("arrived");
+  figure = await chartFigure(MAIN, [], (word) => sail(word), null, { night: true, wait: want, sea, eager: arriving }).catch(() => null);
   if (!hero.isConnected) return;
+  const diving = !!figure?.chart.dive && document.documentElement.classList.contains("dives");
+  if (!diving) document.documentElement.classList.remove("dives");  // no sea to dive into: the hero is one screen
   if (!figure) return hero.querySelector(".hero-sea").classList.add("failed");
   // The route is framed where the text is not: above it on a phone, to its right on a wide screen.
   const inset = () => {
-    const box = hero.getBoundingClientRect(), text = hero.querySelector(".hero-text").getBoundingClientRect(), wide = innerWidth >= 900;
-    figure.chart.inset(wide ? [box.height * 0.12, box.width * 0.04, box.height * 0.16, text.right - box.left] : [box.height * 0.08, 0, box.bottom - text.top + 8, 0]);
+    const box = hero.querySelector(".hero-sea").getBoundingClientRect(), text = hero.querySelector(".hero-text").getBoundingClientRect(), wide = innerWidth >= 900;
+    figure.chart.inset(wide ? [box.height * 0.12, box.width * 0.04, box.height * 0.16, text.right - box.left] : [box.height * 0.08, 0, box.bottom - text.top - hero.querySelector("h1").offsetTop + 8, 0]);
   };
   inset();
   addEventListener("resize", inset);
@@ -1228,21 +1240,62 @@ async function homePage() {
   if (!hero.isConnected) return;
   if (drawn) moor(first);
   hero.querySelector(".hero-sea .chart").replaceWith(figure.node);
+  const lit = arriving && drawn && figure.chart.arrive((n) => t("tally", thousands(n)));
   await figure.chart.drawn();
-  if (!still()) await settled();  // the sea settles on screen, then the ship sets out
+  if (lit) {
+    // Lit when the front has crossed the chart and the rest of the words are in (or have not come in time).
+    await Promise.race([Promise.all([lit, figure.more]), new Promise((done) => setTimeout(done, 2600))]);
+    figure.chart.tallied();
+    session("arrived", 1);
+  } else if (!still()) await settled();  // the sea settles on screen, then the ship sets out
   if (drawn) go(first, !pending);
-  // Depth: the far islands lag behind the near ones as the pointer moves and as the page scrolls.
-  if (!still()) {
-    hero.addEventListener("pointermove", (e) => {
-      if (e.pointerType !== "mouse" || e.buttons) return;  // not while the chart is being dragged
-      const box = hero.getBoundingClientRect();
-      figure.chart.tilt(((e.clientX - box.left) / box.width) * 2 - 1, ((e.clientY - box.top) / box.height) * 2 - 1);
-    });
-    hero.addEventListener("pointerleave", () => figure.chart.tilt(0, 0));
-    const lift = () => (hero.isConnected ? scrollY < hero.offsetHeight + 200 && figure.chart.lift(scrollY) : removeEventListener("scroll", lift));
-    addEventListener("scroll", lift, { passive: true });
+  if (still()) return;
+  // Depth: the camera (or, on the flat chart, the far islands) follows the pointer a little, and the tilt of a phone
+  // where the browser gives it without asking.
+  hero.addEventListener("pointermove", (e) => {
+    if (e.pointerType !== "mouse" || e.buttons) return;  // not while the chart is being dragged
+    const box = hero.getBoundingClientRect();
+    figure.chart.tilt(((e.clientX - box.left) / box.width) * 2 - 1, ((e.clientY - box.top) / box.height) * 2 - 1);
+  });
+  hero.addEventListener("pointerleave", () => figure.chart.tilt(0, 0));
+  if (diving && window.DeviceOrientationEvent && !DeviceOrientationEvent.requestPermission && matchMedia("(pointer: coarse)").matches) {
+    let rest = null;
+    const tilt = (e) => {
+      if (!hero.isConnected) return removeEventListener("deviceorientation", tilt);
+      if (e.gamma === null) return;
+      rest ??= [e.gamma, e.beta];
+      figure.chart.tilt(Math.max(-1, Math.min(1, (e.gamma - rest[0]) / 25)), Math.max(-1, Math.min(1, (e.beta - rest[1]) / 25)));
+    };
+    addEventListener("deviceorientation", tilt);
+  }
+  // The dive: scrolling out of the hero pitches the camera down until the sea is the paper of the page below. The
+  // sea is held on screen (sticky) while the hero's last part scrolls past; the text gives way as it goes.
+  let asked = false;
+  const dive = () => {
+    asked = false;
+    if (!hero.isConnected) return removeEventListener("scroll", ask);
+    const p = Math.max(0, Math.min(1, scrollY / Math.max(1, featured.offsetTop - hero.offsetTop - hero.querySelector(".hero-sea").offsetHeight)));
+    hero.style.setProperty("--dive", p.toFixed(3));
+    hero.classList.toggle("away", p > 0.3);
+    figure.chart.dive(p);
+  };
+  const ask = () => asked || ((asked = true), requestAnimationFrame(dive));
+  const lift = () => (hero.isConnected ? scrollY < hero.offsetHeight + 200 && figure.chart.lift(scrollY) : removeEventListener("scroll", lift));
+  addEventListener("scroll", diving ? ask : lift, { passive: true });
+  if (diving) dive();
+}
+
+/** A value kept for this visit (sessionStorage), read or, with `value`, written; nothing where storage is refused. */
+function session(key, value) {
+  try {
+    return value === undefined ? sessionStorage.getItem(key) : sessionStorage.setItem(key, value);
+  } catch {
+    return null;
   }
 }
+
+/** Resolves after the next paint: what is in the page now is on screen. */
+const painted = () => new Promise((done) => requestAnimationFrame(() => setTimeout(done)));
 
 /** Resolves once the screen keeps up again: three frames in a row each under 25 ms, or after `most` ms. A new layer
  *  on screen costs a few slow frames (more on a slow phone); a motion started then would stutter. */
