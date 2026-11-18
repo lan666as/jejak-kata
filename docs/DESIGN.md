@@ -148,15 +148,17 @@ A story is a voyage in three parts.
    it (from 900px: a column at the right, the stage on the page's 1120px grid like the header; from 1100px the figure
    owns the stage: the stage takes the wide grid, the caption a column of 26 to 30rem at its right, and the plate is
    shown up to 1.5 times its drawn size, with larger marks and type, a strip's rows at most 72px apart so that a strip
-   of few rows is not stretched; below 900px: a band under the figure), the chart's graticule faint behind the figure. Where a story has several scenes, the scene's title stands above the caption as a label; the one count is the step's. Captions do not scroll past as boxes:
+   of few rows is not stretched; below 900px: a band under the figure), the chart's graticule faint behind the figure. Where a story has several scenes, the scene's title stands above
+   the caption as a label; the one count is the step's. Captions do not scroll past as boxes:
    the stage stays, the caption turns (`--d-turn`), the figure's marks travel (`--d-leg`). Scroll, swipe, the arrow
    keys, space, or the next/previous controls all move one step; scrolling settles on a step (scroll snap,
    proximity). Step 0 of a scene opens it: the scene's title and text, so the reader knows the figure before it
    moves. The caption shows its head, the text, and "3 / 6"; a row of ticks shows the steps and takes a tap.
    Nothing is ever cut: on a phone the stage shares its height by need (`--fig`): the caption band keeps room for its
-   tallest step and the figure gets the rest, at least half; where the tallest step would not fit beside that half, the
-   stage's captions are set a size smaller (1rem, then `--t-small`) and at the last the figure gives up a tenth more. No
-   caption is cut.
+   tallest step and the figure gets the rest, at least half (a strip that slides, up to three fifths); where the tallest
+   step would not fit beside that, the stage's captions are set a size smaller (1rem, then `--t-small`) and at the last
+   the figure gives up a little more (to two fifths); an opening longer still rises over the figure's foot while it is
+   read (a move, not a change of layout). No caption is cut.
    A strip of more rows than that room keeps 26px apart (`stripLeast` in plate.js) is drawn at the height that does, in
    a window of that room, and **slides** through the window as the page scrolls through the scene: at each step to the
    rows the step brings forward (at the opening to its top; where a step names none, as far down as the step is

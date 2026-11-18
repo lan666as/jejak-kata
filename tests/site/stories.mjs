@@ -4,7 +4,8 @@
 // At every step the stage must be stuck under the header, show the step's caption and counter, have its figure wholly on
 // screen at the step's moment with a strip's rows at least 17px apart on screen and no text under 12px (a strip drawn
 // taller than its window on a phone: the window on screen, and the rows the step names inside it), and keep its caption
-// band on screen, showing the whole step or at least six lines (a caption longer than the band must scroll in it).
+// band on screen, showing the whole step or at least six lines (a caption longer than the band must scroll in it); on a
+// phone no caption is cut at all (an opening longer than the band rises over the figure's foot, wholly on screen).
 // Then the step buttons and the ticks, and the whole story once more with reduced motion.
 import { TEXT } from "../../site/text.js";
 import { STORIES } from "../../site/story.js";
@@ -27,8 +28,11 @@ const look = () => {
   return { k, y: scrollY, landing, step: +stage.dataset.step, plate: +stage.dataset.plate, shownAt: plates.findIndex((p) => !p.classList.contains("off")), stack: !!stage.querySelector(".plates"),
     plates: shown.length, stuck: Math.round(stage.getBoundingClientRect().top - head),
     fig: fig && [fig.top - head, vh - fig.bottom, fig.left, vw - fig.right].map(Math.round), moment: shown[0]?.querySelector(".state, .marker text")?.textContent || "",
-    cap: [c.top - head, vh - c.bottom].map(Math.round), capHeight: Math.round(c.height), longer: cap.scrollHeight > cap.clientHeight + 1, scrolls: ["auto", "scroll"].includes(getComputedStyle(cap).overflowY),
+    cap: [c.top - head, vh - c.bottom].map(Math.round), capHeight: Math.round(c.height),
+    longer: cap.scrollHeight > cap.clientHeight + 1, scrolls: ["auto", "scroll"].includes(getComputedStyle(cap).overflowY),
     squeezed: cap.clientHeight < Math.min(cap.scrollHeight, 6 * parseFloat(getComputedStyle(cap.querySelector(".turn:not(.out) p:last-child") || cap).lineHeight)) - 2,
+    // (a turn comes in from a few pixels below: --s2)
+    phone: vw < 900, cut: (() => { const t = cap.querySelector(".turn:not(.out)")?.getBoundingClientRect(); return !!t && (t.top < head - 1 || t.bottom > c.bottom + 9); })(),
     outside: named.filter((r) => { const b = r.querySelector("line").getBoundingClientRect(); return b.top < win.top || b.bottom > win.bottom; }).length,
     smallest: Math.min(...[...(shown[0]?.querySelectorAll("text, tspan") || [])].filter((t) => t.textContent.trim()).map((t) => parseFloat(getComputedStyle(t).fontSize) * (shown[0].querySelector("svg").getBoundingClientRect().width / shown[0].querySelector("svg").viewBox.baseVal.width))),
     pitch: (() => { const ys = [...(shown[0]?.querySelectorAll(".row > line") || [])].map((t) => t.getBoundingClientRect().top); return ys.length > 1 ? Math.round(Math.min(...ys.slice(1).map((y, i) => y - ys[i]))) : null; })(),
@@ -69,9 +73,10 @@ function judge(story, k, j, s) {
   if (s.pitch !== null && s.pitch < 17) wrong.push(`the figure's rows are ${s.pitch}px apart on screen`);
   if (s.outside) wrong.push(`${s.outside} of the rows the step names are outside the figure's window`);
   if (s.smallest < 11.9) wrong.push(`the figure has text ${s.smallest.toFixed(1)}px tall on screen`);
-  if (s.squeezed) wrong.push("the caption band shows less than the step or six lines");
+  if (s.phone && s.cut) wrong.push("the caption is cut: not wholly on screen in its band");
+  if (!s.phone && s.squeezed) wrong.push("the caption band shows less than the step or six lines");
   if (s.cap.some((d) => d < -1)) wrong.push(`the caption band is off screen (top, bottom: ${s.cap.join(", ")})`);
-  if (s.longer && !s.scrolls) wrong.push("the caption is longer than its band and the band does not scroll");
+  if (!s.phone && s.longer && !s.scrolls) wrong.push("the caption is longer than its band and the band does not scroll");
   if (s.capHeight < 60) wrong.push(`the caption band is ${s.capHeight}px tall`);
   return wrong;
 }

@@ -679,11 +679,13 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .stage::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .55;
   background: linear-gradient(var(--line-deep) 0 1px, transparent 1px) 0 0 / 100% 96px, linear-gradient(90deg, var(--line-deep) 0 1px, transparent 1px) 0 0 / 96px 100%;
   mask-image: radial-gradient(ellipse 60% 70% at 38% 50%, #000 20%, transparent 75%); }
-.stage { isolation: isolate; }  /* --fig: the figure's share on a phone, by need (app.js, share); --fig-0: its share while the opening is read */
+.stage { isolation: isolate; }  /* --fig: the figure's share on a phone, by need (app.js, share) */
+/* the opening, where it is longer than the band, rises over the figure's foot (--rise; a move, not a change of layout),
+   on the deep */
 @media (max-width: 899.98px) {
-  .stage[data-step="0"] .stage-figure { height: var(--fig-0, var(--fig)); }
-  .stage[data-step="0"] .stage-figure .plate svg { max-height: var(--fig-0, var(--fig)); }
-  .stage-figure, .stage-figure .plate svg { transition: height var(--d-turn) var(--sail), max-height var(--d-turn) var(--sail); }
+  .stage[data-step="0"] .caption { overflow: visible; mask-image: none; }
+  .stage[data-step="0"] .turn:not(.out) { position: relative; z-index: 1; transform: translateY(calc(-1 * var(--rise, 0px))); padding-top: var(--s4);
+    margin-top: calc(-1 * var(--s4)); background: linear-gradient(transparent, var(--deep) var(--s4)); }
 }
 .stage-figure > * { grid-area: 1 / 1; max-width: 100%; }
 /* the stage is the deep in both schemes: its figure is drawn on it, in the night's inks (the dark scheme's own values;
@@ -704,7 +706,7 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .caption { flex: 1; display: grid; align-content: start; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-deep) transparent; }
 .caption.more { mask-image: linear-gradient(#000 calc(100% - var(--s6)), transparent); }
 .caption:focus-visible { outline-offset: calc(-1 * var(--rule)); }
-.turn { grid-area: 1 / 1; transition: opacity var(--d-turn) var(--sail), transform var(--d-turn) var(--sail); }
+.turn { grid-area: 1 / 1; align-self: start; transition: opacity var(--d-turn) var(--sail), transform var(--d-turn) var(--sail); }
 @starting-style { .turn { opacity: 0; transform: translateY(var(--s2)); } .turn.back { transform: translateY(calc(-1 * var(--s2))); } }
 .turn.out { opacity: 0; transform: translateY(calc(-1 * var(--s2))); pointer-events: none; }
 .turn.out.back { transform: translateY(var(--s2)); }
