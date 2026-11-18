@@ -27,23 +27,23 @@ export const STORIES = [
     key: { number: "150 / 200", id: "“oknum” yang kami baca tidak disebut namanya", en: "“oknum” we read are not named" },
     id: {
       title: "Siapa yang disebut “oknum”?",
-      teaser: "Di halaman tentang pelanggaran, kata “oknum” menempel pada guru, pegawai negeri, tentara, dan kepala desa dua sampai lima kali lebih sering daripada pada anggota dewan atau hakim. Dari 200 “oknum” yang kami baca, 150 tidak disebut namanya.",
+      teaser: "Di halaman tentang pelanggaran, kata “oknum” menempel pada guru, pegawai negeri, tentara, dan kepala desa lebih sering daripada pada anggota dewan atau hakim: dua sampai lima kali di Kompas dan Detik. Dari 200 “oknum” yang kami baca, 150 tidak disebut namanya.",
     },
     en: {
       title: "Who gets called “oknum”?",
-      teaser: "On pages about wrongdoing, the word “oknum” (a rogue individual) sits beside teachers, civil servants, soldiers and village heads two to five times more often than beside legislators or judges. Of 200 “oknum” we read, 150 are not named.",
+      teaser: "On pages about wrongdoing, the word “oknum” (a rogue individual) sits beside teachers, civil servants, soldiers and village heads more often than beside legislators or judges: two to five times in Kompas and Detik. Of 200 “oknum” we read, 150 are not named.",
     },
   },
   {
     slug: "diamankan", published: "2026-11-17",
-    key: { number: "5% → 15%", id: "halaman Kompas tentang tersangka yang memakai “diamankan”", en: "of Kompas pages about a suspect use “diamankan”" },
+    key: { number: "5% → 15%", id: "halaman Kompas tentang tersangka yang memakai “diamankan”, 2011 → 2024", en: "of Kompas pages about a suspect use “diamankan”, 2011 → 2024" },
     id: {
       title: "Ditangkap, atau “diamankan”?",
-      teaser: "Di situs berita Polri, sepertiga halaman tentang seorang tersangka memakai kata “diamankan”. Di Tribunnews seperempat. Di Kompas naik dari 5% menjadi 15%. Di Tempo: 3–6%.",
+      teaser: "Di situs berita Polri, sepertiga halaman tentang seorang tersangka memakai kata “diamankan”. Di Tribunnews seperempat. Di Kompas naik dari 5% (2011) menjadi 15% (2024). Di Tempo: 2–8%.",
     },
     en: {
       title: "Arrested, or “secured”?",
-      teaser: "On the police's own news site, a third of the pages about a suspect use the word “diamankan” (secured). In Tribunnews a quarter. In Kompas it rose from 5% to 15%. In Tempo: 3–6%.",
+      teaser: "On the police's own news site, a third of the pages about a suspect use the word “diamankan” (secured). In Tribunnews a quarter. In Kompas it rose from 5% (2011) to 15% (2024). In Tempo: 2–8%.",
     },
   },
   {
@@ -51,11 +51,11 @@ export const STORIES = [
     key: { number: "6–12%", id: "halaman tentang polisi memuat kata “viral”", en: "of pages about the police carry the word “viral”" },
     id: {
       title: "Tidak viral, tidak ada polisi?",
-      teaser: "Pada 2010–2014 kata “viral” tidak ada di berita tentang polisi. Sekarang ada di 6–12% halamannya, dua sampai tiga kali rata-rata semua berita, dan hampir sesering itu di halaman kepala desa dan kepala sekolah. Di halaman KPK, DPR, menteri, dan gubernur: di bawah rata-rata.",
+      teaser: "Pada 2010–2014 kata “viral” tidak ada di berita tentang polisi. Sekarang ada di 6–12% halamannya, dua sampai tiga kali rata-rata semua berita. Kepala desa dan kepala sekolah menyusul: 2–10%. Di halaman KPK, DPR, menteri, dan gubernur: di bawah rata-rata.",
     },
     en: {
       title: "No viral, no police?",
-      teaser: "In 2010–2014 the word “viral” is absent from news about the police. Now it is on 6–12% of those pages, two to three times the rate of all news, and nearly as often on pages about village heads and school heads. On pages about the KPK, parliament, ministers and governors: below average.",
+      teaser: "In 2010–2014 the word “viral” is absent from news about the police. Now it is on 6–12% of those pages, two to three times the rate of all news. Village heads and school heads follow: 2–10%. On pages about the KPK, parliament, ministers and governors: below average.",
     },
   },
   {
@@ -75,11 +75,11 @@ export const STORIES = [
     key: { number: "19%", id: "SBY pada 2015, dari tahun terakhirnya menjabat, di Kompas", en: "SBY in 2015, of his last year in office, in Kompas" },
     id: {
       title: "Setahun sesudah turun, tinggal seperlima",
-      teaser: "SBY pada 2015: 19% dari tahun terakhirnya menjabat di Kompas, 6% di Tempo, 16% di Tribunnews. Boediono: 6–10%. Dari 23 orang yang meninggalkan tujuh jabatan tertinggi pada 2012–2023, nilai tengahnya 16–25%. Yang tidak dilupakan: yang pindah jabatan, maju pemilu, atau diadili.",
+      teaser: "SBY pada 2015: 19% dari tahun terakhirnya menjabat di Kompas, 6% di Tempo, 16% di Tribunnews. Boediono: 6–10%. Dari 25 orang yang meninggalkan tujuh jabatan tertinggi pada 2012–2023, 23 cukup halamannya untuk dihitung; nilai tengahnya 16–25%. Yang tidak dilupakan: yang pindah jabatan, maju pemilu, atau diadili.",
     },
     en: {
       title: "A year after leaving, a fifth is left",
-      teaser: "SBY in 2015: 19% of his last year in office in Kompas, 6% in Tempo, 16% in Tribunnews. Boediono: 6–10%. Across the 23 people who left seven top offices in 2012–2023, the median is 16–25%. Those not forgotten: the ones who took another post, ran for office, or stood trial.",
+      teaser: "SBY in 2015: 19% of his last year in office in Kompas, 6% in Tempo, 16% in Tribunnews. Boediono: 6–10%. Of the 25 people who left seven top offices in 2012–2023, 23 have enough pages to count; their median is 16–25%. Those not forgotten: the ones who took another post, ran for office, or stood trial.",
     },
   },
   {
@@ -87,11 +87,11 @@ export const STORIES = [
     key: { number: "17–25%", id: "halaman Demokrat memuat “korupsi” saat berkuasa", en: "of Demokrat's pages carried “korupsi” while it governed" },
     id: {
       title: "Partai mana yang ditulis bersama kata “korupsi”",
-      teaser: "Ketika Demokrat berkuasa, “korupsi” ada di 17–25% halaman yang menyebutnya. Ketika PDI Perjuangan berkuasa: paling tinggi 11%. Sekarang kesepuluh partai di DPR berkumpul di 2–10%.",
+      teaser: "Ketika Demokrat berkuasa, “korupsi” ada di 17–25% halaman yang menyebutnya. Ketika PDI Perjuangan berkuasa: paling tinggi 11%. Pada 2020–2024 kesepuluh partai yang pernah duduk di DPR sejak 2009 berkumpul di 2–10%.",
     },
     en: {
       title: "Which parties get written with the word “korupsi”",
-      teaser: "While Demokrat governed, “korupsi” was on 17–25% of the pages naming it. While PDI Perjuangan governed: 11% at most. Today all ten parties in parliament sit at 2–10%.",
+      teaser: "While Demokrat governed, “korupsi” was on 17–25% of the pages naming it. While PDI Perjuangan governed: 11% at most. In 2020–2024 all ten parties that have sat in parliament since 2009 are at 2–10%.",
     },
   },
   {
@@ -120,14 +120,14 @@ export const STORIES = [
   },
   {
     slug: "kata-resmi", published: "2026-11-17",
-    key: { number: { id: "Negara", en: "The state" }, id: "mengganti “Cina” dengan “Tiongkok”: Kompas menurut selama dua tahun, Tempo tidak pernah", en: "replaced “Cina” with “Tiongkok”: Kompas followed for two years, Tempo never did" },
+    key: { number: { id: "Negara", en: "The state" }, id: "mengganti “Cina” dengan “Tiongkok”: Kompas ikut pada 2014–2015 lalu berbalik, Tempo tidak pernah", en: "replaced “Cina” with “Tiongkok”: Kompas went along in 2014–2015 and then turned back, Tempo never did" },
     id: {
       title: "Negara memilih kata. Redaksi tidak selalu menurut",
-      teaser: "Keputusan presiden mengganti “Cina” dengan “Tiongkok”: Kompas menurut selama dua tahun, Tempo tidak pernah. Tetapi istilah polisi untuk kelompok bersenjata di Papua, “KKB”, menang di ketiganya.",
+      teaser: "Keputusan presiden mengganti “Cina” dengan “Tiongkok”: Kompas ikut pada 2014–2015 lalu berbalik, Tempo tidak pernah. Tetapi istilah polisi untuk kelompok bersenjata di Papua, “KKB”, unggul di ketiganya sampai 2023.",
     },
     en: {
       title: "The state picks a word. Newsrooms do not always follow",
-      teaser: "A presidential decree replaced “Cina” with “Tiongkok”: Kompas followed for two years, Tempo never did. But the police's term for the armed groups in Papua, “KKB”, won in all three.",
+      teaser: "A presidential decree replaced “Cina” with “Tiongkok”: Kompas went along in 2014–2015 and then turned back, Tempo never did. But the police's term for the armed groups in Papua, “KKB”, led in all three until 2023.",
     },
   },
   {
