@@ -48,10 +48,13 @@ stage_look()     {  # the site used like a reader, in a real browser; needs `npm
   for f in site/*.js; do node --check "$f"; done
   node tests/site/stories.mjs && node tests/site/pages.mjs && node tests/site/hero.mjs && node tests/site/webkit.mjs  # webkit: skips where WebKit cannot run
 }
-stage_deploy()   {  # publish site/ (with its data) as the gh-pages branch, if it passes `look`; not part of a plain ./run.sh
+stage_deploy()   {  # publish site/ (with its data and its generated pages) as the gh-pages branch, if it passes `look` and meta.mjs; not part of a plain ./run.sh
   stage_look
   local tree; tree=$(mktemp -d)
   cp -r site/. "$tree" && touch "$tree/.nojekyll"
+  # Every story and main page as an address of its own (its page, share image, place in the sitemap and the feeds),
+  # made from the site as it is now, then checked as link previews and search engines read it.
+  node tests/site/publish.mjs "$tree" && node tests/site/meta.mjs "$tree"
   git -C "$tree" init -q -b gh-pages && git -C "$tree" add -A
   git -C "$tree" -c user.name="$(git config user.name)" -c user.email="$(git config user.email)" commit -q -m "Site built $(date -u +%F)"
   git -C "$tree" push -q -f "$(git remote get-url origin)" gh-pages

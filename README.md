@@ -217,7 +217,8 @@ validation/             the pre-registered word lists and their protocol
 manifests/              which HathiTrust volumes (pinned: the catalogue dump changes monthly);
                         the adjectives and verbs looked for around names
 tests/                  the whole path on a toy corpus with one planted change; tests/site uses the site
-                        like a reader in a real browser, and `./run.sh deploy` runs it first
+                        like a reader in a real browser, and `./run.sh deploy` runs it first; publish.mjs
+                        writes the published site's own pages, share images, sitemap and feeds
 docs/                   the report, and how the measure was chosen (instrument.md)
 run.sh                  rebuild everything, in order
 ```
@@ -270,7 +271,26 @@ runs `look` first.
 | `seas.mjs` | the map by mouse, keys, buttons and touch (one finger, pinch, twist, tilt, tap), the hero by touch, the held seas |
 | `shift.mjs` | layout shift while pages load and scroll (under 0.05) |
 | `cold.mjs` | the home page cold on slow 4G and 4G: text and an answering chart within 2 s |
-| `frames.mjs`, `capture.mjs`, `look.mjs`, `shot.mjs`, `sheet.mjs`, `share.mjs` | frame times, and screenshots to look at (`share.mjs` remakes `site/og.jpg`) |
+| `meta.mjs [<built>]` | the published site as link previews and search engines read it (below): every generated page fetched with no script, its tags, JSON-LD, share image, canonical and language twins, the sitemap and the feeds; then each page opened, taken over by the app at its route |
+| `frames.mjs`, `capture.mjs`, `look.mjs`, `shot.mjs`, `sheet.mjs` | frame times, and screenshots to look at |
+
+### One generation step: addresses of their own
+
+The app is one page, and a route used to live only after `#`, which no link preview and no search engine reads: every
+link to the site looked like the first page. So `./run.sh deploy` runs one generation step,
+`node tests/site/publish.mjs <tree>`, on the copy of `site/` it publishes. For each story, each main page and play page,
+and each word the first page shows, in Indonesian and in English (under `en/`), it writes a page at a real path
+(`cerita/oknum/`, `en/cerita/oknum/`): the app's own `index.html` with that page's title, description, canonical
+address, language twins, Open Graph and X card tags, JSON-LD (Article, BreadcrumbList, Dataset), and the page's text
+in plain HTML for readers that run no script; the app takes the page over where scripts run. Beside it a share image,
+`og.jpg` (1200x630, under 300 kB): a story's key number and title on its own night sea, drawn by the app in the test
+browser. It also writes `404.html` (GitHub Pages serves it for any other path, and the app reads the path), `sitemap.xml`
+and the stories as feeds (`feed.xml`, Atom; `feed.json`, JSON Feed), and then `meta.mjs` checks all of it. Nothing it
+writes is kept in git: it is made from `site/` (`text.js`, `story.js`, `address.js` and the data) every time the site
+is published, so a published page cannot carry an old title, number or image. `address.js` says which routes have a
+page and how a route is written; addresses without a page (`#/kata/batik`) work as before, and so does every old
+`#/...` link. `node tests/site/publish.mjs <dir> --no-images` writes the pages alone in a second;
+`node tests/site/publish.mjs icons` remakes the installed app's icons (`site/icon-*.png`).
 
 WebKit on Linux needs system libraries a server often lacks (`npx playwright-core install webkit` lists them). Without
 root they can be unpacked from the distribution's packages (`apt-get download`, `dpkg-deb -x`) into a folder whose
