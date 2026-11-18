@@ -5,7 +5,8 @@
 // screen at the step's moment with a strip's rows at least 17px apart on screen, and keep its caption band on screen (a
 // caption longer than the band must scroll in it).
 // Then the step buttons and the ticks, and the whole story once more with reduced motion.
-import { STORIES, TEXT } from "../../site/text.js";
+import { TEXT } from "../../site/text.js";
+import { STORIES } from "../../site/story.js";
 import { base, browser, done } from "./serve.mjs";
 const slugs = process.argv.length > 2 ? process.argv.slice(2) : STORIES.map((s) => s.slug);
 const plain = (html) => html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();

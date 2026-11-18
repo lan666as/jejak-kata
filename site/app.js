@@ -1218,14 +1218,14 @@ addEventListener("scrollend", () => voyage?.arrived());
  * once it is on screen; each figure is then drawn at the size its stage has.
  */
 async function storyPage(slug, scene) {
-  const story = STORIES.find((s) => s.slug === slug);
   if (!slug) return storiesPage();
-  if (!story) return lostPage();
-  // Laid out full width from the first frame (index.html says so too), also while the plates are on their way.
+  if (!STORIES.some((s) => s.slug === slug)) return lostPage();
+  // Laid out full width from the first frame (index.html says so too), also while the plates and the story's body
+  // (story.js: its intro, limits and scenes; the cards need only text.js) are on their way.
   view.classList.add("voyage");
   document.documentElement.classList.add("voyaging");
-  await plating();
-  const words = story[language], next = STORIES[(STORIES.indexOf(story) + 1) % STORIES.length], parts = story.scenes;
+  const story = (await Promise.all([import("./story.js"), plating()]))[0].STORIES.find((s) => s.slug === slug);
+  const words = story[language], next = STORIES[(STORIES.findIndex((s) => s.slug === slug) + 1) % STORIES.length], parts = story.scenes;
   const cover = el(`<header class="cover shore"><div class="shore-sea">${GRATICULE}</div><div class="cover-text"><a class="kicker" href="${href("cerita")}">${t("nav_stories")}</a>
     <p class="cover-kicker">${t("story")} · ${t("read_time", readingTime(story))}</p><h1${words.title.length > 34 ? ' class="long"' : ""}>${words.title}</h1>
     <div class="cover-body"><div><p class="deck">${words.teaser}</p>

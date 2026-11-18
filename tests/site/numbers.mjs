@@ -1,7 +1,7 @@
 // node tests/site/numbers.mjs <old data dir> <new data dir>   Which numbers in the stories' captions does the new data
 // not give, among the series the caption points at? Run before new data replaces old: each line is a caption to reread.
 import { readFileSync } from "node:fs";
-import { STORIES } from "../../site/text.js";
+import { STORIES } from "../../site/story.js";
 const [oldDir, newDir] = process.argv.slice(2), read = (dir, file) => JSON.parse(readFileSync(`${dir}/${file}`));
 const OUTLETS = ["id-web-eras-kompas", "id-web-eras-tempo", "id-web-eras-tribun"];
 /** Every value the series a caption points at can show, as percentages (or times, for the lists of words that fell). */
