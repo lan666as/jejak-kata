@@ -886,7 +886,9 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 ::view-transition-new(root) { animation: page-in var(--d-turn) var(--sail) both; }
 ::view-transition-group(title) { animation-duration: var(--d-leg); animation-timing-function: var(--sail); }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  /* transitions are cut (0s, not a hair above it: with transition-property's default of `all` that would make every
+     change on every element a transition, and a size read just after a change would see the old one) */
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: 0s !important; scroll-behavior: auto !important; }
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   html.voyaging { scroll-snap-type: none; }
 }
