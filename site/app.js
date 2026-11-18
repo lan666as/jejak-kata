@@ -5,8 +5,12 @@
 //         #/pasang/<outlet>/<kind>  #/redaksi/<name>  #/lingkaran/<name>/<outlet>  #/tahun  #/temuan  #/bergeser  #/entitas  #/metode
 
 import { seaChart } from "./chart.js";
-import { plate, strip, plates, savePlate, stripLeast } from "./plate.js";
 import { TEXT, LENS_TEXT, NOTES, FEATURED, SHOWCASE, STORIES } from "./text.js";
+
+// The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
+// cold on a phone, does without them. `plating()` resolves once these names are there.
+let plate, strip, plates, savePlate, stripLeast, plated = null;
+const plating = () => (plated ||= import("./plate.js").then((m) => ({ plate, strip, plates, savePlate, stripLeast } = m)));
 
 const DATA = "data";
 const STEPS = [2, 4, 7, 12, 20]; // shift boundaries of the colour steps
@@ -114,9 +118,10 @@ const pageHead = (title, { kicker, to, lede, cls = "", sea = {}, more = "" } = {
 };
 
 /** A title that rises into place, word by word (or letter by letter): each part in a span the reader's tools do not
- *  read apart (the title keeps its text in aria-label). Nothing moves with reduced motion. */
+ *  read apart (the title keeps its text in aria-label). Nothing moves with reduced motion, nor on a page turn, which
+ *  carries the old title over into this one. */
 function rise(h1, letters = false) {
-  if (still() || h1.children.length) return h1;
+  if (still() || h1.children.length || document.documentElement.classList.contains("turning")) return h1;
   const text = h1.textContent.trim();
   let i = 0;
   h1.setAttribute("aria-label", text);
@@ -1174,7 +1179,7 @@ const PLAY_MARKS = {
   pasang: `${[0, 1, 2, 3].map((r) => [0, 1, 2, 3, 4, 5].map((c) => `<rect class="fill" x="${6 + c * 9}" y="${6 + r * 9}" width="7" height="7" rx="1" opacity="${[0.15, 0.35, 0.7, 1, 0.5, 0.2][(c + 2 * r) % 6]}"/>`).join("")).join("")}`,
   balap: `<rect class="on fill" x="6" y="7" width="50" height="8" rx="1"/><rect class="fill" x="6" y="19" width="36" height="8" rx="1"/><rect class="fill" x="6" y="31" width="22" height="8" rx="1"/>`,
   tahun: `<rect x="8" y="6" width="22" height="32" rx="2"/><rect class="on fill" x="24" y="10" width="22" height="30" rx="2"/><rect x="40" y="6" width="18" height="32" rx="2"/>`,
-  bergeser: `<path class="on" d="M8 34C18 34 18 14 30 16S44 32 56 10"/><circle class="fill" cx="8" cy="34" r="3"/><circle class="on fill" cx="56" cy="10" r="4"/><circle cx="30" cy="16" r="3"/>`,
+  bergeser: `<path class="on" pathLength="1" d="M8 34C18 34 18 14 30 16S44 32 56 10"/><circle class="fill" cx="8" cy="34" r="3"/><circle class="on fill" cx="56" cy="10" r="4"/><circle cx="30" cy="16" r="3"/>`,
   entitas: `<circle class="fill person" cx="14" cy="22" r="6"/><circle class="fill organisation" cx="32" cy="22" r="6"/><circle class="fill place" cx="50" cy="22" r="6"/><path d="M6 36h52"/>`,
 };
 const playCard = (page) => `<li><a class="card play-card" href="${href(page)}"><svg class="play-mark" viewBox="0 0 64 44" width="64" height="44" aria-hidden="true">${PLAY_MARKS[page]}</svg>
@@ -1216,11 +1221,12 @@ async function storyPage(slug, scene) {
   const story = STORIES.find((s) => s.slug === slug);
   if (!slug) return storiesPage();
   if (!story) return lostPage();
+  await plating();
   const words = story[language], next = STORIES[(STORIES.indexOf(story) + 1) % STORIES.length], parts = story.scenes;
   const cover = el(`<header class="cover shore"><div class="shore-sea">${GRATICULE}</div><div class="cover-text"><a class="kicker" href="${href("cerita")}">${t("nav_stories")}</a>
     <p class="cover-kicker">${t("story")} · ${t("read_time", readingTime(story))}</p><h1${words.title.length > 34 ? ' class="long"' : ""}>${words.title}</h1>
     <div class="cover-body"><div><p class="deck">${words.teaser}</p>
-    <button type="button" class="primary begin">${t("begin")}<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button></div><p class="cover-intro">${words.intro}</p></div></div></header>`);
+    <button type="button" class="primary begin">${t("begin")}<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button></div><div class="cover-side"><p class="cover-key"><b class="key-number">${keyOf(story).number}</b><span class="key-label">${keyOf(story).label}</span></p><p class="cover-intro">${words.intro}</p></div></div></div></header>`);
   let last = 0;  // the scene seen last: what the tools save and link to
   // On a phone the cover holds the title, the deck and "Mulai"; the intro opens the first scene instead.
   const stages = parts.map((part, k) => stage(part, k, parts.length, (j) => steer(k, j), k ? "" : words.intro));
@@ -1580,6 +1586,7 @@ const STUCK_PAGES = 300; // a name is ranked in a period only with this many pag
 
 /** Which names a word sticks to: of the pages naming each, the share that also hold the word. */
 async function stuckPage(word = "tersangka", k = "0", era = "2", kind = "p") {
+  await plating();
   const s = await stickOf(k), share = s.share[word] || s.share[(word = s.words[0])], p = +era;
   const ranked = s.names.map((_, i) => i).filter((i) => s.kinds[i] === kind && s.pages[i][p] >= STUCK_PAGES && share[i][p] !== null).sort((a, b) => share[b][p] - share[a][p]);
   const to = (w, a, b, c) => href("menempel", w, String(a), String(b), c);
@@ -1614,6 +1621,7 @@ async function tidePage(k = "0", kind = "person") {
 
 /** One name in three newsrooms: the words on which they differ most, period by period. */
 async function roomsPage(name = "pdip") {
+  await plating();
   const all = await Promise.all(OUTLETS.map((_, k) => stickOf(k))), at = all.map((s) => s.names.indexOf(name));
   const words = all[0].words.filter((w) => all.every((s) => s.share[w]));
   const value = (w, k, p) => (at[k] < 0 || all[k].share[w][at[k]][p] === null ? null : all[k].share[w][at[k]][p] / 1000);
@@ -1761,8 +1769,14 @@ function route() {
   };
   // A page turn: the old page gives way to the new one (--d-turn). The new one is caught as it stands after a
   // moment, so that a page still fetching its data does not hold the screen still.
+  // While it turns, the new page's own entrances wait (html.turning, style.css) and its title is carried over rather
+  // than rising; they play once the turn is done.
   if (first || still() || !document.startViewTransition) render();
-  else document.startViewTransition(() => Promise.race([render(), new Promise((done) => setTimeout(done, 240))]));
+  else {
+    document.documentElement.classList.add("turning");
+    document.startViewTransition(() => Promise.race([render(), new Promise((done) => setTimeout(done, 240))])).finished
+      .finally(() => document.documentElement.classList.remove("turning"));
+  }
   first = false;
 }
 

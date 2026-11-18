@@ -565,6 +565,11 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .cover h1.long { max-width: 16ch; font-size: calc((var(--t-h1) + var(--t-display)) / 2); }
 .cover .deck { margin: 0 0 var(--s5); font-size: var(--t-lede); line-height: var(--l-lede); color: var(--on-deep); }
 .cover-intro { color: var(--on-deep-2); }
+/* the story's key number, a beacon over the water, beside the deck from 900px (a phone's cover keeps its title) */
+.cover-key { display: none; margin: 0 0 var(--s5); }
+.cover-key .key-number { display: block; font: 800 var(--t-h1)/var(--l-display) var(--type); font-stretch: 75%; color: var(--beacon); font-variant-numeric: tabular-nums; }
+.cover-key .key-label { display: block; max-width: 24rem; margin-top: var(--s2); font-size: var(--t-small); line-height: var(--l-small); color: var(--on-deep-2); }
+@media (min-width: 900px) { .cover-key { display: block; animation: surface var(--d-leg) var(--sail) calc(var(--d-turn) * 1.6) both; } }
 @media (max-width: 899.98px) { .cover-intro { display: none; } .cover { justify-content: flex-end; } }  /* on a phone the intro opens the first scene's caption; the sea lies above the title */
 .cover .shore-sea { left: 0; width: 100%; }
 @media (max-width: 899.98px) { .cover .shore-sea::after { background: linear-gradient(to top, var(--deep) 55%, color-mix(in srgb, var(--deep) 60%, transparent) 68%, transparent 82%); } }
@@ -762,6 +767,16 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .play-mark .on { stroke: var(--route); } .play-mark .on.fill { fill: var(--route); stroke: none; }
 .play-mark .person { fill: var(--person); } .play-mark .organisation { fill: var(--organisation); } .play-mark .place { fill: var(--place); }
 .play-card:hover .play-mark { color: var(--ink); }
+/* a play card answers the pointer as a story card does (the route drawn across its top), and the moving part of its
+   mark moves once: a hop, or for a route, drawn again */
+.play-card { position: relative; overflow: hidden; }
+.play-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: var(--mark); background: var(--route); transform: scaleX(0); transform-origin: 0 50%; transition: transform var(--d-turn) var(--sail); }
+.play-card:is(:hover, :focus-visible)::before { transform: scaleX(1); }
+@keyframes hop { 40% { transform: translateY(-3px); } }
+@media (prefers-reduced-motion: no-preference) {
+  .play-card:is(:hover, :focus-visible) .play-mark .on { animation: hop var(--d-leg) var(--sail); transform-box: fill-box; }
+  .play-card:is(:hover, :focus-visible) .play-mark path.on[pathLength] { stroke-dasharray: 1; animation: draw var(--d-leg) var(--sail); }
+}
 .play-cards.row { display: flex; gap: var(--s3); margin: var(--s5) calc(-1 * var(--gutter)); padding: var(--s1) var(--gutter); overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter); scrollbar-width: none; }
 .play-cards.row::-webkit-scrollbar { display: none; }
 .play-cards.row li { flex: 0 0 min(15rem, 72%); scroll-snap-align: start; }
@@ -826,7 +841,7 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 /* A figure draws itself in once, as it first comes near the screen (app.js holds it .unseen until then): lines are
    drawn along their length, areas and points follow, bars grow from their axis, cells come up column by column (by
    the period they stand for), cards and small charts surface one after another. Only what is already there moves. */
-.unseen, .unseen * { animation-play-state: paused !important; }
+.unseen, .unseen *, .turning #view * { animation-play-state: paused !important; }  /* held: below the screen, or while the page turns */
 .area, .spark-area { animation: fade var(--d-leg) var(--sail) calc(var(--d-turn) * .6) both; }
 .pt { animation: fade var(--d-turn) var(--sail) var(--d-leg) both; }
 .plate .series .draw { animation-delay: calc(var(--k) * 120ms); } .plate .band { animation: fade var(--d-leg) var(--sail) both; }
@@ -861,7 +876,7 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 @keyframes page-out { to { opacity: 0; transform: translateY(calc(-1 * var(--s4))); } }
 @keyframes page-in { from { opacity: 0; transform: translateY(var(--s6)); } }
 ::view-transition-old(root) { animation: page-out var(--d-turn) var(--sail) both; }
-::view-transition-new(root) { animation: page-in var(--d-leg) var(--sail) both; }
+::view-transition-new(root) { animation: page-in var(--d-turn) var(--sail) both; }
 ::view-transition-group(title) { animation-duration: var(--d-leg); animation-timing-function: var(--sail); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }

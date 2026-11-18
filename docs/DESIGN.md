@@ -70,8 +70,9 @@ removes the dive and the passages, and shows titles and figures in place.
 
 What answers a page turn, once: the old page lifts away (`--d-turn`) and the new one surfaces (`--d-leg`) while the
 header stays (View Transitions where the browser has them); the title is carried over from the old title, or from the
-card that was chosen (a story card's title becomes the cover's title); the new title rises word by word (letter by
-letter on a word's own page); the kicker, lede and notes surface after it. What answers the scroll: a figure draws
+card that was chosen (a story card's title becomes the cover's title); the page's own entrances wait until the turn
+is done, then play. Arriving at a page without a turn (the first page of a visit), its title rises word by word
+(letter by letter on a word's own page) and the kicker, lede and notes surface after it. What answers the scroll: a figure draws
 itself in once as it first comes near the screen (lines along their length, then areas and points; bars grow from
 their axis; cells come up column by column, in the order of the periods they stand for; cards and small charts
 surface one after another); key numbers settle in once. Controls answer a press in one way (`--d-press`, down a
@@ -111,7 +112,8 @@ A story is a voyage in three parts.
 1. **Cover**, one screen on the deep: kicker ("Cerita" and reading time), the title in display type, the deck
    (teaser), and a "Mulai" control. Behind it, the night sea held still with the route of the story's own word (the
    first of the words the story asks the reader to check that is on the chart's first screen) sailed to its last
-   port, named in its pill: to the right of the title from 900px, above it on a phone (the text then sits low). The
+   port, named in its pill: to the right of the title from 900px, above it on a phone (the text then sits low).
+   From 900px the story's key number stands over the water in `--beacon` beside the deck, with its line. The
    graticule stands in where there is no WebGL2. **Passages** (scroll-driven, native scroll): leaving the cover, its
    words drift up and fade while the sea sinks away; the first stage's figure surfaces as its stage comes up; at the
    landing the tide line swells and settles as the paper comes in.
