@@ -520,5 +520,101 @@
     "tanpa"
    ]
   ]
+ },
+ {
+  "name": "nama-ganda-1",
+  "publishers": [
+   "kompas.com",
+   "tempo.co",
+   "tribunnews.com"
+  ],
+  "by": "span",
+  "first": "2010-01",
+  "last": "2014-12",
+  "patterns": {
+   "demokrat": "\\bdemokrat\\b",
+   "as": "\\b(amerika serikat|trump|biden|obama|hillary|kamala|partai republik|senat as|kongres as|gedung putih)\\b",
+   "korupsi": "\\bkorupsi\\b",
+   "pan": "\\bpan\\b",
+   "panrb": "\\bpan[- ]?rb\\b|\\bmenpan\\b|pendayagunaan aparatur"
+  },
+  "shares": [
+   [
+    "demokrat",
+    "as"
+   ],
+   [
+    "demokrat+as",
+    "korupsi"
+   ],
+   [
+    "pan",
+    "panrb"
+   ]
+  ]
+ },
+ {
+  "name": "nama-ganda-2",
+  "publishers": [
+   "kompas.com",
+   "tempo.co",
+   "tribunnews.com"
+  ],
+  "by": "span",
+  "first": "2015-01",
+  "last": "2019-12",
+  "patterns": {
+   "demokrat": "\\bdemokrat\\b",
+   "as": "\\b(amerika serikat|trump|biden|obama|hillary|kamala|partai republik|senat as|kongres as|gedung putih)\\b",
+   "korupsi": "\\bkorupsi\\b",
+   "pan": "\\bpan\\b",
+   "panrb": "\\bpan[- ]?rb\\b|\\bmenpan\\b|pendayagunaan aparatur"
+  },
+  "shares": [
+   [
+    "demokrat",
+    "as"
+   ],
+   [
+    "demokrat+as",
+    "korupsi"
+   ],
+   [
+    "pan",
+    "panrb"
+   ]
+  ]
+ },
+ {
+  "name": "nama-ganda-3",
+  "publishers": [
+   "kompas.com",
+   "tempo.co",
+   "tribunnews.com"
+  ],
+  "by": "span",
+  "first": "2020-01",
+  "last": "2024-12",
+  "patterns": {
+   "demokrat": "\\bdemokrat\\b",
+   "as": "\\b(amerika serikat|trump|biden|obama|hillary|kamala|partai republik|senat as|kongres as|gedung putih)\\b",
+   "korupsi": "\\bkorupsi\\b",
+   "pan": "\\bpan\\b",
+   "panrb": "\\bpan[- ]?rb\\b|\\bmenpan\\b|pendayagunaan aparatur"
+  },
+  "shares": [
+   [
+    "demokrat",
+    "as"
+   ],
+   [
+    "demokrat+as",
+    "korupsi"
+   ],
+   [
+    "pan",
+    "panrb"
+   ]
+  ]
  }
 ]
