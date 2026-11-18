@@ -1,6 +1,7 @@
-// The site served from site/ on a free port, and one browser: what both checks start from. Text is sent gzipped to a
-// browser that accepts it, as a static host (GitHub Pages) sends it.
-import { chromium } from "playwright-core";
+// The site served from site/ on a free port, and one browser: what every check starts from. Text is sent gzipped to a
+// browser that accepts it, as a static host (GitHub Pages) sends it. The browser is Chromium, or WebKit (Safari's
+// engine) where ENGINE=webkit (webkit.mjs).
+import { chromium, webkit } from "playwright-core";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
@@ -20,5 +21,5 @@ export const server = createServer(async (req, res) => {
   catch { res.writeHead(404); res.end(); }
 }).listen(0);
 export const base = `http://localhost:${server.address().port}/`;
-export const browser = await chromium.launch();
+export const browser = await (process.env.ENGINE === "webkit" ? webkit : chromium).launch();
 export const done = async (failures) => { await browser.close(); server.close(); process.exit(failures ? 1 : 0); };

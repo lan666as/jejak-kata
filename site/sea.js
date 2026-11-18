@@ -476,7 +476,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     const first = sailing[0]?.r, start = first?.legs.length > 1 && project(first.legs[0].x, 0, first.legs[0].z);
     ctx.font = `700 12px ${css["--type"]}`;
     const year = start && periods[first.legs[0].p], wide = year && ctx.measureText(year).width;
-    if (start && clear(start[0] + 9, start[1] - 12, wide)) {
+    if (start && start[0] + 9 + wide < W - 4 && clear(start[0] + 9, start[1] - 12, wide)) {
       claim(start[0] + 9, start[1] - 12, wide);
       ctx.fillStyle = dayAt(...start) > 0.5 ? css["--route"] : css["--route-on-deep"];
       ctx.fillText(year, start[0] + 9, start[1] - 12);
@@ -495,7 +495,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       const p = project(chart.x[k] / 1000, Math.max(0, chart.moved[k]) * lift, chart.y[k] / 1000);
       if (!p || p[0] < 0 || p[1] < 8 || p[0] > W - 40 || p[1] > H - 8 || fade(p[2]) < 0.3) continue;
       const text = name(chart.words[k]), wide = text && ctx.measureText(text).width;
-      if (!text || !clear(p[0] + 8, p[1], wide) || !claim(p[0] + 8, p[1], wide)) continue;
+      if (!text || p[0] + 8 + wide > W - 4 || !clear(p[0] + 8, p[1], wide) || !claim(p[0] + 8, p[1], wide)) continue;
       const paper = dayAt(...p) > 0.5;
       ctx.fillStyle = paper ? css["--ink-3"] : css["--on-deep-2"];
       ctx.globalAlpha = paper ? 1 : (routes.length ? 0.6 : 0.82) * fade(p[2]);

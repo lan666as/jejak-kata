@@ -255,6 +255,28 @@ re-derives Extracted Features files in place (two fetches a day apart differed
 in 1 volume of 59,237, 5 pages of 7.4 million), and the catalogue dump is
 replaced monthly (hence `manifests/`).
 
+### Checking the site
+
+`tests/site` uses the site like a reader, in a real browser (`cd tests/site && npm install` once); each check is
+`node tests/site/<name>.mjs` and fails with a non-zero exit. `./run.sh look` runs the first four, and `./run.sh deploy`
+runs `look` first.
+
+| Check | What it reads |
+|---|---|
+| `stories.mjs` | every story, step by step, by key and by scroll, at 1280px and 360px and with reduced motion: the stage stuck, the caption, the figure on screen (no text under 12px, a strip's rows apart, a tall strip's named rows in its window), the band showing its step |
+| `pages.mjs` | language switch, back button, shared links, a slow line, the menu, search, the map, the games, a saved image |
+| `hero.mjs` | the home hero with WebGL, without, and with reduced motion; the dive; the quality ladder only stepping down and settling |
+| `webkit.mjs` | the same pages in WebKit (Safari's engine), with and without WebGL, and as an older Safari; skips where WebKit cannot run |
+| `seas.mjs` | the map by mouse, keys, buttons and touch (one finger, pinch, twist, tilt, tap), the hero by touch, the held seas |
+| `shift.mjs` | layout shift while pages load and scroll (under 0.05) |
+| `cold.mjs` | the home page cold on slow 4G and 4G: text and an answering chart within 2 s |
+| `frames.mjs`, `capture.mjs`, `look.mjs`, `shot.mjs`, `sheet.mjs`, `share.mjs` | frame times, and screenshots to look at (`share.mjs` remakes `site/og.jpg`) |
+
+WebKit on Linux needs system libraries a server often lacks (`npx playwright-core install webkit` lists them). Without
+root they can be unpacked from the distribution's packages (`apt-get download`, `dpkg-deb -x`) into a folder whose
+`root/usr/lib/x86_64-linux-gnu` is linked into WebKit's own `minibrowser-wpe/sys/lib`; `WEBKIT_LIBS` names the folder
+(default `~/.cache/ms-playwright/webkit-libs`), whose EGL vendor file `webkit.mjs` hands to WebKit.
+
 ## Data and licences
 
 | Source | What is used | Terms |

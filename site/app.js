@@ -32,7 +32,16 @@ const view = document.getElementById("view");
 const masthead = document.querySelector(".masthead");
 const tipNode = document.getElementById("tip");
 
-let language = localStorage.getItem("language") || "id";
+/** A value kept in `store` (localStorage or sessionStorage), read or, with `value`, written; nothing where storage is
+ *  refused (Safari with all cookies blocked throws on any use of it). */
+function kept(store, key, value) {
+  try {
+    return value === undefined ? window[store].getItem(key) : window[store].setItem(key, value);
+  } catch {
+    return null;
+  }
+}
+let language = kept("localStorage", "language") || "id";
 const t = (key, ...args) => {
   const s = TEXT[language][key] ?? TEXT.id[key] ?? key;
   return typeof s === "function" ? s(...args) : s;
@@ -1293,6 +1302,8 @@ async function storyPage(slug, scene) {
     const top = head(), rects = stages.map((s) => s.node.getBoundingClientRect()), beats = stages.map((s) => s.node.querySelector(".beat").offsetHeight);
     const middle = top + (innerHeight - top) / 2, height = innerHeight - top;
     stages.forEach((s, k) => (s.go(Math.max(0, Math.min(s.steps - 1, Math.round((top - rects[k].top) / beats[k])))), s.slide((top - rects[k].top) / beats[k])));
+    // The step steered to is reached (also where the browser has no scrollend, as Safari before 26).
+    if (aim && Math.abs(rects[aim[0]].top - top + aim[1] * beats[aim[0]]) < 2) aim = null;
     const seen = rects.findIndex((r) => r.top <= middle && r.bottom >= middle), shore = landing.getBoundingClientRect().top;
     if (seen >= 0) last = seen;
     if (!rendering && !menuOpen()) marks.set(history.state?.id, seen >= 0 ? [seen, stages[seen].on()] : shore <= top ? [-1, top - shore] : null);
@@ -1399,7 +1410,7 @@ async function homePage() {
   // The 3D sea is fetched beside the data, and made only once the hero's text has been painted.
   const sea = (await Promise.all([gl, painted()]))[0]?.nightSea;
   // The arrival, once a session: the sea starts dark and its words come on as they arrive, the route last.
-  const arriving = !!sea && !still() && !session("arrived");
+  const arriving = !!sea && !still() && !kept("sessionStorage", "arrived");
   figure = await chartFigure(MAIN, [], (word) => sail(word), null, { night: true, wait: want, sea, eager: arriving }).catch(() => null);
   if (!hero.isConnected) return;
   const diving = !!figure?.chart.dive && document.documentElement.classList.contains("dives");
@@ -1427,7 +1438,7 @@ async function homePage() {
     // Lit when the front has crossed the chart and the rest of the words are in (or have not come in time).
     await Promise.race([Promise.all([lit, figure.more]), new Promise((done) => setTimeout(done, 2600))]);
     figure.chart.tallied();
-    session("arrived", 1);
+    kept("sessionStorage", "arrived", 1);
   } else if (!still()) await settled();  // the sea settles on screen, then the ship sets out
   if (drawn) go(first, !pending);
   if (still()) return;
@@ -1466,14 +1477,6 @@ async function homePage() {
   if (diving) dive();
 }
 
-/** A value kept for this visit (sessionStorage), read or, with `value`, written; nothing where storage is refused. */
-function session(key, value) {
-  try {
-    return value === undefined ? sessionStorage.getItem(key) : sessionStorage.setItem(key, value);
-  } catch {
-    return null;
-  }
-}
 
 /** Resolves after the next paint: what is in the page now is on screen. */
 const painted = () => new Promise((done) => requestAnimationFrame(() => setTimeout(done)));
@@ -1953,7 +1956,7 @@ document.addEventListener("click", (e) => {
 
 document.getElementById("language").addEventListener("click", () => {
   language = language === "id" ? "en" : "id";
-  localStorage.setItem("language", language);
+  kept("localStorage", "language", language);
   closeMenu();
   route();
 });

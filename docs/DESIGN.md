@@ -237,4 +237,6 @@ text has been painted. What is on screen is the data and nothing else:
 
 Phone first (360px), then 1440px. Light and dark. Every WebGL scene has a fallback (the flat chart, the graticule)
 and a reduced-motion still. Keyboard reaches everything. AA contrast. No layout shift above
-0.05. First screen interactive under 2 s on a cold load. `tests/site` holds the checks and `./run.sh deploy` runs them.
+0.05. First screen interactive under 2 s on a cold load. Safari (WebKit) as well as Chromium: every page complete and
+usable without scroll-driven animations, View Transitions, the `scrollend` event or storage (refused when cookies
+are blocked); what these add is a flourish, never the content (`tests/site/webkit.mjs`). `tests/site` holds the checks and `./run.sh deploy` runs them.
