@@ -674,7 +674,12 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .stage::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .55;
   background: linear-gradient(var(--line-deep) 0 1px, transparent 1px) 0 0 / 100% 96px, linear-gradient(90deg, var(--line-deep) 0 1px, transparent 1px) 0 0 / 96px 100%;
   mask-image: radial-gradient(ellipse 60% 70% at 38% 50%, #000 20%, transparent 75%); }
-.stage { isolation: isolate; }  /* --fig: the figure's share on a phone, by need (app.js, share) */
+.stage { isolation: isolate; }  /* --fig: the figure's share on a phone, by need (app.js, share); --fig-0: its share while the opening is read */
+@media (max-width: 899.98px) {
+  .stage[data-step="0"] .stage-figure { height: var(--fig-0, var(--fig)); }
+  .stage[data-step="0"] .stage-figure .plate svg { max-height: var(--fig-0, var(--fig)); }
+  .stage-figure, .stage-figure .plate svg { transition: height var(--d-turn) var(--sail), max-height var(--d-turn) var(--sail); }
+}
 .stage-figure > * { grid-area: 1 / 1; max-width: 100%; }
 /* the stage is the deep in both schemes: its figure is drawn on it, in the night's inks (the dark scheme's own values;
    plate.js reads them here, and saves the image on paper) */
@@ -698,7 +703,7 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 @starting-style { .turn { opacity: 0; transform: translateY(var(--s2)); } .turn.back { transform: translateY(calc(-1 * var(--s2))); } }
 .turn.out { opacity: 0; transform: translateY(calc(-1 * var(--s2))); pointer-events: none; }
 .turn.out.back { transform: translateY(var(--s2)); }
-.turn p { max-width: var(--measure); margin: 0 0 var(--s3); font-size: var(--t-body); line-height: var(--l-body); color: var(--on-deep); }
+.turn p { max-width: var(--measure); margin: 0 0 var(--s3); font-size: var(--turn, var(--t-body)); line-height: var(--l-body); color: var(--on-deep); }  /* --turn: a size smaller where a phone's stage needs it (app.js, share) */
 .turn .head, .turn .title { margin: 0 0 var(--s2); font: 800 var(--t-h3)/var(--l-h3) var(--type); font-stretch: 75%; text-wrap: balance; }
 .turn .title { font-size: var(--t-h2); line-height: var(--l-h2); }
 .turn .hint { display: none; font-size: var(--t-small); color: var(--on-deep-2); }

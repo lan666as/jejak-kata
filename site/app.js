@@ -323,7 +323,7 @@ function stage(part, k, of, steer, intro = "") {
     room.style.setProperty("--below", y < most - 1 ? "var(--s6)" : "0px");
   };
   const reach = () => {
-    const svg = room.querySelector(".plate svg"), scale = svg.getBoundingClientRect().height / svg.viewBox.baseVal.height, open = room.clientHeight;
+    const svg = room.querySelector(".plate svg"), scale = svg.getBoundingClientRect().height / svg.viewBox.baseVal.height, open = parseFloat(box.style.getPropertyValue("--fig")) || room.clientHeight;  // its window past the opening
     most = Math.max(0, svg.getBoundingClientRect().height - open);
     places = [...Array(n + 1)].map((_, j) => {
       show(j);
@@ -1138,7 +1138,7 @@ async function entitiesPage() {
  *  shown up to 1.5 times larger (a 1920px screen's stage), never wider or taller than its room, and beside the
  *  caption never much taller than wide. */
 const figureSize = (room) => {
-  const width = room.clientWidth, height = innerWidth >= 900 ? Math.min(room.clientHeight, width * 0.9) : room.clientHeight;
+  const width = room.clientWidth, height = innerWidth >= 900 ? Math.min(room.clientHeight, width * 0.9) : parseFloat(room.parentNode.style.getPropertyValue("--fig")) || room.clientHeight;
   const zoom = Math.min(1.5, Math.max(1, width / 760));
   return [Math.floor(width / zoom), Math.floor(height / zoom), zoom];
 };
@@ -1193,25 +1193,35 @@ const STRIPS = {
 };
 /**
  * On a phone a stage shares its height between the figure and the caption band by need (--fig): the band keeps room
- * for its tallest step, or for a long one six lines, the rest scrolling inside it; the figure gets the rest, at least
- * half. A strip of more rows than that room keeps 26px apart is drawn at the height that does (`tall`), in a window of
- * that room, and slides through it as the page scrolls through the scene (stage, `slide`).
+ * for its tallest step, and the figure gets the rest, at least half. Where the tallest step would not fit beside half
+ * the figure, the stage's captions are set a size smaller (--turn: 1rem, then --t-small), and at the last the figure
+ * gives up a tenth more. The opening (step 0: the scene's title and text, and on the first stage the story's intro),
+ * where it is longer still, has the figure smaller while it is read (--fig-0). No caption is cut. A strip of more rows
+ * than that room keeps 26px apart is drawn at the height that does (`tall`), in a window of that room, and slides
+ * through it as the page scrolls through the scene (stage, `slide`).
  */
+const TURN = ["", "1rem", "var(--t-small)"];
 function share(s, part) {
   const box = s.stage, side = box.querySelector(".stage-side"), style = getComputedStyle(box);
   const whole = box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - parseFloat(style.rowGap), chrome = side.offsetHeight - s.caption.offsetHeight;
   const probe = el(`<div class="caption" style="position:absolute;visibility:hidden;width:${s.caption.clientWidth}px;height:auto;overflow:visible"></div>`);
   side.append(probe);
-  let text = 0;
-  for (let j = 0; j < s.steps; j++) (probe.innerHTML = `<div class="turn">${s.said(j)}</div>`), (text = Math.max(text, probe.scrollHeight));
-  const line = parseFloat(getComputedStyle(probe.querySelector("p") || probe).lineHeight) || 26;
+  const high = (j) => ((probe.innerHTML = `<div class="turn">${s.said(j)}</div>`), probe.scrollHeight);
+  let text = 0, open = 0;
+  for (const size of TURN) {
+    box.style.setProperty("--turn", size || "var(--t-body)");
+    [open, text] = [high(0), Math.max(0, ...[...Array(s.steps - 1)].map((_, j) => high(j + 1)))];
+    if (whole - chrome - Math.max(open, text) >= whole / 2) break;
+  }
   probe.remove();
   const titles = [].concat(part[language].plate).filter((x) => typeof x === "string"), [rows, series] = STRIPS[part.type]?.(part) || [0, []];
   const need = rows ? Math.max(...titles.map((title) => stripLeast(title, rows, s.room.clientWidth, series))) : 0;
-  const fig = Math.floor(Math.max(whole / 2, whole - chrome - Math.min(text, 6 * line)));
+  const fig = Math.floor(Math.max(whole * 0.4, whole - chrome - text));
   box.style.setProperty("--fig", fig + "px");
   s.tall = need > fig ? need : 0;
   box.classList.toggle("tall", !!s.tall);
+  if (whole - chrome - open < fig) box.style.setProperty("--fig-0", Math.floor(Math.max(whole * 0.2, whole - chrome - open)) + "px");
+  else box.style.removeProperty("--fig-0");
 }
 const SCENE_DATA = { together: "together.json", stuck: "together.json", yearly: "years.json", forget: "years.json", left: "years.json", fell: "stopped.json" };
 

@@ -153,7 +153,9 @@ A story is a voyage in three parts.
    proximity). Step 0 of a scene opens it: the scene's title and text, so the reader knows the figure before it
    moves. The caption shows its head, the text, and "3 / 6"; a row of ticks shows the steps and takes a tap.
    Nothing is ever cut: on a phone the stage shares its height by need (`--fig`): the caption band keeps room for its
-   tallest step or, for a long one, six lines (the rest scrolls inside it), and the figure gets the rest, at least half.
+   tallest step and the figure gets the rest, at least half; where the tallest step would not fit beside that half, the
+   stage's captions are set a size smaller (1rem, then `--t-small`) and at the last the figure gives up a tenth more. No
+   caption is cut.
    A strip of more rows than that room keeps 26px apart (`stripLeast` in plate.js) is drawn at the height that does, in
    a window of that room, and **slides** through the window as the page scrolls through the scene: at each step to the
    rows the step brings forward (at the opening to its top; where a step names none, as far down as the step is
