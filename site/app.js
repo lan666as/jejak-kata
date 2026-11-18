@@ -259,16 +259,41 @@ function stage(part, k, of, steer, intro = "") {
           <button type="button" class="step on"><span>${t("step_on")}</span>${arrow("M9 5l7 7-7 7")}</button></div></div></div>
     <ol class="beats">${[...Array(n + 1)].map((_, j) => `<li class="beat"><div class="hidden">${j ? `<p><b>${head(j)}.</b> ${part.steps[j - 1][language]}</p>`
       : `<h2 id="scene-${k}-title">${words.title}</h2>${words.text ? `<p>${words.text}</p>` : ""}`}</div></li>`).join("")}</ol></section>`);
-  const box = node.firstElementChild, caption = box.querySelector(".caption"), count = box.querySelector(".count");
+  const box = node.firstElementChild, room = box.firstElementChild, caption = box.querySelector(".caption"), count = box.querySelector(".count");
   const ticks = [...box.querySelectorAll(".ticks button")], [back, ahead] = box.querySelectorAll(".step");
   let at = -1, figure = null;
   const said = (j) => (j ? `<p class="head">${head(j)}</p><p>${part.steps[j - 1][language]}</p>`
     : `<p class="title">${words.title}</p>${intro ? `<p class="intro">${intro}</p>` : ""}${words.text ? `<p>${words.text}</p>` : ""}${k ? "" : `<p class="hint">${t("stage_hint")}</p>`}`);
-  const show = () => {
-    if (!figure || at < 0) return;
-    const step = part.steps[Math.max(0, at - 1)], i = figure.labels.indexOf(step.at);
+  const show = (j = at) => {
+    if (!figure || j < 0) return;
+    const step = part.steps[Math.max(0, j - 1)], i = figure.labels.indexOf(step.at);
     box.dataset.plate = i;
-    if (i >= 0) figure.show(i, at ? step.focus : undefined, step.mark);
+    if (i >= 0) figure.show(i, j ? step.focus : undefined, step.mark);
+  };
+  // A strip taller than its window (share, on a phone) slides through it as the page scrolls through the scene: at
+  // each step to the rows the step brings forward (at the opening to its top; where a step names none, as far down
+  // as the step is through the scene), and between two steps, between their two places. Its edges fade where it
+  // goes on. `places` are worked out once, from the rows each step leaves unfaded (attributes only: nothing is laid
+  // out between two steps, so no mark starts to travel), then the figure is shown at its own step again.
+  let places = null, most = 0;
+  const slide = (f) => {
+    if (!places) return;
+    const j = Math.max(0, Math.min(n, f)), a = places[Math.floor(j)], b = places[Math.ceil(j)], y = a + (b - a) * (j - Math.floor(j));
+    room.style.setProperty("--slide", `${y.toFixed(1)}px`);
+    room.style.setProperty("--above", y > 1 ? "var(--s6)" : "0px");
+    room.style.setProperty("--below", y < most - 1 ? "var(--s6)" : "0px");
+  };
+  const reach = () => {
+    const svg = room.querySelector(".plate svg"), scale = svg.getBoundingClientRect().height / svg.viewBox.baseVal.height, open = room.clientHeight;
+    most = Math.max(0, svg.getBoundingClientRect().height - open);
+    places = [...Array(n + 1)].map((_, j) => {
+      show(j);
+      const rows = [...room.querySelectorAll(".plate:not(.off) .row")], named = rows.filter((r) => r.style.opacity === "1");
+      if (!j || named.length === rows.length) return (most * j) / n;
+      const ys = named.map((r) => +r.querySelector("line").getAttribute("y1") * scale), top = Math.min(...ys) - 32, bottom = Math.max(...ys) + 32;
+      return Math.max(0, Math.min(most, bottom - top <= open ? (top + bottom - open) / 2 : top));
+    });
+    show();
   };
   const go = (j) => {
     if (j === at) return;
@@ -296,7 +321,7 @@ function stage(part, k, of, steer, intro = "") {
   back.addEventListener("click", () => steer(at - 1));
   ahead.addEventListener("click", () => steer(at + 1));
   go(0);
-  return { node, stage: box, room: box.firstElementChild, caption, said, steps: n + 1, on: () => at, go, hold: (made) => ((figure = made), show()) };
+  return { node, stage: box, room, caption, said, steps: n + 1, on: () => at, go, slide, hold: (made) => ((figure = made), box.classList.contains("tall") ? reach() : show()) };
 }
 
 // ---- figures --------------------------------------------------------------
@@ -1117,10 +1142,10 @@ const STRIPS = {
   split: (p) => [p.pairs.length, [p[language].series]],
 };
 /**
- * On a phone a stage shares its height between the figure and the caption band by need (--fig): a strip of many rows
- * gets the room to keep its rows apart, a short caption leaves its room to the figure, and the band keeps room for its
- * tallest step, or for a long one five lines (three or two beside a strip of very many rows), the rest scrolling inside
- * it. At least half goes to the figure.
+ * On a phone a stage shares its height between the figure and the caption band by need (--fig): the band keeps room
+ * for its tallest step, or for a long one six lines, the rest scrolling inside it; the figure gets the rest, at least
+ * half. A strip of more rows than that room keeps 26px apart is drawn at the height that does (`tall`), in a window of
+ * that room, and slides through it as the page scrolls through the scene (stage, `slide`).
  */
 function share(s, part) {
   const box = s.stage, side = box.querySelector(".stage-side"), style = getComputedStyle(box);
@@ -1133,10 +1158,10 @@ function share(s, part) {
   probe.remove();
   const titles = [].concat(part[language].plate).filter((x) => typeof x === "string"), [rows, series] = STRIPS[part.type]?.(part) || [0, []];
   const need = rows ? Math.max(...titles.map((title) => stripLeast(title, rows, s.room.clientWidth, series))) : 0;
-  // The band keeps five lines; for a strip that needs most of the stage, three, or (never less than 64px) two.
-  const keep = need > whole * 0.75 ? Math.max(64, 2 * line) : (need > whole * 0.6 ? 3 : 5) * line;
-  const fig = Math.max(whole / 2, Math.min(Math.max(need, whole - text - chrome), whole - chrome - Math.min(text, keep)));
-  box.style.setProperty("--fig", Math.floor(fig) + "px");
+  const fig = Math.floor(Math.max(whole / 2, whole - chrome - Math.min(text, 6 * line)));
+  box.style.setProperty("--fig", fig + "px");
+  s.tall = need > fig ? need : 0;
+  box.classList.toggle("tall", !!s.tall);
 }
 const SCENE_DATA = { together: "together.json", stuck: "together.json", yearly: "years.json", forget: "years.json", left: "years.json", fell: "stopped.json" };
 
@@ -1267,7 +1292,7 @@ async function storyPage(slug, scene) {
     // All that is measured is measured first; then the stages are told their step.
     const top = head(), rects = stages.map((s) => s.node.getBoundingClientRect()), beats = stages.map((s) => s.node.querySelector(".beat").offsetHeight);
     const middle = top + (innerHeight - top) / 2, height = innerHeight - top;
-    stages.forEach((s, k) => s.go(Math.max(0, Math.min(s.steps - 1, Math.round((top - rects[k].top) / beats[k])))));
+    stages.forEach((s, k) => (s.go(Math.max(0, Math.min(s.steps - 1, Math.round((top - rects[k].top) / beats[k])))), s.slide((top - rects[k].top) / beats[k])));
     const seen = rects.findIndex((r) => r.top <= middle && r.bottom >= middle), shore = landing.getBoundingClientRect().top;
     if (seen >= 0) last = seen;
     if (!rendering && !menuOpen()) marks.set(history.state?.id, seen >= 0 ? [seen, stages[seen].on()] : shore <= top ? [-1, top - shore] : null);
@@ -1304,11 +1329,12 @@ async function storyPage(slug, scene) {
   // The figures, each at the size of its stage, with the step each stage is on.
   if (innerWidth < 900) stages.forEach((s, k) => share(s, parts[k]));
   await Promise.all(parts.map(async (part, k) => {
-    const [w, h, zoom] = figureSize(stages[k].room), made = await SCENES[part.type](part, w, h).catch(() => null);
+    const [w, h, zoom] = figureSize(stages[k].room), made = await SCENES[part.type](part, w, stages[k].tall || h).catch(() => null);
     if (!made) return stages[k].room.append(el(`<p class="sub">${t("no_data")}</p>`));
     made.node.querySelectorAll(".plate svg").forEach((svg) => (svg.style.width = svg.width.baseVal.value * zoom + "px"));
     stages[k].room.append(made.node);
     stages[k].hold(made);
+    frame();  // a strip that slides takes its place
   }));
 }
 

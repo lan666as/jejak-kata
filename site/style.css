@@ -591,6 +591,13 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .stage-figure > * { grid-area: 1 / 1; max-width: 100%; }
 .stage-figure .plate svg { max-height: var(--fig, calc(var(--stage-h) / 2)); border-color: transparent; }
 .stage-figure .sub { color: var(--on-deep-2); }
+/* on a phone, a strip of more rows than its room keeps apart is drawn at its own height in a window of that room and
+   slides through it as the page scrolls (app.js, share and slide); its edges fade where it goes on */
+@media (max-width: 899.98px) {
+  .stage.tall .stage-figure { overflow: hidden; place-items: start center; mask-image: linear-gradient(transparent, #000 var(--above, 0px), #000 calc(100% - var(--below, 0px)), transparent); }
+  .stage.tall .stage-figure > * { transform: translateY(calc(-1 * var(--slide, 0px))); }
+  .stage.tall .stage-figure .plate svg { max-height: none; }
+}
 .stage-side { grid-area: side; display: flex; flex-direction: column; gap: var(--s2); min-height: 0; }
 .stage-meta { display: flex; justify-content: space-between; gap: var(--s3); max-width: none; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); font-weight: 600; color: var(--on-deep-2); font-variant-numeric: tabular-nums; }
 .caption { flex: 1; display: grid; align-content: start; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-deep) transparent; }

@@ -2,8 +2,9 @@
 // width in dark, and fails on any problem. Down: "Mulai", then one key press per step (arrow keys, space, page down), to
 // the landing. Up: one scroll per step, back to the cover, and between every two steps a look at the position halfway.
 // At every step the stage must be stuck under the header, show the step's caption and counter, have its figure wholly on
-// screen at the step's moment with a strip's rows at least 17px apart on screen, and keep its caption band on screen (a
-// caption longer than the band must scroll in it).
+// screen at the step's moment with a strip's rows at least 17px apart on screen and no text under 12px (a strip drawn
+// taller than its window on a phone: the window on screen, and the rows the step names inside it), and keep its caption
+// band on screen, showing the whole step or at least six lines (a caption longer than the band must scroll in it).
 // Then the step buttons and the ticks, and the whole story once more with reduced motion.
 import { TEXT } from "../../site/text.js";
 import { STORIES } from "../../site/story.js";
@@ -20,11 +21,16 @@ const look = () => {
   const landing = document.querySelector(".landing").getBoundingClientRect().top - head;
   if (k < 0) return { k, landing, y: scrollY };
   const stage = scenes[k].querySelector(".stage"), plates = [...stage.querySelectorAll(".plate")], shown = plates.filter((p) => !p.classList.contains("off"));
-  const fig = shown[0]?.querySelector("svg").getBoundingClientRect(), cap = stage.querySelector(".caption"), c = cap.getBoundingClientRect();
+  const tall = stage.classList.contains("tall"), win = stage.querySelector(".stage-figure").getBoundingClientRect();
+  const fig = tall ? win : shown[0]?.querySelector("svg").getBoundingClientRect(), cap = stage.querySelector(".caption"), c = cap.getBoundingClientRect();
+  const rows = [...(shown[0]?.querySelectorAll(".row") || [])], named = rows.filter((r) => r.style.opacity === "1").length < rows.length ? rows.filter((r) => r.style.opacity === "1") : [];
   return { k, y: scrollY, landing, step: +stage.dataset.step, plate: +stage.dataset.plate, shownAt: plates.findIndex((p) => !p.classList.contains("off")), stack: !!stage.querySelector(".plates"),
     plates: shown.length, stuck: Math.round(stage.getBoundingClientRect().top - head),
     fig: fig && [fig.top - head, vh - fig.bottom, fig.left, vw - fig.right].map(Math.round), moment: shown[0]?.querySelector(".state, .marker text")?.textContent || "",
     cap: [c.top - head, vh - c.bottom].map(Math.round), capHeight: Math.round(c.height), longer: cap.scrollHeight > cap.clientHeight + 1, scrolls: ["auto", "scroll"].includes(getComputedStyle(cap).overflowY),
+    squeezed: cap.clientHeight < Math.min(cap.scrollHeight, 6 * parseFloat(getComputedStyle(cap.querySelector(".turn:not(.out) p:last-child") || cap).lineHeight)) - 2,
+    outside: named.filter((r) => { const b = r.querySelector("line").getBoundingClientRect(); return b.top < win.top || b.bottom > win.bottom; }).length,
+    smallest: Math.min(...[...(shown[0]?.querySelectorAll("text, tspan") || [])].filter((t) => t.textContent.trim()).map((t) => parseFloat(getComputedStyle(t).fontSize) * (shown[0].querySelector("svg").getBoundingClientRect().width / shown[0].querySelector("svg").viewBox.baseVal.width))),
     pitch: (() => { const ys = [...(shown[0]?.querySelectorAll(".row > line") || [])].map((t) => t.getBoundingClientRect().top); return ys.length > 1 ? Math.round(Math.min(...ys.slice(1).map((y, i) => y - ys[i]))) : null; })(),
     text: cap.querySelector(".turn:not(.out)")?.textContent.replace(/\s+/g, " ").trim() || "", count: stage.querySelector(".count").textContent,
     tick: [...stage.querySelectorAll(".ticks button")].findIndex((b) => b.getAttribute("aria-current") === "step") };
@@ -61,6 +67,9 @@ function judge(story, k, j, s) {
     if (moment !== null && dash(s.moment) !== dash(moment)) wrong.push(`the figure is at "${s.moment}", the step at "${moment}"`);
   }
   if (s.pitch !== null && s.pitch < 17) wrong.push(`the figure's rows are ${s.pitch}px apart on screen`);
+  if (s.outside) wrong.push(`${s.outside} of the rows the step names are outside the figure's window`);
+  if (s.smallest < 11.9) wrong.push(`the figure has text ${s.smallest.toFixed(1)}px tall on screen`);
+  if (s.squeezed) wrong.push("the caption band shows less than the step or six lines");
   if (s.cap.some((d) => d < -1)) wrong.push(`the caption band is off screen (top, bottom: ${s.cap.join(", ")})`);
   if (s.longer && !s.scrolls) wrong.push("the caption is longer than its band and the band does not scroll");
   if (s.capHeight < 60) wrong.push(`the caption band is ${s.capHeight}px tall`);

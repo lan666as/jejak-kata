@@ -127,11 +127,15 @@ A story is a voyage in three parts.
    keys, space, or the next/previous controls all move one step; scrolling settles on a step (scroll snap,
    proximity). Step 0 of a scene opens it: the scene's title and text, so the reader knows the figure before it
    moves. The caption shows its head, the text, and "3 / 6"; a row of ticks shows the steps and takes a tap.
-   Nothing is ever cut: on a phone the stage shares its height by need (`--fig`): the figure gets at least half,
-   more when it is a strip of many rows (enough to keep the rows 24px apart, `stripLeast` in plate.js) or when the
-   caption is short; the caption band keeps room for its tallest step or, for a long one, five lines, and the rest
-   scrolls inside it. A strip never sets its rows closer than 24px on a phone (22px on a wide plate). Under each sticky stage lies a run of invisible beats, one
-   per step, that the scroll snaps to; the scroll position chooses the step.
+   Nothing is ever cut: on a phone the stage shares its height by need (`--fig`): the caption band keeps room for its
+   tallest step or, for a long one, six lines (the rest scrolls inside it), and the figure gets the rest, at least half.
+   A strip of more rows than that room keeps 26px apart (`stripLeast` in plate.js) is drawn at the height that does, in
+   a window of that room, and **slides** through the window as the page scrolls through the scene: at each step to the
+   rows the step brings forward (at the opening to its top; where a step names none, as far down as the step is
+   through the scene), between two steps between their places; the window's edges fade where the strip goes on. No
+   nested scrolling: a swipe always moves the story. No text on a plate is under 12px: a line's name and value too
+   long for the column wrap onto a second line. Under each sticky stage lies a run of invisible beats, one per step,
+   that the scroll snaps to; the scroll position chooses the step.
 3. **Landing**, on the chart: "What this data cannot say" as a bordered panel, the tools (save image, copy link,
    check for yourself), and the next story as a card.
 

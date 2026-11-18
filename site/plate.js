@@ -12,6 +12,10 @@ const MOVE = "transition:transform var(--d-leg) var(--sail) calc(var(--k, 0) * 4
 const percent = (v) => (v * 100).toLocaleString(document.documentElement.lang, { maximumSignificantDigits: 2 }) + "%";
 const points = (v) => (v * 100).toLocaleString(document.documentElement.lang, { maximumSignificantDigits: v < 0.0095 ? 1 : 2 });  // percentage points
 const at = (node, x, y) => (node.style.transform = `translate(${x}px,${y}px)`);
+const ink = document.createElement("canvas").getContext("2d");
+/** How wide a text is in the site's typeface, bold, at `size` px. */
+const wide = (text, size) => ((ink.font = `700 ${size}px ${css("--type")}`), ink.measureText(text).width);
+const escape = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
 /** A plate's width, and its title broken into lines at that width: how much room the title takes (`top`). */
 function heading(title, width) {
@@ -79,11 +83,11 @@ export function plate(spec, width, height) {
   const most = Math.max(...spec.series.flatMap((s) => s.values.map((v, i) => (v || 0) + (s.off?.[i] || 0)))) * 1.08 || 1;
   let x, y, R, T, tag;
   const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line }) => {
-    // The names at the right are as wide as the longest name with its value needs: on a phone up to half the plate,
-    // and a little smaller beyond that rather than cut.
+    // The names at the right are as wide as the longest name with its value needs: on a phone up to half the plate;
+    // a name and value longer than that go on two lines (show), never smaller than 12px.
     const long = Math.max(...spec.series.map((s) => s.label.length + (s.off ? 12 : 8)));
     [R, T] = [narrow ? Math.min(W * 0.5, Math.max(W * 0.36, 20 + 6.6 * long)) : Math.min(260, Math.max(190, 22 + 7.2 * long)), top + 22];
-    tag = narrow ? Math.max(10, Math.min(12, (R - 20) / (long * 0.55))) : 13;
+    tag = narrow ? 12 : 13;
     x = (i) => L + ((W - L - R) * i) / Math.max(1, n - 1);
     y = (v) => H - B - ((H - T - B) * v) / most;
     const every = Math.ceil(n / ((W - L - R) / 44));
@@ -97,24 +101,32 @@ export function plate(spec, width, height) {
       const band = !s.off ? [] : s.values.reduce((acc, v, i) => (v === null ? acc.push([]) : acc.at(-1).push(i), acc), [[]]).filter((r) => r.length > 1)
         .map((r) => [...r.map((i) => `${x(i)},${y(s.values[i] + s.off[i])}`), ...r.reverse().map((i) => `${x(i)},${y(Math.max(0, s.values[i] - s.off[i]))}`)].join(" "));
       return `<g class="series" style="--k:${k};transition:opacity var(--d-turn) var(--sail)">${band.map((b) => `<polygon class="band" points="${b}" fill="${colour}" opacity="0.16"/>`).join("")}${runs.map((r) => `<polyline class="draw" pathLength="1" points="${r.join(" ")}" fill="none" stroke="${colour}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`).join("")}
-        <circle r="5" fill="${colour}" stroke="${paper}" stroke-width="2" style="${MOVE}"/><text x="${W - R + 9}" style="font-size:${tag}px;font-weight:700;fill:${ink};${MOVE}"><tspan fill="${colour}">● </tspan><tspan></tspan></text></g>`;
+        <circle r="5" fill="${colour}" stroke="${paper}" stroke-width="2" style="${MOVE}"/><text x="${W - R + 9}" style="font-size:${tag}px;font-weight:700;fill:${ink};${MOVE}"></text></g>`;
     }).join("")}`;
   });
-  const marker = made.svg.querySelector(".marker"), groups = [...made.svg.querySelectorAll(".series")];
+  const marker = made.svg.querySelector(".marker"), groups = [...made.svg.querySelectorAll(".series")], { W } = made;
+  /** A series' name (and value) after its dot, broken at spaces into as many lines as the column needs. */
+  const name = (k, said) => {
+    const dot = wide("● ", tag), room = R - 12 - dot, lines = [""];
+    for (const word of said.split(" ")) wide((lines.at(-1) + " " + word).trim(), tag) > room && lines.at(-1) ? lines.push(word) : (lines[lines.length - 1] = (lines.at(-1) + " " + word).trim());
+    groups[k].querySelector("text").innerHTML = `<tspan fill="${css(COLOURS[k % COLOURS.length])}">● </tspan>` + lines.map((l, j) => `<tspan${j ? ` x="${W - R + 9 + dot}" dy="${tag + 2}"` : ""}>${escape(l)}</tspan>`).join("");
+    return 15 + (tag + 2) * (lines.length - 1);  // the height it takes
+  };
   const show = (i, focus) => {
     at(marker, x(i), 0);
     marker.lastElementChild.textContent = spec.periods[i];
     if (spec.pages) made.note(spec.pages(i));
     // Names stand at the right, at the height of their value at the marker, pushed apart where they would touch.
     const rows = spec.series.map((s, k) => ({ k, v: s.values[i] })).filter((r) => r.v !== null && r.v !== undefined).sort((a, b) => b.v - a.v);
-    rows.forEach((r, j) => (r.at = j ? Math.max(y(r.v), rows[j - 1].at + 15) : y(r.v)));
+    for (const r of rows) r.h = name(r.k, `${spec.series[r.k].label} ${percent(r.v)}${spec.series[r.k].off?.[i] ? " ±" + points(spec.series[r.k].off[i]) : ""}`);
+    rows.forEach((r, j) => (r.at = j ? Math.max(y(r.v), rows[j - 1].at + rows[j - 1].h) : y(r.v)));
     // ... and, where they ran past the foot of the plot, pushed back up together.
-    for (let j = rows.length - 1; j >= 0; j--) rows[j].at = Math.min(rows[j].at, j < rows.length - 1 ? rows[j + 1].at - 15 : y(0));
+    for (let j = rows.length - 1; j >= 0; j--) rows[j].at = Math.min(rows[j].at, j < rows.length - 1 ? rows[j + 1].at - rows[j].h : y(0) + 15 - rows[j].h);
     groups.forEach((g, k) => {
       const row = rows.find((r) => r.k === k), [dot, text] = [g.querySelector("circle"), g.querySelector("text")];
       g.style.opacity = !row ? 0.25 : focus && !focus.includes(spec.series[k].label) ? 0.2 : 1;
       dot.style.opacity = row ? 1 : 0;
-      text.lastElementChild.textContent = row ? `${spec.series[k].label} ${percent(row.v)}${spec.series[k].off?.[i] ? " ±" + points(spec.series[k].off[i]) : ""}` : spec.series[k].label;
+      if (!row) name(k, spec.series[k].label);
       if (row) at(dot, x(i), y(row.v));
       at(text, 0, (row ? row.at : T + 15 * k) + 4);
     });
