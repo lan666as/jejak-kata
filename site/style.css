@@ -432,7 +432,7 @@ svg text { fill: var(--ink-2); font: 12px var(--type); }
 .chart.night.explore .zoom button { width: var(--tap); padding: 0; color: var(--on-deep); background: var(--deep-2); border-color: var(--line-deep-2); }
 .chart.night.explore .zoom button:hover { border-color: var(--on-deep); background: var(--deep-2); }
 .chart.night.explore .zoom [data-k="above"] { width: auto; padding: 0 var(--s3); margin-top: var(--s2); font-size: var(--t-meta); }
-.chart.night.explore .zoom [aria-pressed="true"] { color: var(--deep); background: var(--on-deep); border-color: var(--on-deep); }
+.chart.night.explore .zoom [aria-pressed="true"], .chart.night.explore .zoom [aria-pressed="true"]:hover { color: var(--deep); background: var(--on-deep); border-color: var(--on-deep); }
 .chart.night.explore .when { top: auto; bottom: var(--s4); left: max(var(--gutter), (100% - var(--content)) / 2); right: auto; font-size: var(--t-h1); opacity: .9; }
 .chart.night.explore.above .when { color: var(--ink-3); }
 
