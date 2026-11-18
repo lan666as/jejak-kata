@@ -10,7 +10,7 @@ const TRIES = [["--use-angle=vulkan", "--enable-features=Vulkan", "--ignore-gpu-
 const rendererOf = (page) => page.evaluate(() => { const g = document.createElement("canvas").getContext("webgl2"), d = g?.getExtension("WEBGL_debug_renderer_info"); return d ? g.getParameter(d.UNMASKED_RENDERER_WEBGL) : g ? "WebGL2" : "no WebGL2"; });
 let browser, renderer;
 for (const args of TRIES) {
-  browser = await chromium.launch({ headless: true, args: ["--headless=new", ...args] });
+  browser = await chromium.launch({ headless: true, channel: "chromium", args });  // the full browser: the headless shell has no GPU path
   const page = await browser.newPage(); await page.goto("about:blank"); renderer = await rendererOf(page); await page.close();
   console.log(`${JSON.stringify(args)} -> ${renderer}`);
   if (!/SwiftShader|llvmpipe|no WebGL2/i.test(renderer)) break;
