@@ -1171,7 +1171,7 @@ const ROOMY = 72;  // beside the caption a strip's rows stand at most this far a
 async function sceneFigure(scene, w, h, on) {
   const f = await figureOf(scene, { json, lens: lensNamed, entry: entryOf }, language, { wide: innerWidth > 760 });
   const make = (p, k) => {
-    const spec = { title: plateTitle(scene, p, k), pages: PLATE_NOTES[scene.type](f, scene, k, p) };
+    const spec = { title: plateTitle(scene, p, k), pages: PLATE_NOTES[scene.type](f, scene, k, p), base: ["forget", "left"].includes(scene.type) ? 1 : undefined };
     const made = f.draw === "plate"
       ? plate({ ...spec, periods: p.states, series: p.rows.map((r) => ({ label: r.label, values: r.values.map((v) => v[0]), off: r.off?.map((v) => v[0]) })) }, w, h)
       : strip({ ...spec, states: p.states, series: p.series, rows: p.rows, most: p.most, format: f.times ? (v) => "÷" + number(v) : undefined }, w,

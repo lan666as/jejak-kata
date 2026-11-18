@@ -118,7 +118,8 @@ it.
   what the game asks about in `--route`.
 - **Figure plate**: paper `--chart-2` on the chart; on a story's stage (the deep in both schemes) it is drawn on the
   stage itself in the night's inks (the dark scheme's values, `.stage-figure` in style.css), and saved as an image on
-  paper in the page's inks; title is a sentence with the number in it. The
+  paper in the page's inks. Its scale runs from 0 in round steps (1, 2, 2.5 or 5 times a power of ten, at most five)
+  to the step at or past the largest value; where the values are a part of a base year, the 100% line is drawn stronger. Title is a sentence with the number in it. The
   numbers a step's caption names (its `focus`) stand on the beacon: a pill of `--beacon` behind the value, the text in
   `--deep`. The tools under a figure save it as an image and download the numbers it draws as CSV (from what the
   figure loaded: a row per period, or per row and state).

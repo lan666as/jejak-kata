@@ -24,6 +24,14 @@ const ink = document.createElement("canvas").getContext("2d");
 const wide = (text, size) => ((ink.font = `700 ${size}px ${css("--type")}`), ink.measureText(text).width);
 const escape = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
+/** Round ticks from 0 to `top` or just past it: a step of 1, 2, 2.5 or 5 times a power of ten, at most five steps. */
+const ticks = (top) => {
+  const raw = top / 4, p = 10 ** Math.floor(Math.log10(raw)), step = [1, 2, 2.5, 5, 10].map((m) => m * p).find((s) => s >= raw * 0.999);
+  return [...Array(Math.ceil(top / step - 1e-9) + 1)].map((_, i) => i * step);
+};
+/** The scale's lines: one per tick, and where the values are a part of a base (`base`, 1: 100%), its line stronger. */
+const rules = (tick, base, line, soft, draw) => tick.map((v) => draw(v, Math.abs(v - base) < 1e-9 ? soft : line, Math.abs(v - base) < 1e-9 ? 1.5 : 1)).join("");
+
 /** A plate's width, and its title broken into lines at that width: how much room the title takes (`top`). */
 function heading(title, width) {
   const W = Math.round(Math.max(300, Math.min(760, width))), narrow = W < 480;
@@ -83,13 +91,14 @@ function sheet(spec, width, height, body, least = 0) {
 }
 
 /**
- * Lines. `spec`: {title, note, periods: [labels], series: [{label, values: [share | null], off}], pages: (i) => text};
+ * Lines. `spec`: {title, note, periods: [labels], series: [{label, values: [share | null], off}], pages: (i) => text,
+ * base: where the values are a part of a base, the base (1), whose line is drawn stronger};
  * `off[i]` is how far value i may be off either way: drawn as a band, and written after the value.
  * Returns {node, labels, show(i, focus)}: the marker travels to period i; series not named in `focus` fade.
  */
 export function plate(spec, width, height) {
   const n = spec.periods.length, B = 84, L = 40;
-  const most = Math.max(...spec.series.flatMap((s) => s.values.map((v, i) => (v || 0) + (s.off?.[i] || 0)))) * 1.08 || 1;
+  const tick = ticks(Math.max(...spec.series.flatMap((s) => s.values.map((v, i) => (v || 0) + (s.off?.[i] || 0)))) || 1), most = tick.at(-1);
   let x, y, R, T, tag;
   const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line, beacon }) => {
     // The names at the right are as wide as the longest name with its value needs: on a phone up to half the plate;
@@ -100,7 +109,7 @@ export function plate(spec, width, height) {
     x = (i) => L + ((W - L - R) * i) / Math.max(1, n - 1);
     y = (v) => H - B - ((H - T - B) * v) / most;
     const every = Math.ceil(n / ((W - L - R) / 44));
-    return `${[0, 0.5, 1].map((f) => `<line x1="${L}" x2="${W - R}" y1="${y(most * f)}" y2="${y(most * f)}" stroke="${line}"/><text x="${L - 5}" y="${y(most * f) + 4}" text-anchor="end" style="font-size:12px;fill:${soft}">${percent(most * f)}</text>`).join("")}
+    return `${rules(tick, spec.base, line, soft, (v, stroke, width) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${stroke}" stroke-width="${width}"/><text x="${L - 5}" y="${y(v) + 4}" text-anchor="end" style="font-size:12px;fill:${soft}">${percent(v)}</text>`)}
     ${spec.periods.map((p, i) => (i % every ? "" : `<text x="${x(i)}" y="${H - B + 15}" text-anchor="middle" style="font-size:12px;fill:${soft}">${p}</text>`)).join("")}
     <g class="marker" style="${MOVE}"><line y1="${T - 4}" y2="${H - B}" stroke="${ink}" stroke-dasharray="3 3"/><text y="${T - 9}" text-anchor="middle" style="font-size:12px;font-weight:800;fill:${ink}"></text></g>
     ${spec.series.map((s, k) => {
@@ -158,12 +167,13 @@ export function plate(spec, width, height) {
 
 /**
  * Rows on one scale. `spec`: {title, note, states: [labels], series: [names], rows: [{label, values: [state][series]}],
- * format: (v) => text, pages: (i) => text, most: the value at the right edge (else just past the largest)}. One dot per series in every row; `show(i, focus)` moves the dots to
+ * format: (v) => text, pages: (i) => text, most: the value at the right edge (else the round tick at or past the largest),
+ * base: as for lines}. One dot per series in every row; `show(i, focus)` moves the dots to
  * state i and leaves a ring where they were at the first state; rows not named in `focus` fade.
  */
 export function strip(spec, width, height) {
   const format = spec.format || percent, rows = spec.rows.length;
-  const most = spec.most || Math.max(...spec.rows.flatMap((r) => r.values.flat().map((v) => v || 0))) * 1.05 || 1;
+  const tick = ticks(spec.most || Math.max(...spec.rows.flatMap((r) => r.values.flat().map((v) => v || 0))) || 1).filter((v) => !spec.most || v <= spec.most + 1e-9), most = spec.most || tick.at(-1);
   let x, y;
   const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line, beacon }) => {
     const longest = Math.max(...spec.rows.map((r) => r.label.length)), L = narrow ? Math.min(W * 0.45, 16 + 7 * longest) : 200, R = narrow ? 80 : 84;
@@ -184,7 +194,7 @@ export function strip(spec, width, height) {
     };
     return `${legend.marks.map((m, k) => `<circle cx="${m.x + 5}" cy="${top + 10 + m.line * 16}" r="4.5" fill="${css(COLOURS[k])}"/><text x="${m.x + 14}" y="${top + 14 + m.line * 16}" style="font-size:12px;fill:${soft}">${m.name}</text>`).join("")}
     <text class="state" x="${below ? 12 : W - 12}" y="${top + (below ? 32 + extra : 15)}" text-anchor="${below ? "start" : "end"}" style="font-size:14px;font-weight:800;fill:${ink}"></text>
-    ${[0, 0.5, 1].map((f) => `<line x1="${x(most * f)}" x2="${x(most * f)}" y1="${T - 4}" y2="${H - B + 2}" stroke="${line}"/><text x="${x(most * f)}" y="${H - B + 14}" text-anchor="middle" style="font-size:12px;fill:${soft}">${format(most * f)}</text>`).join("")}
+    ${rules(tick, spec.base, line, soft, (v, stroke, width) => `<line x1="${x(v)}" x2="${x(v)}" y1="${T - 4}" y2="${H - B + 2}" stroke="${stroke}" stroke-width="${width}"/><text x="${x(v)}" y="${H - B + 14}" text-anchor="middle" style="font-size:12px;fill:${soft}">${format(v)}</text>`)}
     ${spec.rows.map((row, k) => `<g class="row" style="--k:${k};transition:opacity var(--d-turn) var(--sail)">${name(row.label, k)}
       <line x1="${L}" x2="${W - R}" y1="${y(k)}" y2="${y(k)}" stroke="${line}" stroke-dasharray="1 3"/>
       ${spec.series.map((_, j) => (row.values[0][j] === null || spec.states.length < 2 ? "" : `<circle cx="${x(row.values[0][j])}" cy="${y(k)}" r="4" fill="none" stroke="${css(COLOURS[j])}" stroke-width="1.2" opacity=".65"/>`)).join("")}
