@@ -36,22 +36,24 @@ const look = () => {
   if (k < 0) return { k, landing, y: scrollY };
   const stage = scenes[k].querySelector(".stage"), plates = [...stage.querySelectorAll(".plate")], shown = plates.filter((p) => !p.classList.contains("off"));
   const tall = stage.classList.contains("tall"), win = stage.querySelector(".stage-figure").getBoundingClientRect();
+  // (where the captions flow as cards, app.js stage: flow, the step's card is its caption; tests/site/fit.mjs holds the cards to their places)
+  const flow = scenes[k].classList.contains("flow"), card = flow && scenes[k].querySelectorAll(".beat")[+stage.dataset.step]?.querySelector(".said");
   const fig = tall ? win : shown[0]?.querySelector("svg").getBoundingClientRect(), cap = stage.querySelector(".caption"), c = cap.getBoundingClientRect();
   const rows = [...(shown[0]?.querySelectorAll(".row") || [])], named = rows.filter((r) => r.style.opacity === "1").length < rows.length ? rows.filter((r) => r.style.opacity === "1") : [];
   return { k, y: scrollY, landing, step: +stage.dataset.step, plate: +stage.dataset.plate, shownAt: plates.findIndex((p) => !p.classList.contains("off")), stack: !!stage.querySelector(".plates"),
     plates: shown.length, units: !!shown[0]?.querySelector(".tally"), stuck: Math.round(stage.getBoundingClientRect().top - head),
     fig: fig && [fig.top - head, vh - fig.bottom, fig.left, vw - fig.right].map(Math.round), moment: shown[0]?.querySelector(".state, .marker text")?.textContent || "",
     cap: [c.top - head, vh - c.bottom].map(Math.round), capHeight: Math.round(c.height),
-    longer: cap.scrollHeight > cap.clientHeight + 1, scrolls: ["auto", "scroll"].includes(getComputedStyle(cap).overflowY),
-    squeezed: cap.clientHeight < Math.min(cap.scrollHeight, 6 * parseFloat(getComputedStyle(cap.querySelector(".turn:not(.out) p:last-child") || cap).lineHeight)) - 2,
+    longer: !flow && cap.scrollHeight > cap.clientHeight + 1, scrolls: ["auto", "scroll"].includes(getComputedStyle(cap).overflowY),
+    squeezed: !flow && cap.clientHeight < Math.min(cap.scrollHeight, 6 * parseFloat(getComputedStyle(cap.querySelector(".turn:not(.out) p:last-child") || cap).lineHeight)) - 2,
     // (a turn comes in from a few pixels below: --s2)
-    phone: vw < 900, cut: (() => { const t = cap.querySelector(".turn:not(.out)")?.getBoundingClientRect(); return !!t && (t.top < head - 1 || t.bottom > c.bottom + 9); })(),
+    phone: vw < 900, cut: !flow && (() => { const t = cap.querySelector(".turn:not(.out)")?.getBoundingClientRect(); return !!t && (t.top < head - 1 || t.bottom > c.bottom + 9); })(),
     outside: named.filter((r) => { const b = r.querySelector("line").getBoundingClientRect(); return b.top < win.top || b.bottom > win.bottom; }).length,
     smallest: Math.min(...[...(shown[0]?.querySelectorAll("text, tspan") || [])].filter((t) => t.textContent.trim()).map((t) => parseFloat(getComputedStyle(t).fontSize) * (shown[0].querySelector("svg").getBoundingClientRect().width / shown[0].querySelector("svg").viewBox.baseVal.width))),
     pitch: (() => { const ys = [...(shown[0]?.querySelectorAll(".row > line") || [])].map((t) => t.getBoundingClientRect().top); return ys.length > 1 ? Math.round(Math.min(...ys.slice(1).map((y, i) => y - ys[i]))) : null; })(),
     key: stage.querySelector(".sea-key").textContent, mute: stage.classList.contains("mute"), landed: stage.querySelector(".sea-key").dataset.at === `${k}/${stage.dataset.step}`, sea: !!document.querySelector(".story-sea .chart"),
     named: document.querySelector(".story-sea .chart")?.sea?.labels().names.map((n) => n.text) || [],
-    text: cap.querySelector(".turn:not(.out)")?.textContent.replace(/\s+/g, " ").trim() || "", count: stage.querySelector(".count").textContent,
+    text: (card || cap.querySelector(".turn:not(.out)"))?.textContent.replace(/\s+/g, " ").trim() || "", count: stage.querySelector(".count").textContent,
     tick: [...stage.querySelectorAll(".ticks button")].findIndex((b) => b.getAttribute("aria-current") === "step") };
 };
 /** In the page: whether some caption can be read, at least 40px of it, between the header and the bottom of the screen. */
@@ -166,7 +168,9 @@ for (const [width, height, scheme] of [[1280, 800, "light"], [360, 740, "dark"]]
     // The controls: next, previous, a tick, and the arrow keys each move one step.
     const last = story.scenes[0].steps.length;
     await page.evaluate((y) => scrollTo(0, y), await spot(page, 0, 0)); await settle(page);
-    for (const [act, j] of [[".step.on", 1], [".step.on", 2], [".step.back", 1], [`.ticks li:nth-child(${last + 1}) button`, last], [".ticks li:nth-child(1) button", 0]]) {
+    // (ticks too narrow to be targets are a picture only: app.js, glance)
+    const ticked = !(await page.locator("#scene-0 .ticks.glance").count());
+    for (const [act, j] of [[".step.on", 1], [".step.on", 2], [".step.back", 1], ...(ticked ? [[`.ticks li:nth-child(${last + 1}) button`, last], [".ticks li:nth-child(1) button", 0]] : [[".step.back", 0]])]) {
       await page.click(`#scene-0 ${act}`); await settle(page); await at(`control ${act}`, 0, j);
     }
     for (const [key, j] of [["ArrowRight", 1], ["ArrowDown", 2], ["ArrowUp", 1], ["ArrowLeft", 0]]) { await page.keyboard.press(key); await settle(page); await at(`key ${key}`, 0, j); }
