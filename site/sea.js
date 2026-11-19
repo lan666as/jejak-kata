@@ -97,7 +97,7 @@ void main() {
 const LIGHTS = [`#version 300 es
 ${CAMERA}
 in vec4 word; // x, z, shift (-1 when not measured), rank by frequency
-uniform float mirror, ref, rise, quiet, fogNear, fogFar, time, maxSize, reach, head, tailIn;
+uniform float mirror, ref, rise, quiet, fogNear, fogFar, time, maxSize, reach, head, tailIn, bold;
 uniform vec2 origin;
 uniform vec3 lights[6], dots[6];
 out vec3 colour; out float alpha, glow;
@@ -108,14 +108,14 @@ void main() {
   float day = dayAt(gl_Position.xy / gl_Position.w);
   bool lit = word.w < ${NEAR}.;
   float night = lit ? (word.w < 300. ? 13. : word.w < 800. ? 10. : 8.) * (.75 + .22 * level) : 3.2;
-  float paper = word.w < 400. ? 6. : word.w < 4000. ? 4.2 : 3.;
+  float paper = (word.w < 400. ? 6. : word.w < 4000. ? 4.2 : 3.) * (1. + .6 * bold);  // (bold: the map seen from above)
   float size = mix(night * clamp(ref / max(gl_Position.w, 1e-3), .35, 2.2), paper, day) * dpr;
   if (mirror < 0.) size *= 1.9;
   gl_PointSize = clamp(size, 1., maxSize);
   int i = int(level);
   colour = mix(lights[i], dots[i], day);
   float fog = 1. - smoothstep(fogNear, fogFar, gl_Position.w);
-  alpha = mix((lit ? .45 + .11 * level : .3 + .12 * level) * quiet * fog, level < .5 ? .3 : 1., day);
+  alpha = mix((lit ? .45 + .11 * level : .3 + .12 * level) * quiet * fog, level < .5 ? .3 + .35 * bold : 1., day);
   glow = 1. - day;
   // The arrival: a word is lit once the front, spreading from the first route's word, has passed it, with a brief
   // flare as it does; the words that came after the first batch (head) fade in as they come.
@@ -281,7 +281,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     haze: rgb("--deep-2").map((c, i) => mix(c, rgb("--light-0")[i], 0.22)),
     lights: [0, 1, 2, 3, 4, 5].flatMap((i) => rgb(`--light-${i}`)), dots: [rgb("--ink-3"), ...[1, 2, 3, 4, 5].map((i) => rgb(`--seq-${i}`))].flat(),
     light: rgb("--on-deep"), routes: {},
-    css: Object.fromEntries(["--on-deep", "--on-deep-2", "--deep-2", "--ink", "--ink-3", "--chart-2", "--route", "--route-on-deep", "--beacon", "--type"].map((k) => [k, root().getPropertyValue(k).trim()])),
+    css: Object.fromEntries(["--on-deep", "--on-deep-2", "--deep-2", "--ink", "--ink-2", "--ink-3", "--chart-2", "--route", "--route-on-deep", "--beacon", "--type"].map((k) => [k, root().getPropertyValue(k).trim()])),
   });
   /** A route's colours, by its token: at night (as rgb and as CSS) and by day. */
   const tint = (token) => (palette().routes[token] ||= { night: rgb(ON_DEEP[token] || token), day: rgb(token), css: [ON_DEEP[token] || token, token].map((k) => root().getPropertyValue(k).trim()) });
@@ -414,7 +414,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     gl.uniform1f(lights.u("fogNear"), cam.fog[0]); gl.uniform1f(lights.u("fogFar"), cam.fog[1]); gl.uniform1f(lights.u("time"), seconds); gl.uniform1f(lights.u("maxSize"), maxSize);
     gl.uniform3fv(lights.u("lights"), c.lights); gl.uniform3fv(lights.u("dots"), c.dots);
     gl.uniform2fv(lights.u("origin"), arrival.origin); gl.uniform1f(lights.u("reach"), arrival.reach); gl.uniform1f(lights.u("head"), head);
-    gl.uniform1f(lights.u("tailIn"), held ? 1 : Math.min(1, (time - tailAt) / 600));
+    gl.uniform1f(lights.u("tailIn"), held ? 1 : Math.min(1, (time - tailAt) / 600)); gl.uniform1f(lights.u("bold"), explore ? depth : 0);
     gl.bindVertexArray(words.vao);
     if (reflections && settle() < 0.99 && tide() < 0.99) (gl.uniform1f(lights.u("mirror"), -1), gl.drawArrays(gl.POINTS, 0, Math.min(n, NEAR)));
     // Each route's ship, where it has sailed to; the last route is drawn first, so that the first lies on top.
@@ -544,7 +544,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       const text = name(chart.words[k]);
       if (!text || !plain(p, text)) continue;
       const paper = dayAt(...p) > 0.5;
-      ctx.fillStyle = paper ? css["--ink-3"] : css["--on-deep-2"];
+      ctx.fillStyle = paper ? css[explore ? "--ink-2" : "--ink-3"] : css["--on-deep-2"];  // (the map from above names at a reader's strength)
       // A backdrop names quietly; the map, where the names are what the reader reads, at full strength on a halo of the deep.
       ctx.globalAlpha = paper ? 1 : (explore ? 1 : routes.length ? 0.6 : 0.82) * fade(p[2]);
       if (explore && !paper) (ctx.lineWidth = 3), (ctx.lineJoin = "round"), (ctx.strokeStyle = css["--deep-2"]), ctx.strokeText(text, p[0] + 8, p[1]);
@@ -791,8 +791,20 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
   };
   const turn = (dYaw, dPitch, from = aim, ms) => move({ yaw: from.yaw + dYaw, pitch: from.pitch + dPitch }, ms);
   /** From above, the sea becomes the chart on paper (the hero's dive, as a choice); and back down to the water. */
+  // From above, the camera frames the words (their middle 98%, north up, as wide and tall as the screen allows) and
+  // goes back to the reader's place when it comes down; there the dots are larger and the faint ones stronger.
+  let place0 = null;
+  const extent = () => {
+    const xs = [], zs = [];
+    for (let k = 0; k < n; k++) (xs.push(chart.x[k] / 1000), zs.push(chart.y[k] / 1000));
+    const q = (list, f) => list.sort((a, b) => a - b)[Math.floor(f * (list.length - 1))], [x0, x1, z0, z1] = [q(xs, 0.01), q(xs, 0.99), q(zs, 0.01), q(zs, 0.99)];
+    const t = Math.tan(fovOf() / 2) * 0.9;
+    return { x: (x0 + x1) / 2, z: (z0 + z1) / 2, yaw: 0, dist: Math.max((z1 - z0) / 2 / t, (x1 - x0) / 2 / (t * (W / H))) };  // (north up, as a chart is)
+  };
   const above = (on) => {
     if (on === depth > 0.5) return;
+    if (on) (place0 = { x: aim.x, z: aim.z, dist: aim.dist, yaw: aim.yaw }), move(extent());
+    else if (place0) move(place0);
     const b = node.querySelector('[data-k="above"]');
     b.setAttribute("aria-pressed", on);
     node.classList.toggle("above", on);  // what the page's legend reads: the colours of the night or of the paper
