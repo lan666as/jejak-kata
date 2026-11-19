@@ -152,8 +152,8 @@ A story is a voyage in three parts.
    shown up to 1.5 times its drawn size, with larger marks and type, a strip's rows at most 72px apart so that a strip
    of few rows is not stretched; below 900px: a band under the figure). **The stages lie on the sea**: one held night
    sea under all of them (`storySea` in app.js), its camera flying (600 ms, `--sail`) to each step: to the words the step
-   brings forward (its `focus`), else the scene's words, each looked up on the first page's chart (a word not there is
-   not lit), the step's ringed in `--beacon` and named, the scene's others ringed faintly; where the scene is about one
+   brings forward (its `focus`), else the scene's words, each looked up on the first page's chart (its first screen on
+   a phone, the whole chart from 900px; a word not there is not lit), the step's ringed in `--beacon` and named, the scene's others ringed faintly; where the scene is about one
    word over time (`word`), its route is sailed to the step's year. The view is framed in the water the stage leaves
    open (under the caption, beside the figure from 900px). The figure stands on a panel of the deep (`--paper` at 92%)
    and a caption on a shade of it (88%): their text keeps 4.5:1 over the brightest the sea can be. The sea draws only

@@ -1608,24 +1608,31 @@ async function storySea(holder, stages, parts) {
   if (!window.WebGL2RenderingContext) return null;
   const [module, first] = await Promise.all([import("./sea.js"), json(`${MAIN}/first.json`), painted()]).catch(() => []);
   if (!first || !holder.isConnected) return null;
-  const named = new Map(first.words.map((id, k) => [id, first.names[k]])), ids = (list) => [...new Set(list.map((w) => first.words[first.names.indexOf(w)]).filter((id) => id !== undefined))];
-  let k = 0, at = "";
+  // The words are looked up on the first screen of the chart; from 900px the whole chart and its lens follow, and the
+  // step is lit again with every word the lens has (a phone keeps to the first screen: it stays cheap).
+  let lens = null, k = 0, at = "", now = null;
+  const named = new Map(first.words.map((id, k) => [id, first.names[k]])), idOf = (w) => (lens ? lens.index.get(w) : first.words[first.names.indexOf(w)]);
+  const ids = (list) => [...new Set(list.map(idOf).filter((id) => id !== undefined && sea.has(id)))];  // (only what the sea carries)
   // What lies over the sea on the stage shown: no name is written under it.
   const over = () => [...stages[k].stage.querySelectorAll(".stage-meta, .caption .turn:not(.out), .stage-nav, .stage-figure .plate:not(.off) svg")];
-  const sea = module.nightSea({ chart: first, name: (id) => named.get(id), pick: () => {}, periods: first.periods, tip, label: t("sea_label"), hold: true, fly: true, rung: window.seaRung ?? 0, most: 2500, names: 0, over });
+  const wide = innerWidth >= 900, sea = module.nightSea({ chart: first, name: (id) => (lens ? lens.words[id] : named.get(id)), pick: () => {}, periods: first.periods, tip, label: t("sea_label"),
+    hold: true, fly: true, rung: window.seaRung ?? 0, most: wide ? Infinity : 2500, names: 0, over });
   if (!sea) return null;
   holder.append(sea.node);
+  addEventListener("resize", () => holder.isConnected && (at = ""));  // the open water is found again at the next step's look
+  if (wide) Promise.all([lensNamed(MAIN), json(`${MAIN}/chart.json`)]).then(([l, whole]) => ((lens = l), sea.more(whole), (at = ""), now && to(...now))).catch(() => {});
   const paths = new Map(), route = (id) => paths.get(id) || paths.set(id, json(`${MAIN}/paths/${Math.floor(id / BUCKET)}.json`).then((list) => list.find((p) => p.word === id)?.route || []).catch(() => [])).get(id);
   /** The open water of a stage as it now stands, [top, right, bottom, left] in pixels of the sea: under the caption
    *  (and beside the plate from 900px), at least a band above the controls (a long caption is shaded over it). */
   const water = (stage) => {
     const box = holder.getBoundingClientRect(), r = (n) => n.getBoundingClientRect(), text = stage.querySelector(".caption .turn:not(.out)") || stage.querySelector(".caption");
     const plate = r(stage.querySelector(".stage-figure .plate:not(.off) svg") || stage.querySelector(".stage-figure")), nav = r(stage.querySelector(".stage-nav"));
-    const bottom = box.bottom - nav.top + 16, wide = innerWidth >= 900, top = Math.min(r(text).bottom - box.top + 16, box.height - bottom - (wide ? 240 : 100));
+    const bottom = box.bottom - nav.top + 16, top = Math.min(r(text).bottom - box.top + 16, box.height - bottom - (wide ? 240 : 100));
     return wide ? [top, box.right - r(stage).right + 32, bottom, plate.right - box.left + 32] : [top, 0, bottom, 0];
   };
-  return async (scene, j) => {
+  const to = async (scene, j) => {
     const key = `${scene}/${j}`;
+    now = [scene, j];
     if (key === at) return;
     at = key;
     k = scene;
@@ -1647,6 +1654,7 @@ async function storySea(holder, stages, parts) {
     const away = holder.animate({ opacity: [1, 0] }, { duration: FLIGHT / 4, fill: "forwards" });
     away.finished.then(() => (view(), holder.animate({ opacity: [0, 1] }, { duration: FLIGHT / 4 }), away.cancel())).catch(() => {});
   };
+  return to;
 }
 
 /** The story on screen, if one is: `ask()` after a scroll or a resize, `key(e)` for the keyboard, `place()` for
