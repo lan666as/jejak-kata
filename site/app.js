@@ -378,7 +378,7 @@ function stage(part, k, of, steer, intro = "") {
   const node = el(`<section class="scene" id="scene-${k}" aria-labelledby="scene-${k}-title">
     <div class="stage" data-step="0" tabindex="-1"><div class="stage-figure"></div>
       <div class="stage-side"><p class="stage-meta"><span class="stage-part">${of > 1 ? words.title : ""}</span><span class="count"></span></p>
-        <div class="caption" aria-live="polite"></div>
+        <div class="caption" aria-live="polite"></div><p class="sea-key" aria-hidden="true"></p>
         <div class="stage-nav"><button type="button" class="step back">${arrow("M15 5l-7 7 7 7")}<span>${t("step_back")}</span></button>
           <ol class="ticks" aria-label="${t("steps_label")}">${[...Array(n + 1)].map((_, j) => `<li><button type="button" aria-label="${escape(name(j).replace(/<[^>]+>/g, ""))}"></button></li>`).join("")}</ol>
           <button type="button" class="step on"><span>${t("step_on")}</span>${arrow("M9 5l7 7-7 7")}</button></div></div></div>
@@ -1348,14 +1348,21 @@ function share(s, part) {
   box.classList.toggle("tall", !!s.tall);
   box.style.setProperty("--rise", Math.ceil(Math.max(0, open - (whole - chrome - fig))) + "px");
 }
-/** From 900px a step's caption is set at --t-caption, or a size smaller (--t-lede, then the body's; an opening's
- *  title at --t-h2) where it would not fit its band at that size: as on a phone, no caption scrolls. */
-const CAPTION = ["", "--caption:var(--t-lede);--caption-title:var(--t-h2)", "--caption:var(--t-body);--caption-title:var(--t-h2)"];
-function fit(s) {
-  const probe = el(`<div class="caption" style="position:absolute;visibility:hidden;width:${s.caption.clientWidth}px;height:auto;overflow:visible"></div>`);
-  s.caption.after(probe);
-  s.sized([...Array(s.steps)].map((_, j) => CAPTION.find((size) => ((probe.innerHTML = `<div class="turn" style="${size}">${s.said(j)}</div>`), probe.scrollHeight <= s.caption.clientHeight)) ?? CAPTION.at(-1)));
-  probe.remove();
+/** From 900px a story's captions take at most two sizes: --t-caption where a step fits its band at it, and for every
+ *  other step one size smaller, the largest of the ladder at which the longest caption of the whole story fits (an
+ *  opening's title then at --t-h2). Measured in the language and at the width shown: no caption is cut, none scrolls,
+ *  and the type does not step from size to size. */
+const CAPTION = ["", "--caption:var(--t-lede);--caption-title:var(--t-h2)", "--caption:var(--t-body);--caption-title:var(--t-h2)", "--caption:var(--t-small);--caption-title:var(--t-h3)"];
+function fit(stages) {
+  const fits = stages.map((s) => {
+    const probe = el(`<div class="caption" style="position:absolute;visibility:hidden;width:${s.caption.clientWidth}px;height:auto;overflow:visible"></div>`);
+    s.caption.after(probe);
+    const rows = [...Array(s.steps)].map((_, j) => CAPTION.map((size) => ((probe.innerHTML = `<div class="turn" style="${size}">${s.said(j)}</div>`), probe.scrollHeight <= s.caption.clientHeight)));
+    probe.remove();
+    return rows;
+  });
+  const small = CAPTION.findIndex((_, c) => c && fits.every((rows) => rows.every((row) => row[c]))), smaller = CAPTION[small < 0 ? CAPTION.length - 1 : small];
+  stages.forEach((s, k) => s.sized(fits[k].map((row) => (row[0] ? "" : smaller))));
 }
 const SCENE_DATA = { together: "together.json", stuck: "together.json", yearly: "years.json", forget: "years.json", left: "years.json", fell: "stopped.json" };
 
@@ -1649,10 +1656,14 @@ const FLIGHT = 600;  // ms the story's sea takes from one step's view to the nex
  * The sea under a story's stages (DESIGN.md, "The story"): one held sea behind every stage's figure, whose camera
  * flies to each step (FLIGHT, on the site's curve): to the words the step brings forward (its focus), else the
  * scene's words, each looked up on the first page's chart (a word it does not have is not lit); the step's words are
- * ringed in the beacon, the scene's others faintly; where the scene is about one word over time, its route is sailed
- * to the step's year. The view is framed in the water the stage leaves open (beside the caption from 900px, under it
- * on a phone). With reduced motion a crossfade instead of the flight; without WebGL2 the stages keep the graticule.
- * Returns `to(k, j)`, or null where there is no such sea.
+ * ringed in the beacon and named, the scene's others faintly; where the scene follows one word (its `word`, or the one
+ * word a step brings forward), that word's route is sailed to the step's year. The view is framed in the water the
+ * stage leaves open (beside the caption from 900px, under it on a phone). At a new scene (`entering`: the moment its
+ * gong is heard, and from the cover) the sea takes the whole stage for a leg (LEG): the figure and the caption give
+ * way, the camera flies to the scene's words, the route sails; then the card comes back over it and the sea glides
+ * into the open water. A key on the stage (above its controls) says in a line what the sea shows, made from what is lit. With reduced
+ * motion no flight and no taking over: a crossfade, and the key. Without WebGL2 the stages keep the graticule.
+ * Returns `to(k, j, entering)`, or null where there is no such sea.
  */
 async function storySea(holder, stages, parts) {
   if (!window.WebGL2RenderingContext) return null;
@@ -1660,12 +1671,14 @@ async function storySea(holder, stages, parts) {
   if (!first || !holder.isConnected) return null;
   // The words are looked up on the first screen of the chart; from 900px the whole chart and its lens follow, and the
   // step is lit again with every word the lens has (a phone keeps to the first screen: it stays cheap).
-  let lens = null, k = 0, at = "", now = null;
+  let lens = null, k = 0, at = "", now = null, full = 0;
   const named = new Map(first.words.map((id, k) => [id, first.names[k]])), idOf = (w) => (lens ? lens.index.get(w) : first.words[first.names.indexOf(w)]);
   const ids = (list) => [...new Set(list.map(idOf).filter((id) => id !== undefined && sea.has(id)))];  // (only what the sea carries)
-  // What lies over the sea on the stage shown: no name is written under it.
-  const over = () => [...stages[k].stage.querySelectorAll(".stage-meta, .caption .turn:not(.out), .stage-nav, .stage-figure .plate:not(.off) svg")];
-  const wide = innerWidth >= 900, sea = module.nightSea({ chart: first, name: (id) => (lens ? lens.words[id] : named.get(id)), pick: () => {}, periods: first.periods, tip, label: t("sea_label"),
+  const nameOf = (id) => (lens ? lens.words[id] : named.get(id));
+  // What lies over the sea on the stage shown: no name is written under it (while the sea has the stage, only the
+  // controls and the key).
+  const over = () => [...stages[k].stage.querySelectorAll(full ? ".sea-key, .stage-nav" : ".stage-meta, .caption .turn:not(.out), .sea-key, .stage-nav, .stage-figure .plate:not(.off) svg")];
+  const wide = innerWidth >= 900, sea = module.nightSea({ chart: first, name: nameOf, pick: () => {}, periods: first.periods, tip, label: t("sea_label"),
     hold: true, fly: true, rung: window.seaRung ?? 0, most: wide ? Infinity : 2500, names: 0, over });
   if (!sea) return null;
   holder.append(sea.node);
@@ -1673,36 +1686,54 @@ async function storySea(holder, stages, parts) {
   if (wide) Promise.all([lensNamed(MAIN), json(`${MAIN}/chart.json`)]).then(([l, whole]) => ((lens = l), sea.more(whole), (at = ""), now && to(...now))).catch(() => {});
   const paths = new Map(), route = (id) => paths.get(id) || paths.set(id, json(`${MAIN}/paths/${Math.floor(id / BUCKET)}.json`).then((list) => list.find((p) => p.word === id)?.route || []).catch(() => [])).get(id);
   /** The open water of a stage as it now stands, [top, right, bottom, left] in pixels of the sea: under the caption
-   *  (and beside the plate from 900px), at least a band above the controls (a long caption is shaded over it). */
-  const water = (stage) => {
+   *  (and beside the plate from 900px), at least a band above the controls (a long caption is shaded over it); with
+   *  `whole`, all of the stage above its controls. */
+  const water = (stage, whole = false) => {
     const box = holder.getBoundingClientRect(), r = (n) => n.getBoundingClientRect(), text = stage.querySelector(".caption .turn:not(.out)") || stage.querySelector(".caption");
-    const plate = r(stage.querySelector(".stage-figure .plate:not(.off) svg") || stage.querySelector(".stage-figure")), nav = r(stage.querySelector(".stage-nav"));
-    const bottom = box.bottom - nav.top + 16, top = Math.min(r(text).bottom - box.top + 16, box.height - bottom - (wide ? 240 : 100));
+    const plate = r(stage.querySelector(".stage-figure .plate:not(.off) svg") || stage.querySelector(".stage-figure")), nav = r(stage.querySelector(".sea-key"));
+    const bottom = box.bottom - nav.top + 8, top = Math.min(r(text).bottom - box.top + 16, box.height - bottom - (wide ? 240 : 100));
+    if (whole) return [24, wide ? 48 : 16, bottom, wide ? 48 : 16];
     return wide ? [top, box.right - r(stage).right + 32, bottom, plate.right - box.left + 32] : [top, 0, bottom, 0];
   };
-  const to = async (scene, j) => {
-    const key = `${scene}/${j}`;
+  const to = async (scene, j, entering = false) => {
+    const label = `${scene}/${j}`;
     now = [scene, j];
-    if (key === at) return;
-    at = key;
+    if (label === at) return;
+    at = label;
     k = scene;
     const part = parts[scene], step = j ? part.steps[j - 1] : null, focus = ids(step?.focus || []), rest = ids(sceneWords(part)).filter((id) => !focus.includes(id)).slice(0, 12);
-    const one = ids([part.word || ""])[0], sailed = one === undefined ? [] : [{ id: one, route: await route(one) }];
-    if (at !== key) return;  // moved on while the route came
-    const year = first.periods.indexOf(String(step?.at ?? "").match(/\d{4}/g)?.at(-1)), sail = !j ? 0 : year >= 0 ? year : first.periods.length - 1;
-    const view = () => {
-      sea.inset(water(stages[scene].stage));
+    // The sea takes the stage at once, with the gong; its flight starts as soon as the route is there.
+    const stage = stages[scene].stage, taking = entering && !still();
+    if (taking) (stages.forEach((s) => s.stage.classList.remove("sea-full")), stage.classList.add("sea-full"), (full = performance.now()));
+    // The route sailed: the scene's own word, else the one word the step brings forward.
+    const one = ids([part.word || ""])[0] ?? (focus.length === 1 && (step.focus || []).length === 1 ? focus[0] : undefined), sailed = one === undefined ? [] : [{ id: one, route: await route(one) }];
+    if (at !== label) return;  // moved on while the route came
+    const year = first.periods.indexOf(String(step?.at ?? "").match(/\d{4}/g)?.at(-1)), sail = !j || !sailed[0]?.route.some(Boolean) ? 0 : year >= 0 ? year : first.periods.length - 1;
+    // The key: the words lit (those the step brings forward first; as many named as fit its room, at most four, the
+    // rest counted) and the route as far as sailed.
+    const shown = [...focus, ...rest], sailedTo = sail && sailed.length ? t("sea_key_route", nameOf(one), first.periods[sail]) : "", keyed = stage.querySelector(".sea-key");
+    for (let n = Math.min(4, shown.length); n >= 0; n--) {
+      keyed.textContent = shown.length || sailedTo ? t("sea_key", shown.slice(0, n).map(nameOf).join(", ") + (shown.length > n ? t(n ? "sea_key_more" : "sea_key_count", shown.length - n) : ""), sailedTo) : "";
+      if (keyed.scrollWidth <= keyed.clientWidth + 1) break;
+    }
+    const view = (box, ms) => {
+      sea.inset(box);
       sea.routes(sailed);
       sea.light([...focus.map((id) => ({ id, strong: true })), ...rest.map((id) => ({ id }))]);
-      sea.time(sail, FLIGHT);
-      sea.frame(focus.length ? focus : rest, FLIGHT / 1.4);  // a frame glides 1.4 times the time it is given
+      sea.time(sail, ms);
+      sea.frame(focus.length ? focus : rest, ms / 1.4);  // a frame glides 1.4 times the time it is given
     };
     // The bed follows the flight: the water closes a little as the camera lifts, and opens as it comes down.
-    if (hearing && !still()) (sounding?.dive(0.15, true), setTimeout(() => hearing && sounding?.dive(0, true), FLIGHT));
-    if (!still() || !sea.state().routes && !sea.state().lit) return view();
+    if (hearing && !still()) (sounding?.dive(0.15, true), setTimeout(() => hearing && sounding?.dive(0, true), taking ? LEG : FLIGHT));
+    if (taking) {
+      view(water(stage, true), LEG);
+      // Then the card comes back over the sea, and the sea glides into the water the stage leaves open.
+      return setTimeout(() => (stage.classList.remove("sea-full"), (full = 0), at === label && requestAnimationFrame(() => view(water(stage), FLIGHT))), LEG);
+    }
+    if (!still() || !sea.state().routes && !sea.state().lit) return view(water(stage), FLIGHT);
     // With reduced motion the view is not flown but crossfaded, through the deep.
     const away = holder.animate({ opacity: [1, 0] }, { duration: FLIGHT / 4, fill: "forwards" });
-    away.finished.then(() => (view(), holder.animate({ opacity: [0, 1] }, { duration: FLIGHT / 4 }), away.cancel())).catch(() => {});
+    away.finished.then(() => (view(water(stage), 0), holder.animate({ opacity: [0, 1] }, { duration: FLIGHT / 4 }), away.cancel())).catch(() => {});
   };
   return to;
 }
@@ -1788,9 +1819,11 @@ async function storyPage(slug, scene, step, more) {
     // The step steered to is reached (also where the browser has no scrollend, as Safari before 26).
     if (aim && Math.abs(rects[aim[0]].top - top + aim[1] * beats[aim[0]]) < 2) aim = null;
     const seen = rects.findIndex((r) => r.top <= middle && r.bottom >= middle), shore = landing.getBoundingClientRect().top;
-    if (seen >= 0) (last = seen), sea?.(seen, stages[seen].on());
-    // A new scene is heard as the larger gong of its cycle (sound.js): going on, or back from the scene after or the landing.
-    if (seen >= 0 && heardScene !== null && seen !== heardScene) hear("scene", seen, heardScene >= 0 ? seen < heardScene : !!landed);
+    // A new scene (going on, or back from the scene after or the landing) is heard as the larger gong of its cycle
+    // (sound.js), and in the same frame the sea takes its stage (storySea).
+    const entering = seen >= 0 && heardScene !== null && seen !== heardScene;
+    if (seen >= 0) (last = seen), sea?.(seen, stages[seen].on(), entering);
+    if (entering) hear("scene", seen, heardScene >= 0 ? seen < heardScene : !!landed);
     heardScene = seen;
     if (landed === false && shore < middle) hear("land");  // ashore
     landed = shore < middle;
@@ -1826,7 +1859,8 @@ async function storyPage(slug, scene, step, more) {
   frame();
 
   // The figures, each at the size of its stage, with the step each stage is on; then the sea under them.
-  stages.forEach((s, k) => (innerWidth < 900 ? share(s, parts[k]) : fit(s)));
+  if (innerWidth < 900) stages.forEach((s, k) => share(s, parts[k]));
+  else fit(stages);
   storySea(scenes.firstElementChild, stages, parts).then((to) => ((sea = to), frame()));
   await Promise.all(parts.map((part, k) => {
     const [w, h, zoom] = figureSize(stages[k].room);

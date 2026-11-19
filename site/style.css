@@ -782,6 +782,15 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 /* over the sea a caption and the step's controls keep a shade of the deep under them, as the figure has its panel */
 .sea-on .caption { padding-inline: var(--gutter); margin-inline: calc(-1 * var(--gutter)); }  /* room for the shade */
 .sea-on .turn { border-radius: var(--r2); background: color-mix(in srgb, var(--deep) 88%, transparent); box-shadow: 0 0 var(--s4) var(--s3) color-mix(in srgb, var(--deep) 88%, transparent); }
+/* at a new scene the sea takes the whole stage for a leg (app.js, storySea): the figure, the caption and its meta give
+   way, then come back over it */
+.sea-on :is(.stage-figure, .caption, .stage-meta) { transition: opacity var(--d-turn) var(--sail), transform var(--d-turn) var(--sail); }  /* (the meta also glides as a phone's opening rises) */
+.sea-on .stage.sea-full :is(.stage-figure, .caption, .stage-meta) { opacity: 0; transition-duration: var(--d-press); }
+/* the key: what the sea shows, in a line above the controls (as many words named as fit it, app.js); its room is kept from the start (a phone's stage
+   shares its height with it, app.js share), so nothing moves when it is written */
+.sea-key { display: none; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); color: var(--on-deep-2); }
+.sea-on .sea-key { display: block; height: calc(1em * var(--l-meta)); overflow: hidden; white-space: nowrap; color: var(--on-deep);
+  background: color-mix(in srgb, var(--deep) 88%, transparent); box-shadow: 0 0 var(--s3) var(--s2) color-mix(in srgb, var(--deep) 88%, transparent); }  /* (the caption's shade) */
 .sea-on .stage-nav .step { background: var(--deep); }
 .sea-on .stage-nav .step:hover { background: var(--deep-2); }
 .stage-figure .sub { color: var(--on-deep-2); }

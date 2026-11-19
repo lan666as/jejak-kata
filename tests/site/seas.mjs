@@ -1,7 +1,7 @@
 // node tests/site/seas.mjs   The night sea away from the home hero (and its touch), three ways (WebGL, no WebGL, reduced motion):
 // the map's sea explored by mouse, keys and buttons (turn, tilt, come near, from above, Enter on the ringed word, up to
 // four routes); a story's stages on one sea that flies to each step (a crossfade with reduced motion), its figure's
-// panel and captions legible over it; the sea held still behind a page head, a story's cover (with the route of the
+// panel and captions legible over it, taking the whole stage at a new scene and saying what it shows in a key; the sea held still behind a page head, a story's cover (with the route of the
 // story's word) and the footer; the GPU let go when the page turns; and in each case the fallback or the still, with nothing thrown.
 import { base, browser, done } from "./serve.mjs";
 let failures = 0;
@@ -142,6 +142,20 @@ for (const [name, options, init] of [["WebGL", {}, null], ["reduced motion", { r
     const ok = !gl ? !one && looks.graticule !== "none" && looks.clear !== "rgba(0, 0, 0, 0)"
       : one?.flies === !held && one.held && one.lit > 0 && moved(one, two) && (held ? !during.gliding && fading > 0 : during.gliding) && idle <= 2 && looks.panelWorst >= 4.5 && looks.captionWorst >= 4.5;
     log(`story's sea, ${name}`, ok && !p.errors.length, `${gl ? `flies ${one?.flies}, ${one?.lit} words lit; step 1 -> 2: aim ${JSON.stringify(one?.aim)} -> ${JSON.stringify(two?.aim)}, gliding at 250 ms ${during?.gliding}, crossfading ${fading}; ${idle} frames in a still second; ` : ""}panel ${looks.panel} (over white): ${looks.texts} texts, the faintest ${looks.panelWorst}:1; caption ${looks.captionWorst}:1; stage ${looks.clear}, graticule ${looks.graticule}; errors ${p.errors.length} ${p.errors[0] || ""}`);
+    await p.close();
+  }
+  { // a new scene: the sea takes the whole stage for a leg (the figure and caption give way), then gives it back; not
+    // with reduced motion. The key above the controls says what the sea shows, in the language shown.
+    const p = await fresh(options, init);
+    await p.addInitScript(() => { window.__took = 0; new MutationObserver(() => document.querySelector(".stage.sea-full") && (window.__took = window.__took || performance.now())).observe(document, { subtree: true, attributes: true, attributeFilter: ["class"] }); });
+    await p.goto(base + "#/cerita/kata-korupsi"); await p.waitForSelector(".stage .plate svg"); await p.waitForTimeout(2000);
+    await p.click(".begin"); await p.waitForTimeout(350);
+    const during = await p.evaluate(() => ({ full: !!document.querySelector("#scene-0 .stage.sea-full"), figure: +getComputedStyle(document.querySelector("#scene-0 .stage-figure")).opacity }));
+    await p.waitForTimeout(1800);
+    const after = await p.evaluate(() => ({ took: window.__took > 0, full: !!document.querySelector(".stage.sea-full"), figure: +getComputedStyle(document.querySelector("#scene-0 .stage-figure")).opacity,
+      key: document.querySelector("#scene-0 .sea-key")?.textContent || "", shown: !!document.querySelector("#scene-0 .sea-key")?.getClientRects().length }));
+    const ok = !gl ? !after.shown && !after.took : held ? !after.took && after.key.startsWith("Di peta: ") : during.full && during.figure < 0.5 && !after.full && after.figure === 1 && after.key.startsWith("Di peta: ");
+    log(`story's sea takes the stage, ${name}`, ok && !p.errors.length, `350 ms after "Mulai": sea has the stage ${during.full}, figure opacity ${during.figure}; after: ${after.full ? "still" : "given back"}, figure ${after.figure}, took it ${after.took}; key ${after.shown ? `"${after.key}"` : "not shown"}; errors ${p.errors.length} ${p.errors[0] || ""}`);
     await p.close();
   }
   { // the held seas: a page head, a story's cover with its word's route, the footer; let go on a page turn
