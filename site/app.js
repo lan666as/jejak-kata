@@ -1642,6 +1642,15 @@ function cite(story, url) {
   return box;
 }
 
+/** What a story's data cannot say (story.js, `limits`: its own paragraphs, word for word) as a list, a paragraph an
+ *  item; each led in bold by its own first words: the lead it already has (<b>), else its first sentence where that is
+ *  short (12 words at most). Only the markup is the site's: the text is not changed. */
+const limitsList = (html) => `<ul class="limits-list">${[...el(`<div>${html}</div>`).children].map((p) => {
+  const text = p.firstChild, end = text?.nodeType === 3 ? text.data.search(/[.?!](\s|$)/) : -1, lead = end > 0 ? text.data.slice(0, end + 1) : "";
+  if (lead && lead.split(/\s+/).length <= 12) (text.data = text.data.slice(end + 1)), p.prepend(Object.assign(document.createElement("b"), { textContent: lead }));  // (a paragraph led by its own <b> starts with that, not with text)
+  return `<li>${p.innerHTML}</li>`;
+}).join("")}</ul>`;
+
 /** Every story, led by its key number; the newest three large, on the deep. */
 function storiesPage() {
   view.replaceChildren(pageHead(t("nav_stories"), { kicker: t("stories_kicker", STORIES.length), lede: t("stories_lede"), sea: { words: storyWords(STORIES.slice(0, 3)) } }), el(storyCards(STORIES.slice(0, 3), true)),
@@ -1776,7 +1785,7 @@ async function storyPage(slug, scene, step, more) {
   cover.querySelector(".begin").after(sharer(t("share"), shared, "on-deep"));
   stages.forEach((s, k) => s.stage.querySelector(".stage-meta").append(sharer(`${SHARE_MARK}<span class="hidden">${t("share_step")}</span>`,
     () => ({ title: words.title, url: whole(href("cerita", slug, String(k), String(s.on()))), image: [s.room, s.on()], embed: whole(href("cerita", slug, "embed", String(k), String(s.on()))) }), "step")));
-  const landing = el(`<section class="landing">${tideLine()}<div class="limits"><h2>${t("limits_title")}</h2>${words.limits}</div></section>`);
+  const landing = el(`<section class="landing">${tideLine()}<div class="limits"><h2>${t("limits_title")}</h2>${limitsList(words.limits)}</div></section>`);
   landing.append(tools(() => href("cerita", slug, String(last)), { image: () => stages[last].room, table: () => stages[last].figure()?.table?.(),
     share: () => ({ ...shared(), embed: whole(href("cerita", slug, "embed", String(last), String(stages[last].on()))) }), check: [...new Set(parts.flatMap((part) => part.check || []))],
     data: [...new Set(parts.map((part) => (part.type === "asked" ? `pages/${part.name}.json` : SCENE_DATA[part.type])).filter(Boolean))] }),

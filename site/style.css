@@ -862,13 +862,21 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 /* 3. the landing, on the chart: what the data cannot say, the tools, the next story */
 .landing { position: relative; z-index: 2; max-width: calc(var(--content) + 2 * var(--gutter)); margin: 0 auto; padding: var(--s8) var(--gutter) var(--s9); scroll-snap-align: start; }
 .landing > .tide-line { top: calc(1px - var(--tide-h)); bottom: auto; transform-origin: 50% 100%; }  /* the voyage comes ashore: the deep gives way to the paper along the tide line */
-.limits { max-width: calc(var(--measure) + 2 * var(--s6)); padding: var(--s2) var(--s5) var(--s4); background: var(--chart-2); border: var(--hair) solid var(--line-2); border-radius: var(--r2); }
-.limits h2 { margin-top: var(--s4); }
-.next-story { max-width: calc(var(--measure) + 2 * var(--s6)); margin-top: var(--s7); padding: var(--s6); gap: var(--s3); }
+/* the paper of the landing covers the sea under the stages, which ends at the tide line above it */
+.landing::before { content: ""; position: absolute; z-index: -1; inset: 0 calc(50% - 50vw); background: var(--chart); }
+.limits { max-width: calc(var(--measure) + 2 * var(--s6)); padding: var(--s5) var(--s6) var(--s4); background: var(--chart-2); border: var(--hair) solid var(--line-2); border-radius: var(--r2); }
+.limits h2 { margin: 0 0 var(--s4); }
+/* what the data cannot say: a list, a paragraph of the story's own an item, led by its own first words in bold */
+.limits-list { margin: 0; padding: 0; list-style: none; }
+.limits-list li { padding: var(--s4) 0 var(--s4) var(--s5); border-top: var(--hair) solid var(--line); line-height: 1.65; position: relative; }
+.limits-list li::before { content: ""; position: absolute; left: 0; top: calc(var(--s4) + .55em); width: var(--s2); height: var(--rule); background: var(--route); }
+.limits-list li > b:first-child { color: var(--ink); }
+.next-story { max-width: calc(var(--measure) + 2 * var(--s6)); margin-top: var(--s7); padding: var(--s5) var(--s6) var(--s6); gap: var(--s3); }
 @media (min-width: 900px) {
   .landing { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); column-gap: var(--s7); align-items: start; }
   .landing > :not(.next-story) { grid-column: 1; }
-  .landing .next-story { grid-column: 2; grid-row: 1 / span 3; margin-top: 0; }
+  /* the next story stands beside the panel, its top on the panel's top, and stays beside it while the panel is read */
+  .landing .next-story { grid-column: 2; grid-row: 1 / span 3; margin-top: 0; position: sticky; top: calc(var(--head, var(--head-h)) + var(--s5)); }
 }
 .next-story .kicker { margin: 0; }
 .next-story .card-title { font-size: var(--t-h2); line-height: var(--l-h2); font-weight: 800; font-stretch: 75%; }

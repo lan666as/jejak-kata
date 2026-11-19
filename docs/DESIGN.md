@@ -187,9 +187,11 @@ A story is a voyage in three parts.
    nested scrolling: a swipe always moves the story. No text on a plate is under 12px: a line's name and value too
    long for the column wrap onto a second line. Under each sticky stage lies a run of invisible beats, one per step,
    that the scroll snaps to; the scroll position chooses the step.
-3. **Landing**, on the chart: "What this data cannot say" as a bordered panel, the tools (save image, share, copy
+3. **Landing**, on the chart (its paper covers the sea, which ends at the tide line above it): "What this data cannot
+   say" as a bordered panel, its paragraphs (the story's own, word for word) a list, each led in bold by its own first
+   words (the lead it has, else its first sentence where that is 12 words or fewer), the tools (save image, share, copy
    link, check for yourself), how to cite the story (folded: a line and BibTeX, each to copy), and the next story as a
-   card.
+   card, its top on the panel's top, staying beside the panel while it is read (from 900px).
 
 Every caption stays in the document, in its beat, for screen readers and find-in-page; the visible caption is an
 `aria-live="polite"` region. With reduced motion the stage stays, steps cut instead of travelling and nothing snaps.
