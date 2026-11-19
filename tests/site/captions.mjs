@@ -58,7 +58,8 @@ function numbers(text, lang) {
 }
 const sentences = (text) => text.split(/(?<=[.!?])\s+/).filter(Boolean);
 /** Rounded to `d` decimals, is v what the text says? (v in the text's unit: percent points or times) */
-const near = (v, shown, d) => v !== null && v !== undefined && Math.abs(v - shown) <= 0.5 * 10 ** -d + 1e-9;
+/** (Rounded as the figure rounds it, by Intl: at a tie the text may not say the other neighbour, "0,44%" under a label "0,43%".) */
+const near = (v, shown, d) => v !== null && v !== undefined && Math.abs(Number(v.toLocaleString("en", { maximumFractionDigits: Math.max(0, d), useGrouping: false })) - shown) < 1e-9 || (d < 0 && Math.abs(v - shown) <= 0.5 * 10 ** -d + 1e-9);
 const sig = (v) => (v >= 9.95 ? 0 : v >= 0.995 ? 1 : v >= 0.0995 ? 2 : 3);  // decimals the site shows a share with (two significant digits)
 const show = (v, times) => (times ? v.toFixed(1) : v.toFixed(Math.min(3, sig(v))));
 
@@ -180,7 +181,7 @@ function explain(n, pool, broad) {
   if (n.unit === "x" && !pool[0]?.times) return "no ratio of two values shown at this moment gives it";
   if (!n.unit) return "a count the figure does not give: explain it in captions-allowed.tsv";
   const c = closest(pool, n.lo), elsewhere = broad.filter((b) => near(b[target], n.lo, n.d));
-  return `${c ? `closest shown: ${show(c[target], c.times)} (${where(c)})` : "nothing shown"}${elsewhere.length ? `; the data has it at ${elsewhere.slice(0, 3).map(where).join("; ")}, not shown at this step` : ""}`;
+  return `${c ? `closest shown: ${show(c[target], c.times)} [raw ${c[target]}, as drawn ${c[target].toLocaleString("en", { maximumSignificantDigits: 2 })}] (${where(c)})` : "nothing shown"}${elsewhere.length ? `; the data has it at ${elsewhere.slice(0, 3).map(where).join("; ")}, not shown at this step` : ""}`;
 }
 
 // ---- every story ---------------------------------------------------------------------------------------------------
