@@ -82,8 +82,9 @@ const hide = (p, hidden) => p.evaluate((h) => {
 // Where the browser lets sound start at once: a Chromium launched with the policy that says so.
 for (const [name, using] of [["--autoplay-policy=no-user-gesture-required", await chromium.launch({ args: ["--autoplay-policy=no-user-gesture-required"] })]]) {
   const p = await fresh({ using });
-  await p.goto(base); await p.waitForTimeout(2500);
-  const s = await look(p);
+  await p.goto(base);
+  let s;  // the sound is set up at an idle moment after the first paint: on a busy machine that can be seconds
+  for (let t = 0; t < 30 && !((s = await look(p)).state === "running" && s.ask === null && sounded(p)); t++) await p.waitForTimeout(500);
   log(`heard at once where allowed (${name})`, s.pressed === "true" && s.contexts === 1 && s.state === "running" && s.ask === null && sounded(p) && !p.errors.length,
     `pressed ${s.pressed}; ${s.contexts} AudioContext, ${s.state}, no press; note ${s.ask ? "shown" : "none"}; errors ${p.errors.length} ${p.errors[0] || ""}`);
   await p.close();
