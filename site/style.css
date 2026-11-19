@@ -695,14 +695,31 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 @media (max-width: 899.98px) {
   .stage[data-step="0"] .caption { overflow: visible; mask-image: none; }
   .stage[data-step="0"] .turn:not(.out) { position: relative; z-index: 1; transform: translateY(calc(-1 * var(--rise, 0px))); padding-top: var(--s4);
-    margin-top: calc(-1 * var(--s4)); background: linear-gradient(transparent, var(--deep) var(--s4)); }
+    margin-top: calc(-1 * var(--s4)); background: var(--deep); }
+  /* ... and takes the scene's name and the count up with it, over the figure's foot */
+  .stage-meta { position: relative; z-index: 2; transition: transform var(--d-turn) var(--sail); }
+  .stage[data-step="0"] .stage-meta { transform: translateY(calc(-1 * var(--rise, 0px))); padding-top: var(--s4); margin-top: calc(-1 * var(--s4)); background: linear-gradient(transparent, var(--deep) var(--s4)); }
 }
 .stage-figure > * { grid-area: 1 / 1; max-width: 100%; }
 /* the stage is the deep in both schemes: its figure is drawn on it, in the night's inks (the dark scheme's own values;
-   plate.js reads them here, and saves the image on paper) */
-.stage-figure { --paper: transparent; --line: var(--line-deep); --ink: #e8eff0; --ink-2: #b3c3cc; --ink-3: #8497a3;
+   plate.js reads them here, and saves the image on paper), on a panel of the deep that the sea under the stages
+   (below) shows through only faintly: its text keeps 4.5:1 over the brightest frame of the sea */
+.stage-figure { --paper: color-mix(in srgb, var(--deep) 92%, transparent); --line: var(--line-deep); --ink: #e8eff0; --ink-2: #b3c3cc; --ink-3: #8497a3;
   --cat-1: #ea5aa6; --cat-2: #d98a2b; --cat-3: #199e70; --cat-4: #c98500; --cat-5: #3987e5; --cat-6: #0ca30c; --cat-7: #9085e9; --cat-8: #e66767; --cat-9: #b3c3cc; }
-.stage-figure .plate svg { max-height: var(--fig, calc(var(--stage-h) / 2)); border-color: transparent; }
+.stage-figure .plate svg { max-height: var(--fig, calc(var(--stage-h) / 2)); border-color: transparent; border-radius: var(--r2); }
+/* the sea under the stages (app.js, storySea): held under them while they pass, seen around each figure's panel; the
+   stages are then clear, and the graticule is the sea's own */
+.scenes { position: relative; }
+.story-sea { position: sticky; top: var(--head, var(--head-h)); height: var(--stage-h); margin-bottom: calc(-1 * var(--stage-h)); pointer-events: none; background: var(--deep); }
+.story-sea > .chart { position: absolute; inset: 0; height: 100%; background: none; border: 0; border-radius: 0; animation: fade calc(var(--d-leg) * 1.5) var(--sail) both; }
+.story-sea .chart.gl :is(.when, .tally) { display: none; }
+.sea-on .scene, .sea-on .stage { background: transparent; }
+.sea-on .stage::before { content: none; }
+/* over the sea a caption and the step's controls keep a shade of the deep under them, as the figure has its panel */
+.sea-on .caption { padding-inline: var(--gutter); margin-inline: calc(-1 * var(--gutter)); }  /* room for the shade */
+.sea-on .turn { border-radius: var(--r2); background: color-mix(in srgb, var(--deep) 88%, transparent); box-shadow: 0 0 var(--s4) var(--s3) color-mix(in srgb, var(--deep) 88%, transparent); }
+.sea-on .stage-nav .step { background: var(--deep); }
+.sea-on .stage-nav .step:hover { background: var(--deep-2); }
 .stage-figure .sub { color: var(--on-deep-2); }
 /* on a phone, a strip of more rows than its room keeps apart is drawn at its own height in a window of that room and
    slides through it as the page scrolls (app.js, share and slide); its edges fade where it goes on */
@@ -751,9 +768,9 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
   .stage-figure .plate svg { max-height: calc(var(--stage-h) - 2 * var(--s5)); }
   .stage-side { gap: var(--s4); padding: var(--s2) 0; }
   .caption { padding-top: clamp(0px, 12vh - var(--s6), 96px); }  /* a short caption sits a little below the top, a fixed amount: nothing moves as captions turn */
-  .turn p { font-size: var(--t-caption); line-height: 1.38; }
+  .turn p { font-size: var(--caption, var(--t-caption)); line-height: 1.38; }  /* --caption: a size smaller where a long step needs it (app.js, fit) */
   .turn .head { font-size: var(--t-h2); line-height: var(--l-h2); }
-  .turn .title { font-size: var(--t-h1); line-height: var(--l-h1); }
+  .turn .title { font-size: var(--caption-title, var(--t-h1)); line-height: var(--l-h1); }
   .turn .hint { display: block; margin-top: var(--s5); }
   .stage-nav { grid-template: "ticks ticks" auto "back on" auto / auto auto; justify-content: space-between; row-gap: var(--s3); }
   .stage-nav .ticks { grid-area: ticks; }

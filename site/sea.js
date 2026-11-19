@@ -191,8 +191,12 @@ void main() {
  * many (a quiet backdrop names few); `pitch`: how steeply a held sea is seen (a short band shows more of the chart
  * from higher). `look(to)` sets the camera of a sea with no route. `explore` (the map): the
  * reader moves the camera, with `controls` {in, out, all, turn, above, level} naming its buttons.
+ * `fly` (a story's stage): a held sea whose camera still glides when `frame` is asked to, and whose route still sails,
+ * frame by frame while it moves and on the quality ladder from rung `rung` (window.seaRung, where a sea that moved
+ * this visit settled); `light([{id, strong}])` rings the words a step is about, and names them clear of what `over()`
+ * lists (the elements over the sea).
  */
-export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hold = false, most: carry = Infinity, names: named = Infinity, explore = false, controls = {}, pitch: tilted = null }) {
+export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hold = false, most: carry = Infinity, names: named = Infinity, explore = false, controls = {}, pitch: tilted = null, fly = false, rung: from = 0, over = () => [] }) {
   const node = document.createElement("div");
   node.className = `chart night gl${explore ? " explore" : ""}`;
   const button = (k, text) => `<button type="button" data-k="${k}" aria-label="${controls[k] || text}" title="${controls[k] || text}">${text}</button>`;
@@ -270,13 +274,14 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     haze: rgb("--deep-2").map((c, i) => mix(c, rgb("--light-0")[i], 0.22)),
     lights: [0, 1, 2, 3, 4, 5].flatMap((i) => rgb(`--light-${i}`)), dots: [rgb("--ink-3"), ...[1, 2, 3, 4, 5].map((i) => rgb(`--seq-${i}`))].flat(),
     light: rgb("--on-deep"), routes: {},
-    css: Object.fromEntries(["--on-deep", "--on-deep-2", "--deep-2", "--ink", "--ink-3", "--chart-2", "--route", "--route-on-deep", "--type"].map((k) => [k, root().getPropertyValue(k).trim()])),
+    css: Object.fromEntries(["--on-deep", "--on-deep-2", "--deep-2", "--ink", "--ink-3", "--chart-2", "--route", "--route-on-deep", "--beacon", "--type"].map((k) => [k, root().getPropertyValue(k).trim()])),
   });
   /** A route's colours, by its token: at night (as rgb and as CSS) and by day. */
   const tint = (token) => (palette().routes[token] ||= { night: rgb(ON_DEEP[token] || token), day: rgb(token), css: [ON_DEEP[token] || token, token].map((k) => root().getPropertyValue(k).trim()) });
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => ((colours = null), ask()));
 
-  let W = 0, H = 0, ratio = 1, rung = 0, calm = 0, wanted = null, pad = [0, 0, 0, 0], depth = 0, ready = false, waiting = [], held = hold || still();
+  let W = 0, H = 0, ratio = 1, rung = Math.min(from, LADDER.length - 1), calm = 0, wanted = null, pad = [0, 0, 0, 0], depth = 0, ready = false, waiting = [], held = hold || still(), lit = [];
+  const flies = fly && !still();
   // Exploring: the word ringed for the keyboard (keyed), whether the reader has moved the camera, the rise to above.
   let ringed = -1, keyed = false, moved = false;
   const rising = { from: 0, to: null, start: 0 };
@@ -456,7 +461,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     };
     // Nothing is named under what lies over the sea: its buttons, the year, a hint, the map's fields, with a margin around them; nor,
     // in a held sea, outside its open water.
-    const box = canvas.getBoundingClientRect(), keep = [...node.querySelectorAll(".zoom, .when, .sea-hint"), ...(node.closest(".map-deep")?.querySelectorAll(".map-steer") || [])].map((n) => n.getBoundingClientRect()).filter((r) => r.width && r.height)
+    const box = canvas.getBoundingClientRect(), keep = [...node.querySelectorAll(".zoom, .when, .sea-hint"), ...(node.closest(".map-deep")?.querySelectorAll(".map-steer") || []), ...over()].map((n) => n.getBoundingClientRect()).filter((r) => r.width && r.height)
       .map((r) => [r.left - box.left - 8, r.top - box.top - 8, r.right - box.left + 8, r.bottom - box.top + 8]);
     const open = held && !explore ? [pad[3], pad[0], W - pad[1], H - pad[2]] : [-1e9, -1e9, 1e9, 1e9];
     const clear = (x, y, width, height = 18) => x >= open[0] && x + width <= open[2] && y - height / 2 >= open[1] && y + height / 2 <= open[3]
@@ -496,6 +501,17 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       ctx.fillText(year, start[0] + 9, start[1] - 12);
     }
     note(sailing[0], taken, css);
+    // The words a step is about (light): a ring round each; the strong ones in the beacon, named in a pill in the open
+    // water, the rest named quietly where there is room.
+    for (const { k, strong } of lit) {
+      const p = project(chart.x[k] / 1000, Math.max(0, chart.moved[k] ?? 0) * lift, chart.y[k] / 1000);
+      if (!p || p[0] < 0 || p[1] < 0 || p[0] > W || p[1] > H) continue;
+      ctx.beginPath(); ctx.arc(p[0], p[1], strong ? 9 : 6, 0, 7); ctx.strokeStyle = css[strong ? "--beacon" : "--on-deep-2"]; ctx.lineWidth = strong ? 2 : 1.5; ctx.stroke();
+      const text = name(chart.words[k]);
+      ctx.font = `${strong ? 800 : 600} ${strong ? 13 : 12}px ${css["--type"]}`;
+      if (strong && clear(p[0] + 14, p[1], ctx.measureText(text).width + 14, 24)) pill(p, text, false);
+      else if (!strong && clear(p[0] + 10, p[1], ctx.measureText(text).width) && claim(p[0] + 10, p[1], ctx.measureText(text).width, 14)) (ctx.fillStyle = css["--on-deep-2"]), ctx.fillText(text, p[0] + 10, p[1]);
+    }
     // Exploring, the word nearest the middle of the screen is ringed and named: Enter chooses it.
     const ring = ringed >= 0 && project(chart.x[ringed] / 1000, Math.max(0, chart.moved[ringed] ?? 0) * lift, chart.y[ringed] / 1000);
     if (ring) {
@@ -586,9 +602,10 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     if (!node.isConnected) return ready && end();
     if (!W && !size()) return;
     const busy = t < busyUntil || glide.to || moving() || arrival.on || t - tailAt < 700 || rising.to !== null;
-    // Exploring, or with the swell given up, nothing moves unless something is asked: the loop sleeps until then.
+    // Exploring, or with the swell given up, nothing moves unless something is asked: the loop sleeps until then. A
+    // held sea that flies draws only while its camera or its ship moves.
     const swell = !explore && LADDER[rung].swell;
-    if (!held && (busy || swell)) frame = requestAnimationFrame(loop);
+    if (held ? flies && busy : busy || swell) frame = requestAnimationFrame(loop);
     if (!busy && ready && !held && (!swell || t - last < 30 || tide() >= 1)) return (wasBusy = false);  // the swell alone: about 30 frames a second, and none once all is paper
     if (glide.to) {
       const f = Math.min(1, (t - glide.start) / glide.ms), e = ease(f);
@@ -613,7 +630,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     }
     // The screen keeps up, or the sea steps down its ladder: only frames drawn one after another count (the swell
     // alone is drawn at half the rate, on purpose), judged a quarter of a second at a time.
-    if (busy && wasBusy && !held) (times.push(t - last), (since ||= t));
+    if (busy && wasBusy && (!held || flies)) (times.push(t - last), (since ||= t));
     if (times.length >= 6 && t - since >= 250) {
       const median = times.sort((a, b) => a - b)[times.length >> 1];
       times = [];
@@ -855,7 +872,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     },
     time(p, ms = LEG) {
       const from = now, t0 = performance.now();
-      if (!ms || held) return (now = p), redraw();
+      if (!ms || (held && !flies)) return (now = p), redraw();
       const tick = (t) => {
         const f = Math.min(1, (t - t0) / ms);
         now = mix(from, p, ease(f));
@@ -896,7 +913,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
         return ok;
       };
       for (let i = 0; i < 12 && !fits(); i++) to.dist = Math.min(3, to.dist * 1.15);
-      if (!ms || held || !ready) return Object.assign(aim, to), redraw();
+      if (!ms || (held && !flies) || !ready) return Object.assign(aim, to), redraw();
       Object.assign(glide, { from: { ...aim }, to, start: performance.now(), ms: ms * 1.4 });
       ask();
     },
@@ -916,6 +933,12 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       ask();
     },
     lift() {},
+    /** The words to ring and name, [{id, strong}]: what a story's step is about. */
+    light(list) {
+      lit = list.map(({ id, strong }) => ({ k: chart.words.indexOf(id), strong })).filter((w) => w.k >= 0 && w.k < n);
+      labelsAt = "";
+      redraw();
+    },
     /** The arrival: the sea starts dark and its words come on from the first route's word outwards, a tally beside
      *  the year counting them in words (say(n)); resolves once all that has come is lit. */
     arrive(say) {
@@ -957,7 +980,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       return p ? { word: name(chart.words[k]), at: [p[0], p[1]] } : null;
     },
     /** How the sea is being drawn, for the checks: frames held still, the rung of the quality ladder, where the camera is. */
-    state: () => ({ held, rung, points: n, pixels: [canvas.width, canvas.height], depth, routes: routes.length, ended,
+    state: () => ({ held, flies, gliding: !!glide.to, lit: lit.length, rung, points: n, pixels: [canvas.width, canvas.height], depth, routes: routes.length, ended,
       aim: Object.fromEntries(Object.entries(aim).map(([k, v]) => [k, +v.toFixed(3)])), ringed: ringed >= 0 ? name(chart.words[ringed]) : null }),
   };
   node.sea = api;  // for the checks (tests/site): how the sea is being drawn

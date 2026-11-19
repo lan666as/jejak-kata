@@ -1,7 +1,8 @@
 // node tests/site/seas.mjs   The night sea away from the home hero (and its touch), three ways (WebGL, no WebGL, reduced motion):
 // the map's sea explored by mouse, keys and buttons (turn, tilt, come near, from above, Enter on the ringed word, up to
-// four routes); the sea held still behind a page head, a story's cover (with the route of the story's word) and the
-// footer; the GPU let go when the page turns; and in each case the fallback or the still, with nothing thrown.
+// four routes); a story's stages on one sea that flies to each step (a crossfade with reduced motion), its figure's
+// panel and captions legible over it; the sea held still behind a page head, a story's cover (with the route of the
+// story's word) and the footer; the GPU let go when the page turns; and in each case the fallback or the still, with nothing thrown.
 import { base, browser, done } from "./serve.mjs";
 let failures = 0;
 const log = (name, ok, detail) => { failures += !ok; console.log(`${ok ? "ok  " : "FAIL"} ${name}: ${detail}`); };
@@ -109,6 +110,39 @@ for (const [name, options, init] of [["WebGL", {}, null], ["reduced motion", { r
     await fingers([[200, 300], [200, 60]]); const swiped = await p.evaluate(() => Math.round(scrollY));
     log(`hero by touch, ${name}`, near?.open && route === near.word && swiped > 150 && !p.errors.length, `tap on "${near?.word}" (open water: ${near?.open}) sails ${route}; a swipe up scrolls ${swiped}px; errors ${p.errors.length} ${p.errors[0] || ""}`);
     await context.close();
+  }
+  { // a story's stages on one sea: it flies (about 600 ms) to each step's words, rings them, and sleeps between; with
+    // reduced motion it cuts (a crossfade) instead; without WebGL the stages keep their graticule. Text on the figure's
+    // panel and on a caption's shade keeps 4.5:1 over the brightest the sea can be (white).
+    const p = await fresh(options, init), sea = () => state(p, ".story-sea .chart");
+    await p.goto(base + "#/cerita/kata-korupsi"); await p.waitForSelector(".stage .plate svg"); await p.waitForTimeout(1500);
+    const to = (k, j) => p.evaluate(([k, j]) => { const s = document.getElementById(`scene-${k}`); scrollTo(0, scrollY + s.getBoundingClientRect().top - document.querySelector(".masthead").offsetHeight + j * s.querySelector(".beat").offsetHeight); }, [k, j]);
+    await to(0, 1); await p.waitForTimeout(2500);
+    const one = await sea();
+    await to(0, 2); await p.waitForTimeout(250);
+    const during = await sea(), fading = await p.evaluate(() => document.querySelector(".story-sea").getAnimations().length);
+    await p.waitForTimeout(1500);
+    const two = await sea();
+    const idle = await p.evaluate(() => new Promise((ok) => { let n = 0; const raf = requestAnimationFrame; window.requestAnimationFrame = (f) => (n++, raf(f)); setTimeout(() => ((window.requestAnimationFrame = raf), ok(n)), 1000); }));
+    const looks = await p.evaluate(() => {
+      const c = document.createElement("canvas").getContext("2d", { willReadFrequently: true }), over = (colour, under, alpha = 1) => {
+        c.globalAlpha = 1; c.fillStyle = under; c.fillRect(0, 0, 1, 1); c.globalAlpha = alpha; c.fillStyle = colour; c.fillRect(0, 0, 1, 1);
+        const [r, g, b] = c.getImageData(0, 0, 1, 1).data; return `rgb(${r}, ${g}, ${b})`; };
+      const lum = (rgb) => rgb.match(/\d+/g).slice(0, 3).map((v) => v / 255).map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+      const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+      const opacity = (n, top) => { let o = 1; for (; n && n !== top; n = n.parentNode) o *= +getComputedStyle(n).opacity; return o; };
+      const svg = document.querySelector("#scene-0 .plate:not(.off) svg"), panel = over(getComputedStyle(svg.querySelector("rect")).fill, "#ffffff"), deep = getComputedStyle(document.documentElement).getPropertyValue("--deep").trim();
+      const texts = [...svg.querySelectorAll("text")].filter((t) => t.textContent.replace("●", "").trim() && getComputedStyle(t).fill !== over(deep, "#ffffff"));  // (not the numbers on the beacon)
+      const panelWorst = Math.min(...texts.map((t) => ratio(over(getComputedStyle(t).fill, panel, opacity(t, svg.parentNode)), panel)));
+      const turn = document.querySelector("#scene-0 .turn:not(.out)"), shade = over(getComputedStyle(turn).backgroundColor, "#ffffff");
+      const captionWorst = Math.min(...[...turn.querySelectorAll("p")].map((q) => ratio(over(getComputedStyle(q).color, shade), shade)));
+      return { panel, panelWorst: +panelWorst.toFixed(2), texts: texts.length, captionWorst: +captionWorst.toFixed(2), clear: getComputedStyle(document.querySelector("#scene-0 .stage")).backgroundColor, graticule: getComputedStyle(document.querySelector("#scene-0 .stage"), "::before").content };
+    });
+    const moved = (a, b) => a && b && ["x", "z", "dist", "yaw"].some((k) => a.aim[k] !== b.aim[k]);
+    const ok = !gl ? !one && looks.graticule !== "none" && looks.clear !== "rgba(0, 0, 0, 0)"
+      : one?.flies === !held && one.held && one.lit > 0 && moved(one, two) && (held ? !during.gliding && fading > 0 : during.gliding) && idle <= 2 && looks.panelWorst >= 4.5 && looks.captionWorst >= 4.5;
+    log(`story's sea, ${name}`, ok && !p.errors.length, `${gl ? `flies ${one?.flies}, ${one?.lit} words lit; step 1 -> 2: aim ${JSON.stringify(one?.aim)} -> ${JSON.stringify(two?.aim)}, gliding at 250 ms ${during?.gliding}, crossfading ${fading}; ${idle} frames in a still second; ` : ""}panel ${looks.panel} (over white): ${looks.texts} texts, the faintest ${looks.panelWorst}:1; caption ${looks.captionWorst}:1; stage ${looks.clear}, graticule ${looks.graticule}; errors ${p.errors.length} ${p.errors[0] || ""}`);
+    await p.close();
   }
   { // the held seas: a page head, a story's cover with its word's route, the footer; let go on a page turn
     const p = await fresh(options, init);

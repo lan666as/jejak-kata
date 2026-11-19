@@ -149,7 +149,16 @@ A story is a voyage in three parts.
    it (from 900px: a column at the right, the stage on the page's 1120px grid like the header; from 1100px the figure
    owns the stage: the stage takes the wide grid, the caption a column of 26 to 30rem at its right, and the plate is
    shown up to 1.5 times its drawn size, with larger marks and type, a strip's rows at most 72px apart so that a strip
-   of few rows is not stretched; below 900px: a band under the figure), the chart's graticule faint behind the figure. Where a story has several scenes, the scene's title stands above
+   of few rows is not stretched; below 900px: a band under the figure). **The stages lie on the sea**: one held night
+   sea under all of them (`storySea` in app.js), its camera flying (600 ms, `--sail`) to each step: to the words the step
+   brings forward (its `focus`), else the scene's words, each looked up on the first page's chart (a word not there is
+   not lit), the step's ringed in `--beacon` and named, the scene's others ringed faintly; where the scene is about one
+   word over time (`word`), its route is sailed to the step's year. The view is framed in the water the stage leaves
+   open (under the caption, beside the figure from 900px). The figure stands on a panel of the deep (`--paper` at 92%)
+   and a caption on a shade of it (88%): their text keeps 4.5:1 over the brightest the sea can be. The sea draws only
+   while it flies, on the quality ladder from the rung the visit's moving sea settled on; with reduced motion a step
+   crossfades through the deep; without WebGL2 the stage is the deep with the chart's graticule faint behind the
+   figure. Where a story has several scenes, the scene's title stands above
    the caption as a label; the one count is the step's. Captions do not scroll past as boxes:
    the stage stays, the caption turns (`--d-turn`), the figure's marks travel (`--d-leg`). Scroll, swipe, the arrow
    keys, space, or the next/previous controls all move one step; scrolling settles on a step (scroll snap,
@@ -159,7 +168,8 @@ A story is a voyage in three parts.
    tallest step and the figure gets the rest, at least half (a strip that slides, up to three fifths); where the tallest
    step would not fit beside that, the stage's captions are set a size smaller (1rem, then `--t-small`) and at the last
    the figure gives up a little more (to two fifths); an opening longer still rises over the figure's foot while it is
-   read (a move, not a change of layout). No caption is cut.
+   read (a move, not a change of layout), the scene's name and count with it. From 900px a step whose caption would not
+   fit its column is set a size smaller (`--t-lede`, then the body's). No caption is cut, and none scrolls.
    A strip of more rows than that room keeps 26px apart (`stripLeast` in plate.js) is drawn at the height that does, in
    a window of that room, and **slides** through the window as the page scrolls through the scene: at each step to the
    rows the step brings forward (at the opening to its top; where a step names none, as far down as the step is
@@ -260,7 +270,7 @@ A story keeps its place by step (not by pixels) across a language switch and the
 
 One engine, three ways to be on a page: **the hero** (below: the swell, the arrival, the dive); **held** (one frame,
 drawn again only when its size, the scheme or the hover changes: behind every page head, a story's cover, the 404 and
-the footer; the chart's first screen of 2,500 words, made once the page has painted, its GPU let go when the page
+the footer; under a story's stages it is held between steps and flies to each (`fly`); the chart's first screen of 2,500 words, made once the page has painted, its GPU let go when the page
 turns); and **explore** (the map). The home hero is the chart of words in WebGL2, seen across the water at a low angle toward a horizon. Raw WebGL2 in
 one module, no library: four small programs (water, lights, the route's ribbon, the ship and its ports), no matrices,
 colours, the curve and the leg read from the tokens. It is fetched beside the data and made only after the hero's
