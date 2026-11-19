@@ -90,9 +90,10 @@ it.
 ## Components
 
 - **Header** (56px, `--deep`, sticky everywhere, opaque): wordmark; from 900px the five links inline, search field,
-  language. Below 900px: wordmark, search button, menu button; the menu is a full-screen sheet on `--deep` with the
-  five links set in display type, the search field and the language switch. The current page is marked in `--route`.
-  Inside a story a 2px route-coloured line along the header's lower edge shows how far through the story one is.
+  sound (a speaker, below), language. Below 900px: wordmark, search button, menu button; the menu is a full-screen
+  sheet on `--deep` with the five links set in display type, the search field, the sound toggle with its name, and the
+  language switch. The current page is marked in `--route`. Inside a story a 2px route-coloured line along the
+  header's lower edge shows how far through the story one is.
 - **Buttons**: primary (route fill, on-route text), secondary (hairline, ink), quiet (text only). Height 44px on touch.
   Chips are pills. One focus ring: 2px `--route`, 2px offset, on everything focusable.
 - **Field**: 44px, `--chart-2`, hairline; on the deep, `--deep-2` with no border.
@@ -323,6 +324,41 @@ text has been painted. What is on screen is the data and nothing else:
   turns the view the few degrees a mouse does and lets it settle back; a tap sails the nearest word.
 - Covers, heads and the footer hold one frame of a sea that is no larger than the chart's first screen: a quiet
   backdrop that still shows only data (the lights, and only the routes of words the page is about), named sparingly.
+
+## Sound (`site/sound.js`)
+
+The night sea can be heard. Everything is made in the page with the Web Audio API: no files, no samples, no library.
+
+- **The bed**: the sea at night, quiet. Two lines of waves (white noise through a lowpass that opens as each wave rises,
+  one to each side) on a swell of 5.5 to 12 s whose every wave has its own height and length, so nothing repeats; a
+  low drone (the root, the near fifth above it and the root again, faint and a few cents apart), breathing slowly; now
+  and then a bell buoy far off, struck by a wave and often again, softer, as it rocks back. Each family of pages hears
+  its own sea, as each has its own sea scene, by a few numbers (`BEDS`): the home hero open water, a story's stage
+  further off and lower, the map wider with more bells, a word's page and the rest quieter.
+- **The dive** is the one to remember: one lowpass lies over the whole bed (the water). As the hero's dive goes, it
+  closes an octave every quarter of the way, the drone sinks a step and the waves slow, so the sea is heard from under
+  the water; where the tide line rises (halfway) the water closes over with a sweep down and a few bubbles, and coming
+  back up, a sweep the other way.
+- **What the site does**, short and soft, from two voices (a ringing tone with a bell's partials, a breath of noise):
+  the arrival (a slow chord from below, a few lights pinging on), a route sailed (a low tone rising under it and a
+  pluck at each port, left to right, rising), a story's step (a page turning, then its numbers: the values on the
+  beacon, lowest to highest, each pitched by where it lies between the lowest and the highest, so the chart can be
+  heard), the cover opening (four notes up), the landing (a wave on the beach and a low gong), on the map a tick as a
+  word is added or taken away and a bell as a light is chosen, a share sheet opening (a swish up), a quiz answer (two
+  notes up when right; a soft step down when wrong, never a buzzer), a press, and a barely heard tick as a control is
+  pointed at with a mouse or reached by keyboard (never by touch).
+- **One scale**: every pitch is a note of slendro (five near-equal steps to the octave, a gamelan's scale) on D, so the
+  bed, the bells and every sound are in tune with each other.
+- **Manners**: off by default. A toggle in the header (in the menu on a phone; in an embed's foot): a speaker, its waves
+  while on and a cross while off, named "Suara" / "Sound", `aria-pressed`. The first page's hero invites once ("Nyalakan
+  suara", with a "no" beside it); any choice ends the invitation; with reduced motion it is still. The choice is kept
+  per viewer (localStorage; nothing kept where storage is refused). Nothing of it exists until it is turned on: the
+  press makes the AudioContext, then `sound.js` is fetched; where it was left on, the first press or key of the next
+  visit does the same. Silent when the tab is hidden (a fade, then the context sleeps), once turned off (a 1.5 s fade)
+  and in an embed unless turned on there. Reduced motion does not silence it. Without Web Audio there is no toggle.
+- **Level**: low. The bed sits near -35 dBFS (rms), the sounds over it at -45 (the tick) to -19 dBFS (peak), all
+  through a compressor that only catches peaks; `tests/site/sound.mjs` renders the bed and every sound offline and
+  fails above -6 dBFS.
 
 ## Quality bar
 
