@@ -1160,7 +1160,8 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .demo-tie { fill: none; stroke: var(--ink-3); } .demo-grid { stroke: var(--line); } .demo-dot { fill: var(--ink-3); }
 .demo-ship { fill: var(--route); stroke: var(--chart-2); stroke-width: 2; transition: transform var(--d-leg) var(--sail), opacity var(--d-turn) var(--sail); }
 .demo-trail { fill: none; stroke: var(--route); stroke-width: 2; stroke-dasharray: 4 4; }
-.demo-said { min-height: calc(3em * var(--l-body)); max-width: var(--measure); margin: var(--s3) 0; }
+.demo-said { max-width: var(--measure); margin: var(--s3) 0; }
+.demo-room { display: grid; } .demo-room > * { grid-area: 1 / 1; } .demo-room > [aria-hidden] { visibility: hidden; }  /* as tall as the longest step: the controls never move */
 .demo-controls, .demo-steps { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
 .demo-steps { margin: 0; padding: 0; list-style: none; }
 .demo-steps button[aria-pressed="true"] { color: var(--route); border-color: var(--route); }

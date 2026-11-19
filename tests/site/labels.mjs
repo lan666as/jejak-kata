@@ -1,6 +1,7 @@
 // node tests/site/labels.mjs   Names over a picture never overlap (site/labels.js, the one placement): on the home
 // hero (its route sailed and its notes out, then after a click on its open water), a story's sea (steps of three
-// stories), the map, two words' route plates and the findings' pairs, at 1440 and 390 wide; on each, no name twice.
+// stories), the map, two words' route plates, the findings' pairs and the method's diagram (each step; and at least
+// half of it used), at 1440 and 390 wide; on each, no name twice.
 // On a sea, the names it placed (sea.labels()) must not touch each other, what the sea
 // reserved (the routes, the rings) or, measured here from the page, what lies over the sea (the hero's text and legend;
 // the story's figure, caption, meta and controls; the map's buttons, year and fields). On a plate, the islands' names,
@@ -62,6 +63,25 @@ const duetLook = () => {
     });
   }
   return { names, wrong, missing: !document.querySelector(".duets svg") };
+};
+/** In the page: what is wrong with the method's diagram at its step: a name of the chart on another, on a dot, the
+ *  ship or the trail; or the figure less than half used (what the step shows set in a band of empty paper). */
+const methodLook = () => {
+  const svg = document.querySelector(".demo-figure"), shown = (n) => !!n.closest(".shown");
+  if (!svg) return { missing: true };
+  const r = (n) => n.getBoundingClientRect(), hit = (a, b) => a.left < b.right - 0.5 && a.right > b.left + 0.5 && a.top < b.bottom - 0.5 && a.bottom > b.top + 0.5;
+  const names = [...svg.querySelectorAll("text.demo-word, text.demo-near")].filter(shown).map((t) => ({ text: t.textContent, b: r(t) }));
+  const dots = [...svg.querySelectorAll(".demo-dot, .demo-ship")].filter(shown).map(r), m = svg.getScreenCTM(), ship = svg.querySelector(".demo-ship");
+  const [a, b] = ["a", "b"].map((k) => ship.dataset[k].split(",").map(Number)), trail = svg.querySelector(".demo-trail.shown") ? [...Array(40)].map((_, i) => [a[0] + ((b[0] - a[0]) * i) / 39, a[1] + ((b[1] - a[1]) * i) / 39]).map(([x, y]) => [x * m.a + m.e, y * m.d + m.f]) : [];
+  const wrong = [];
+  names.forEach((n, i) => {
+    names.slice(i + 1).forEach((o) => hit(n.b, o.b) && wrong.push(`"${n.text}" on "${o.text}"`));
+    if (dots.some((d) => hit(n.b, d))) wrong.push(`"${n.text}" on a dot`);
+    if (trail.some(([x, y]) => x > n.b.left + 1 && x < n.b.right - 1 && y > n.b.top + 1 && y < n.b.bottom - 1)) wrong.push(`"${n.text}" on the trail`);
+  });
+  const box = r(svg), used = Math.max(...[...svg.querySelectorAll(".shown")].map(r).filter((x) => x.height).map((x) => x.bottom)) - box.top;
+  if (used < box.height / 2) wrong.push(`${Math.round(used)} of ${Math.round(box.height)}px used`);
+  return { names: names.map((n) => n.text), wrong };
 };
 const stage = (page, k, j) => page.evaluate(([k, j]) => { const s = document.getElementById(`scene-${k}`); scrollTo(0, scrollY + s.getBoundingClientRect().top - document.querySelector(".masthead").offsetHeight + j * s.querySelector(".beat").offsetHeight); }, [k, j]);
 const report = (name, s) => log(name, !s.missing && !s.wrong.length, s.missing ? "no picture" : `${s.names.length} names${s.wrong.length ? `; ${s.wrong.slice(0, 4).join("; ")}` : ""}`);
@@ -144,6 +164,11 @@ for (const width of only === "figures" ? [] : [1440, 390]) {
   }
   await page.goto(`${base}#/temuan`); await page.waitForSelector(".duets svg", { timeout: 20000 }).catch(() => {}); await page.waitForTimeout(800);
   report(`findings pairs @${width}px`, await page.evaluate(duetLook));
+  await page.goto(`${base}#/metode`); await page.waitForSelector(".demo-figure", { timeout: 20000 }).catch(() => {});
+  for (const k of [1, 2, 3, 4]) {
+    await page.click(`.demo-steps button[data-step="${k}"]`).catch(() => {}); await page.waitForTimeout(1200);
+    report(`method diagram step ${k} @${width}px`, await page.evaluate(methodLook));
+  }
   log(`no errors @${width}px`, !errors.length, errors.join(" | ") || "none");
   await page.close();
 }

@@ -2429,9 +2429,10 @@ async function methodDemo() {
   const port = (w) => { const k = first.names.indexOf(w); return k < 0 ? null : [first.x[k], first.y[k]]; };
   const shift = e.shift[pairIndex(lens, a, b)], [ya, yb] = [lens.periods[a], lens.periods[b]];
   const said = [t("demo_1", ya, thousands(lens.units[a]), word, percent(e.share[a])), t("demo_2", word, list(company(a))), t("demo_3", word, ya),
-    t("demo_4", word, yb, list(company(b)), shift === null ? "–" : number(shift), shift >= lens.flag)];
-  // The page on the left (beside the chart from 640px, above it on a phone), the chart fitted to the ports it shows.
-  const W = Math.min(room(), 1120), wide = W >= 640, H = wide ? 270 : 430, top = wide ? 0 : 220, left = wide ? Math.round(W * 0.38) : 0, cw = W - left, ch = H - top;
+    t("demo_4", word, yb, list(company(b)), shift === null ? "–" : number(shift), shift >= lens.flag && lens.flag)];
+  // The page on the left, beside the chart from 640px; on a phone the chart takes the whole figure from its step on,
+  // the page and its words giving way to it (each step's line says what is shown). The chart fitted to its ports.
+  const W = Math.min(room(), 1120), wide = W >= 640, H = wide ? 270 : 250, top = 0, left = wide ? Math.round(W * 0.38) : 0, cw = W - left, ch = H - top, until = wide ? "" : ' data-until="2"';
   const words = [...new Set([...company(a), ...company(b)])].map((w) => ({ w, at: port(w), from: company(a).includes(w) ? 3 : 4 })).filter((x) => x.at);
   const all = [path.route[a], path.route[b], ...words.map((x) => x.at)], xs = all.map((p) => p[0]), zs = all.map((p) => p[1]);
   const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs), 120), mid = [(Math.max(...xs) + Math.min(...xs)) / 2, (Math.max(...zs) + Math.min(...zs)) / 2];
@@ -2446,29 +2447,29 @@ async function methodDemo() {
     const w = measure(text, strong ? font.replace("600", "800") : font) + 6, k = B.place([[p[0] + 10, p[1] - 9], [p[0] - 10 - w, p[1] - 9], [p[0] - w / 2, p[1] - 30], [p[0] - w / 2, p[1] + 12]].map(([x, y]) => [x, y, x + w, y + 18]), text);
     return k ? `<text class="${cls}" data-from="${from}" x="${(k[0] + 3).toFixed(1)}" y="${(k[1] + 13).toFixed(1)}">${escape(text)}</text>` : "";
   };
-  B.reserve([pa[0] - 9, pa[1] - 9, pa[0] + 9, pa[1] + 9], [pb[0] - 9, pb[1] - 9, pb[0] + 9, pb[1] + 9]);
+  B.reserve([pa[0] - 9, pa[1] - 9, pa[0] + 9, pa[1] + 9], [pb[0] - 9, pb[1] - 9, pb[0] + 9, pb[1] + 9], ...words.map((x) => [X(x.at) - 5, Y(x.at) - 5, X(x.at) + 5, Y(x.at) + 5])).line([pa, pb], 3);
   const names = [name(pa, `${word} ${ya}`, "demo-word", 3, true), name(pb, `${word} ${yb}`, "demo-word", 4, true), ...words.map((x) => name([X(x.at), Y(x.at)], x.w, "demo-near", x.from))];
   const lines = [0, 1, 2, 3, 4, 5, 6].map((k) => `<path class="demo-line${k === 2 ? " on" : ""}" d="M14 ${30 + k * 15}H${k === 2 ? 66 : 14 + 52 + ((k * 23) % 30)}"/>`).join("");
   const textX = 120;
   const svg = `<svg class="demo-figure" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${escape(said.join(" "))}">
-    <g data-from="1"><rect class="demo-page" x="0" y="10" width="96" height="128" rx="6"/>${lines}
+    <g data-from="1"${until}><rect class="demo-page" x="0" y="10" width="96" height="128" rx="6"/>${lines}
       <text class="demo-big" x="${textX}" y="52">${thousands(lens.units[a])}</text><text class="demo-small" x="${textX}" y="72">${t("demo_pages")} · Kompas ${ya}</text>
       <text class="demo-big on" x="${textX}" y="116">${percent(e.share[a])}</text><text class="demo-small" x="${textX}" y="136">${escape(t("demo_hold", word))}</text></g>
-    <g data-from="2">${company(a).map((w, k) => `<path class="demo-tie" d="M66 ${60}C${wide ? 80 : 90} ${60} ${wide ? 60 : 70} ${164 + k * 18} 96 ${160 + k * 18}"/><text class="demo-near" x="104" y="${164 + k * 18}">${escape(w)}</text>`).join("")}</g>
+    <g data-from="2"${until}>${company(a).map((w, k) => `<path class="demo-tie" d="M66 ${60}C${wide ? 80 : 90} ${60} ${wide ? 60 : 70} ${164 + k * 18} 96 ${160 + k * 18}"/><text class="demo-near" x="104" y="${164 + k * 18}">${escape(w)}</text>`).join("")}</g>
     <g data-from="3">${grid}</g>
     ${words.map((x) => `<circle class="demo-dot" data-from="${x.from}" cx="${X(x.at).toFixed(1)}" cy="${Y(x.at).toFixed(1)}" r="4"/>`).join("")}
     <path class="demo-trail" data-from="4" pathLength="1" d="M${pa[0].toFixed(1)} ${pa[1].toFixed(1)}L${pb[0].toFixed(1)} ${pb[1].toFixed(1)}"/>
     <circle class="demo-ship" data-from="3" r="7" cx="0" cy="0" style="transform:translate(${pa[0].toFixed(1)}px,${pa[1].toFixed(1)}px)" data-a="${pa.map((v) => v.toFixed(1))}" data-b="${pb.map((v) => v.toFixed(1))}"/>
     ${names.join("")}</svg>`;
   const box = el(`<figure class="method-demo"><figcaption class="demo-title">${escape(t("demo_title", word, ya, yb))}</figcaption>${svg}
-    <p class="demo-said" aria-live="polite"></p><div class="demo-controls"><button type="button" class="demo-play">${t("demo_play")}</button>
+    <div class="demo-room"><p class="demo-said" aria-live="polite"></p>${said.map((x) => `<p class="demo-said" aria-hidden="true">${escape(x)}</p>`).join("")}</div><div class="demo-controls"><button type="button" class="demo-play">${t("demo_play")}</button>
     <ol class="demo-steps">${t("demo_steps").map((s, k) => `<li><button type="button" data-step="${k + 1}">${k + 1}. ${s}</button></li>`).join("")}</ol></div>
     <p class="demo-source">${t("demo_source")}</p></figure>`);
   const ship = box.querySelector(".demo-ship");
   let at = 0, playing = 0;
   const show = (n) => {
     at = n;
-    box.querySelectorAll("[data-from]").forEach((x) => x.classList.toggle("shown", +x.dataset.from <= n));
+    box.querySelectorAll("[data-from]").forEach((x) => x.classList.toggle("shown", +x.dataset.from <= n && !(n > x.dataset.until)));
     box.querySelectorAll(".demo-steps button").forEach((x) => x.setAttribute("aria-pressed", +x.dataset.step === n));
     const [x, y] = ship.dataset[n >= 4 ? "b" : "a"].split(",");
     ship.style.transform = `translate(${x}px,${y}px)`;
