@@ -391,12 +391,17 @@ th:last-child, td:last-child { padding-right: 0; }
 /* lists of words with a score */
 .movers { columns: 15rem; column-gap: var(--s6); margin: var(--s4) 0; padding: 0; list-style: none; }
 .movers li { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); min-height: var(--chip); break-inside: avoid; border-bottom: var(--hair) solid var(--line); font-size: var(--t-small); }
+/* A list of names (the names page): the spellings of one article run on as text, not pushed to the row's two ends. */
+.movers.names li { display: block; padding-block: var(--s2); min-height: 0; overflow-wrap: anywhere; }
 .movers .score { color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* legends */
 .legend { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); align-items: center; margin: var(--s2) 0; font-size: var(--t-meta); line-height: var(--l-meta); color: var(--ink-2); max-width: none; }
 .legend span { display: inline-flex; align-items: center; }
 .legend i, .score i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: var(--s1); flex: none; }
+/* A fifth series and on: aqua, blue, violet, red (--cat-3, 5, 7, 8), after magenta, orange, ink and the dashed grey. */
+.legend i.k4, .picked li.k4 { background: var(--cat-3); } .legend i.k5, .picked li.k5 { background: var(--cat-5); } .legend i.k6, .picked li.k6 { background: var(--cat-7); } .legend i.k7, .picked li.k7 { background: var(--cat-8); }
+.line.k4 { stroke: var(--cat-3); } .pt.k4 { fill: var(--cat-3); } .line.k5 { stroke: var(--cat-5); } .pt.k5 { fill: var(--cat-5); } .line.k6 { stroke: var(--cat-7); } .pt.k6 { fill: var(--cat-7); } .line.k7 { stroke: var(--cat-8); } .pt.k7 { fill: var(--cat-8); }
 .legend i.k0 { background: var(--route); } .legend i.k1 { background: var(--route-2); } .legend i.k2 { background: var(--ink); } .legend i.k3 { background: var(--ink-3); }
 i.s0 { background: var(--seq-0); } i.s1 { background: var(--seq-1); } i.s2 { background: var(--seq-2); } i.s3 { background: var(--seq-3); } i.s4 { background: var(--seq-4); } i.s5 { background: var(--seq-5); }
 .legend i.rare { border: var(--hair) dashed var(--ink-3); } .legend i.early { border: var(--rule) solid var(--ink); background: var(--chart-2); border-radius: 50%; } .legend i.late { background: var(--ink); border-radius: 50%; }

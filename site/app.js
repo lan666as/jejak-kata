@@ -464,7 +464,7 @@ function frequencyChart(lens, series, chosen = []) {
   const y = (v) => H - B - ((H - T - B) * v) / top;
   const every = Math.ceil(n / (W / 90));
   const points = (e) => e.share.map((v, i) => `${x(i)},${y(v)}`).join(" ");
-  const k = (i) => Math.min(i, 3);
+  const k = (i) => Math.min(i, 7);  // eight series have a colour of their own (style.css, .k0 to .k7)
   const svg = el(`<svg viewBox="0 0 ${W} ${H}" width="${W}" role="img" aria-label="${t("frequency")}">
     ${[0, 0.5, 1].map((f) => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(top * f)}" y2="${y(top * f)}"/>
       <text x="${L - 6}" y="${y(top * f) + 4}" text-anchor="end">${percent(top * f)}</text>`).join("")}
@@ -967,7 +967,7 @@ function suggest(lens, placeholder, button, chosen) {
 function picker(lens, list, changed, most = 12) {
   const box = el(`<div><ul class="picked"></ul></div>`);
   const draw = () => {
-    box.firstElementChild.innerHTML = list.map((w, k) => `<li class="k${k}">${w}<button type="button" data-k="${k}" aria-label="${t("remove")} ${w}">×</button></li>`).join("");
+    box.firstElementChild.innerHTML = list.map((w, k) => `<li class="k${Math.min(k, 7)}">${w}<button type="button" data-k="${k}" aria-label="${t("remove")} ${w}">×</button></li>`).join("");
     box.querySelectorAll("li button").forEach((b) => b.addEventListener("click", () => (list.splice(+b.dataset.k, 1), draw(), changed())));
   };
   box.append(suggest(lens, t("add_word"), t("add"), (word) => {
@@ -1256,7 +1256,7 @@ async function entitiesPage() {
   const section = (lens) => {
     const box = el(`<section><div class="controls"><label>${t("filter")} <input type="search"></label></div></section>`);
     const input = box.querySelector("input");
-    const list = el(`<ul class="movers"></ul>`);
+    const list = el(`<ul class="movers names"></ul>`);
     let kind = kinds[0];
     const draw = () => {
       const q = input.value.trim().toLowerCase();
@@ -2166,6 +2166,7 @@ function lostPage() {
 
 /** One screen about a name: when it peaked, its voyage, what the news had it doing, and who keeps company like it. */
 async function portraitPage(word) {
+  if (!word) return lostPage();  // a portrait is of someone
   const lens = await lensNamed(MAIN), e = lens && (await entryOf(lens, word));
   if (!e) return wordPage(word);
   const peak = e.share.indexOf(Math.max(...e.share)), last = known(e).at(-1), path = await pathOf(lens, e.word);
