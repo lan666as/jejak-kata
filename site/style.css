@@ -544,8 +544,13 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .path-plate { padding: var(--s4) var(--s5) var(--s5); background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); --chart: var(--chart-2); }
 .path-plate > .legend { margin: 0 0 var(--s3); }
 .path-body { display: grid; gap: var(--s5); align-items: start; }
-@media (min-width: 900px) { .path-body { grid-template-columns: minmax(0, auto) minmax(0, 1fr); } }
-.path-near { padding-left: var(--s5); border-left: var(--hair) solid var(--line); font-size: var(--t-small); line-height: var(--l-small); }
+@media (min-width: 900px) { .path-body { grid-template-columns: minmax(0, 1fr) minmax(0, 17.5rem); gap: var(--s6); } }  /* the plate takes the band; the column beside it (app.js, pathFigure: COLUMN) */
+.path-year { margin: 0 0 var(--s3); font: 800 var(--t-h1)/var(--l-h1) var(--type); font-stretch: 75%; color: var(--route); font-variant-numeric: tabular-nums; }
+.path-near .path-now { font: 600 var(--t-small)/var(--l-small) var(--type); color: var(--ink-2); }
+.path-company { margin: 0 0 var(--s5); padding-bottom: var(--s5); border-bottom: var(--hair) solid var(--line); font-size: var(--t-body); line-height: var(--l-body); }
+@media (max-width: 899.98px) { .path-year { display: none; } }  /* on a phone the column lies under the plate, and the player says the year */
+@media (min-width: 900px) { .path-near { padding-left: var(--s5); border-left: var(--hair) solid var(--line); } }
+.path-near { font-size: var(--t-small); line-height: var(--l-small); }
 .path-near h3 { display: flex; align-items: center; gap: var(--s2); margin: 0 0 var(--s1); font-size: var(--t-h3); }
 .path-near h3 i { width: 12px; height: 12px; border-radius: 50%; } .path-near i.early { border: var(--rule) solid var(--ink); } .path-near i.late { background: var(--ink); }
 .path-near h3:not(:first-child) { margin-top: var(--s5); }
@@ -564,6 +569,17 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .deep-band .player button { background: var(--on-deep); color: var(--deep); border-color: var(--on-deep); }
 .deep-band .player button:hover { background: var(--route-on-deep); border-color: var(--route-on-deep); }
 .deep-band .about summary, .deep-band .sub { color: var(--on-deep-2); }
+/* a word's page is one stage on its first screen: its head runs on into the deep under the source chips and the
+   figure tabs, and on into the route's band; where the figure chosen is on paper, the tide line comes under the tabs */
+.word > .page-head { margin-bottom: 0; padding-bottom: var(--s4); }
+.word > .page-head > .tide-line { display: none; }
+.word > div > .chips, .word .lens-section > div > .tabs, .word .ashore { background: var(--deep); box-shadow: 0 0 0 100vmax var(--deep); clip-path: inset(0 -100vmax);
+  --chart: var(--deep); --chart-2: var(--deep); --ink: var(--on-deep); --ink-2: var(--on-deep-2); --ink-3: var(--on-deep-2); --line: var(--line-deep); --line-2: var(--line-deep-2); --route: var(--route-on-deep); --focus: var(--route-on-deep); }
+.word > div > .chips { margin-block: 0; padding-block: var(--s2) var(--s4); }
+.word .lens-section > div > .tabs { margin-block: 0; padding-block: var(--s2) 0; }
+.word .lens-section .deep-band { margin-top: 0; padding-top: var(--s5); }
+.word .lens-section .deep-band > .tide-line:first-child { display: none; }
+.ashore { position: relative; height: var(--tide-h); margin-bottom: var(--s5); }
 .deep-band > .tide-line:first-child { top: -1px; bottom: auto; }
 .rail { display: flex; justify-content: space-between; margin: calc(-1 * var(--s1)) 0 var(--s3) calc(var(--tap) + var(--s3)); margin-right: calc(4.4em * 1.5 + var(--s3)); padding: 0; list-style: none;
   font: 600 var(--t-meta)/1 var(--type); color: var(--ink-3); font-variant-numeric: tabular-nums; touch-action: none; cursor: ew-resize; user-select: none; }

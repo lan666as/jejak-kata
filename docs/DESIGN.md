@@ -239,12 +239,14 @@ A story keeps its place by step (not by pixels) across a language switch and the
 - **Story on a phone**: the cover holds kicker, title, deck and "Mulai"; the intro opens the first scene's caption.
 - **Word and portrait**: the word in display type rises in, letter by letter; behind it the sea with the word's
   route on the first page's lens (Kompas, year by year) when it has one there; what the word is in one line (`GLOSS`),
-  then what we know about it (that it is a name and what it names, our note) stands under it in the head. The
-  voyage among its neighbours is a stage of its own: a band of the deep, edge to edge between two tide lines, in the
-  night's inks: the route with its years along it (each port clear of the last one named), fitted to the route and the
-  islands near it; an island far out hangs on a dotted spur from the route's last port, its arrow pointing to where
-  it lies; a legend in plain words ("its closest company in 2011", ringed; "in 2024", filled), and from 900px the two
-  lists of neighbours beside it. Under it the player and a **year rail**: the years, each a stop, pressed and drawn
+  then what we know about it (that it is a name and what it names, our note) stands under it in the head. The head
+  runs on into the deep under the source chips and the figure tabs and on into the route's band, so the first screen
+  is one stage (where the figure chosen is on paper, the tide line comes under the tabs). The voyage among its
+  neighbours takes the whole band, in the night's inks: the route with its years along it (each port clear of the last
+  one named), fitted to the route and the islands near it, to the band's width and the screen's height; an island far out hangs on a dotted spur from the route's last port, its arrow pointing to where
+  it lies; a legend in plain words ("its closest company in 2011", ringed; "in 2024", filled), and a column beside it from
+  900px (under it on a phone): the year the ship is at, its closest company that year, and the two lists. A name that
+  finds no clear spot on the plate is left out; the column names them all. Under it the player and a **year rail**: the years, each a stop, pressed and drawn
   along to scrub the route. Below the tide line the lens chips, then the figure tabs and the figure (on a 1440x900
   screen the figure begins on the first screen), then what the lens is, and what to do next as three cards (its
   portrait, the chart with other words, a race), each a title and a line of what it does.
@@ -324,6 +326,11 @@ text has been painted. What is on screen is the data and nothing else:
   most) and never goes back and forth; a slow phone settles on its rung during the arrival. The rung of the sea that
   moves is `window.seaRung` (and `rung` in a sea's `state()`); `tests/site/hero.mjs` checks that it only steps down
   and settles within 1.5 s of its first step.
+- **Names** on every picture (the hero, the held seas, a story's sea, the map, the flat chart, a word's route plate)
+  are placed by one function (`site/labels.js`): what no name may touch is reserved first (the routes as sailed, the
+  rings, the figure card, the caption, titles, controls, the year), then names are offered by priority (the ships, the
+  words a step is about, the first port's year, the hero's notes, the ringed word, the rest), each taking the first of
+  its spots that is clear; one with none is left out, never drawn over anything (`tests/site/labels.mjs`).
 - **Fallbacks**: without WebGL2 the flat night chart of `chart.js`, one screen tall; with reduced motion one still
   frame, no dive, no arrival. The canvas is `role="img"` with a text alternative that names the route; the status
   line under the field says what sails.

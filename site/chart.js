@@ -9,6 +9,8 @@
 const STEPS = [2, 4, 7, 12, 20]; // shift boundaries, as in app.js
 const LEG = 900; // milliseconds a ship takes from one period to the next
 const NEAR = 1500; // at night, the most frequent islands lie on the near layer and are lit; the rest lie on the far one
+import { board } from "./labels.js";
+
 const MARGIN = 140; // pixels of sea painted around the view on every side
 const ON_DEEP = { "--route": "--route-on-deep", "--ink": "--on-deep", "--ink-3": "--on-deep-2" }; // a route's colour at night
 
@@ -153,13 +155,10 @@ export function seaChart({ chart, name, pick, periods, tip, label = "", night = 
     // Names: the most frequent islands in view, as many as fit without touching; fewer and quieter at night.
     g.font = `${night ? 500 : 400} 12px ${css("--type")}`;
     g.textBaseline = "middle";
-    const taken = new Set(), cell = (x, y) => `${Math.floor(x / 84)},${Math.floor(y / 17)}`;
-    const claim = (x, y, width) => {
-      const cells = [cell(x, y), cell(x + width, y), cell(x + width / 2, y)];
-      if (cells.some((c) => taken.has(c))) return false;
-      cells.forEach((c) => taken.add(c));
-      return true;
-    };
+    // On the one board (labels.js): clear of each other and of the buttons and the year over the chart.
+    const box = node.getBoundingClientRect(), B = board([-MARGIN, -MARGIN, W + MARGIN, H + MARGIN]).reserve(...[...node.querySelectorAll(".zoom, .when")].map((n) => n.getBoundingClientRect())
+      .filter((r) => r.width).map((r) => [r.left - box.left - 6, r.top - box.top - 6, r.right - box.left + 6, r.bottom - box.top + 6]));
+    const claim = (x, y, width, text) => B.place([[x - 3, y - 9, x + width + 3, y + 9]], text);
     const chosen = new Set(routes.map((r) => place.get(r.id))), most = night ? 34 : 90;
     g.fillStyle = night ? soft : ink;
     g.globalAlpha = night ? (routes.length ? 0.55 : 0.8) : routes.length ? 0.5 : 0.82;
@@ -168,7 +167,7 @@ export function seaChart({ chart, name, pick, periods, tip, label = "", night = 
       const x = sx(chart.x[k]), y = sy(chart.y[k]);
       if (x < -MARGIN || y < 8 - MARGIN || x > W + MARGIN - 30 || y > H + MARGIN - 8 || chosen.has(k) || (night && level[k] < 2)) continue;  // at night only words that moved are named
       const text = name(chart.words[k]);
-      if (!text || !claim(x + 7, y, g.measureText(text).width)) continue;
+      if (!text || !claim(x + 7, y, g.measureText(text).width, text)) continue;
       g.fillText(text, x + 7, y);
       written++;
     }

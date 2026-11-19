@@ -9,6 +9,7 @@
 import { seaChart } from "./chart.js";
 import { TEXT, LENS_TEXT, NOTES, GLOSS, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
 import { address, routeOf, named, canonical, EMBED, PAGES, PLAY } from "./address.js";
+import { board, measure } from "./labels.js";
 import { figureOf, focused, lensFrom, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
 
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
@@ -565,12 +566,17 @@ function orbit(lens, e) {
 
 /**
  * The path of a word among its own neighbours, after the figure in Hamilton, Leskovec and Jurafsky (2016).
- * The neighbours are islands that stay put; the word sails among them. Names stand clear of the route, on the
- * side away from it, each tied to its island by a thin line.
+ * The neighbours are islands that stay put; the word sails among them. The plate takes the whole band it stands in:
+ * the route and the islands near it fitted to its width and to the height of the screen, and from 900px a column
+ * beside it (under it on a phone) with the year the ship is at and the word's closest company that year (`e.like`, of which the plate's
+ * rings are the first and the last year's). Every name is placed on one board (labels.js): the route, its ports, the
+ * islands and the ship's year are reserved; the years along the route come first, then the islands' names, each beside
+ * its island on the side away from the route where it can, else a line or more above or below (a leader ties it to its
+ * island); a name with no clear spot is left out (the column and the lists name them all).
  */
-function pathFigure(lens, path) {
-  // On a wide screen the figure keeps to 720px and its two lists of neighbours stand beside it.
-  const beside = room() >= 900, W = Math.max(300, Math.min(beside ? 720 : 960, room() - (beside ? 300 : 0))), H = Math.round(Math.min(W * 0.78, 540)), P = 34, SIDE = Math.round(Math.min(170, W * 0.22)); // room at the sides for the names
+function pathFigure(lens, path, e) {
+  const beside = room() >= 900, COLUMN = 280;
+  const W = Math.max(300, Math.round(room() - (beside ? COLUMN + 40 : 0))), H = Math.round(Math.max(300, Math.min(W * (beside ? 0.62 : 0.9), beside ? innerHeight - 250 : 560))), P = 34, SIDE = Math.round(Math.min(170, W * 0.2));
   const raw = path.path.map((xy, p) => xy && { p, xy }).filter(Boolean);
   const smooth = (k, d) => (raw.length > 6 && k > 0 && k < raw.length - 1 ? (raw[k - 1].xy[d] + 2 * raw[k].xy[d] + raw[k + 1].xy[d]) / 4 : raw[k].xy[d]);
   const moved = raw.map((r, k) => [smooth(k, 0), smooth(k, 1)]);
@@ -593,9 +599,6 @@ function pathFigure(lens, path) {
     return `C${p1.x + (p2.x - p0.x) / 6},${p1.y + (p2.y - p0.y) / 6} ${p2.x - (p3.x - p1.x) / 6},${p2.y - (p3.y - p1.y) / 6} ${p2.x},${p2.y}`;
   }).join(" ");
   const d = `M${steps[0].x},${steps[0].y} ${curve}`;
-  // Each name takes a box beside its island, on the side away from the middle of the route where it can, else a line
-  // or more above or below (a leader ties it to its island), else on the other side: no name touches another, a year
-  // of the route, or the plate's edge.
   const mid = { x: steps.reduce((s, p) => s + p.x, 0) / steps.length, y: steps.reduce((s, p) => s + p.y, 0) / steps.length };
   const marks = path.near.map((id, k) => ({ id, late: k >= path.early, x: x(path.at[k][0]), y: y(path.at[k][1]), out: [x.out(path.at[k][0]), y.out(path.at[k][1])] }));
   // An island far out is hung on a dotted spur from the route's last port (towards the plate's roomier side), one under
@@ -603,44 +606,45 @@ function pathFigure(lens, path) {
   const last = steps.at(-1), far = marks.filter((m) => m.out[0] || m.out[1]), down = last.y < H / 2 ? 1 : -1;
   far.forEach((m, j) => Object.assign(m, { x: last.x, y: Math.max(P, Math.min(H - P, last.y + down * (34 + 24 * j))) }));
   const spur = far.length ? `<path class="spur" d="M${last.x},${last.y}V${far.at(-1).y}"/>` : "";
-  // The years along the route: each port that stands clear of the last one named, on the side away from the
-  // route's turn, with the first and the last always named.
+  // The board: the route (through its ports, a point every few pixels), its ports, the islands, the spur and the
+  // ship's year at the last port (where the ship rests) are reserved.
+  const type = getComputedStyle(document.documentElement).getPropertyValue("--type").trim(), B = board([2, 2, W - 2, H - 2]);
+  B.line(steps.map((s) => [s.x, s.y]), 5);
+  B.reserve(...steps.map((s) => [s.x - 6, s.y - 6, s.x + 6, s.y + 6]), ...marks.map((m) => [m.x - 7, m.y - 7, m.x + 7, m.y + 7]), far.length && [last.x - 3, Math.min(last.y, far.at(-1).y), last.x + 3, Math.max(last.y, far.at(-1).y)]);
+  const shipYear = String(lens.periods[last.p]), shipWide = measure(shipYear, `800 13px ${type}`);
+  B.reserve([last.x - shipWide / 2 - 4, last.y - 30, last.x + shipWide / 2 + 4, last.y - 12], [last.x - 11, last.y - 11, last.x + 11, last.y + 11]);
+  // The years along the route: the first port in full, then each port clear of the last one named, on the side away
+  // from the route's turn (else the other side); not the last port, which the ship's own year names.
   const years = [];
-  steps.forEach((s, k) => {
-    const last = years.at(-1), end = k === 0;  // the last port is named by the ship's own label (when-label)
-    if (!end && last && Math.hypot(s.x - last.x, s.y - last.y) < 40) return;
-    const [a, b] = [at(k - 1), at(k + 1)], dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
-    years.push({ k, x: s.x, y: s.y, tx: s.x + (-dy / len) * 15, ty: s.y + (dx / len) * 15 + 4, text: end ? lens.periods[s.p] : "’" + String(lens.periods[s.p]).slice(-2) });
+  steps.slice(0, -1).forEach((s, k) => {
+    if (k && years.length && Math.hypot(s.x - years.at(-1).x, s.y - years.at(-1).y) < 40) return;
+    const [a, b] = [at(k - 1), at(k + 1)], dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1, text = k ? "’" + String(lens.periods[s.p]).slice(-2) : String(lens.periods[s.p]), wide = measure(text, `700 12px ${type}`);
+    const spots = [1, -1, 1.6, -1.6].map((f) => { const tx = s.x + (-dy / len) * 15 * f, ty = s.y + (dx / len) * 15 * f + 4; return [tx - wide / 2 - 2, ty - 11, tx + wide / 2 + 2, ty + 3]; });
+    const box = B.place(spots, text);
+    if (box) years.push({ x: s.x, y: s.y, tx: (box[0] + box[2]) / 2, ty: box[3] - 3, text });
   });
-  // What a name may not cover: the years, the route itself (a point every few pixels along it) and the ship's year at
-  // the last port.
-  const along = steps.slice(1).flatMap((p, k) => [...Array(Math.ceil(Math.hypot(p.x - steps[k].x, p.y - steps[k].y) / 6))].map((_, i, a) => [steps[k].x + ((p.x - steps[k].x) * i) / a.length, steps[k].y + ((p.y - steps[k].y) * i) / a.length]));
-  const end = steps.at(-1), taken = years.map((v) => [v.tx - 14, v.ty - 12, v.tx + 14, v.ty + 3]).concat(along.map(([px, py]) => [px - 4, py - 4, px + 4, py + 4]), [[end.x - 22, end.y - 32, end.x + 22, end.y + 10]],
-    far.length ? [[end.x - 3, Math.min(end.y, far.at(-1).y), end.x + 3, Math.max(end.y, far.at(-1).y)]] : []);
-  // A spot's cost: past the plate's edge never, else how many things it would touch (the first with none is taken).
-  const cost = ([l, t, r, b]) => (l < 2 || r > W - 2 || t < 2 || b > H - 2 ? 1e3 : 0) + taken.filter((k) => l < k[2] && r > k[0] && t < k[3] && b > k[1]).length;
-  for (const m of [...marks].sort((a, b) => a.y - b.y)) {
-    const width = 7.2 * lens.words[m.id].length + 4, side = m.x >= mid.x ? 1 : -1, beside = (sd) => (sd > 0 ? m.x + 10 : m.x - 10 - width);
+  // The islands' names, the nearest company first.
+  for (const m of marks) {
+    const word = lens.words[m.id], width = measure(word, `400 13px ${type}`) + 4, side = m.x >= mid.x ? 1 : -1, beside_ = (sd) => (sd > 0 ? m.x + 10 : m.x - 10 - width);
     const middle = Math.max(2, Math.min(W - 2 - width, m.x - width / 2));
-    const spots = [...[side, -side].flatMap((sd) => [0, -16, 16, -32, 32, -48, 48, -64, 64, -80, 80].map((dy) => [beside(sd), m.y + dy])), ...[-18, 22, -34, 38, -50, 54, -66, 70].map((dy) => [middle, m.y + dy])];
-    const box = ([lx, ly]) => [lx, ly - 10, lx + width, ly + 5];
-    const [lx, ly] = spots.reduce((best, sp) => (cost(box(sp)) < cost(box(best)) ? sp : best));
-    taken.push(box([lx, ly]), [m.x - 6, m.y - 6, m.x + 6, m.y + 6]);
-    Object.assign(m, { lx, ly, tie: Math.max(lx, Math.min(lx + width, m.x)) });
+    const spots = [...[side, -side].flatMap((sd) => [0, -16, 16, -32, 32, -48, 48].map((dy) => [beside_(sd), m.y + dy])), ...[-18, 22, -34, 38, -50, 54].map((dy) => [middle, m.y + dy])];
+    const box = B.place(spots.map(([lx, ly]) => [lx, ly - 11, lx + width, ly + 4]), word);
+    if (box) Object.assign(m, { lx: box[0], ly: box[1] + 11, tie: Math.max(box[0], Math.min(box[2], m.x)) });
   }
   const near = (late) => marks.filter((m) => m.late === late).map((m) => lens.isEntry(m.id) ? link(lens.words[m.id]) : lens.words[m.id]);
+  const company = (p) => (e?.like[p] || []).map((i) => (lens.isEntry(i) ? link(lens.words[i]) : lens.words[i])).join(", ");
   const node = el(`<div class="path-plate"><div class="legend"><span><i class="early"></i>${t("near_early", lens.periods[steps[0].p])}</span>
     <span><i class="late"></i>${t("near_late", lens.periods[steps.at(-1).p])}</span><span><i class="route-key"></i>${t("path_key")}</span></div>
     <div class="path-body"><svg viewBox="0 0 ${W} ${H}" width="${W}" role="img" aria-label="${t("path")}">
     <defs><marker id="head" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--route)"/></marker><marker id="far" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-3)"/></marker></defs>
-    ${marks.map((m) => `<line class="leader" x1="${m.x}" y1="${m.y}" x2="${m.tie}" y2="${m.ly - 3}"/><circle class="island ${m.late ? "late" : ""}" cx="${m.x}" cy="${m.y}" r="5"/>${m.out[0] || m.out[1] ? `<path class="leader" d="M${m.x + 7 * m.out[0]},${m.y + 7 * m.out[1]}l${8 * m.out[0]},${8 * m.out[1]}" marker-end="url(#far)"/>` : ""}`).join("")}
+    ${marks.map((m) => `${m.lx === undefined ? "" : `<line class="leader" x1="${m.x}" y1="${m.y}" x2="${m.tie}" y2="${m.ly - 3}"/>`}<circle class="island ${m.late ? "late" : ""}" cx="${m.x}" cy="${m.y}" r="5"><title>${escape(lens.words[m.id])}</title></circle>${m.out[0] || m.out[1] ? `<path class="leader" d="M${m.x + 7 * m.out[0]},${m.y + 7 * m.out[1]}l${8 * m.out[0]},${8 * m.out[1]}" marker-end="url(#far)"/>` : ""}`).join("")}
     ${spur}<path class="casing" d="${d}"/><path class="route-line draw" pathLength="1" marker-end="url(#head)" d="${d}"/>
     ${steps.map((s, k) => `<circle class="route-step" data-k="${k}" cx="${s.x}" cy="${s.y}" r="4.5"><title>${lens.periods[s.p]}</title></circle>`).join("")}
     ${years.map((v) => `<text class="route-year" x="${v.tx.toFixed(1)}" y="${v.ty.toFixed(1)}" text-anchor="middle">${v.text}</text>`).join("")}
-    ${marks.map((m) => `<text class="island-label" data-word="${escape(lens.words[m.id])}" x="${m.lx + 2}" y="${m.ly + 1}">${lens.words[m.id]}</text>`).join("")}
+    ${marks.filter((m) => m.lx !== undefined).map((m) => `<text class="island-label" data-word="${escape(lens.words[m.id])}" x="${m.lx + 2}" y="${m.ly}">${lens.words[m.id]}</text>`).join("")}
     <circle class="ship" r="9" cx="${steps[0].x}" cy="${steps[0].y}"/><text class="when-label" text-anchor="middle"></text>
-  </svg>${beside ? `<aside class="path-near"><h3><i class="early"></i>${lens.periods[steps[0].p]}</h3><p>${near(false).join(", ")}</p>
-    <h3><i class="late"></i>${lens.periods[steps.at(-1).p]}</h3><p>${near(true).join(", ")}</p></aside>` : ""}</div></div>`);
+  </svg>${`<aside class="path-near"><p class="path-year" aria-hidden="true"></p><h3 class="path-now"></h3><p class="path-company"></p>
+    <h3><i class="early"></i>${lens.periods[steps[0].p]}</h3><p>${near(false).join(", ")}</p><h3><i class="late"></i>${lens.periods[steps.at(-1).p]}</h3><p>${near(true).join(", ")}</p></aside>`}</div></div>`);
   const ship = node.querySelector(".ship"), label = node.querySelector(".when-label");
   const figure = { node, labels: steps.map((s) => lens.periods[s.p]), rail: true };
   figure.show = (k) => {
@@ -649,6 +653,10 @@ function pathFigure(lens, path) {
     label.setAttribute("x", steps[k].x);
     label.setAttribute("y", steps[k].y - 16);
     label.textContent = lens.periods[steps[k].p];
+    // The column (under the plate on a phone): the year the ship is at, and its company that year.
+    node.querySelector(".path-year").textContent = lens.periods[steps[k].p];
+    node.querySelector(".path-now").textContent = t("near_now", lens.periods[steps[k].p]);
+    node.querySelector(".path-company").innerHTML = company(steps[k].p);
   };
   node.querySelectorAll(".route-step").forEach((c) => c.addEventListener("click", () => (figure.goto || figure.show)(+c.dataset.k)));
   node.querySelectorAll(".island-label").forEach((n) => n.addEventListener("click", () => visit(href("kata", n.dataset.word))));
@@ -658,13 +666,13 @@ function pathFigure(lens, path) {
 /** The chart of a lens with the routes of the given words on it. `pick(word)` is called when an island is clicked.
  *  With `night`, the chart is drawn for the deep (the home page's hero). With `sea` (sea.js) it is the 3D sea where
  *  WebGL2 is, and with `explore` that sea is the map's: the reader moves over it. */
-async function chartFigure(name, list, pick = (word) => visit(href("kata", word)), height = "min(70vh, 560px)", { night = false, wait, sea, eager = false, explore = false } = {}) {
+async function chartFigure(name, list, pick = (word) => visit(href("kata", word)), height = "min(70vh, 560px)", { night = false, wait, sea, eager = false, explore = false, over } = {}) {
   const first = await json(`${name}/first.json`), label = new Map(first.words.map((id, k) => [id, first.names[k]]));
   // The whole lens comes later (after `wait`, if given); the chart is on screen before it.
   const meta = Promise.resolve(wait).then(() => lensNamed(name));
   let lens = null;
   // At night, with `sea` (sea.js), the chart is the 3D sea; where WebGL2 is not there, the night chart of chart.js.
-  const given = { chart: first, name: (id) => (lens ? lens.words[id] : label.get(id)), pick: async (id) => pick((await meta).words[id]), periods: first.periods, tip, label: t("chart_keys"), night };
+  const given = { chart: first, name: (id) => (lens ? lens.words[id] : label.get(id)), pick: async (id) => pick((await meta).words[id]), periods: first.periods, tip, label: t("chart_keys"), night, over };
   const deep = sea && sea({ ...given, ...(explore ? { explore, label: t("sea_keys"), controls: { in: t("zoom_in"), out: t("zoom_out"), all: t("zoom_all"), turn: t("sea_turn"), above: t("sea_above"), level: t("sea_level") } } : { label: t("sea_label") }) });
   const chart = deep || seaChart(given);
   if (height && !(deep && explore)) chart.node.style.height = height;  // the map's sea is as tall as its band (style.css)
@@ -913,13 +921,15 @@ async function lensSection(lens, e) {
     return box;
   };
   const views = [
-    path?.path && [t("path"), () => onDeep(explained(pathFigure(lens, path), t("path_about"), undefined, true))],
+    path?.path && [t("path"), () => onDeep(explained(pathFigure(lens, path, e), t("path_about"), undefined, true))],
     path?.route && [t("chart"), async () => explained(await chartFigure(lens.lens, [word]), t("chart_about"), undefined, true)],
     known(e).length > 1 && [t("orbit"), () => explained(orbit(lens, e), t("orbit_about"))],
     [t("numbers"), () => numbers(lens, e)],
     lens.articles.has(e.word) && [t("said"), said],
   ].filter(Boolean);
-  section.prepend(switcher(views.map((v) => v[0]), (i) => views[i][1]()));  // the figure first; what the lens is, under it
+  // The figure first; what the lens is, under it. The route stands on the deep that the tabs stand on; any other
+  // figure on paper, under the tide line.
+  section.prepend(switcher(views.map((v) => v[0]), async (i) => { const made = await views[i][1](); return made.classList.contains("deep-band") ? made : el(`<div><div class="ashore">${tideLine()}</div></div>`).appendChild(made).parentNode; }));
   return section;
 }
 
@@ -1002,6 +1012,7 @@ async function wordPage(word, opened) {
   if (NOTES[word]) notes += `<p class="note">${NOTES[word][language]}</p>`;
   // What the word is, in one line, where a reader may not know (text.js, GLOSS).
   if (gloss(word)) notes = `<p class="gloss">${escape(gloss(word))}</p>` + notes;
+  view.classList.add("word");
   view.replaceChildren(pageHead(escape(word), { kicker: named ? `<span class="dot ${kind}"></span>${t("name")}${kind === "other" ? "" : ` · ${t("kind_one_" + kind)}`}` : t("word"), cls: "word-title",
     more: notes && `<div class="head-notes">${notes}</div>`, sea: wordSea(all.find((lens) => lens.lens === MAIN), word) }));
   if (!found.length) {
@@ -1946,7 +1957,7 @@ async function homePage() {
   const sea = (await Promise.all([gl, painted()]))[0]?.nightSea;
   // The arrival, once a session: the sea starts dark and its words come on as they arrive, the route last.
   const arriving = !!sea && !still() && !kept("sessionStorage", "arrived");
-  figure = await chartFigure(MAIN, [], (word) => sail(word), null, { night: true, wait: want, sea, eager: arriving }).catch(() => null);
+  figure = await chartFigure(MAIN, [], (word) => sail(word), null, { night: true, wait: want, sea, eager: arriving, over: () => hero.querySelectorAll(".hero-text > *, .hero-key") }).catch(() => null);
   if (!hero.isConnected) return;
   const diving = !!figure?.chart.dive && document.documentElement.classList.contains("dives");
   if (!diving) document.documentElement.classList.remove("dives");  // no sea to dive into: the hero is one screen
@@ -2074,7 +2085,7 @@ async function portraitPage(word) {
     el(`<h3>${t("most_alike")} (${lens.periods[last]})</h3>`),
     el(words(lens, e.like[last])),
   );
-  if (path?.path) view.append(el(`<h3>${t("path")}</h3>`), onDeep(played(pathFigure(lens, path))));
+  if (path?.path) view.append(el(`<h3>${t("path")}</h3>`), onDeep(played(pathFigure(lens, path, e))));
   view.append(el(`<p class="sub">${lensText(lens).title}. ${t("traits_about")}</p>`),
     el(`<ul class="links"><li><a href="${href("lingkaran", word)}">${t("play_lingkaran")}</a></li><li><a href="${href("redaksi", word)}">${t("play_redaksi")}</a></li></ul>`), tools(href("potret", word), { check: [word] }));
 }
@@ -2370,7 +2381,7 @@ function route() {
     for (const node of view.querySelectorAll(".gl")) node.sea?.end();  // the old page's seas let the GPU go
     // A story is laid out across the whole width and snaps to its steps; any other page is neither.
     voyage = null;
-    view.classList.remove("voyage", "home", "embed");
+    view.classList.remove("voyage", "home", "embed", "word");
     document.documentElement.classList.remove("voyaging", "embedded");
     masthead.style.removeProperty("--voyage");
     if (!place) scrollTo(0, 0);
