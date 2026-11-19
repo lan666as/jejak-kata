@@ -616,6 +616,9 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .spark-line.k1 { stroke: var(--ink-3); } .spark-area { fill: var(--route); opacity: .12; }
 
 /* findings: the lead pairs as figures, each word named where its line is; the rest folded under them */
+/* from 900px what the pairs are and the rule that picked them stand side by side, so that the lead pair begins on the
+   first screen */
+@media (min-width: 900px) { .told { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s6); align-items: start; } .told > * { margin-top: 0; } }
 .rule { max-width: var(--measure); margin: 0 0 var(--s4); padding-left: var(--s4); border-left: var(--rule) solid var(--beacon); font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
 .duets { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); gap: var(--s4); margin: var(--s4) 0; padding: 0; list-style: none; }
 .duets a { display: flex; flex-direction: column; gap: var(--s1); height: 100%; padding: var(--s4) var(--s5) var(--s3); color: var(--ink); text-decoration: none; background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); transition: border-color var(--d-press) var(--sail); }
@@ -631,6 +634,10 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .duet-figure text { font-size: 12px; fill: var(--ink-3); }
 .duet-figure .duet-rose, .duet-figure .duet-fell { font-size: 13px; font-weight: 700; paint-order: stroke; stroke: var(--chart-2); stroke-width: 4px; stroke-linejoin: round; }
 .duet-figure .duet-rose { fill: var(--route); } .duet-figure .duet-fell { fill: var(--ink-2); } .duet-figure .duet-year { font-weight: 700; fill: var(--ink); }
+/* the two lines draw together; where they cross is marked as they reach it (--at: how far along), then named */
+.duet-figure .crossing circle { fill: var(--chart-2); stroke: var(--ink); stroke-width: 2; }
+.duet-figure .crossing { animation: fade var(--d-turn) var(--sail) calc(var(--at, 0) * var(--d-leg) * 1.5) both; }
+.duets > li:first-child .duet-figure .crossing circle { stroke: var(--route); stroke-width: 2.5; }
 .more-finds > summary { color: var(--link); font-size: var(--t-small); }
 .more-finds[open] > summary { margin-bottom: var(--s2); }
 
@@ -1142,6 +1149,22 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .caveats { margin-top: var(--s6); padding: var(--s2) var(--s5) var(--s4); background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
 .caveats h2 { margin: var(--s4) 0 var(--s3); font-size: var(--t-h3); line-height: var(--l-h3); }
 .caveats b { color: var(--ink); }
+/* the method on one word (app.js, methodDemo): a page, its words counted, the word's port on the chart, a year on */
+.method-demo { margin: var(--s6) 0 var(--s7); padding: var(--s5); background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); }
+.demo-title { margin: 0 0 var(--s4); font: 700 var(--t-h3)/var(--l-h3) var(--type); font-stretch: 80%; }
+.demo-figure { display: block; max-width: 100%; height: auto; overflow: visible; }
+.demo-figure [data-from] { opacity: 0; transition: opacity var(--d-turn) var(--sail); } .demo-figure .shown { opacity: 1; }
+.demo-page { fill: var(--chart); stroke: var(--line); } .demo-line { stroke: var(--line); stroke-width: 4; stroke-linecap: round; } .demo-line.on { stroke: var(--beacon); }
+.demo-big { font: 800 34px var(--type); font-stretch: 75%; fill: var(--ink); } .demo-big.on { fill: var(--route); }
+.demo-small, .demo-near { font-size: 13px; fill: var(--ink-2); } .demo-near { font-weight: 600; } .demo-word { font: 800 13px var(--type); fill: var(--route); }
+.demo-tie { fill: none; stroke: var(--ink-3); } .demo-grid { stroke: var(--line); } .demo-dot { fill: var(--ink-3); }
+.demo-ship { fill: var(--route); stroke: var(--chart-2); stroke-width: 2; transition: transform var(--d-leg) var(--sail), opacity var(--d-turn) var(--sail); }
+.demo-trail { fill: none; stroke: var(--route); stroke-width: 2; stroke-dasharray: 4 4; }
+.demo-said { min-height: calc(3em * var(--l-body)); max-width: var(--measure); margin: var(--s3) 0; }
+.demo-controls, .demo-steps { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+.demo-steps { margin: 0; padding: 0; list-style: none; }
+.demo-steps button[aria-pressed="true"] { color: var(--route); border-color: var(--route); }
+.demo-source { margin: var(--s3) 0 0; font-size: var(--t-meta); line-height: var(--l-meta); color: var(--ink-3); }
 @media (min-width: 900px) { .method-body { display: grid; grid-template-columns: minmax(0, 38rem) minmax(0, 1fr); gap: var(--s8); align-items: start; } .caveats { margin-top: 0; position: sticky; top: calc(var(--head-h) + var(--s5)); } }
 .caveats ul { padding-left: var(--s5); max-width: var(--measure); margin: 0; }
 .caveats li { margin-bottom: var(--s2); }

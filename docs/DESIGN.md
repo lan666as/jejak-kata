@@ -143,7 +143,8 @@ A story is a voyage in three parts.
    first of the words the story asks the reader to check that is on the chart's first screen) sailed to its last
    port, named in its pill: to the right of the title from 900px, above it on a phone (the text then sits low).
    From 900px the story's key number stands over the water in `--beacon` beside the deck, with its line, and nothing
-   else. The
+   else; as it surfaces its figures tick up from 0 to their value, once (a denominator, and a key with no figure,
+   stand as they are; with reduced motion it is simply there). The
    graticule stands in where there is no WebGL2. **Passages** (scroll-driven, native scroll): leaving the cover, its
    words drift up and fade while the sea sinks away; the first stage's figure surfaces as its stage comes up; at the
    landing the tide line swells and settles as the paper comes in.
@@ -285,14 +286,20 @@ A story keeps its place by step (not by pixels) across a language switch and the
   the page, large, the year they cross named; the next five under it, smaller, by how many times as common the rising
   word ends, each with only its first and last year; the rest folded; of the words
   that came and went or came to stay, the top eight, the rest folded. The rule is written on the page beside a rule
-  of `--beacon`. The page shows its first source as soon as that source has come, not after every source.
+  of `--beacon` (from 900px beside what the pairs are, so that the lead pair begins on the first screen). A pair's two
+  lines draw themselves together as the figure first comes near (once; at once with reduced motion or reached by a
+  jump), and where they cross is marked as the lines reach it, the lead's named with its year. The page shows its first source as soon as that source has come, not after every source.
 - **Play**: the first thing to play leads, on the deep, its picture large (two rows tall from 900px); the next two
   beside it, text and picture side by side; the rest under "more" in three columns, the tide table and the year posters
   two columns wide. The first page shows the same first three. A game is a board: the round on paper, and beside it the game's voyage so far (a port
   per round: filled where right, a ring where wrong, the ship on the round now); at the end the score as a plate
   to save as an image.
 - **Method, stories index, other play pages**: the page head pattern, the same cards, fields, chips and tables;
-  figures on plates.
+  figures on plates. The method opens with the method on one word the first page sails (`jokowi`, 2013 then 2014), in
+  four steps stepped or played: the year's pages and the share that hold the word, the words it appears with most, its
+  port on the chart among them, and a year on its new company, its new port and its shift; every number read from the
+  first page's lens (meta.json, words/, paths/, first.json), none written by hand. A play page's head sea lights that
+  game's own words: those its picture shows.
 
 ## The night sea (`site/sea.js`)
 
