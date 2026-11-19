@@ -1,6 +1,6 @@
 // node tests/site/labels.mjs   Names over a picture never overlap (site/labels.js, the one placement): on the home
-// hero (its route sailed and its notes out), a story's sea (three steps of two stories), the map and two words' route
-// plates, at 1440 and 390 wide. On a sea, the names it placed (sea.labels()) must not touch each other, what the sea
+// hero (its route sailed and its notes out, then after a click on its open water), a story's sea (steps of three
+// stories), the map and two words' route plates, at 1440 and 390 wide; on each, no name twice. On a sea, the names it placed (sea.labels()) must not touch each other, what the sea
 // reserved (the routes, the rings) or, measured here from the page, what lies over the sea (the hero's text and legend;
 // the story's figure, caption, meta and controls; the map's buttons, year and fields). On a plate, the islands' names,
 // the years along the route and the ship's year must not touch each other or the route.
@@ -24,7 +24,7 @@ const seaLook = ([chart, over]) => {
   const dom = [...document.querySelectorAll(over)].map((n) => n.getBoundingClientRect()).filter((r) => r.width && r.height).map((r) => [r.left, r.top, r.right, r.bottom]);
   const wrong = [];
   names.forEach((a, i) => {
-    names.slice(i + 1).forEach((b) => hit(a.box, b.box) && wrong.push(`"${a.text}" on "${b.text}"`));
+    names.slice(i + 1).forEach((b) => (hit(a.box, b.box) && wrong.push(`"${a.text}" on "${b.text}"`), a.text === b.text && wrong.push(`"${a.text}" named twice`)));
     if (reserved.some((r) => hit(a.box, r))) wrong.push(`"${a.text}" on the route or a ring`);
     if (dom.some((r) => hit(a.box, r))) wrong.push(`"${a.text}" under what lies over the sea`);
   });
@@ -40,7 +40,7 @@ const plateLook = () => {
   const points = [...Array(Math.ceil(length / 3))].map((_, i) => route.getPointAtLength(i * 3)).map((p) => [p.x * m.a + p.y * m.c + m.e, p.x * m.b + p.y * m.d + m.f]);
   const wrong = [];
   texts.forEach((a, i) => {
-    texts.slice(i + 1).forEach((b) => hit(a.r, b.r) && wrong.push(`"${a.text}" on "${b.text}"`));
+    texts.slice(i + 1).forEach((b) => (hit(a.r, b.r) && wrong.push(`"${a.text}" on "${b.text}"`), a.text === b.text && wrong.push(`"${a.text}" named twice`)));
     if (points.some(([x, y]) => x > a.r.left + 1 && x < a.r.right - 1 && y > a.r.top + 1 && y < a.r.bottom - 1)) wrong.push(`"${a.text}" on the route`);
   });
   return { names: texts.map((t) => t.text), wrong };
@@ -105,7 +105,12 @@ for (const width of only === "figures" ? [] : [1440, 390]) {
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(base + "#/"); await page.waitForFunction(() => document.querySelector(".hero .chart[data-route]"), null, { timeout: 30000 }).catch(() => {}); await page.waitForTimeout(6000);
   report(`home hero @${width}px`, await page.evaluate(seaLook, [".hero .chart", ".hero-text > *, .hero-key"]));
-  for (const [slug, steps] of [["kata-korupsi", [[0, 3], [1, 2], [2, 4]]], ["viral-polisi", [[0, 1], [1, 2], [2, 3]]]]) {
+  // A click on the open water sails the word nearest it, which the pointer still rests on: it is named once.
+  const water = await page.evaluate(() => { const r = document.querySelector(".hero .chart canvas").getBoundingClientRect(), t = document.querySelector(".hero-text").getBoundingClientRect();
+    return innerWidth >= 900 ? [Math.round((t.right + r.right) / 2), Math.round(r.top + r.height * 0.55)] : [Math.round(r.width / 2), Math.round(r.top + 140)]; });
+  await page.mouse.move(...water); await page.waitForTimeout(400); await page.mouse.click(...water); await page.waitForTimeout(4000);
+  report(`home hero after a click on the water @${width}px`, await page.evaluate(seaLook, [".hero .chart", ".hero-text > *, .hero-key"]));
+  for (const [slug, steps] of [["kata-korupsi", [[0, 3], [1, 2], [2, 4]]], ["viral-polisi", [[0, 1], [1, 2], [2, 3]]], ["dilupakan", [[0, 5], [0, 7]]]]) {
     await page.goto(`${base}#/cerita/${slug}`); await page.waitForSelector(".stage .plate svg", { timeout: 20000 }).catch(() => {}); await page.waitForTimeout(1500);
     for (const [k, j] of steps) {
       if (!(await page.$(`#scene-${k}`))) continue;

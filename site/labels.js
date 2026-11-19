@@ -25,8 +25,10 @@ export function board(bounds = [-Infinity, -Infinity, Infinity, Infinity]) {
       return me;
     },
     /** The first of `spots` (boxes, in the order they are wanted) that is free within `within`, taken and returned;
-     *  null where none is: the name is dropped. `text` is kept with the box, for the checks. */
+     *  null where none is, or where `text` is named already: the name is dropped. `text` is kept with the box, for the
+     *  checks. */
     place: (spots, text = "", within = bounds) => {
+      if (text && placed.some((p) => p.text === text)) return null;  // a word is named once on a picture
       const k = spots.find((b) => free(b, within));
       if (!k) return null;
       taken.push(k);

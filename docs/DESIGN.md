@@ -359,7 +359,8 @@ text has been painted. What is on screen is the data and nothing else:
   are placed by one function (`site/labels.js`): what no name may touch is reserved first (the routes as sailed, the
   rings, the figure card, the caption, titles, controls, the year), then names are offered by priority (the ships, the
   words a step is about, the first port's year, the hero's notes, the ringed word, the rest), each taking the first of
-  its spots that is clear; one with none is left out, never drawn over anything (`tests/site/labels.mjs`).
+  its spots that is clear; one with none is left out, never drawn over anything, and a word already named (a ship, a
+  ringed word, the light under the pointer) is not named again (`tests/site/labels.mjs`).
 - **Fallbacks**: without WebGL2 the flat night chart of `chart.js`, one screen tall; with reduced motion one still
   frame, no dive, no arrival. The canvas is `role="img"` with a text alternative that names the route; the status
   line under the field says what sails.
