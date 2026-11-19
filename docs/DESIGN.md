@@ -31,7 +31,8 @@ Colour roles (light / dark). Names used by the figures (`--sea --shoal --paper -
 
 A figure's series take `--cat-1..8` in that order (plate.js): magenta (`--route`), orange (`--route-2`), aqua, yellow,
 blue, green, violet, red, each with its own light and dark step, checked for colour-blind separation of neighbours on
-each mode's paper. Their names on a plate are set in ink beside a dot of their colour, never in the colour itself.
+each mode's paper, and each at least 3:1 on the paper it is read on (by day the aqua is a deep teal, `#0f8a73`, and the
+yellow a dark gold, `#b07a00`: the brighter ones stay for the night). Their names on a plate are set in ink beside a dot of their colour, never in the colour itself.
 
 At night (the home hero) the islands take `--light-0..5`, dim to bright by how far a word moved; control edges on
 the deep use `--line-deep-2` (3:1 against `--deep`).

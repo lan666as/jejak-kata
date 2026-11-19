@@ -17,11 +17,12 @@
   --line: #cdd8d4; --line-2: #7d8e8f;  /* --line-2: control edges, 3:1 against the chart */
   --route: #cf1b7e; --on-route: #ffffff; --route-on-deep: #ea5aa6; --route-soft: #f8dcea; --route-2: #cc6a00; --on-route-2: #0c1d2e;
   --beacon: #f0ae2c; --link: #0f5c8c; --focus: var(--route);
-  --person: #2a78d6; --organisation: #1baf7a; --place: #eda100; --other: #8a8f96;
+  --person: #2a78d6; --organisation: #0f8a73; --place: #b07a00; --other: #8a8f96;
   --seq-0: #d3e0de; --seq-1: #b4cfe9; --seq-2: #86b3e6; --seq-3: #4f92dc; --seq-4: #2468b8; --seq-5: #0d366b;
   --lift: 0 18px 40px -16px rgb(6 18 31 / .38), 0 2px 6px rgb(6 18 31 / .12);
-  /* a figure's series, up to eight, in this order (plate.js): checked for colour-blind separation on the paper of each mode */
-  --cat-1: var(--route); --cat-2: var(--route-2); --cat-3: #1baf7a; --cat-4: #eda100; --cat-5: #2a78d6; --cat-6: #008300; --cat-7: #6250d6; --cat-8: #e34948; --cat-9: var(--ink-2);
+  /* a figure's series, up to eight, in this order (plate.js): checked for colour-blind separation on the paper of each mode;
+     each at least 3:1 on the paper (the aqua and the yellow as a deep teal and a dark gold by day) */
+  --cat-1: var(--route); --cat-2: var(--route-2); --cat-3: #0f8a73; --cat-4: #b07a00; --cat-5: #2a78d6; --cat-6: #008300; --cat-7: #6250d6; --cat-8: #e34948; --cat-9: var(--ink-2);
   /* names the figures read (chart.js, plate.js), defined from the roles */
   --sea: var(--chart); --shoal: var(--chart-3); --paper: var(--chart-2);
 
