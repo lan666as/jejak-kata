@@ -6,13 +6,15 @@
 // taller than its window on a phone: the window on screen, and the rows the step names inside it), and keep its caption
 // band on screen, showing the whole step or at least six lines (a caption longer than the band must scroll in it); on a
 // phone no caption is cut at all (an opening longer than the band rises over the figure's foot, wholly on screen).
-// Where the stages lie on the sea, the key above the controls names the step's own word (its focus, else the word its
-// plate is named after: the first of them the chart has), at both widths.
+// Where the stages lie on the sea, going down, once the sea has landed: the key above the controls names one of the
+// step's own words (seaWords in scenes.js, those the chart has) or, where the caption leaves the sea no room to name one,
+// the band is dropped (the caption's shade covers it; counted in the summary); it lists no word the sea has not named on
+// screen; and where a step brings other words forward than the step before, the key says something else, at both widths.
 // Then the step buttons and the ticks, and the whole story once more with reduced motion.
 import { readFileSync } from "node:fs";
 import { TEXT } from "../../site/text.js";
 import { STORIES } from "../../site/story.js";
-import { sceneWords } from "../../site/scenes.js";
+import { seaWords } from "../../site/scenes.js";
 import { base, browser, done } from "./serve.mjs";
 const slugs = process.argv.length > 2 ? process.argv.slice(2) : STORIES.map((s) => s.slug);
 const plain = (html) => html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
@@ -20,8 +22,11 @@ const dash = (s) => String(s).replace(/-/g, "–").replace(/\s+/g, " ").trim();
 const started = Date.now();
 const lens = (file) => JSON.parse(readFileSync(new URL(`../../site/data/id-web-news-kompas/${file}`, import.meta.url)));
 const charted = new Set(lens("chart.json").words), index = new Map(lens("meta.json").words.map((w, i) => [w, i]));
-/** The word the sea's key must name at a step: the first the step brings forward that the chart has. */
-const subject = (part, step) => (step.focus || (sceneWords(part).includes(step.at) ? [step.at] : [])).find((w) => charted.has(index.get(w)));
+/** The words a step brings forward that the chart has; the first is the one the sea's key must name. */
+const subjects = (part, step) => seaWords(part, step).filter((w) => charted.has(index.get(w)));
+/** The words a key lists ("Di peta: a, b dan 2 lagi · rute “c” sampai 2014"), and the word of its route. */
+const listed = (key) => (key.split(/: /)[1] || "").split(" · ").filter((part) => !/^(rute|the route)/.test(part)).join("").replace(/ (dan \d+ lagi|and \d+ more)$|^\d+ (kata|words)$/, "").split(", ").filter(Boolean);
+const routed = (key) => key.match(/(?:rute|route of) “([^”]+)”/)?.[1];
 
 /** In the page: the stage that holds the middle of the screen, and all that a reader would see of it. */
 const look = () => {
@@ -44,7 +49,8 @@ const look = () => {
     outside: named.filter((r) => { const b = r.querySelector("line").getBoundingClientRect(); return b.top < win.top || b.bottom > win.bottom; }).length,
     smallest: Math.min(...[...(shown[0]?.querySelectorAll("text, tspan") || [])].filter((t) => t.textContent.trim()).map((t) => parseFloat(getComputedStyle(t).fontSize) * (shown[0].querySelector("svg").getBoundingClientRect().width / shown[0].querySelector("svg").viewBox.baseVal.width))),
     pitch: (() => { const ys = [...(shown[0]?.querySelectorAll(".row > line") || [])].map((t) => t.getBoundingClientRect().top); return ys.length > 1 ? Math.round(Math.min(...ys.slice(1).map((y, i) => y - ys[i]))) : null; })(),
-    key: stage.querySelector(".sea-key").textContent, sea: !!document.querySelector(".story-sea .chart"),
+    key: stage.querySelector(".sea-key").textContent, mute: stage.classList.contains("mute"), landed: stage.querySelector(".sea-key").dataset.at === `${k}/${stage.dataset.step}`, sea: !!document.querySelector(".story-sea .chart"),
+    named: document.querySelector(".story-sea .chart")?.sea?.labels().names.map((n) => n.text) || [],
     text: cap.querySelector(".turn:not(.out)")?.textContent.replace(/\s+/g, " ").trim() || "", count: stage.querySelector(".count").textContent,
     tick: [...stage.querySelectorAll(".ticks button")].findIndex((b) => b.getAttribute("aria-current") === "step") };
 };
@@ -64,7 +70,7 @@ const spot = (page, k, j) => page.evaluate(([k, j]) => { const s = document.getE
   return Math.round(scrollY + s.getBoundingClientRect().top - document.querySelector(".masthead").offsetHeight + j * s.querySelector(".beat").offsetHeight); }, [k, j]);
 
 /** What is wrong with what the reader sees at step j of scene k. */
-function judge(story, k, j, s) {
+function judge(story, k, j, s, before = null) {
   const part = story.scenes[k], n = part.steps.length, step = part.steps[Math.max(0, j - 1)], wrong = [];
   if (s.k !== k) return [`the stage of scene ${s.k + 1} is on screen, not scene ${k + 1}`];
   if (s.step !== j) wrong.push(`the stage is at step ${s.step}`);
@@ -87,8 +93,18 @@ function judge(story, k, j, s) {
   if (s.cap.some((d) => d < -1)) wrong.push(`the caption band is off screen (top, bottom: ${s.cap.join(", ")})`);
   if (!s.phone && s.longer && !s.scrolls) wrong.push("the caption is longer than its band and the band does not scroll");
   if (s.capHeight < 60) wrong.push(`the caption band is ${s.capHeight}px tall`);
-  const own = j && subject(part, step);
-  if (s.sea && own && !s.key.includes(own)) wrong.push(`the sea's key says "${s.key}", not the step's "${own}"`);
+  if (s.sea && s.landed) {
+    // The step's own words: one of them named, or the band dropped (where the caption leaves the sea no room to name one).
+    const own = j ? subjects(part, step) : [];
+    if (own.length && !own.some((w) => listed(s.key).includes(w) || routed(s.key) === w) && !s.mute) wrong.push(`the sea's key says "${s.key}", none of the step's ${own.join(", ")}`);
+    if (!s.key !== s.mute) wrong.push(s.mute ? "the band is dropped though the key names words" : "the key is empty but its band is kept");
+    const unnamed = listed(s.key).filter((w) => !s.named.includes(w));
+    if (unnamed.length) wrong.push(`the sea's key lists ${unnamed.join(", ")}, which the sea does not name`);
+    // A step that brings other words forward than the one before it changes what the key says.
+    const [now, then] = [subjects(part, step), j > 1 ? subjects(part, part.steps[j - 2]) : []], within = (a, b) => a.every((w) => b.includes(w));
+    const was = before?.k === k && before.step === j - 1 && before.landed && !before.mute && !s.mute && now.length && then.length && !within(now, then) && !within(then, now);
+    if (was && before.key === s.key) wrong.push(`the sea's key still says "${s.key}" though the step brings ${subjects(part, step).join(", ")} forward`);
+  }
   return wrong;
 }
 
@@ -110,13 +126,21 @@ for (const [width, height, scheme] of [[1280, 800, "light"], [360, 740, "dark"]]
     await page.waitForTimeout(400);
     const steps = story.scenes.flatMap((part, k) => [...Array(part.steps.length + 1)].map((_, j) => [k, j]));
     const problems = [], note = (where, wrong) => wrong.length && problems.push(`${where}: ${wrong.join("; ")}`);
-    const at = async (where, k, j) => note(`${where} scene ${k + 1} step ${j}`, judge(story, k, j, await page.evaluate(look)));
+    let before = null, muted = 0;
+    const at = async (where, k, j, landing = false) => {
+      // Going down, the sea's key is read once the sea has landed on the step (it says what the sea then names).
+      if (landing) await page.waitForFunction(([k, j]) => !document.querySelector(".story-sea .chart") || document.querySelector(`#scene-${k} .sea-key`)?.dataset.at === `${k}/${j}`, [k, j], { timeout: 6000 }).catch(() => {});
+      const s = await page.evaluate(look);
+      s.landed &&= landing;  // (only then: a pointer moved over the sea names the light under it, and a name may give way)
+      note(`${where} scene ${k + 1} step ${j}`, judge(story, k, j, s, landing ? before : null));
+      if (landing) (before = s), (muted += s.landed && s.mute);
+    };
 
     // Down: the cover's control, then one key per step, to the landing.
     await page.click(".begin"); await settle(page);
-    await at("down", 0, 0);
+    await at("down", 0, 0, true);
     const keys = ["ArrowDown", "Space", "PageDown", "ArrowRight"];
-    for (let i = 1; i < steps.length; i++) { await page.keyboard.press(keys[i % keys.length]); await settle(page); await at(`down (${keys[i % keys.length]})`, ...steps[i]); }
+    for (let i = 1; i < steps.length; i++) { await page.keyboard.press(keys[i % keys.length]); await settle(page); await at(`down (${keys[i % keys.length]})`, ...steps[i], true); }
     await page.keyboard.press("ArrowDown"); await settle(page);
     const landed = await page.evaluate(look);
     if (Math.abs(landed.landing) > 2) problems.push(`down: the last step's next key does not land on the landing (${Math.round(landed.landing)}px off)`);
@@ -148,7 +172,7 @@ for (const [width, height, scheme] of [[1280, 800, "light"], [360, 740, "dark"]]
     const shift = await page.evaluate(() => window.__shift);
     const bad = problems.length + page.errors.length + (shift > 0.05);
     total += bad;
-    console.log(`${bad ? "FAIL" : "ok  "} ${slug} @${width}px ${scheme}: ${steps.length} steps down by key and up by scroll, ${halfways} halfway looks (${blank} without a caption); layout shift ${shift.toFixed(3)}; errors ${page.errors.length}${page.errors.length ? " " + page.errors[0].slice(0, 90) : ""}; ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+    console.log(`${bad ? "FAIL" : "ok  "} ${slug} @${width}px ${scheme}: ${steps.length} steps down by key and up by scroll, ${halfways} halfway looks (${blank} without a caption); layout shift ${shift.toFixed(3)}; sea band dropped on ${muted}; errors ${page.errors.length}${page.errors.length ? " " + page.errors[0].slice(0, 90) : ""}; ${((Date.now() - t0) / 1000).toFixed(1)} s`);
     problems.slice(0, 8).forEach((p) => console.log("     " + p));
     await page.close();
   }

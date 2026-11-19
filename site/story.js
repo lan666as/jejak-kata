@@ -25,7 +25,7 @@ const BODIES = {
       limits: "<p>What is counted is pages that name a price the state sets (bbm, pertamax, pertalite, solar, tarif listrik, bpjs, tarif tol, elpiji) or a market price (cabai, bawang, beras, telur, daging, minyak goreng, gula), and in them the phrase “penyesuaian harga” or “penyesuaian tarif”, and “kenaikan”, “naiknya” or “menaikkan” of a price or tariff. A page can name both kinds of price. Other phrasings (“harga disesuaikan”, “menyesuaikan harga”) are not counted, so the figures are too low. In the 200 places we read, who says the word is not always clear because the excerpt is cut; the direction of the price is more certain. “Penyesuaian” is indeed also used for cuts: 19 of the 200. For toll roads, “penyesuaian tarif” (tariff adjustment) is the law's own term, which sets a review and adjustment every two years; a newsroom using it there is quoting the law, not softening.</p>",
     },
     scenes: [
-      { type: "asked", name: "harga", rows: "shares", periods: ["2013", "2016", "2019", "2021", "2022"], check: ["penyesuaian", "kenaikan", "subsidi"],
+      { type: "asked", name: "harga", word: "penyesuaian", rows: "shares", periods: ["2013", "2016", "2019", "2021", "2022"], check: ["penyesuaian", "kenaikan", "subsidi"],
         publishers: ["kompas.com", "tempo.co", "tribunnews.com", "bisnis.com", "okezone.com", "detik.com", "liputan6.com"],
         shares: [["negara|penyesuaian", { id: "BBM, listrik, tol, BPJS", en: "fuel, power, tolls, BPJS" }], ["pasar|penyesuaian", { id: "cabai, beras, telur", en: "chili, rice, eggs" }]],
         id: { title: "Dua macam harga", text: "Dua baris: halaman yang menyebut harga yang ditetapkan negara, dan halaman yang menyebut harga pasar. Tiap titik satu penerbit: bagian halaman itu yang memuat <i>penyesuaian harga</i> atau <i>penyesuaian tarif</i>.",
@@ -90,7 +90,7 @@ const BODIES = {
       limits: "<p>What is counted is pages, not sentences; a page can hold both words. We read 200 places drawn at random: in 156 (78%) what is “diamankan” is a person suspected of an offence, in 42 it is evidence, in 2 something else. So about a fifth of the figures here are not about people, and that is similar in each publisher (about people: Tribunnews 83%, Kompas 70%, the police's site 71%). The word “mengamankan” is not counted. The police's site has enough pages only from 2016; in 2024 every publisher has few. This does not say <i>why</i>: a reporter may use the word because a release is quoted, out of habit, or because the story is about evidence.</p>",
     },
     scenes: [
-      { type: "asked", name: "tangkap", periods: ["2012", "2016", "2018", "2021", "2023"], check: ["diamankan", "ditangkap", "polisi"],
+      { type: "asked", name: "tangkap", word: "diamankan", periods: ["2012", "2016", "2018", "2021", "2023"], check: ["diamankan", "ditangkap", "polisi"],
         publishers: ["polri.go.id", "tribunnews.com", "okezone.com", "detik.com", "liputan6.com", "kompas.com", "bisnis.com", "tempo.co"],
         shares: [["polisi+pelaku|diamankan", "diamankan"], ["polisi+pelaku|ditangkap", { id: "ditangkap, menangkap, penangkapan", en: "ditangkap, menangkap, penangkapan (arrest)" }]],
         id: { title: "Kata polisi, penerbit demi penerbit", text: "Yang dihitung hanya halaman yang menyebut polisi dan seorang pelaku, tersangka, atau terduga. Di tiap baris dua titik: bagian halaman itu yang memuat <i>diamankan</i>, dan bagian yang memuat kata tangkap.",

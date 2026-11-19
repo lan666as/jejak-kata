@@ -10,7 +10,7 @@ import { seaChart } from "./chart.js";
 import { TEXT, LENS_TEXT, NOTES, GLOSS, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
 import { address, routeOf, named, canonical, EMBED, PAGES, PLAY, QUIZ_NAMES, GUESS_WORDS } from "./address.js";
 import { board, measure } from "./labels.js";
-import { figureOf, focused, lensFrom, sceneWords, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
+import { figureOf, focused, lensFrom, sceneWords, seaWords, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
 
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
 // cold on a phone, does without them. `plating()` resolves once these names are there.
@@ -1746,18 +1746,18 @@ async function storySea(holder, stages, parts) {
   holder.append(sea.node);
   addEventListener("resize", () => holder.isConnected && (at = ""));  // the open water is found again at the next step's look
   const own = (l, whole) => {
-    const want = new Set(parts.flatMap((part) => [...sceneWords(part), ...part.steps.flatMap((step) => step.focus || [])]).map((w) => l.index.get(w))), past = whole.words.flatMap((id, k) => (k >= first.words.length && want.has(id) ? [k] : []));
+    const want = new Set(parts.flatMap((part) => [...sceneWords(part), ...part.steps.flatMap((step) => seaWords(part, step))]).map((w) => l.index.get(w))), past = whole.words.flatMap((id, k) => (k >= first.words.length && want.has(id) ? [k] : []));
     return Object.fromEntries(["words", "x", "y", "moved"].map((key) => [key, [...first[key], ...past.map((k) => whole[key][k])]]));
   };
   Promise.all([lensNamed(MAIN), json(`${MAIN}/chart.json`)]).then(([l, whole]) => ((lens = l), sea.more(wide ? whole : own(l, whole)), (at = ""), now && to(...now))).catch(() => {});
   const paths = new Map(), route = (id) => paths.get(id) || paths.set(id, json(`${MAIN}/paths/${Math.floor(id / BUCKET)}.json`).then((list) => list.find((p) => p.word === id)?.route || []).catch(() => [])).get(id);
   /** The open water of a stage as it now stands, [top, right, bottom, left] in pixels of the sea: under the caption
-   *  (and beside the plate from 900px), at least a band above the controls (a long caption is shaded over it); with
-   *  `whole`, all of the stage above its controls. */
+   *  (and beside the plate from 900px), at least a narrow band above the controls (a caption longer than that is shaded
+   *  over its top); with `whole`, all of the stage above its controls. */
   const water = (stage, whole = false) => {
     const box = holder.getBoundingClientRect(), r = (n) => n.getBoundingClientRect(), text = stage.querySelector(".caption .turn:not(.out)") || stage.querySelector(".caption");
     const plate = r(stage.querySelector(".stage-figure .plate:not(.off) svg") || stage.querySelector(".stage-figure")), nav = r(stage.querySelector(".sea-key"));
-    const bottom = box.bottom - nav.top + 8, top = Math.min(r(text).bottom - box.top + 16, box.height - bottom - (wide ? 240 : 100));
+    const bottom = box.bottom - nav.top + 8, top = Math.min(r(text).bottom - box.top + 16, box.height - bottom - (wide ? 96 : 72));
     if (whole) return [24, wide ? 48 : 16, bottom, wide ? 48 : 16];
     return wide ? [top, box.right - r(stage).right + 32, bottom, plate.right - box.left + 32] : [top, 0, bottom, 0];
   };
@@ -1767,22 +1767,38 @@ async function storySea(holder, stages, parts) {
     if (label === at) return;
     at = label;
     k = scene;
-    // What the step brings forward: its focus, else the word its plate is named after.
-    const part = parts[scene], step = j ? part.steps[j - 1] : null, brought = step?.focus || (sceneWords(part).includes(step?.at) ? [step.at] : []), focus = ids(brought), rest = ids(sceneWords(part)).filter((id) => !focus.includes(id)).slice(0, 12);
+    // What the step brings forward (seaWords: the rows it names, the word its plate is named after, its caption's
+    // italics), and the scene's other words.
+    const part = parts[scene], step = j ? part.steps[j - 1] : null, focus = ids(seaWords(part, step)), rest = ids(sceneWords(part)).filter((id) => !focus.includes(id)).slice(0, 12);
     // The sea takes the stage at once, with the gong; its flight starts as soon as the route is there.
     const stage = stages[scene].stage, taking = entering && !still();
     if (taking) (stages.forEach((s) => s.stage.classList.remove("sea-full")), stage.classList.add("sea-full"), (full = performance.now()));
     // The route sailed: the scene's own word, else the one word the step brings forward.
-    const one = ids([part.word || ""])[0] ?? (focus.length === 1 && brought.length === 1 ? focus[0] : undefined), sailed = one === undefined ? [] : [{ id: one, route: await route(one) }];
+    const one = ids([part.word || ""])[0] ?? (focus.length === 1 ? focus[0] : undefined), sailed = one === undefined ? [] : [{ id: one, route: await route(one) }];
     if (at !== label) return;  // moved on while the route came
-    const year = first.periods.indexOf(String(step?.at ?? "").match(/\d{4}/g)?.at(-1)), sail = !j || !sailed[0]?.route.some(Boolean) ? 0 : year >= 0 ? year : first.periods.length - 1;
-    // The key: the words lit (those the step brings forward first; as many named as fit its room, at most four, the
-    // rest counted) and the route as far as sailed. Where the route leaves no room to name even the first word, the
-    // route is left to its pill on the sea: the key names the step's own word first.
-    const shown = [...focus, ...rest], sailedTo = sail && sailed.length ? t("sea_key_route", nameOf(one), first.periods[sail]) : "", keyed = stage.querySelector(".sea-key");
-    const said = (n, route) => (shown.length || route ? t("sea_key", shown.slice(0, n).map(nameOf).join(", ") + (shown.length > n ? t(n ? "sea_key_more" : "sea_key_count", shown.length - n) : ""), route) : "");
-    const counts = [4, 3, 2, 1].filter((n) => n <= shown.length), ways = [...counts.map((n) => [n, sailedTo]), ...(sailedTo ? counts.map((n) => [n, ""]) : []), [0, sailedTo]];
-    for (const [n, route] of ways) if (((keyed.textContent = said(n, route)), keyed.scrollWidth <= keyed.clientWidth + 1)) break;
+    const year = first.periods.indexOf(String(step?.mark ?? step?.at ?? "").match(/\d{4}/g)?.at(-1)), sail = !j || !sailed[0]?.route.some(Boolean) ? 0 : year >= 0 ? year : first.periods.length - 1;
+    // The key: the words the sea names (those the step brings forward first; as many as fit its room, at most four,
+    // the rest counted) and the route as far as sailed. Where the route leaves no room to name even the first word, the
+    // route is left to its pill on the sea: the key names the step's own word first. It is written as the flight
+    // starts from the words lit, and once the sea has landed from those it has named: it lists no word the sea does not.
+    const sailedTo = sail && sailed.length ? t("sea_key_route", nameOf(one), first.periods[sail]) : "", keyed = stage.querySelector(".sea-key");
+    const write = (shown) => {
+      const said = (n, route) => (shown.length || route ? t("sea_key", shown.slice(0, n).map(nameOf).join(", ") + (shown.length > n ? t(n ? "sea_key_more" : "sea_key_count", shown.length - n) : ""), route) : "");
+      const counts = [4, 3, 2, 1].filter((n) => n <= shown.length), ways = [...counts.map((n) => [n, sailedTo]), ...(sailedTo ? counts.map((n) => [n, ""]) : []), [0, sailedTo]];
+      for (const [n, route] of ways) if (((keyed.textContent = said(n, route)), keyed.scrollWidth <= keyed.clientWidth + 1)) break;
+    };
+    write([...focus, ...rest]);
+    delete keyed.dataset.at;
+    const landed = (ms) => setTimeout(() => {
+      if (at !== label) return;
+      const named = new Set(sea.labels().names.map((n) => n.text));
+      // (on a phone, a band that names none of the step's own words is dropped rather than name others)
+      write(!wide && focus.length && !focus.some((id) => named.has(nameOf(id))) ? [] : [...focus, ...rest].filter((id) => named.has(nameOf(id))));
+      // Where the sea names nothing (a phone's caption too long to leave it a band), the caption's shade covers the band:
+      // an empty band is worse than none.
+      stage.classList.toggle("mute", !keyed.textContent);
+      if (lens) keyed.dataset.at = label;  // (for the checks: the key now says what the sea named, with every word of the lens)
+    }, ms + 120);
     const view = (box, ms) => {
       sea.inset(box);
       sea.routes(sailed);
@@ -1794,9 +1810,11 @@ async function storySea(holder, stages, parts) {
     if (hearing && !still()) (sounding?.dive(0.15, true), setTimeout(() => hearing && sounding?.dive(0, true), taking ? LEG : FLIGHT));
     if (taking) {
       view(water(stage, true), LEG);
+      landed(LEG + FLIGHT * 1.4);
       // Then the card comes back over the sea, and the sea glides into the water the stage leaves open.
       return setTimeout(() => (stage.classList.remove("sea-full"), (full = 0), at === label && requestAnimationFrame(() => view(water(stage), FLIGHT))), LEG);
     }
+    landed(still() ? FLIGHT / 2 : FLIGHT * 1.4);
     if (!still() || !sea.state().routes && !sea.state().lit) return view(water(stage), FLIGHT);
     // With reduced motion the view is not flown but crossfaded, through the deep.
     const away = holder.animate({ opacity: [1, 0] }, { duration: FLIGHT / 4, fill: "forwards" });

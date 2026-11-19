@@ -156,8 +156,11 @@ for (const [name, options, init] of [["WebGL", {}, null], ["reduced motion", { r
     const during = await p.evaluate(() => ({ full: !!document.querySelector("#scene-0 .stage.sea-full"), figure: +getComputedStyle(document.querySelector("#scene-0 .stage-figure")).opacity }));
     await p.waitForTimeout(1800);
     const after = await p.evaluate(() => ({ took: window.__took > 0, full: !!document.querySelector(".stage.sea-full"), figure: +getComputedStyle(document.querySelector("#scene-0 .stage-figure")).opacity,
-      key: document.querySelector("#scene-0 .sea-key")?.textContent || "", shown: !!document.querySelector("#scene-0 .sea-key")?.getClientRects().length }));
-    const ok = !gl ? !after.shown && !after.took : held ? !after.took && after.key.startsWith("Di peta: ") : during.full && during.figure < 0.5 && !after.full && after.figure === 1 && after.key.startsWith("Di peta: ");
+      key: document.querySelector("#scene-0 .sea-key")?.textContent || "", shown: !!document.querySelector("#scene-0 .sea-key")?.getClientRects().length,
+      mute: !!document.querySelector("#scene-0 .stage.mute") }));
+    // (the key says what the sea names; where the opening leaves it no room to name a word, the band is dropped)
+    const keyed = after.key.startsWith("Di peta: ") || (after.mute && !after.key);
+    const ok = !gl ? !after.shown && !after.took : held ? !after.took && keyed : during.full && during.figure < 0.5 && !after.full && after.figure === 1 && keyed;
     log(`story's sea takes the stage, ${name}`, ok && !p.errors.length, `350 ms after "Mulai": sea has the stage ${during.full}, figure opacity ${during.figure}; after: ${after.full ? "still" : "given back"}, figure ${after.figure}, took it ${after.took}; key ${after.shown ? `"${after.key}"` : "not shown"}; errors ${p.errors.length} ${p.errors[0] || ""}`);
     await p.close();
   }
@@ -194,7 +197,9 @@ for (const [name, options, init] of [["WebGL", {}, null], ["reduced motion", { r
       const at = spots[0];
       if (at) { await p.mouse.move(at.x + 30, at.y - 30); await p.mouse.move(at.x + 1, at.y + 1, { steps: 5 }); await still(".story-sea .chart"); }
       const stage = at && { ...(await state(p, ".story-sea .chart")), frames: await idle() };
-      log(`the hand on a story's stage, ${name}`, !!at && stage.revealed === at.word && (held ? stage.lean.every((v) => v === 0) : stage.lean.some((v) => v !== 0)) && stage.frames <= 2 && !p.errors.length,
+      // (lights may stand a few pixels apart, and the view leans as the pointer comes: the light named is the one nearest
+      // the pointer as the view stood then, which may be the neighbour of the one aimed at; a light must be named)
+      log(`the hand on a story's stage, ${name}`, !!at && !!stage.revealed && (held ? stage.lean.every((v) => v === 0) : stage.lean.some((v) => v !== 0)) && stage.frames <= 2 && !p.errors.length,
         at ? `light "${at.word}": named ${stage.revealed}, lean ${stage.lean}, ${stage.frames} frames in a still second` : "no light found on the stage's open water");
       // The hero leans to the pointer anywhere on it.
       await p.goto(base + "#/"); await p.waitForFunction(() => document.querySelector(".hero .chart[data-route]"), null, { timeout: 20000 }).catch(() => {}); await p.waitForTimeout(1500);

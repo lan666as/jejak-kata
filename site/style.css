@@ -808,6 +808,9 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .sea-key { display: none; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); color: var(--on-deep-2); }
 .sea-on .sea-key { display: block; height: calc(1em * var(--l-meta)); overflow: hidden; white-space: nowrap; color: var(--on-deep);
   background: color-mix(in srgb, var(--deep) 88%, transparent); box-shadow: 0 0 var(--s3) var(--s2) color-mix(in srgb, var(--deep) 88%, transparent); }  /* (the caption's shade) */
+/* where the sea names nothing on a step (app.js, storySea: a phone's long caption), the caption's shade covers its band */
+.sea-on .stage.mute .caption { background: color-mix(in srgb, var(--deep) 88%, transparent); border-radius: var(--r2); }
+.sea-on .stage.mute .sea-key { visibility: hidden; }
 .sea-on .stage-nav .step { background: var(--deep); }
 .sea-on .stage-nav .step:hover { background: var(--deep-2); }
 .stage-figure .sub { color: var(--on-deep-2); }

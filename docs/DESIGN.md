@@ -156,18 +156,22 @@ A story is a voyage in three parts.
    shown up to 1.5 times its drawn size, with larger marks and type, a strip's rows at most 72px apart so that a strip
    of few rows is not stretched; below 900px: a band under the figure). **The stages lie on the sea**: one held night
    sea under all of them (`storySea` in app.js), its camera flying (600 ms, `--sail`) to each step: to the words the step
-   brings forward (its `focus`, or the word its plate is named after), else the scene's words, each looked up on the
+   brings forward (`seaWords` in scenes.js: the rows its `focus` names, a count from the text by the words of its row's
+   name; the word its plate is named after; the words its caption sets in italics), else the scene's words, each looked up on the
    first page's chart (the whole chart from 900px; on a phone its first screen and, from the rest, the story's own
    words; a word not on the chart is not lit), the step's ringed in `--beacon` and named, the scene's others ringed faintly; where the scene is about one
-   word over time (`word`, else the one word a step brings forward), its route is sailed to the step's year. The view
-   is framed in the water the stage leaves open (under the caption, beside the figure from 900px). **At a new scene**
+   word over time (`word`, else the one word a step brings forward), its route is sailed to the step's year (its `mark`'s,
+   else its moment's). The view is framed in the water the stage leaves open (under the caption, beside the figure from
+   900px), the camera looking at the lights' height; where not all the step's words fit there, clear of the caption, the
+   first that do are framed and the rest stay lit where they fall. **At a new scene**
    (going on or back, and from the cover), in the frame its gong is heard, the sea takes the whole stage for a leg
    (`--d-leg`): the figure, the caption and its meta give way, the camera flies to the scene's words, they are lit and
    named, the route sails; then the card comes back over it and the sea glides into the open water. Between steps of a
    scene the 600 ms flight stays under the card. Above the controls a **key** says in a line what the sea shows,
-   made from what is lit ("Di peta: demokrat, golkar, pks dan 7 lagi · rute “korupsi” sampai 2014"; as many words named
+   made from what the sea names ("Di peta: demokrat, golkar, pks dan 7 lagi · rute “korupsi” sampai 2014"; as many words
    as fit its room, the rest counted, the step's own first; where the route leaves no room to name one, the route
-   is left to its pill); its room is kept from the first frame. With reduced motion no flight and no
+   is left to its pill): written from what is lit as the flight starts, and once the sea has landed from the names it
+   placed, so it never lists a word the sea does not name; its room is kept from the first frame. With reduced motion no flight and no
    taking over, and the key. The figure stands on a panel of the deep (`--paper` at 92%)
    and a caption on a shade of it (88%): their text keeps 4.5:1 over the brightest the sea can be. The sea draws only
    while it flies, on the quality ladder from the rung the visit's moving sea settled on; with reduced motion a step
@@ -179,7 +183,7 @@ A story is a voyage in three parts.
    proximity). Step 0 of a scene opens it: the scene's title and text, so the reader knows the figure before it
    moves. The caption shows its head, the text, and "3 / 6"; a row of ticks shows the steps and takes a tap.
    Nothing is ever cut: on a phone the stage shares its height by need (`--fig`): the caption band keeps room for its
-   tallest step and the figure gets the rest, at least half (a strip that slides, up to three fifths); where the tallest
+   tallest step and the figure gets the rest, at least half (a strip that slides, up to three fifths); Where the tallest
    step would not fit beside that, the stage's captions are set a size smaller (1rem, then `--t-small`) and at the last
    the figure gives up a little more (to two fifths); an opening longer still rises over the figure's foot while it is
    read (a move, not a change of layout), the scene's name and count with it, and never over a mark: lines give it

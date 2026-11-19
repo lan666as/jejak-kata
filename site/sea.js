@@ -294,7 +294,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
   const rising = { from: 0, to: null, start: 0 };
   // Where the camera looks (aim), as it glides there (from, to, start, ms), the ship it follows, and the nudge.
   // `aim.pitch` is the reader's (explore); the hero works its pitch out from where its text leaves the sea open.
-  const aim = { x: 0, z: 0, dist: 1.6, yaw: 0, pitch: 0.42 }, glide = { from: null, to: null, start: 0, ms: 0 }, follow = { x: 0, z: 0 }, nudge = { x: 0, y: 0, to: [0, 0] };
+  const aim = { x: 0, y: 0, z: 0, dist: 1.6, yaw: 0, pitch: 0.42 }, glide = { from: null, to: null, start: 0, ms: 0 }, follow = { x: 0, z: 0 }, nudge = { x: 0, y: 0, to: [0, 0] };
   const cam = { eye: [0, 0, 0], R: [1, 0, 0], U: [0, 1, 0], F: [0, 0, -1], lens: [1, 1, 0, 0], pitch: 0, ref: 1, fog: [1, 8] };
   const wide = () => W >= 900, fovOf = () => ((H > W ? 52 : 38) * Math.PI) / 180;
   /** The camera as it now stands, the dive (or, exploring, the view from above) and the nudge taken into account. */
@@ -308,7 +308,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     // From above: the hero shows the whole chart, as wide as the screen allows; the map keeps the reader's place.
     const over = 1.05 / t / Math.min(1, asp), tx = explore ? aim.x : mix(aim.x + follow.x, -0.04, e), tz = explore ? aim.z : mix(aim.z + follow.z, -0.03, e), dist = explore ? aim.dist : mix(aim.dist, over, e);
     const cp = Math.cos(pitch), sp = Math.sin(pitch), cy_ = Math.cos(yaw), sy = Math.sin(yaw);
-    cam.eye = [tx + dist * sy * cp, dist * sp, tz + dist * cy_ * cp];
+    cam.eye = [tx + dist * sy * cp, aim.y * (1 - e) + dist * sp, tz + dist * cy_ * cp];  // (a held sea looks at its lights' height: y)
     cam.F = [-sy * cp, -sp, -cy_ * cp];
     cam.R = [cy_, 0, -sy];
     cam.U = [-sy * sp, cp, -cy_ * sp];  // right × forward
@@ -460,10 +460,15 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
    *  step is about, the first port's year, the hero's notes, the ringed word, the rest) and one that has no clear spot
    *  is left out. A held sea names only in its open water. */
   let placed = null;  // the last board, for the checks (labels())
-  function label(sailing) {
-    const { css } = palette(), fade = (w) => 1 - smooth(cam.fog[0], cam.fog[1], w), lift = RISE * (1 - settle());
-    const box = canvas.getBoundingClientRect(), keep = [...node.querySelectorAll(".zoom, .when > *, .sea-hint"), ...(node.closest(".map-deep")?.querySelectorAll(".map-steer") || []), ...over()]
+  /** What lies over the sea (its buttons, the year, a hint, the map's fields, what `over()` names), as boxes of the sea's
+   *  pixels with 8px round them: no name there, and no light framed under it. */
+  const kept = () => {
+    const box = canvas.getBoundingClientRect();
+    return [...node.querySelectorAll(".zoom, .when > *, .sea-hint"), ...(node.closest(".map-deep")?.querySelectorAll(".map-steer") || []), ...over()]
       .map((n) => n.getBoundingClientRect()).filter((r) => r.width && r.height).map((r) => [r.left - box.left - 8, r.top - box.top - 8, r.right - box.left + 8, r.bottom - box.top + 8]);
+  };
+  function label(sailing) {
+    const { css } = palette(), fade = (w) => 1 - smooth(cam.fog[0], cam.fog[1], w), lift = RISE * (1 - settle()), keep = kept();
     const B = (placed = board([4, 4, W - 4, H - 4])), open = held && !explore ? [Math.max(4, pad[3]), Math.max(4, pad[0]), W - Math.max(4, pad[1]), H - Math.max(4, pad[2])] : undefined;
     const under = (p) => keep.some(([l, t, r, b]) => p[0] > l && p[0] < r && p[1] > t && p[1] < b);
     B.reserve(...keep);
@@ -516,7 +521,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     for (const { k, strong, p } of [...rings.filter((x) => x.strong), ...rings.filter((x) => !x.strong)]) {
       ctx.beginPath(); ctx.arc(p[0], p[1], strong ? 9 : 6, 0, 7); ctx.strokeStyle = css[strong ? "--beacon" : "--on-deep-2"]; ctx.lineWidth = strong ? 2 : 1.5; ctx.stroke();
       const text = name(chart.words[k]);
-      if (strong) pill(p, text, false);
+      if (strong) pill(p, text, false, false, true);  // (a step's own word: wherever on the sea it is clear, if not in its open water)
       else if ((ctx.font = `600 12px ${css["--type"]}`) && plain(p, text, 12)) (ctx.fillStyle = css["--on-deep-2"]), ctx.fillText(text, p[0] + 12, p[1]);
     }
     const first = sailing[0]?.r, start = first?.legs.length > 1 && project(first.legs[0].x, 0, first.legs[0].z);
@@ -628,7 +633,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     if (!busy && ready && !held && (!swell || t - last < 30 || tide() >= 1)) return (wasBusy = false);  // the swell alone: about 30 frames a second, and none once all is paper
     if (glide.to) {
       const f = Math.min(1, (t - glide.start) / glide.ms), e = ease(f);
-      for (const k of ["x", "z", "dist", "yaw", "pitch"]) aim[k] = mix(glide.from[k], glide.to[k], e);
+      for (const k of ["x", "y", "z", "dist", "yaw", "pitch"]) aim[k] = mix(glide.from[k], glide.to[k], e);
       if (f >= 1) glide.to = null;
     }
     if (rising.to !== null) {
@@ -759,7 +764,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
 
   const redraw = () => (held ? W && render(performance.now()) : ask());
   /** The whole chart in view, before any route is chosen. */
-  const WHOLE = { x: 0, z: 0.05, dist: 2.3, yaw: 0, pitch: 0.5 };  // the hero's camera works its own pitch out
+  const WHOLE = { x: 0, y: 0, z: 0.05, dist: 2.3, yaw: 0, pitch: 0.5 };  // the hero's camera works its own pitch out
   const frameAll = () => Object.assign(aim, WHOLE);
 
   // ---- exploring (the map): drag to move over the sea, with the right button or Shift to turn and tilt, Ctrl and
@@ -909,6 +914,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       else if (k === "above") above(depth < 0.5);
     });
   } else canvas.style.touchAction = "pan-y pinch-zoom";  // a swipe up or down scrolls the page, two fingers zoom it, as anywhere
+  const BARE = Symbol("bare");
   const api = {
     node,
     /** The names last placed and what was reserved, in pixels of the page (labels.js): for tests/site/labels.mjs. */
@@ -940,11 +946,13 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     },
     /** Bring these words and the route into view: the camera turns to see the route from its side, and backs off
      *  until it fits in the open part of the hero. */
-    frame(ids, ms = LEG) {
+    frame(ids, ms = LEG, ...rest) {
+      // (`bare`: a held sea's own retry, framing its words without its route; anything else given here is not for the sea)
+      const bare = rest[0] === BARE;
       wanted = W || size() ? null : [ids, ms];
       if (wanted) return;
       // (a word's light stands as high above the water as it moved: it is the light, not its foot, that must be seen)
-      const ps = [...routes.flatMap((r) => r.legs), ...ids.map((id) => chart.words.indexOf(id)).filter((k) => k >= 0).map((k) => ({ x: chart.x[k] / 1000, z: chart.y[k] / 1000, y: Math.max(0, chart.moved[k] ?? 0) * RISE * (1 - settle()) }))];
+      const ps = [...(bare ? [] : routes.flatMap((r) => r.legs)), ...ids.map((id) => chart.words.indexOf(id)).filter((k) => k >= 0).map((k) => ({ x: chart.x[k] / 1000, z: chart.y[k] / 1000, y: Math.max(0, chart.moved[k] ?? 0) * RISE * (1 - settle()) }))];
       if (!ps.length) return;
       const mx = ps.reduce((s, p) => s + p.x, 0) / ps.length, mz = ps.reduce((s, p) => s + p.z, 0) / ps.length;
       // The route's main direction; the camera looks across it, turning no more than about 35 degrees.
@@ -956,21 +964,26 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       if (yaw < -Math.PI / 2) yaw += Math.PI;
       yaw = Math.max(-0.6, Math.min(0.6, -yaw));
       const spread = Math.max(...ps.map((p) => Math.abs((p.x - mx) * Math.cos(yaw) - (p.z - mz) * Math.sin(yaw)))), open = (W - pad[1] - pad[3]) / W;
-      const t = Math.tan(((H > W ? 52 : 38) * Math.PI) / 360), dist = Math.max(held ? 0.2 : 0.32, Math.min(2.2, (spread * 2.4 + 0.12) / (2 * t * (W / H) * open)));
-      const to = { ...aim, x: mx, z: mz, dist, yaw };  // the reader's tilt (exploring) stays as it is
+      const t = Math.tan(((H > W ? 52 : 38) * Math.PI) / 360), dist = Math.max(held ? 0.5 : 0.32, Math.min(2.2, (spread * 2.4 + 0.12) / (2 * t * (W / H) * open)));
+      const to = { ...aim, x: mx, y: held ? ps.reduce((s, p) => s + (p.y || 0), 0) / ps.length : 0, z: mz, dist, yaw };  // the reader's tilt (exploring) stays as it is
       follow.x = follow.z = 0;
       // Seen at a low angle, the near end of a route comes out larger than its spread says: back off until every
-      // port lies in the open water, with a margin.
+      // port lies in the open water, with a margin, and (held) clear of what lies over it.
+      const keep = held ? kept() : [];
       const fits = () => {
         const was = { ...aim };
         Object.assign(aim, to);
         place();
-        const ok = ps.every((p) => { const q = project(p.x, p.y || 0, p.z); return q && q[0] > pad[3] + 24 && q[0] < W - pad[1] - 24 && q[1] > pad[0] + 24 && q[1] < H - pad[2] - 24; });
+        const ok = ps.every((p) => { const q = project(p.x, p.y || 0, p.z); return q && q[0] > pad[3] + 24 && q[0] < W - pad[1] - 24 && q[1] > pad[0] + 24 && q[1] < H - pad[2] - 24 && !keep.some(([l, t, r, b]) => q[0] > l && q[0] < r && q[1] > t && q[1] < b); });
         Object.assign(aim, was);
         place();
         return ok;
       };
       for (let i = 0; i < 12 && !fits(); i++) to.dist = Math.min(3, to.dist * 1.15);
+      // A held sea that cannot fit all its words in its open water frames the first of them that fit (those a step
+      // names first), and those before its route; the others stay lit wherever they fall.
+      if (held && ids.length > 1 && !fits()) return api.frame(ids.slice(0, -1), ms, bare ? BARE : null);
+      if (held && ids.length && !bare && routes.length && !fits()) return api.frame(ids, ms, BARE);
       if (!ms || (held && !flies) || !ready) return Object.assign(aim, to), redraw();
       Object.assign(glide, { from: { ...aim }, to, start: performance.now(), ms: ms * 1.4 });
       ask();

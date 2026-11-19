@@ -99,3 +99,17 @@ export const sceneWords = (part) => [part.word, ...[part.words, part.with, Array
 
 /** The labels of the rows a step's `focus` names (by key: a word, "*" for all pages, a publisher's address, a share). */
 export const focused = (plate, focus) => focus?.map((key) => plate.rows.find((r) => r.key === key)?.label ?? key);
+
+/**
+ * The words a step brings forward on the sea, its own first: the rows it names (a count from the text by the words of
+ * its row's name, "kepala desa, lurah" both; a publisher is no word), the word its plate is named after, and the words
+ * its caption sets in italics. The sea lights those its chart has (app.js, storySea); tests/site/stories.mjs reads the
+ * same list.
+ */
+export const seaWords = (part, step) => {
+  if (!step) return [];
+  const row = (key) => (part.type === "asked" ? part.shares?.find(([k]) => k === key)?.[1] ?? "" : key);
+  const rows = (step.focus || []).filter((key) => key !== "*").flatMap((key) => String(said(row(key), "id")).toLowerCase().split(", "));
+  const italics = [...step.id.matchAll(/<i>([^<]+)<\/i>/g)].map((m) => m[1].toLowerCase());
+  return [...new Set([...rows, ...(sceneWords(part).includes(step.at) ? [step.at] : []), ...italics].filter(Boolean))];
+};
