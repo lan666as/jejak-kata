@@ -1142,12 +1142,25 @@ function duet(lens, rose, fell, W = 340, H = 150, lead = false) {
   // (they draw from left to right together; --at, how far along), named with its year on the lead pair.
   const f = cross > 0 ? (fell.share[cross - 1] - rose.share[cross - 1]) / (rose.share[cross] - rose.share[cross - 1] - fell.share[cross] + fell.share[cross - 1]) : 0;
   const [cx, cy] = cross > 0 ? [x(cross - 1 + f), y(rose.share[cross - 1] + f * (rose.share[cross] - rose.share[cross - 1]))] : [0, 0], at = ((cx - L) / (W - L - R)).toFixed(2);
+  // Each word named by its line on one board (labels.js): the lines, the crossing and the years are reserved first;
+  // the word that fell where it starts, the one that rose where it ends, above or below the line, a little along it if
+  // need be. A name with no clear spot is left out (the card names both words over the figure).
+  const room = board([0, 0, W, H - B + 2]), type = getComputedStyle(document.documentElement).getPropertyValue("--type").trim(), size = lead ? 15 : 13;
+  room.line(fell.share.map((v, i) => [x(i), y(v)]), 3).line(rose.share.map((v, i) => [x(i), y(v)]), 3);
+  if (cross > 0) room.reserve([cx - 3, T - 6, cx + 3, H - B], [cx - 8, cy - 8, cx + 8, cy + 8], lead && [cx - 20, T - 24, cx + 20, T - 6]);
+  const spot = (word, e, along) => {
+    const w = measure(word, `700 ${size}px ${type}`) + 4;
+    return room.place(along.flatMap((i) => [-6, size + 8, -size - 12, 2 * size + 14].map((dy) => {
+      const left = Math.max(0, Math.min(W - w, x(i) - (i === 0 ? 0 : i === n - 1 ? w : w / 2))), base = y(e.share[i]) + dy;
+      return [left, base - size, left + w, base + 4];
+    })), word);
+  };
+  const named = [["duet-fell", b, spot(b, fell, [0, 1, 2, 3])], ["duet-rose", a, spot(a, rose, [n - 1, n - 2, n - 3, n - 4])]];
   return `<svg class="duet-figure" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${escape(t("duet_label", a, b, lens.periods[cross] ?? ""))}">
     <line class="grid" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>
     <polyline class="spark-line k1 draw" pathLength="1" points="${points(fell)}"/><polyline class="spark-line draw" pathLength="1" points="${points(rose)}"/>
     ${cross > 0 ? `<g class="crossing" style="--at:${at}"><line class="cross" x1="${cx.toFixed(1)}" x2="${cx.toFixed(1)}" y1="${T - 6}" y2="${H - B}"/><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${lead ? 6 : 4}"/>${lead ? `<text class="duet-year" x="${cx.toFixed(1)}" y="${T - 10}" text-anchor="middle">${lens.periods[cross]}</text>` : ""}</g>` : ""}
-    <text class="duet-fell" x="${L}" y="${Math.max(12, y(fell.share[0]) - 7)}">${escape(b)}</text>
-    <text class="duet-rose" x="${W - R}" y="${Math.max(12, y(rose.share.at(-1)) - 7)}" text-anchor="end">${escape(a)}</text>
+    ${named.map(([cls, word, at]) => (at ? `<text class="${cls}" x="${at[0] + 2}" y="${at[3] - 4}">${escape(word)}</text>` : "")).join("")}
     <text x="${L}" y="${H - 6}">${lens.periods[0]}</text><text x="${W - R}" y="${H - 6}" text-anchor="end">${lens.periods.at(-1)}</text></svg>`;
 }
 
@@ -1180,9 +1193,12 @@ async function findingsPage() {
     const pairs = (await Promise.all(swaps.map(([fell, rose]) => Promise.all([entry(lens, rose), entry(lens, fell)])))).filter(([r, f]) => r && f && crosses(r, f));
     // The first pair leads, across the page; the next under it, by how many times as common the rising word ends.
     const effect = ([r, f]) => third(r, true) / third(f, true), shown = [pairs[0], ...pairs.slice(1, LEAD).sort((a, b) => effect(b) - effect(a))].filter(Boolean);
-    const w = room(), wide = innerWidth >= 900, cols = wide ? 3 : Math.max(1, Math.floor((w + 16) / 320)), col = Math.floor((w - 16 * (cols - 1)) / cols - 50);
+    // The small ones in rows of `cols` on a grid of six tracks; a last row of fewer takes the whole width between them,
+    // each drawn at the width it is shown at (its card's padding off).
+    const w = room(), wide = innerWidth >= 900, cols = wide ? 3 : Math.max(1, Math.floor((w + 16) / 320)), small = shown.length - 1, last = small % cols || cols;
+    const span = (k) => 6 / (k > small - last ? last : cols), col = (k) => Math.floor(((w - 16 * 5) / 6) * span(k) + 16 * (span(k) - 1) - 50);
     box.append(el(`<h2>${t("swaps_title")}</h2>`), el(`<div class="told"><p class="sub">${t("swaps_about")}</p><p class="rule">${t("swaps_rule", pairs.length, swaps.length, Math.min(LEAD, pairs.length))}</p></div>`),
-      folded(pairs, LEAD, () => el(`<ul class="duets">${shown.map(([r, f], k) => `<li><a href="${href("kata", lens.words[r.word])}"><b class="duet-word">${lens.words[r.word]}</b><span class="duet-was">${escape(t("in_company", lens.words[f.word]))}</span>${k ? duet(lens, r, f, col, Math.round(col * 0.45)) : duet(lens, r, f, w - (wide ? 66 : 50), wide ? 300 : 200, true)}</a></li>`).join("")}</ul>`),
+      folded(pairs, LEAD, () => el(`<ul class="duets">${shown.map(([r, f], k) => `<li${k ? ` style="grid-column:span ${span(k)}"` : ""}><a href="${href("kata", lens.words[r.word])}"><b class="duet-word">${lens.words[r.word]}</b><span class="duet-was">${escape(t("in_company", lens.words[f.word]))}</span>${k ? duet(lens, r, f, col(k), Math.round(col(1) * 0.45)) : duet(lens, r, f, w - (wide ? 66 : 50), wide ? 300 : 200, true)}</a></li>`).join("")}</ul>`),
         (list) => sparks(lens, list.map((p) => p[0]), list.map((p) => p[1]))));
     for (const kind of ["went", "stayed"]) {
       const entries = (await Promise.all(arrivals[kind].map(([w]) => entry(lens, w)))).filter(Boolean);

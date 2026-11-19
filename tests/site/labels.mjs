@@ -1,6 +1,7 @@
 // node tests/site/labels.mjs   Names over a picture never overlap (site/labels.js, the one placement): on the home
 // hero (its route sailed and its notes out, then after a click on its open water), a story's sea (steps of three
-// stories), the map and two words' route plates, at 1440 and 390 wide; on each, no name twice. On a sea, the names it placed (sea.labels()) must not touch each other, what the sea
+// stories), the map, two words' route plates and the findings' pairs, at 1440 and 390 wide; on each, no name twice.
+// On a sea, the names it placed (sea.labels()) must not touch each other, what the sea
 // reserved (the routes, the rings) or, measured here from the page, what lies over the sea (the hero's text and legend;
 // the story's figure, caption, meta and controls; the map's buttons, year and fields). On a plate, the islands' names,
 // the years along the route and the ship's year must not touch each other or the route.
@@ -44,6 +45,23 @@ const plateLook = () => {
     if (points.some(([x, y]) => x > a.r.left + 1 && x < a.r.right - 1 && y > a.r.top + 1 && y < a.r.bottom - 1)) wrong.push(`"${a.text}" on the route`);
   });
   return { names: texts.map((t) => t.text), wrong };
+};
+/** In the page: what is wrong with the names on the findings' pairs: each word's name clear of both lines, the
+ *  crossing and the other name (in the figure's own units). */
+const duetLook = () => {
+  const wrong = [], names = [];
+  for (const svg of document.querySelectorAll(".duets svg")) {
+    const texts = [...svg.querySelectorAll(".duet-rose, .duet-fell")].map((t) => ({ text: t.textContent, b: t.getBBox() })), hit = (a, b) => a.x < b.x + b.width - 0.5 && a.x + a.width > b.x + 0.5 && a.y < b.y + b.height - 0.5 && a.y + a.height > b.y + 0.5;
+    const along = [...svg.querySelectorAll("polyline")].flatMap((l) => { const p = [...l.points]; return p.slice(1).flatMap((q, i) => [...Array(20)].map((_, k) => [p[i].x + ((q.x - p[i].x) * k) / 20, p[i].y + ((q.y - p[i].y) * k) / 20])); });
+    const marks = [...svg.querySelectorAll(".crossing circle, .crossing line, .duet-year")].map((n) => n.getBBox());
+    texts.forEach((a, i) => {
+      names.push(a.text);
+      if (along.some(([x, y]) => x > a.b.x + 1 && x < a.b.x + a.b.width - 1 && y > a.b.y + 1 && y < a.b.y + a.b.height - 1)) wrong.push(`"${a.text}" on a line`);
+      if (marks.some((m) => hit(a.b, m))) wrong.push(`"${a.text}" on the crossing`);
+      texts.slice(i + 1).forEach((b) => hit(a.b, b.b) && wrong.push(`"${a.text}" on "${b.text}"`));
+    });
+  }
+  return { names, wrong, missing: !document.querySelector(".duets svg") };
 };
 const stage = (page, k, j) => page.evaluate(([k, j]) => { const s = document.getElementById(`scene-${k}`); scrollTo(0, scrollY + s.getBoundingClientRect().top - document.querySelector(".masthead").offsetHeight + j * s.querySelector(".beat").offsetHeight); }, [k, j]);
 const report = (name, s) => log(name, !s.missing && !s.wrong.length, s.missing ? "no picture" : `${s.names.length} names${s.wrong.length ? `; ${s.wrong.slice(0, 4).join("; ")}` : ""}`);
@@ -124,6 +142,8 @@ for (const width of only === "figures" ? [] : [1440, 390]) {
     await page.goto(`${base}#/kata/${word}`); await page.waitForSelector(".path-plate svg", { timeout: 20000 }).catch(() => {}); await page.waitForTimeout(800);
     report(`word ${word} route plate @${width}px`, await page.evaluate(plateLook));
   }
+  await page.goto(`${base}#/temuan`); await page.waitForSelector(".duets svg", { timeout: 20000 }).catch(() => {}); await page.waitForTimeout(800);
+  report(`findings pairs @${width}px`, await page.evaluate(duetLook));
   log(`no errors @${width}px`, !errors.length, errors.join(" | ") || "none");
   await page.close();
 }

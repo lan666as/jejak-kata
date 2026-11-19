@@ -286,9 +286,9 @@ A story keeps its place by step (not by pixels) across a language switch and the
 - **Findings**: each list is the counting's own ranking, shown by a stated rule, never picked: of the pairs, only
   those whose lines cross clearly (the rising word starts below the falling one and ends at least twice as common:
   a drift of topic, where both words live on, does not pass), the top six as figures (both lines on one scale, each
-  word named where its line is, the year they cross marked), drawn at the size they are shown: the first leading across
-  the page, large, the year they cross named; the next five under it, smaller, by how many times as common the rising
-  word ends, each with only its first and last year; the rest folded; of the words
+  word named by its line and clear of both, on the one board (`labels.js`), the year they cross marked), drawn at the size they are shown: the first leading across
+  the page, large, the year they cross named; the next five under it, smaller (rows of three from 900px, a shorter last row as wide as the others), by how many
+  times as common the rising word ends, each with only its first and last year; the rest folded; of the words
   that came and went or came to stay, the top eight, the rest folded. The rule is written on the page beside a rule
   of `--beacon` (from 900px beside what the pairs are, so that the lead pair begins on the first screen). A pair's two
   lines draw themselves together as the figure first comes near (once; at once with reduced motion or reached by a
