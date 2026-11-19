@@ -1515,7 +1515,7 @@ const PICTURES = {
     const p = y.years.map((_, i) => i).sort((a, b) => count(b) - count(a) || b - a)[0], clue = peaks.filter((x) => x.p === p).slice(0, 3).map((x) => x.w);
     const choices = [...new Set([p - 6, p - 3, p, p + 3, p + 5].map((i) => Math.max(0, Math.min(y.years.length - 1, i))))].slice(0, 4).sort((a, b) => a - b);
     // The year's words over the picture's height, the four years at its foot: no empty band under them.
-    const w = Math.min(72, (W - 24) / 4), h = 30, top = H - h - 2, pitch = Math.max(22, Math.min(44, (top - 12) / clue.length));
+    const w = Math.min(72, (W - 24) / 4), h = 30, top = H - h - 2, pitch = Math.max(22, (top - 20 - 18) / Math.max(1, clue.length - 1));
     return { svg: clue.map((word, k) => svgText(0, 20 + k * pitch, word, k ? "" : "strong word")).join("") + choices.map((c, k) => {
       const x = k * (w + 8);
       return `<g class="in" style="--i:${k}"><rect class="${c === p ? "on" : "line"}" x="${x.toFixed(1)}" y="${top}" width="${w.toFixed(1)}" height="${h}" rx="${h / 2}"/>${svgText(x + w / 2, top + h / 2 + 4.5, y.years[c], c === p ? "on-text" : "", "middle")}</g>`;
@@ -2152,11 +2152,16 @@ function voyageMark(results, rounds, { inline = false, width = 300 } = {}) {
 }
 
 /** A finished game as a plate to save and share: its score as the title, its voyage, the site's name. */
-function scorePlate(title, results, rounds) {
-  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(), W = 640, H = 196;
+function scorePlate(title, results, rounds, width = 640) {
+  // Drawn at the width it is shown at (at most 640px), so that its text keeps its size on a phone: the title on two
+  // lines (at its colon) where one would not fit, never under 13px.
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(), W = Math.max(280, Math.min(640, Math.floor(width)));
+  const font = (size) => `800 ${size}px ${css("--type")}`, cut = title.indexOf(": ") + 1;
+  const lines = measure(title, font(24)) <= W - 32 || cut < 1 ? [title] : [title.slice(0, cut), title.slice(cut + 1)];
+  const size = Math.max(13, Math.min(24, ...lines.map((l) => (24 * (W - 32)) / measure(l, font(24))))), top = 14 + size * 1.2 * lines.length, H = top + 158;
   return el(`<div class="plate"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${escape(title)}" style="font-family:${css("--type").replace(/"/g, "'")}">
-    <rect width="${W}" height="${H}" fill="${css("--paper")}"/><text x="16" y="38" style="font-size:24px;font-weight:800;fill:${css("--ink")}">${escape(title)}</text>
-    <g transform="translate(10 62)">${voyageMark(results, rounds, { inline: true, width: W - 20 }).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g>
+    <rect width="${W}" height="${H}" fill="${css("--paper")}"/>${lines.map((l, i) => `<text x="16" y="${(14 + size * (1 + 1.2 * i)).toFixed(1)}" style="font-size:${size.toFixed(1)}px;font-weight:800;fill:${css("--ink")}">${escape(l)}</text>`).join("")}
+    <g transform="translate(10 ${(top + 10).toFixed(1)})">${voyageMark(results, rounds, { inline: true, width: W - 20 }).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g>
     <text x="16" y="${H - 14}" style="font-size:12px;font-weight:700;fill:${css("--ink")}">Jejak Kata · zidan.dev/jejak-kata</text></svg></div>`);
 }
 
@@ -2191,7 +2196,7 @@ async function quizPage() {
     const next = async () => {
       sailed();
       if (results.length === ROUNDS) {
-        const right = results.filter((r) => r.ok).length, plate = scorePlate(t("quiz_plate", label, right, ROUNDS), results, ROUNDS);
+        const right = results.filter((r) => r.ok).length, plate = scorePlate(t("quiz_plate", label, right, ROUNDS), results, ROUNDS, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft));
         box.innerHTML = `<p class="score">${t("quiz_score", right, ROUNDS)}</p>`;
         const again = el(`<button type="button" class="primary">${t("quiz_again")}</button>`), share = el(`<button type="button">${t("copy_link")}</button>`), row = el(`<p class="controls"></p>`);
         const save = el(`<button type="button">${t("quiz_save")}</button>`);
@@ -2321,7 +2326,7 @@ async function guessPage() {
     sailed();
     if (k === rounds.length) {
       const said = t("guess_share", score, rounds.length * 100, whole(href("tebak")));
-      box.replaceChildren(el(`<p class="score">${score} / ${rounds.length * 100}</p>`), el(`<p>${t("guess_done")}</p>`), scorePlate(`${t("play_tebak")}: ${score} / ${rounds.length * 100}`, results, rounds.length),
+      box.replaceChildren(el(`<p class="score">${score} / ${rounds.length * 100}</p>`), el(`<p>${t("guess_done")}</p>`), scorePlate(`${t("play_tebak")}: ${score} / ${rounds.length * 100}`, results, rounds.length, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft)),
         el(`<p class="controls"><button type="button">${t("copy_score")}</button><button type="button">${t("quiz_save")}</button><a role="button" class="primary" href="${href("tebak")}">${t("again")}</a></p>`));
       const [copy, save] = box.querySelectorAll(".controls button");
       copy.addEventListener("click", async (e) => (await navigator.clipboard?.writeText(said), (e.target.textContent = t("copied"))));
@@ -2578,14 +2583,17 @@ footSeen.observe(foot);
  *  Whether a figure is on screen is looked at on every scroll, resize and change of the page, not left to an observer:
  *  a figure reached by a jump (a fast wheel, a link to a place lower down) is simply there, with no entrance. */
 const FIGURES = "svg[role=img], .sparks, .cards, .race, .tide, .wall, .bars, .duel";
-let sweeping = false;
+let sweeping = false, swept = 0;
 const sweep = () => sweeping || ((sweeping = true), requestAnimationFrame(() => {
   sweeping = false;
+  // A jump: the page moved more than a fifth of a screen since the last look (a fast wheel, a link lower down).
+  const jump = Math.abs(scrollY - swept) > innerHeight * 0.2;
+  swept = scrollY;
   for (const figure of view.querySelectorAll(".unseen")) {
     const top = figure.getBoundingClientRect().top;
     if (top > innerHeight * 0.96) continue;
     figure.classList.remove("unseen");
-    if (top < innerHeight * 0.6) figure.classList.add("arrived");  // already well on screen: no entrance to wait for
+    if (jump || top < innerHeight * 0.6) figure.classList.add("arrived");  // reached by a jump, or already well on screen: simply there
   }
 }));
 addEventListener("scroll", sweep, { passive: true });

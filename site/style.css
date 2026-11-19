@@ -904,6 +904,8 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
   background: linear-gradient(transparent, var(--chart)); }
 .hero-track { position: absolute; inset: 0; z-index: -1; }
 .hero-sea { position: sticky; top: var(--head, var(--head-h)); height: var(--stage); contain: strict; background: radial-gradient(120% 80% at 60% 20%, var(--deep-2), var(--deep) 70%); }
+/* as the dive ends on paper, the chart comes out of the paper under the header rather than being cut by it */
+.hero-sea::before { content: ""; position: absolute; z-index: 1; inset: 0 0 auto; height: var(--s7); pointer-events: none; background: linear-gradient(var(--chart), transparent); opacity: calc(var(--dive, 0) * var(--dive, 0)); }
 .hero-sea .chart { position: absolute; inset: 0; height: 100%; background: none; border: 0; border-radius: 0; }
 .hero-sea::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: calc(1 - var(--open));
   background: linear-gradient(to top, var(--deep) 0, var(--deep) 30%, color-mix(in srgb, var(--deep) 70%, transparent) 48%, transparent 66%); }
@@ -1142,7 +1144,8 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 /* A figure draws itself in once, as it first comes near the screen (app.js holds it .unseen until then): lines are
    drawn along their length, areas and points follow, bars grow from their axis, cells come up column by column (by
    the period they stand for), cards and small charts surface one after another. Only what is already there moves. */
-.unseen, .unseen *, .turning #view * { animation-play-state: paused !important; }  /* held: below the screen, or while the page turns */
+.unseen, .unseen *, .turning #view * { animation-play-state: paused !important; }
+.arrived, .arrived * { animation: none !important; }  /* reached by a jump: simply there (app.js, sweep) */  /* held: below the screen, or while the page turns */
 .area, .spark-area { animation: fade var(--d-leg) var(--sail) calc(var(--d-turn) * .6) both; }
 .pt { animation: fade var(--d-turn) var(--sail) var(--d-leg) both; }
 .plate .series .draw { animation-delay: calc(var(--k) * 120ms); } .plate .band { animation: fade var(--d-leg) var(--sail) both; }
