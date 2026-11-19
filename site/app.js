@@ -1122,8 +1122,9 @@ async function racePage(name = MAIN, ...list) {
 /** Each period in its own words: a wall of posters, lens by lens. */
 async function yearsPage() {
   const found = await allLenses();
-  // The head's sea lights what the game's picture shows (PICTURES): each year's own word.
-  const own = json("years.json").then((y) => { const peaks = peaksOf(y).filter((x) => x.stand >= 2); return y.years.map((_, p) => peaks.find((x) => x.p === p)?.w).filter(Boolean).reverse(); }).catch(() => []);
+  // The head's sea lights the posters' own words: of each year of the first page's source, the first of its words
+  // that the chart's first screen has, the latest years first.
+  const main = found.find((lens) => lens.lens === MAIN), own = main ? highlights(main).then(({ peaks }) => peaks.map((list) => list.map((i) => main.words[i])).reverse()).catch(() => []) : [];
   view.replaceChildren(pageHead(t("nav_years"), { ...fromPlay(), lede: t("years_about"), sea: { words: own } }));
   view.append(switcher(found.map((lens) => lensText(lens).short || lensText(lens).title), (i) => wall(found[i]), Math.max(0, found.findIndex((lens) => lens.lens === MAIN)), "chips"));
 }
