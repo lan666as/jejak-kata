@@ -518,7 +518,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       ctx.beginPath(); ctx.arc(ring[0], ring[1], 10, 0, 7); ctx.strokeStyle = dayAt(...ring) > 0.5 ? css["--ink"] : css["--on-deep"]; ctx.lineWidth = 2; ctx.stroke();
       pill([ring[0] + 2, ring[1] - 18], name(chart.words[ringed]), false);
     }
-    ctx.font = `500 12px ${css["--type"]}`;
+    ctx.font = `${explore ? 600 : 500} 12px ${css["--type"]}`;
     let written = 0;
     const ids = new Set(routes.map((r) => r.id));
     for (let k = 0; k < Math.min(n, NEAR) && written < Math.min(named, W < 600 ? 14 : explore ? 44 : 30); k++) {
@@ -529,7 +529,9 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
       if (!text || p[0] + 8 + wide > W - 4 || !clear(p[0] + 8, p[1], wide) || !claim(p[0] + 8, p[1], wide, 14)) continue;
       const paper = dayAt(...p) > 0.5;
       ctx.fillStyle = paper ? css["--ink-3"] : css["--on-deep-2"];
-      ctx.globalAlpha = paper ? 1 : (routes.length ? 0.6 : 0.82) * fade(p[2]);
+      // A backdrop names quietly; the map, where the names are what the reader reads, at full strength on a halo of the deep.
+      ctx.globalAlpha = paper ? 1 : (explore ? 1 : routes.length ? 0.6 : 0.82) * fade(p[2]);
+      if (explore && !paper) (ctx.lineWidth = 3), (ctx.lineJoin = "round"), (ctx.strokeStyle = css["--deep-2"]), ctx.strokeText(text, p[0] + 8, p[1]);
       ctx.fillText(text, p[0] + 8, p[1]);
       written++;
     }
