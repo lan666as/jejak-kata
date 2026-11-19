@@ -222,7 +222,7 @@ async function shore(box, { words = [], count = 3, routes = null, name: named, l
   }
   if (!box.isConnected) return null;
   const label = routes.length ? t("sea_label_route", routes.map((r) => name(r.id)).join(", ")) : t("sea_label");
-  const sea = module.nightSea({ chart: first, name, pick: (id) => visit(href("kata", name(id))), periods: first.periods, tip, label, hold: true, most: 2500, names: innerWidth < 600 ? Math.min(names, 6) : names, pitch });
+  const sea = module.nightSea({ chart: first, name, pick: (id) => visit(href("kata", name(id))), periods: first.periods, tip, label, hold: true, most: 2500, names: innerWidth < 600 ? Math.min(names, 6) : names, pitch, host: box });
   if (!sea) return null;
   holder.replaceChildren(sea.node);
   // By default the water is open beside the head's text from 900px (from its right edge), above it on a phone.
@@ -662,13 +662,13 @@ function pathFigure(lens, path, e) {
 /** The chart of a lens with the routes of the given words on it. `pick(word)` is called when an island is clicked.
  *  With `night`, the chart is drawn for the deep (the home page's hero). With `sea` (sea.js) it is the 3D sea where
  *  WebGL2 is, and with `explore` that sea is the map's: the reader moves over it. */
-async function chartFigure(name, list, pick = (word) => visit(href("kata", word)), height = "min(70vh, 560px)", { night = false, wait, sea, eager = false, explore = false, over } = {}) {
+async function chartFigure(name, list, pick = (word) => visit(href("kata", word)), height = "min(70vh, 560px)", { night = false, wait, sea, eager = false, explore = false, over, host } = {}) {
   const first = await json(`${name}/first.json`), label = new Map(first.words.map((id, k) => [id, first.names[k]]));
   // The whole lens comes later (after `wait`, if given); the chart is on screen before it.
   const meta = Promise.resolve(wait).then(() => lensNamed(name));
   let lens = null;
   // At night, with `sea` (sea.js), the chart is the 3D sea; where WebGL2 is not there, the night chart of chart.js.
-  const given = { chart: first, name: (id) => (lens ? lens.words[id] : label.get(id)), pick: async (id) => pick((await meta).words[id]), periods: first.periods, tip, label: t("chart_keys"), night, over };
+  const given = { chart: first, name: (id) => (lens ? lens.words[id] : label.get(id)), pick: async (id) => pick((await meta).words[id]), periods: first.periods, tip, label: t("chart_keys"), night, over, host };
   const deep = sea && sea({ ...given, ...(explore ? { explore, label: t("sea_keys"), controls: { in: t("zoom_in"), out: t("zoom_out"), all: t("zoom_all"), turn: t("sea_turn"), above: t("sea_above"), level: t("sea_level") } } : { label: t("sea_label") }) });
   const chart = deep || seaChart(given);
   if (height && !(deep && explore)) chart.node.style.height = height;  // the map's sea is as tall as its band (style.css)
@@ -1690,8 +1690,8 @@ async function storySea(holder, stages, parts) {
   // What lies over the sea on the stage shown: no name is written under it (while the sea has the stage, only the
   // controls and the key).
   const over = () => [...stages[k].stage.querySelectorAll(full ? ".sea-key, .stage-nav" : ".stage-meta, .caption .turn:not(.out), .sea-key, .stage-nav, .stage-figure .plate:not(.off) svg")];
-  const wide = innerWidth >= 900, sea = module.nightSea({ chart: first, name: nameOf, pick: () => {}, periods: first.periods, tip, label: t("sea_label"),
-    hold: true, fly: true, rung: window.seaRung ?? 0, most: wide ? Infinity : 2500, names: 0, over });
+  const wide = innerWidth >= 900, sea = module.nightSea({ chart: first, name: nameOf, pick: (id) => visit(href("kata", nameOf(id))), periods: first.periods, tip, label: t("sea_label"),
+    hold: true, fly: true, rung: window.seaRung ?? 0, most: wide ? Infinity : 2500, names: 0, over, host: holder.parentNode });
   if (!sea) return null;
   holder.append(sea.node);
   addEventListener("resize", () => holder.isConnected && (at = ""));  // the open water is found again at the next step's look
@@ -2003,7 +2003,7 @@ async function homePage() {
   const sea = (await Promise.all([gl, painted()]))[0]?.nightSea;
   // The arrival, once a session: the sea starts dark and its words come on as they arrive, the route last.
   const arriving = !!sea && !still() && !kept("sessionStorage", "arrived");
-  figure = await chartFigure(MAIN, [], (word) => sail(word), null, { night: true, wait: want, sea, eager: arriving, over: () => hero.querySelectorAll(".hero-text > *, .hero-key") }).catch(() => null);
+  figure = await chartFigure(MAIN, [], (word) => sail(word), null, { night: true, wait: want, sea, eager: arriving, over: () => hero.querySelectorAll(".hero-text > *, .hero-key"), host: hero }).catch(() => null);
   if (!hero.isConnected) return;
   const diving = !!figure?.chart.dive && document.documentElement.classList.contains("dives");
   if (!diving) document.documentElement.classList.remove("dives");  // no sea to dive into: the hero is one screen
@@ -2036,9 +2036,9 @@ async function homePage() {
   if (drawn) go(first, !pending);
   // Once the first route has sailed, two notes say what a light's height and the route are.
   if (drawn && !pending) figure.chart.notes?.({ rise: t("note_rise"), route: (word, from, to) => t("note_route", word, from, to) });
-  if (still()) return;
-  // Depth: the camera (or, on the flat chart, the far islands) follows the pointer a little, and the tilt of a phone
-  // where the browser gives it without asking.
+  if (still() || figure.chart.hand) return;  // (the sea answers the hand itself: sea.js)
+  // Depth: on the flat chart the far islands follow the pointer a little, and the tilt of a phone where the browser
+  // gives it without asking.
   hero.addEventListener("pointermove", (e) => {
     if (e.pointerType !== "mouse" || e.buttons) return;  // not while the chart is being dragged
     const box = hero.getBoundingClientRect();

@@ -366,6 +366,14 @@ text has been painted. What is on screen is the data and nothing else:
   where a held sea names quietly.
 - **Touch on the hero**: a swipe up or down scrolls the page and a pinch zooms it, as anywhere; a finger moved sideways
   turns the view the few degrees a mouse does and lets it settle back; a tap sails the nearest word.
+- **The hand**, on every sea (the hero, the heads, a story's cover and stages, the footer, the map): it leans a few
+  degrees to the pointer (by touch, to a finger moved sideways, and to the tilt of a phone where the browser gives it
+  without asking, past a small dead band), and the light nearest the pointer on its open water (not under its text or
+  controls) brightens, is ringed and is named on the board (`labels.js`; where its name finds no room, only ringed). A
+  click on it chooses it: the hero sails it, the map adds it, every other sea opens its word's page; by touch a held
+  sea names it at the first tap and opens it at the second. A held sea draws only while it leans; with reduced motion
+  it does not lean, and the light is still named. A press or a drag on a sea's water starts no selection; the text
+  over it is selected as any text is (`sea.js`, `host`).
 - Covers, heads and the footer hold one frame of a sea that is no larger than the chart's first screen: a quiet
   backdrop that still shows only data (the lights, and only the routes of words the page is about), named sparingly.
 

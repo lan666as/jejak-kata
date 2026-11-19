@@ -3,6 +3,9 @@
 // four routes); a story's stages on one sea that flies to each step (a crossfade with reduced motion), its figure's
 // panel and captions legible over it, taking the whole stage at a new scene and saying what it shows in a key; the sea held still behind a page head, a story's cover (with the route of the
 // story's word) and the footer; the GPU let go when the page turns; and in each case the fallback or the still, with nothing thrown.
+// And the hand, on a page head, a story's stage and the hero: a sea leans to the pointer (not with reduced motion),
+// names the light nearest it on its open water, draws nothing once the pointer is still, and a click on the light
+// opens its word's page; a drag that starts on a head's sea selects no text, while the head's title can still be.
 import { base, browser, done } from "./serve.mjs";
 let failures = 0;
 const log = (name, ok, detail) => { failures += !ok; console.log(`${ok ? "ok  " : "FAIL"} ${name}: ${detail}`); };
@@ -156,6 +159,49 @@ for (const [name, options, init] of [["WebGL", {}, null], ["reduced motion", { r
       key: document.querySelector("#scene-0 .sea-key")?.textContent || "", shown: !!document.querySelector("#scene-0 .sea-key")?.getClientRects().length }));
     const ok = !gl ? !after.shown && !after.took : held ? !after.took && after.key.startsWith("Di peta: ") : during.full && during.figure < 0.5 && !after.full && after.figure === 1 && after.key.startsWith("Di peta: ");
     log(`story's sea takes the stage, ${name}`, ok && !p.errors.length, `350 ms after "Mulai": sea has the stage ${during.full}, figure opacity ${during.figure}; after: ${after.full ? "still" : "given back"}, figure ${after.figure}, took it ${after.took}; key ${after.shown ? `"${after.key}"` : "not shown"}; errors ${p.errors.length} ${p.errors[0] || ""}`);
+    await p.close();
+  }
+  { // the hand: a page head (a play page's), a story's stage, the hero
+    const p = await fresh(options, init), still = (selector) => p.waitForFunction((s) => !document.querySelector(s)?.sea?.state().leaning, selector, { timeout: 8000, polling: 100 }).catch(() => {});
+    const idle = () => p.evaluate(() => new Promise((ok) => { let n = 0; const raf = requestAnimationFrame; window.requestAnimationFrame = (f) => (n++, raf(f)); setTimeout(() => ((window.requestAnimationFrame = raf), ok(n)), 1000); }));
+    /** A light on the open water of the sea in `selector`, near (fx, fy) of it, where nothing lies over it. */
+    const light = (selector, fx, fy) => p.evaluate(([s, fx, fy]) => { const c = document.querySelector(s), r = c?.getBoundingClientRect(), x = c?.sea?.spot(r.width * fx, r.height * fy);
+      return x && { word: x.word, x: r.left + x.at[0], y: r.top + x.at[1], over: document.elementFromPoint(r.left + x.at[0], r.top + x.at[1])?.closest("p, h1, a, button, svg, .turn")?.tagName || null }; }, [selector, fx, fy]);
+    await p.goto(base + "#/redaksi"); await p.waitForTimeout(3000);
+    const h = gl && await light(".page-head .chart", 0.75, 0.45);
+    let head = null;
+    if (h) {
+      await p.mouse.move(h.x - 40, h.y + 30); await p.mouse.move(h.x + 2, h.y + 1, { steps: 5 }); await still(".page-head .chart");
+      head = { ...(await state(p, ".page-head .chart")), frames: await idle() };
+    }
+    // A drag from the head's water across its title selects nothing; a double click on the title still selects a word.
+    const title = await p.locator(".page-head h1").boundingBox(), from = h || { x: title.x + title.width + 120, y: title.y + 20 };
+    await p.mouse.move(from.x, from.y); await p.mouse.down(); await p.mouse.move(title.x + 10, title.y + 10, { steps: 8 }); await p.mouse.up();
+    const dragged = await p.evaluate(() => getSelection().toString().length);
+    await p.mouse.dblclick(title.x + 8, title.y + title.height / 2);
+    const word = await p.evaluate(() => getSelection().toString().trim());
+    let opened = null;
+    if (h) { await p.mouse.click(h.x + 2, h.y + 1); await p.waitForFunction(() => /\/kata\/|#\/kata\//.test(location.href), null, { timeout: 5000 }).catch(() => {}); opened = await p.evaluate(() => decodeURIComponent(location.pathname + location.hash)); }
+    const okHead = !gl ? dragged === 0 && word.length > 0 : !h.over && head.revealed === h.word && (held ? head.lean.every((v) => v === 0) : head.lean.some((v) => v !== 0)) && head.frames <= 2 && dragged === 0 && word.length > 0 && opened?.includes(`kata/${h.word}`);
+    log(`the hand on a page head, ${name}`, okHead && !p.errors.length, `${h ? `light "${h.word}" (under ${h.over || "nothing"}): named ${head.revealed}, lean ${head.lean}, ${head.frames} frames in a still second; a click opens ${opened}; ` : ""}a drag from the sea selects ${dragged} characters, a double click on the title "${word}"; errors ${p.errors.length} ${p.errors[0] || ""}`);
+    if (gl) {
+      // A story's stage: the sea under it answers the pointer on its open water (under the caption, beside the figure).
+      await p.goto(base + "#/cerita/kata-korupsi"); await p.waitForSelector(".stage .plate svg"); await p.waitForTimeout(1500);
+      await p.evaluate(() => { const s = document.getElementById("scene-0"); scrollTo(0, scrollY + s.getBoundingClientRect().top - document.querySelector(".masthead").offsetHeight + s.querySelector(".beat").offsetHeight); });
+      await p.waitForTimeout(2600);
+      const spots = [];
+      for (const [fx, fy] of [[0.8, 0.7], [0.9, 0.62], [0.72, 0.66], [0.85, 0.75]]) { const x = await light(".story-sea .chart", fx, fy); if (x && !x.over) { spots.push(x); break; } }
+      const at = spots[0];
+      if (at) { await p.mouse.move(at.x + 30, at.y - 30); await p.mouse.move(at.x + 1, at.y + 1, { steps: 5 }); await still(".story-sea .chart"); }
+      const stage = at && { ...(await state(p, ".story-sea .chart")), frames: await idle() };
+      log(`the hand on a story's stage, ${name}`, !!at && stage.revealed === at.word && (held ? stage.lean.every((v) => v === 0) : stage.lean.some((v) => v !== 0)) && stage.frames <= 2 && !p.errors.length,
+        at ? `light "${at.word}": named ${stage.revealed}, lean ${stage.lean}, ${stage.frames} frames in a still second` : "no light found on the stage's open water");
+      // The hero leans to the pointer anywhere on it.
+      await p.goto(base + "#/"); await p.waitForFunction(() => document.querySelector(".hero .chart[data-route]"), null, { timeout: 20000 }).catch(() => {}); await p.waitForTimeout(1500);
+      await p.mouse.move(200, 300); await p.mouse.move(1100, 700, { steps: 6 }); await p.waitForTimeout(300);
+      const hero = await state(p, ".hero .chart");
+      log(`the hand on the hero, ${name}`, (held ? hero.lean.every((v) => v === 0) : hero.lean[0] > 0.3) && !p.errors.length, `lean ${hero.lean}`);
+    }
     await p.close();
   }
   { // the held seas: a page head, a story's cover with its word's route, the footer; let go on a page turn
