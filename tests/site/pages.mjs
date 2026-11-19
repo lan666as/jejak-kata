@@ -7,7 +7,7 @@ const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport:
   const where = () => { const head = document.querySelector(".masthead").getBoundingClientRect().bottom, middle = head + (innerHeight - head) / 2;
     const stage = [...document.querySelectorAll(".stage")].find((s) => { const r = s.parentNode.getBoundingClientRect(); return r.top <= middle && r.bottom >= middle; });
     return stage ? `scene ${stage.parentNode.id.split("-")[1]} step ${stage.dataset.step}, ${Math.round(stage.getBoundingClientRect().top - head)}px under the header` : "no stage"; };
-  const p = await fresh(); await p.goto(base + "#/cerita/prabowo"); await p.waitForTimeout(2500); await p.mouse.wheel(0, 2500); await p.waitForTimeout(900);
+  const p = await fresh(); await p.goto(base + "#/cerita/prabowo"); await p.waitForTimeout(2500); await p.mouse.wheel(0, 2500); await p.waitForTimeout(2500);  // (the page settles on a step: a scene entered gives the sea the stage for a leg)
   const before = await p.evaluate(where); await p.click("#menu-button"); await p.click("#language"); await p.waitForTimeout(2500); const after = await p.evaluate(where);
   log("language switch keeps the place", before === after && before.includes("step") && !before.includes("step 0,") && before.endsWith(" 0px under the header"), `${before} -> ${after}`); await p.close(); }
 { // the header at 390px: opaque, and stuck at the top after a scroll
