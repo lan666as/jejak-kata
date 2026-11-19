@@ -98,6 +98,26 @@ b, strong { font-weight: 700; }
 .headline { font-size: var(--t-lede); line-height: var(--l-lede); margin: var(--s5) 0 var(--s2); }
 .holder:empty { min-height: 80svh; }  /* what follows a switcher stays where it will be, below the screen, while the content comes */
 .loading { color: var(--ink-3); min-height: 60vh; padding-top: var(--s7); }
+/* a part waiting for its data (app.js, awaited): quiet bars where its title and lines will be, and a block as tall as
+   its figure; on a story's stage, the figure's panel; a page, its head on the deep. They breathe slowly (not with
+   reduced motion). Where the data did not come: a line and "Try again", in the part's place. */
+.skeleton { display: grid; gap: var(--s3); align-content: start; min-height: 80svh; padding-top: var(--s5); }
+.skeleton > i, .skeleton .page-head > i { display: block; height: var(--s4); width: min(28rem, 70%); border-radius: var(--r1); background: var(--line); }
+.skeleton > i + i { width: min(38rem, 90%); height: var(--s3); }
+.skeleton > b { display: block; height: clamp(200px, 40vh, 340px); margin-top: var(--s3); border-radius: var(--r2); background: color-mix(in srgb, var(--line) 45%, transparent); }
+.skeleton.page { padding-top: 0; gap: var(--s3); }
+.skeleton .page-head { display: grid; gap: var(--s4); margin-bottom: var(--s5); }
+.skeleton .page-head::before { content: ""; position: absolute; z-index: -1; inset: 0 calc(50% - 50vw); background: var(--deep); }
+.skeleton .page-head > i { background: var(--line-deep); width: 8rem; }
+.skeleton .page-head > i:nth-child(2) { height: var(--s8); width: min(24rem, 70%); }
+.skeleton .page-head > i:nth-child(3) { width: min(36rem, 90%); }
+.skeleton.plate { min-height: 0; height: 100%; width: 100%; padding: 0; border-radius: var(--r2); background: color-mix(in srgb, var(--deep) 92%, transparent); }
+.skeleton.plate > * { display: none; }
+@keyframes breathe { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: no-preference) { .skeleton { animation: breathe 2.4s var(--sail) infinite; } }
+.failed { max-width: var(--measure); margin: var(--s6) 0; padding: var(--s5); background: var(--chart-2); border: var(--hair) solid var(--line-2); border-radius: var(--r2); }
+.failed p { margin: 0 0 var(--s4); }
+.stage-figure .failed { align-self: center; margin: 0; color: var(--on-deep); background: var(--deep-2); border-color: var(--line-deep); }
 details { margin: var(--s5) 0; }
 summary { min-height: var(--tap); display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--ink); }
 

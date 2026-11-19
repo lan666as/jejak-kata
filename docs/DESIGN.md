@@ -83,7 +83,7 @@ itself in once as it first comes near the screen (lines along their length, then
 their axis; cells come up column by column, in the order of the periods they stand for; cards and small charts
 surface one after another); key numbers settle in once. Whether a figure has come near is looked at on every scroll,
 resize and change of the page, never left to an observer, and a figure reached by a jump (a fast wheel, a link lower
-down) is simply there: content never waits on an entrance. A section that waits for its data says "Memuat…" in its place. Controls answer a press in one way (`--d-press`, down a
+down) is simply there: content never waits on an entrance. A part that waits for its data shows a quiet skeleton of itself in its place, as tall as it will be (a page, its head on the deep; a story's stage, its figure's panel), so nothing moves when it lands; a file that fails is asked for once more after 800 ms, and where it still fails the part says so in a line with "Coba lagi" / "Try again", which brings it without reloading the page (`awaited` in app.js, the one place for this). Controls answer a press in one way (`--d-press`, down a
 pixel); a large story card leans a few degrees towards a mouse with a glint crossing its number. On a plate the marks
 travel one after another (a series or row 45 ms after the one before), its lines draw in when the stage first shows
 it.

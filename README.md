@@ -276,6 +276,7 @@ runs `look` first.
 | `seas.mjs` | the map by mouse, keys, buttons and touch (one finger, pinch, twist, tilt, tap), the hero by touch, the held seas |
 | `shift.mjs` | layout shift while pages load and scroll (under 0.05) |
 | `cold.mjs` | the home page cold on slow 4G and 4G: text and an answering chart within 2 s |
+| `fails.mjs` | no dead pages: a data file each family of pages needs fails twice; a skeleton while it waits, one retry, then a line and "Try again", which brings the part without reloading |
 | `meta.mjs [<built>]` | the published site as link previews and search engines read it (below): every generated page fetched with no script, its tags, JSON-LD, share image, canonical and language twins, the sitemap and the feeds; then each page opened, taken over by the app at its route |
 | `frames.mjs`, `capture.mjs`, `look.mjs`, `shot.mjs`, `sheet.mjs` | frame times, and screenshots to look at |
 | `stages.mjs <dir> [slug ...]` | every story's first and densest scene at 1440x900 and 1920x1080, light and dark: a screenshot each, and fails on a figure or caption past its stage, text under 12px or a page wider than the screen |

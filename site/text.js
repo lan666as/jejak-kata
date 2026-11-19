@@ -235,7 +235,7 @@ export const TEXT = {
     measure_more: "Cara kerja dan ujinya selengkapnya",
     lost_kicker: "404", lost_title: "Halaman ini tidak ada di peta", lost_lede: "Alamatnya mungkin salah ketik, atau halamannya sudah pindah. Cari sebuah kata, atau berangkat dari salah satu tempat ini.", lost_home: "Halaman depan",
     word_missing: (word) => `“${word}” tidak ada di peta`, word_missing_next: "Coba ejaan lain atau bentuk dasarnya di kotak cari, atau buka salah satu kata ini:",
-    failed_title: "Datanya tidak termuat", failed: "Mungkin sambungan terputus. Muat ulang halaman ini; bila tetap gagal, coba lagi sebentar lagi.", reload: "Muat ulang",
+    failed_title: "Datanya tidak termuat", failed: "Mungkin sambungan terputus. Coba lagi: halaman ini tidak perlu dimuat ulang.", reload: "Coba lagi",
     no_offers: (q) => `Tidak ada kata yang dimulai dengan “${q}”. Coba ejaan lain atau kata dasarnya.`,
     read_figure: "Cara membaca gambar ini",
     doc_title: "Jejak Kata: tiap kata punya pelayarannya",
@@ -489,7 +489,6 @@ export const TEXT = {
     play_more: "Mainan lain", play_lead: "Mulai dari sini", path_key: "rute kata ini: satu titik tiap masa",
     not_found: "Kata ini tidak termasuk kata-kata tersering di sumber mana pun.",
     is_name: "Kata ini hampir selalu ditulis dengan huruf kapital dan tidak punya artikel di Wikipedia bahasa Indonesia, jadi dianggap nama diri yang bukan milik umum dan tidak ditampilkan.",
-    no_data: "Data belum tersedia.",
     method: `
       <p>Untuk tiap masa, setiap kata diberi <b>profil</b>: catatan, untuk tiap kata lain, apakah keduanya muncul sehalaman atau seartikel lebih sering atau lebih jarang daripada kebetulan. Profil dari dua masa dapat langsung dibandingkan, karena keduanya memakai daftar kata konteks yang sama.</p>
       <p>Jarak antara dua profil tidak pernah nol, bahkan untuk dua contoh acak dari masa yang sama, dan makin besar untuk kata yang makin jarang. Karena itu tiap masa dibelah dua secara acak berulang kali: jarak antara belahan masa A dan belahan masa B dikurangi jarak antara dua belahan dari masa yang sama. Sisanya lalu dibandingkan dengan 500 kata lain yang paling dekat kekerapannya. Hasilnya angka <b>pergeseran</b>.</p>
@@ -510,7 +509,7 @@ export const TEXT = {
     measure_more: "The method and its tests in full",
     lost_kicker: "404", lost_title: "This page is not on the chart", lost_lede: "The address may be mistyped, or the page has moved. Search for a word, or set out from one of these.", lost_home: "Front page",
     word_missing: (word) => `“${word}” is not on the chart`, word_missing_next: "Try another spelling or the root form in the search box, or open one of these words:",
-    failed_title: "The data did not load", failed: "The connection may have dropped. Reload this page; if it still fails, try again in a moment.", reload: "Reload",
+    failed_title: "The data did not load", failed: "The connection may have dropped. Try again: the page need not be reloaded.", reload: "Try again",
     no_offers: (q) => `No word starts with “${q}”. Try another spelling or the root form.`,
     read_figure: "How to read this figure",
     doc_title: "Jejak Kata: every word has its voyage",
@@ -764,7 +763,6 @@ export const TEXT = {
     play_more: "More to play with", play_lead: "Start here", path_key: "this word's route: a port for each period",
     not_found: "This word is not among the most common words of any source.",
     is_name: "This word is almost always capitalised and has no article on Indonesian Wikipedia, so it is treated as a private name and not shown.",
-    no_data: "The data is not available yet.",
     method: `
       <p>For each period, every word gets a <b>profile</b>: a record, for every other word, of whether the two share a page or an article more or less often than chance. Profiles from two periods can be compared directly, because both use the same list of context words.</p>
       <p>The distance between two profiles is never zero, even for two random samples of one period, and it grows as a word gets rarer. So each period is split in two at random, many times over: the distance between a half of period A and a half of period B, minus the distance between two halves of the same period. What is left is then compared with the 500 words nearest in frequency. The result is the <b>shift</b>.</p>

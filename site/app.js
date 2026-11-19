@@ -76,20 +76,29 @@ function wake(e) {
 
 // ---- data ---------------------------------------------------------------
 
+/** A file of data, fetched once and kept. A fetch that fails (no connection, an answer other than 200, a body cut off
+ *  or not JSON) is asked again once, AGAIN ms later; a file that is not there (404) is not. What still fails is not
+ *  kept: the next ask (the reader's "Try again", awaited) fetches it anew, where a failure kept would fail for the
+ *  rest of the visit. */
+const AGAIN = 800;
 const cache = new Map();
 const json = (path) => {
-  if (!cache.has(path)) cache.set(path, fetch(`${DATA}/${path}`).then((r) => (r.ok ? r.json() : Promise.reject(path))));
+  const get = () => fetch(`${DATA}/${path}`).then((r) => (r.ok ? r.json() : Promise.reject(Object.assign(new Error(`${path}: ${r.status}`), { status: r.status }))));
+  if (!cache.has(path))
+    cache.set(path, get().catch((e) => (e.status === 404 ? Promise.reject(e) : new Promise((wait) => setTimeout(wait, AGAIN)).then(get)))
+      .catch((e) => (cache.delete(path), Promise.reject(e))));
   return cache.get(path);
 };
 
-/** A lens with its meta, a word -> index map, and which entries are entities (index -> Wikipedia article). */
+/** A lens with its meta, a word -> index map, and which entries are entities (index -> Wikipedia article); undefined
+ *  where its meta does not come (and then asked for anew next time). */
 const loaded = new Map();
 const lensNamed = (name) => {
   if (!loaded.has(name))
     loaded.set(name, json(`${name}/meta.json`).then((meta) => {
       const articles = new Map(Object.entries(meta.entities).map(([i, article]) => [+i, article]));
       return { ...lensFrom(meta), articles, kind: (i) => meta.kinds[i] || "other" };
-    }).catch(() => undefined));
+    }).catch(() => (loaded.delete(name), undefined)));
   return loaded.get(name);
 };
 /** Every lens. The first page needs only one, so nothing waits for this unless it asks. */
@@ -255,16 +264,30 @@ function tabs(labels, show, first = 0, style = "tabs") {
   return list;
 }
 
+/**
+ * The one way a part of a page waits for its data and fails: in `holder`, a quiet skeleton of the part to come (`shape`:
+ * "part", a figure with its title; "plate", a story's figure; "page", a page's head and a part), as tall as the part
+ * will be, so that nothing moves when it lands; then the part `make()` returns (a node, or a promise of one), and
+ * `then(node)` once it is in place. Where its data did not come (json() has already asked twice), a plain line and
+ * "Try again", which makes the part again without reloading the page. Only the last asked of a holder is shown.
+ */
+function awaited(holder, make, { shape = "part", then } = {}) {
+  const turn = (holder.turn = (holder.turn || 0) + 1), mine = () => holder.turn === turn;
+  const made = Promise.resolve().then(make);
+  holder.replaceChildren(el(`<div class="skeleton ${shape}" role="status" aria-label="${t("loading")}">${shape === "page" ? `<div class="page-head shore"><i></i><i></i><i></i>${tideLine()}</div>` : ""}<i></i><i></i><b></b></div>`));
+  return made.then((node) => mine() && (node instanceof Node && holder.replaceChildren(node), then?.(node)), () => {
+    if (!mine()) return;
+    // One press tries again every part of the page that failed (the stages of a story often wait for one file).
+    const box = Object.assign(el(`<div class="failed" role="alert"><p><b>${t("failed_title")}.</b> ${t("failed")}</p><button type="button" class="primary">${t("reload")}</button></div>`), { again: () => awaited(holder, make, { shape, then }) });
+    box.querySelector("button").addEventListener("click", () => document.querySelectorAll(".failed").forEach((b) => b.again()));
+    holder.replaceChildren(box);
+  });
+}
+
 /** Tabs over one holder: the content of the pressed tab replaces the last. */
 function switcher(labels, content, first = 0, style = "tabs") {
-  const holder = el(`<div class="holder"></div>`);  // keeps its room while its content is on the way, and says so (style.css)
-  const box = el("<div></div>");
-  const show = async (i) => {
-    const made = Promise.resolve(content(i)).catch(() => el(`<p class="sub">${t("no_data")}</p>`));
-    holder.replaceChildren(el(`<p class="loading" role="status">${t("loading")}</p>`));
-    holder.replaceChildren(await made);
-  };
-  box.append(tabs(labels, show, first, style), holder);
+  const holder = el(`<div class="holder"></div>`), box = el("<div></div>");
+  box.append(tabs(labels, (i) => awaited(holder, () => content(i)), first, style), holder);
   return box;
 }
 
@@ -1778,13 +1801,13 @@ async function storyPage(slug, scene, step, more) {
   // The figures, each at the size of its stage, with the step each stage is on; then the sea under them.
   stages.forEach((s, k) => (innerWidth < 900 ? share(s, parts[k]) : fit(s)));
   storySea(scenes.firstElementChild, stages, parts).then((to) => ((sea = to), frame()));
-  await Promise.all(parts.map(async (part, k) => {
-    const [w, h, zoom] = figureSize(stages[k].room), made = await sceneFigure(part, w, stages[k].tall || h, stages[k].room).catch(() => null);
-    if (!made) return stages[k].room.append(el(`<p class="sub">${t("no_data")}</p>`));
-    made.node.querySelectorAll(".plate svg").forEach((svg) => (svg.style.width = svg.width.baseVal.value * zoom + "px"));
-    stages[k].room.append(made.node);
-    stages[k].hold(made);
-    frame();  // a strip that slides takes its place
+  await Promise.all(parts.map((part, k) => {
+    const [w, h, zoom] = figureSize(stages[k].room);
+    return awaited(stages[k].room, async () => {
+      const made = await sceneFigure(part, w, stages[k].tall || h, stages[k].room);
+      made.node.querySelectorAll(".plate svg").forEach((svg) => (svg.style.width = svg.width.baseVal.value * zoom + "px"));
+      return Object.assign(made.node, { made });
+    }, { shape: "plate", then: (node) => (stages[k].hold(node.made), frame()) });  // a strip that slides takes its place
   }));
 }
 
@@ -1804,11 +1827,10 @@ async function embedPage(slug, k = "0", j = "0") {
   view.replaceChildren(box);
   const room = box.querySelector(".embed-figure"), caption = box.querySelector(".embed-caption"), count = box.querySelector(".count"), link = box.querySelector(".embed-open");
   const width = Math.min(760, room.clientWidth), height = Math.max(240, innerHeight - box.offsetHeight - 120);
-  const figure = await sceneFigure(part, width, height).catch(() => null);
-  if (!figure) return room.append(el(`<p class="sub">${t("no_data")}</p>`));
-  room.append(figure.node);
+  let figure = null;
   const head = (at) => dash(part.steps[at - 1].head ?? part.steps[at - 1].mark ?? part.steps[at - 1].at);
   const go = (at) => {
+    if (!figure) return;
     at = Math.max(0, Math.min(n, at));
     const step = part.steps[Math.max(0, at - 1)], i = figure.labels.indexOf(step.at);
     if (i >= 0) figure.show(i, at ? step.focus : undefined, step.mark);
@@ -1825,7 +1847,7 @@ async function embedPage(slug, k = "0", j = "0") {
   box.querySelector(".embed-foot .sound-toggle")?.removeAttribute("id");
   box.querySelector(".back").addEventListener("click", () => go(+j - 1));
   box.querySelector(".on").addEventListener("click", () => go(+j + 1));
-  go(+j || 0);
+  await awaited(room, () => sceneFigure(part, width, height).then((made) => ((figure = made), made.node)), { shape: "plate", then: () => go(+j || 0) });
 }
 
 /**
@@ -1994,26 +2016,21 @@ const settled = (most = 1500) => new Promise((done) => {
   requestAnimationFrame(tick);
 });
 
-/** The three columns of "how it is measured", filled from the data itself once they come near the screen. */
+/** The three columns of "how it is measured", made from the data itself once they come near the screen. */
 function measured(section) {
+  const cols = section.querySelector(".measure-cols");
   const fill = async () => {
     const names = await json("lenses.json"), own = names.filter((name) => !/-(tribun|okezone|kompas|tempo)$/.test(name)); // one publisher's lens is a part of the news
-    const lenses = (await Promise.all(own.map(lensNamed))).filter(Boolean), main = await lensNamed(MAIN);
-    if (!section.isConnected || !lenses.length) return;
+    const lenses = await Promise.all(own.map(lensNamed)), main = await lensNamed(MAIN);
+    if (!lenses.every(Boolean) || !main) throw new Error("lenses");
     const years = lenses.flatMap((l) => l.periods.join(" ").match(/\d{4}/g).map(Number)), total = (l) => l.units.reduce((x, y) => x + y, 0);
     const amount = (n) => (n >= 1e6 ? `${number(n / 1e6, n >= 1e7 ? 0 : 1)} ${t("million")}` : thousands(n));
-    const col = (k) => section.querySelector(`[data-k="${k}"]`);
-    const put = (k, big, label, more) => {
-      col(k).querySelector(".measure-number").textContent = big;
-      col(k).querySelector(".measure-label").textContent = label;
-      col(k).querySelector(".measure-more").innerHTML = more;
-    };
-    put("sources", String(names.length), t("measure_sources", `${Math.min(...years)}–${Math.max(...years)}`), `<ul class="measure-list">${lenses.map((l) => `<li>${lensText(l).title}</li>`).join("")}</ul>`);
-    put("text", number(lenses.reduce((sum, l) => sum + total(l), 0) / 1e6, 0), t("measure_text"),
-      `<ul class="measure-list">${[...lenses].sort((a, b) => total(b) - total(a)).map((l) => `<li><span>${lensText(l).title}</span><b>${amount(total(l))}</b></li>`).join("")}</ul>`);
-    if (main?.sensitivity) put("tests", percent(main.sensitivity.found["0.8"]), t("measure_tests", lensText(main).short), `<p>${t("measure_alarms", percent(main.sensitivity.false_alarms), percent(main.sensitivity.found["0.4"]))}</p>`);
+    const col = (k, big, label, more) => `<div class="measure-col" data-k="${k}"><h3>${t(`measure_${k}_title`)}</h3><p class="measure-number">${big}</p><p class="measure-label">${label}</p><div class="measure-more">${more}</div></div>`;
+    return el(`<div>${col("sources", String(names.length), t("measure_sources", `${Math.min(...years)}–${Math.max(...years)}`), `<ul class="measure-list">${lenses.map((l) => `<li>${lensText(l).title}</li>`).join("")}</ul>`)}
+      ${col("text", number(lenses.reduce((sum, l) => sum + total(l), 0) / 1e6, 0), t("measure_text"), `<ul class="measure-list">${[...lenses].sort((a, b) => total(b) - total(a)).map((l) => `<li><span>${lensText(l).title}</span><b>${amount(total(l))}</b></li>`).join("")}</ul>`)}
+      ${main.sensitivity ? col("tests", percent(main.sensitivity.found["0.8"]), t("measure_tests", lensText(main).short), `<p>${t("measure_alarms", percent(main.sensitivity.false_alarms), percent(main.sensitivity.found["0.4"]))}</p>`) : ""}</div>`);
   };
-  const seen = new IntersectionObserver((list) => list.some((e) => e.isIntersecting) && (seen.disconnect(), fill().catch(() => {})), { rootMargin: "600px 0px" });
+  const seen = new IntersectionObserver((list) => list.some((e) => e.isIntersecting) && (seen.disconnect(), awaited(cols, () => fill().then((box) => { const f = document.createDocumentFragment(); f.append(...box.children); return f; }))), { rootMargin: "600px 0px" });
   seen.observe(section);
 }
 
@@ -2025,13 +2042,6 @@ function lostPage() {
   view.replaceChildren(lost);
   // The lights lie where the text is not: beside it on a wide screen, above it on a phone (shore's default).
   shore(lost, { names: 24, pitch: 0.5, look: { x: 0.2, z: 0.1, dist: 1.5, yaw: -0.35 } });
-}
-
-/** Data that did not come: what happened and what to do, with a way to try again. */
-function failedPage() {
-  const box = el(`<section class="empty" role="alert"><h1>${t("failed_title")}</h1><p>${t("failed")}</p><p><button type="button" class="primary">${t("reload")}</button></p></section>`);
-  box.querySelector("button").addEventListener("click", () => location.reload());
-  view.replaceChildren(box);
 }
 
 /** One screen about a name: when it peaked, its voyage, what the news had it doing, and who keeps company like it. */
@@ -2348,8 +2358,8 @@ function route() {
     document.documentElement.classList.remove("voyaging", "embedded");
     masthead.style.removeProperty("--voyage");
     if (!place) scrollTo(0, 0);
-    return Promise.resolve((page ? pages[page] || lostPage : homePage)(...args))
-      .catch(failedPage)
+    // The page's skeleton while its data comes, and where it does not come, a line and "Try again" (awaited).
+    return awaited(view, () => (page ? pages[page] || lostPage : homePage)(...args), { shape: "page", then: () => describe(page, args) })
       .then(() => {
         describe(page, args);
         settle();
