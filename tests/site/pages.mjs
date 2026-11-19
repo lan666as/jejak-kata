@@ -95,6 +95,23 @@ const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport:
   for (let i = 0; i < 6; i++) { await p.locator(".gauge input").fill(String(20 + 10 * i)); await p.locator(".controls button").click(); await p.waitForTimeout(200); n += await p.locator(".verdict:not([hidden])").count(); await p.locator(".controls button").click(); await p.waitForTimeout(250); }
   log("guess the number plays six rounds to a score", (await p.locator(".score").count()) === 1, `${n} verdicts; score: ${await p.locator(".score").innerText().catch(() => "-")}; errors ${p.errors.length}`);
   await p.close(); }
+{ // no chart text under 11px on a phone (360 and 430 wide): every figure drawn as SVG, on every page with figures, scrolled
+  // through so that each draws itself (the names on a WebGL sea are drawn at 12px and up, in sea.js)
+  const pages = ["#/", "#/temuan", "#/kata/kpk", "#/potret/prabowo", "#/peta", "#/main", "#/metode", "#/kuis", "#/tebak", "#/menempel", "#/lingkaran", "#/redaksi", "#/pasang", "#/balap", "#/tahun", "#/bergeser", "#/entitas"];
+  for (const width of [360, 430]) {
+    const p = await fresh({ viewport: { width, height: 800 } }), small = [];
+    for (const hash of pages) {
+      await p.goto(base + hash); await p.waitForTimeout(1800);
+      for (let y = 0, h = await p.evaluate(() => document.documentElement.scrollHeight); y < h; y += 700) { await p.evaluate((y) => scrollTo(0, y), y); await p.waitForTimeout(150); }
+      await p.evaluate(() => document.querySelectorAll("details").forEach((d) => (d.open = true))); await p.waitForTimeout(400);
+      const found = await p.evaluate(() => [...document.querySelectorAll("svg text, svg tspan")].filter((t) => t.textContent.trim() && t.getClientRects().length && t.getScreenCTM())
+        .map((t) => [t.textContent.trim().slice(0, 16), parseFloat(getComputedStyle(t).fontSize) * Math.hypot(t.getScreenCTM().a, t.getScreenCTM().b)]).filter(([, px]) => px < 10.95));
+      if (found.length) small.push(`${hash}: ${found.length}, e.g. "${found[0][0]}" ${found[0][1].toFixed(1)}px`);
+    }
+    log(`no chart text under 11px at ${width}px`, !small.length && !p.errors.length, `${pages.length} pages; ${small.join("; ") || "none smaller"}; errors ${p.errors.length} ${p.errors[0] || ""}`);
+    await p.close();
+  }
+}
 { // saving a plate as an image with the site's typeface
   const p = await fresh({ viewport: { width: 1200, height: 800 }, acceptDownloads: true }); await p.goto(base + "#/cerita/prabowo"); await p.waitForSelector(".tools button");
   const [d] = await Promise.all([p.waitForEvent("download", { timeout: 15000 }).catch(() => null), p.locator(".tools button").first().click()]);
