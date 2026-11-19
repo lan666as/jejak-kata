@@ -262,7 +262,7 @@ replaced monthly (hence `manifests/`).
 ### Checking the site
 
 `tests/site` uses the site like a reader, in a real browser (`cd tests/site && npm install` once); each check is
-`node tests/site/<name>.mjs` and fails with a non-zero exit. `./run.sh look` runs the first five, and `./run.sh deploy`
+`node tests/site/<name>.mjs` and fails with a non-zero exit. `./run.sh look` runs the first six, and `./run.sh deploy`
 runs `look` first.
 
 | Check | What it reads |
@@ -271,6 +271,7 @@ runs `look` first.
 | `stories.mjs` | every story, step by step, by key and by scroll, at 1280px and 360px and with reduced motion: the stage stuck, the caption, the figure on screen (no text under 12px, a strip's rows apart, a tall strip's named rows in its window), the band showing its step |
 | `pages.mjs` | language switch, back button, shared links, a slow line, the menu, search, the map, the games, a saved image |
 | `hero.mjs` | the home hero with WebGL, without, and with reduced motion; the dive; the quality ladder only stepping down and settling |
+| `sound.mjs` | the sound layer: off by default and nothing of it made before the toggle is pressed; the toggle in both languages, by keyboard and in the phone's menu; the choice kept across a reload; silent in a hidden tab, once turned off and in an embed; no errors with storage refused or without Web Audio; then the bed of each family, every sound and 40 s of the first page rendered offline, each peak under -6 dBFS and nothing NaN (`SOUND_WAV=<dir>` writes them as WAV files to listen to) |
 | `webkit.mjs` | the same pages in WebKit (Safari's engine), with and without WebGL, and as an older Safari; skips where WebKit cannot run |
 | `seas.mjs` | the map by mouse, keys, buttons and touch (one finger, pinch, twist, tilt, tap), the hero by touch, the held seas |
 | `shift.mjs` | layout shift while pages load and scroll (under 0.05) |
