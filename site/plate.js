@@ -3,6 +3,8 @@
 // travels) and `strip` (rows on one scale, dots that travel from one state to the next). Nothing is redrawn
 // when the moment changes: the marks move.
 
+import { board } from "./labels.js";
+
 // A plate takes its inks from the page, or from the node it is drawn for (`inks`): a story's stage is the deep in both
 // schemes, and a plate on it is drawn in the night's inks on the stage itself (style.css, .stage-figure). Saved as an
 // image it is paper again, in the page's own inks (plateImage).
@@ -140,25 +142,35 @@ export function plate(spec, width, height) {
     at(marker, x(i), 0);
     marker.lastElementChild.textContent = spec.periods[i];
     if (spec.pages) made.note(spec.pages(i));
-    // Names stand at the right, at the height of their value at the marker, pushed apart where they would touch.
-    const rows = spec.series.map((s, k) => ({ k, v: s.values[i] })).filter((r) => r.v !== null && r.v !== undefined).sort((a, b) => b.v - a.v);
-    for (const r of rows) r.h = name(r.k, `${spec.series[r.k].label} ${percent(r.v)}${spec.series[r.k].off?.[i] ? " ±" + points(spec.series[r.k].off[i]) : ""}`);
-    rows.forEach((r, j) => (r.at = j ? Math.max(y(r.v), rows[j - 1].at + rows[j - 1].h) : y(r.v)));
-    // ... and, where they ran past the foot of the plot, pushed back up together.
-    for (let j = rows.length - 1; j >= 0; j--) rows[j].at = Math.min(rows[j].at, j < rows.length - 1 ? rows[j + 1].at - rows[j].h : y(0) + 15 - rows[j].h);
+    // Names stand at the right, at the height of their value at the marker, in the order of their values, pushed apart
+    // where their pills would touch and, where they ran past the foot of the plot, pushed back up together; then each
+    // takes its box on a board (labels.js, the one placement): one that has no room is left out, never drawn over
+    // another. A line with no value here is named faintly where a name is free.
+    const rows = spec.series.map((s, k) => ({ k, v: s.values[i], named: !!focus?.includes(s.label) })).map((r) => ({ ...r, known: r.v !== null && r.v !== undefined }));
+    const B = board([W - R, T - tag - 10, W, y(0) + 21]), box = (r, a) => [W - R + 2, a + 1 - tag, W - R + 4 + r.wide, a + 1 - tag + r.tall];  // (a pill and 2px)
+    for (const r of rows) {
+      name(r.k, r.known ? `${spec.series[r.k].label} ${percent(r.v)}${spec.series[r.k].off?.[i] ? " ±" + points(spec.series[r.k].off[i]) : ""}` : spec.series[r.k].label);
+      const pill = groups[r.k].querySelector(".beacon");
+      [r.wide, r.tall] = [+pill.getAttribute("width"), +pill.getAttribute("height") + 2];
+    }
+    const stack = rows.filter((r) => r.known).sort((a, b) => b.v - a.v);
+    stack.forEach((r, j) => (r.at = j ? Math.max(y(r.v), stack[j - 1].at + stack[j - 1].tall) : y(r.v)));
+    for (let j = stack.length - 1; j >= 0; j--) stack[j].at = Math.min(stack[j].at, j < stack.length - 1 ? stack[j + 1].at - stack[j].tall : y(0) + 20 + tag - stack[j].tall);
+    for (const r of [...stack.filter((r) => r.named), ...stack.filter((r) => !r.named)]) if (!B.place([box(r, r.at)], spec.series[r.k].label)) r.at = null;
+    for (const r of rows.filter((r) => !r.known)) r.at = (B.place([0, 1, 2, 3, 4, 5, 6].map((d) => box(r, T + 15 * (r.k + d))), spec.series[r.k].label)?.[1] ?? NaN) - 1 + tag || null;
     groups.forEach((g, k) => {
-      const row = rows.find((r) => r.k === k), [dot, pill, text] = [g.querySelector("circle"), g.querySelector(".beacon"), g.querySelector("text")];
-      const named = !!row && !!focus?.includes(spec.series[k].label), ghost = !!focus && !named;
+      const row = rows[k], [dot, pill, text] = [g.querySelector("circle"), g.querySelector(".beacon"), g.querySelector("text")];
+      const named = row.known && row.named, ghost = !!focus && !named;
       // A line the step does not name stays readable as context: its name and value at GHOST, its line fainter still.
-      g.style.opacity = !row ? 0.25 : ghost ? GHOST : 1;
+      g.style.opacity = !row.known ? 0.25 : ghost ? GHOST : 1;
       g.querySelectorAll("polyline").forEach((l) => (l.style.opacity = ghost ? FAINT : 1));
-      dot.style.opacity = row ? (ghost ? FAINT : 1) : 0;
-      if (!row) name(k, spec.series[k].label);
-      if (row) at(dot, x(i), y(row.v));
-      at(text, 0, (row ? row.at : T + 15 * k) + 4);
+      dot.style.opacity = row.known ? (ghost ? FAINT : 1) : 0;
+      if (row.known) at(dot, x(i), y(row.v));
+      text.style.opacity = row.at === null ? 0 : "";
+      at(text, 0, (row.at ?? T) + 4);
       // The number the caption names stands on the beacon: amber is the one number a figure wants you to see.
-      at(pill, 0, (row ? row.at : T + 15 * k) + 4);
-      pill.setAttribute("opacity", +named);
+      at(pill, 0, (row.at ?? T) + 4);
+      pill.setAttribute("opacity", +(named && row.at !== null));
       text.style.fill = named ? made.deep : inked;
     });
   };

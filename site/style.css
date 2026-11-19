@@ -800,6 +800,9 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
   .stage.tall .stage-figure { overflow: hidden; place-items: start center; mask-image: linear-gradient(transparent, #000 var(--above, 0px), #000 calc(100% - var(--below, 0px)), transparent); }
   .stage.tall .stage-figure > * { transform: translateY(calc(-1 * var(--slide, 0px))); }
   .stage.tall .stage-figure .plate svg { max-height: none; }
+  /* an opening that rises over a strip's rows (app.js, share: `risen`), or over a sliding strip: the window ends where
+     the opening (and its shade, --s1 over the figure's edge) begins, fading there like a sliding strip's edge */
+  .stage:is(.tall, .risen)[data-step="0"] .stage-figure { overflow: hidden; mask-image: linear-gradient(transparent, #000 var(--above, 0px), #000 calc(100% - var(--rise, 0px) - var(--s6)), transparent calc(100% - var(--rise, 0px) - var(--s1))); }
 }
 .stage-side { grid-area: side; display: flex; flex-direction: column; gap: var(--s2); min-height: 0; }
 .stage-meta { display: flex; justify-content: space-between; gap: var(--s3); max-width: none; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); font-weight: 600; color: var(--on-deep-2); font-variant-numeric: tabular-nums; }

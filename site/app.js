@@ -1320,7 +1320,7 @@ const STRIPS = {
  * than that room keeps 26px apart is drawn at the height that does (`tall`), in a window of that room, and slides
  * through it as the page scrolls through the scene (stage, `slide`).
  */
-const TURN = ["", "1rem", "var(--t-small)"];
+const TURN = ["", "1rem", "var(--t-small)"], FOOT = 50;  // (a plate's note and the site's name: plate.js, sheet)
 function share(s, part) {
   const box = s.stage, side = box.querySelector(".stage-side"), style = getComputedStyle(box);
   const whole = box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - parseFloat(style.rowGap), chrome = side.offsetHeight - s.caption.offsetHeight;
@@ -1338,11 +1338,19 @@ function share(s, part) {
     if (whole - chrome - text >= want) break;
   }
   probe.remove();
-  const fig = Math.floor(Math.max(whole * 0.4, whole - chrome - text));
+  // The opening may rise over the figure's foot (FOOT: its note and the site's name), never over a mark: where it is
+  // longer, lines give it the room (down to three tenths of the stage), and a strip keeps the room its rows need: the
+  // window it is seen in then ends where the opening begins, fading there as a sliding strip's window does (`risen`).
+  const clear = Math.floor(whole - chrome - open + FOOT);
+  let fig = Math.floor(Math.max(whole * 0.4, whole - chrome - text));
+  if (!need && fig > clear) fig = Math.max(Math.floor(whole * 0.3), clear);
+  else if (need && need <= fig) fig = Math.max(need, Math.min(fig, clear));
   box.style.setProperty("--fig", fig + "px");
   s.tall = need > fig ? need : 0;
   box.classList.toggle("tall", !!s.tall);
-  box.style.setProperty("--rise", Math.ceil(Math.max(0, open - (whole - chrome - fig))) + "px");
+  const rise = Math.ceil(Math.max(0, open - (whole - chrome - fig)));
+  box.style.setProperty("--rise", rise + "px");
+  box.classList.toggle("risen", rise > FOOT);
 }
 /** From 900px a story's captions take at most two sizes: --t-caption where a step fits its band at it, and for every
  *  other step one size smaller, the largest of the ladder at which the longest caption of the whole story fits (an

@@ -896,7 +896,8 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     frame(ids, ms = LEG) {
       wanted = W || size() ? null : [ids, ms];
       if (wanted) return;
-      const ps = [...routes.flatMap((r) => r.legs), ...ids.map((id) => chart.words.indexOf(id)).filter((k) => k >= 0).map((k) => ({ x: chart.x[k] / 1000, z: chart.y[k] / 1000 }))];
+      // (a word's light stands as high above the water as it moved: it is the light, not its foot, that must be seen)
+      const ps = [...routes.flatMap((r) => r.legs), ...ids.map((id) => chart.words.indexOf(id)).filter((k) => k >= 0).map((k) => ({ x: chart.x[k] / 1000, z: chart.y[k] / 1000, y: Math.max(0, chart.moved[k] ?? 0) * RISE * (1 - settle()) }))];
       if (!ps.length) return;
       const mx = ps.reduce((s, p) => s + p.x, 0) / ps.length, mz = ps.reduce((s, p) => s + p.z, 0) / ps.length;
       // The route's main direction; the camera looks across it, turning no more than about 35 degrees.
@@ -917,7 +918,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
         const was = { ...aim };
         Object.assign(aim, to);
         place();
-        const ok = ps.every((p) => { const q = project(p.x, 0, p.z); return q && q[0] > pad[3] + 24 && q[0] < W - pad[1] - 24 && q[1] > pad[0] + 24 && q[1] < H - pad[2] - 24; });
+        const ok = ps.every((p) => { const q = project(p.x, p.y || 0, p.z); return q && q[0] > pad[3] + 24 && q[0] < W - pad[1] - 24 && q[1] > pad[0] + 24 && q[1] < H - pad[2] - 24; });
         Object.assign(aim, was);
         place();
         return ok;
