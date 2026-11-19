@@ -1348,6 +1348,7 @@ const STRIPS = {
  * through it as the page scrolls through the scene (stage, `slide`).
  */
 const TURN = ["", "1rem", "var(--t-small)"], FOOT = 50;  // (a plate's note and the site's name: plate.js, sheet)
+const BAND = 76;  // on a phone, the sea's band under the longest caption: room for a ring and its name (a 30px pill) clear of the text and the controls
 function share(s, part) {
   const box = s.stage, side = box.querySelector(".stage-side"), style = getComputedStyle(box);
   const whole = box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - parseFloat(style.rowGap), chrome = side.offsetHeight - s.caption.offsetHeight;
@@ -1357,19 +1358,22 @@ function share(s, part) {
   const want = need ? Math.min(need, whole * 0.6) : whole / 2;
   const probe = el(`<div class="caption" style="position:absolute;visibility:hidden;width:${s.caption.clientWidth}px;height:auto;overflow:visible"></div>`);
   side.append(probe);
+  let band = box.closest(".sea-on") ? BAND : 0;  // (where the stages lie on the sea)
   const high = (j) => ((probe.innerHTML = `<div class="turn">${s.said(j)}</div>`), probe.scrollHeight);
   let text = 0, open = 0;
   for (const size of TURN) {
     box.style.setProperty("--turn", size || "var(--t-body)");
     [open, text] = [high(0), Math.max(0, ...[...Array(s.steps - 1)].map((_, j) => high(j + 1)))];
-    if (whole - chrome - text >= want) break;
+    if (whole - chrome - text - band >= want) break;
   }
   probe.remove();
   // The opening may rise over the figure's foot (FOOT: its note and the site's name), never over a mark: where it is
   // longer, lines give it the room (down to three tenths of the stage), and a strip keeps the room its rows need: the
   // window it is seen in then ends where the opening begins, fading there as a sliding strip's window does (`risen`).
   const clear = Math.floor(whole - chrome - open + FOOT);
-  let fig = Math.floor(Math.max(whole * 0.4, whole - chrome - text));
+  if (need > whole - chrome - text) band = 0;  // a strip that slides anyway keeps its window: no band under it
+  let fig = Math.floor(Math.max(whole * 0.4, whole - chrome - text - band));
+  if (need > fig && need <= fig + band) fig = need;  // a strip seen whole, title to foot, before the sea's band (a step then left without one drops it)
   if (!need && fig > clear) fig = Math.max(Math.floor(whole * 0.3), clear);
   else if (need && need <= fig) fig = Math.max(need, Math.min(fig, clear));
   box.style.setProperty("--fig", fig + "px");
@@ -1774,7 +1778,8 @@ async function storySea(holder, stages, parts) {
     const stage = stages[scene].stage, taking = entering && !still();
     if (taking) (stages.forEach((s) => s.stage.classList.remove("sea-full")), stage.classList.add("sea-full"), (full = performance.now()));
     // The route sailed: the scene's own word, else the one word the step brings forward.
-    const one = ids([part.word || ""])[0] ?? (focus.length === 1 ? focus[0] : undefined), sailed = one === undefined ? [] : [{ id: one, route: await route(one) }];
+    // (on a phone, where the band has room for little, a step's own words come before the scene's route)
+    const one = (wide || !focus.length ? ids([part.word || ""])[0] : undefined) ?? (focus.length === 1 ? focus[0] : undefined), sailed = one === undefined ? [] : [{ id: one, route: await route(one) }];
     if (at !== label) return;  // moved on while the route came
     const year = first.periods.indexOf(String(step?.mark ?? step?.at ?? "").match(/\d{4}/g)?.at(-1)), sail = !j || !sailed[0]?.route.some(Boolean) ? 0 : year >= 0 ? year : first.periods.length - 1;
     // The key: the words the sea names (those the step brings forward first; as many as fit its room, at most four,

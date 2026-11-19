@@ -183,7 +183,12 @@ A story is a voyage in three parts.
    proximity). Step 0 of a scene opens it: the scene's title and text, so the reader knows the figure before it
    moves. The caption shows its head, the text, and "3 / 6"; a row of ticks shows the steps and takes a tap.
    Nothing is ever cut: on a phone the stage shares its height by need (`--fig`): the caption band keeps room for its
-   tallest step and the figure gets the rest, at least half (a strip that slides, up to three fifths); Where the tallest
+   tallest step and, where the stages lie on the sea, a band of the sea under it (`BAND`, 76px: a ring and its name in a
+   pill, clear of the text and the controls), and the figure gets the rest, at least half (a strip that slides, up to
+   three fifths). A strip that would be seen whole, title to foot, if the sea's band gave way takes that room, and a strip
+   that slides anyway keeps its window: the sea's band gives way first. On a step where the sea then names nothing, the
+   caption's shade covers the band and the key is not shown (an empty band is worse than none); on a phone a step's own
+   words come before the scene's route (the route is sailed only where the step brings no word of its own). Where the tallest
    step would not fit beside that, the stage's captions are set a size smaller (1rem, then `--t-small`) and at the last
    the figure gives up a little more (to two fifths); an opening longer still rises over the figure's foot while it is
    read (a move, not a change of layout), the scene's name and count with it, and never over a mark: lines give it
