@@ -555,7 +555,9 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .duets a { display: flex; flex-direction: column; gap: var(--s1); height: 100%; padding: var(--s4) var(--s5) var(--s3); color: var(--ink); text-decoration: none; background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); transition: border-color var(--d-press) var(--sail); }
 .duets a:hover { border-color: var(--ink-2); }
 /* the first pair, the counting's top, leads: two columns and two rows from 900px, drawn larger */
-@media (min-width: 900px) { .duets { grid-template-columns: repeat(3, minmax(0, 1fr)); } .duets > li:first-child { grid-column: span 2; grid-row: span 2; }
+.duets > li:first-child { grid-column: 1 / -1; }  /* the lead pair across the page, the rest under it */
+.duets > li:first-child .duet-figure :is(.duet-rose, .duet-fell) { font-size: 15px; }
+@media (min-width: 900px) { .duets { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .duets > li:first-child a { padding: var(--s5) var(--s6) var(--s4); justify-content: space-between; } .duets > li:first-child .duet-word { font-size: var(--t-h1); line-height: var(--l-h1); } }
 .duet-word { font: 800 var(--t-h2)/var(--l-h2) var(--type); font-stretch: 75%; color: var(--route); }
 .duet-was { font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }

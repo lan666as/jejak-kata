@@ -1058,8 +1058,9 @@ async function yearsPage() {
 }
 
 /** Two words over the periods, on one scale: the one that fell in grey, named where it starts; the one that rose in the
- *  route's colour, named where it ends; the year its line first runs above the other's, marked. */
-function duet(lens, rose, fell, W = 340, H = 150) {
+ *  route's colour, named where it ends; the year its line first runs above the other's, marked (and on the lead, named:
+ *  a small one keeps only its first and last year). Drawn at the width it is shown at, so its text is as set. */
+function duet(lens, rose, fell, W = 340, H = 150, lead = false) {
   const L = 10, R = 10, T = 26, B = 24, n = lens.periods.length, top = Math.max(...rose.share, ...fell.share) || 1;
   const x = (i) => L + ((W - L - R) * i) / (n - 1), y = (v) => H - B - ((H - T - B) * v) / top;
   const points = (e) => e.share.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
@@ -1068,7 +1069,7 @@ function duet(lens, rose, fell, W = 340, H = 150) {
   return `<svg class="duet-figure" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${escape(t("duet_label", a, b, lens.periods[cross] ?? ""))}">
     <line class="grid" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>
     <polyline class="spark-line k1" points="${points(fell)}"/><polyline class="spark-line draw" pathLength="1" points="${points(rose)}"/>
-    ${cross > 0 ? `<line class="cross" x1="${x(cross)}" x2="${x(cross)}" y1="${T - 6}" y2="${H - B}"/><text class="duet-year" x="${x(cross)}" y="${T - 10}" text-anchor="middle">${lens.periods[cross]}</text>` : ""}
+    ${cross > 0 ? `<line class="cross" x1="${x(cross)}" x2="${x(cross)}" y1="${T - 6}" y2="${H - B}"/>${lead ? `<text class="duet-year" x="${x(cross)}" y="${T - 10}" text-anchor="middle">${lens.periods[cross]}</text>` : ""}` : ""}
     <text class="duet-fell" x="${L}" y="${Math.max(12, y(fell.share[0]) - 7)}">${escape(b)}</text>
     <text class="duet-rose" x="${W - R}" y="${Math.max(12, y(rose.share.at(-1)) - 7)}" text-anchor="end">${escape(a)}</text>
     <text x="${L}" y="${H - 6}">${lens.periods[0]}</text><text x="${W - R}" y="${H - 6}" text-anchor="end">${lens.periods.at(-1)}</text></svg>`;
@@ -1101,8 +1102,11 @@ async function findingsPage() {
     const lens = await lensNamed(name), { swaps, arrivals } = await highlights(lens);
     const box = el("<div></div>");
     const pairs = (await Promise.all(swaps.map(([fell, rose]) => Promise.all([entry(lens, rose), entry(lens, fell)])))).filter(([r, f]) => r && f && crosses(r, f));
+    // The first pair leads, across the page; the next under it, by how many times as common the rising word ends.
+    const effect = ([r, f]) => third(r, true) / third(f, true), shown = [pairs[0], ...pairs.slice(1, LEAD).sort((a, b) => effect(b) - effect(a))].filter(Boolean);
+    const w = room(), wide = innerWidth >= 900, cols = wide ? 3 : Math.max(1, Math.floor((w + 16) / 320)), col = Math.floor((w - 16 * (cols - 1)) / cols - 50);
     box.append(el(`<h2>${t("swaps_title")}</h2>`), el(`<p class="sub">${t("swaps_about")}</p>`), el(`<p class="rule">${t("swaps_rule", pairs.length, swaps.length, Math.min(LEAD, pairs.length))}</p>`),
-      folded(pairs, LEAD, (list) => el(`<ul class="duets">${list.map(([r, f], k) => `<li><a href="${href("kata", lens.words[r.word])}"><b class="duet-word">${lens.words[r.word]}</b><span class="duet-was">${escape(t("in_company", lens.words[f.word]))}</span>${k ? duet(lens, r, f) : duet(lens, r, f, 560, 270)}</a></li>`).join("")}</ul>`),
+      folded(pairs, LEAD, () => el(`<ul class="duets">${shown.map(([r, f], k) => `<li><a href="${href("kata", lens.words[r.word])}"><b class="duet-word">${lens.words[r.word]}</b><span class="duet-was">${escape(t("in_company", lens.words[f.word]))}</span>${k ? duet(lens, r, f, col, Math.round(col * 0.45)) : duet(lens, r, f, w - (wide ? 66 : 50), wide ? 300 : 200, true)}</a></li>`).join("")}</ul>`),
         (list) => sparks(lens, list.map((p) => p[0]), list.map((p) => p[1]))));
     for (const kind of ["went", "stayed"]) {
       const entries = (await Promise.all(arrivals[kind].map(([w]) => entry(lens, w)))).filter(Boolean);
