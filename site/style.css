@@ -131,6 +131,14 @@ main:focus { outline: none; }
 #suggestions a { display: flex; align-items: center; min-height: var(--tap); padding: 0 var(--s3); border-radius: var(--r1); text-decoration: none; }
 #language { color: var(--on-deep); background: transparent; border-color: var(--line-deep); white-space: nowrap; }
 #language:hover { background: var(--deep-2); border-color: var(--on-deep-2); }
+/* the sound toggle (sound.js): a speaker, with its waves while sound is on and a cross while it is off; its name is
+   written beside it in the phone's menu and an embed's foot, and only said on the bar */
+.sound-toggle { gap: var(--s2); white-space: nowrap; }
+.sound-toggle svg { flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sound-toggle[aria-pressed="true"] .hush, .sound-toggle[aria-pressed="false"] .wave { display: none; }
+#sound { color: var(--on-deep); background: transparent; border-color: var(--line-deep); }
+#sound:hover { background: var(--deep-2); border-color: var(--on-deep-2); }
+#sound[aria-pressed="true"] { background: var(--deep-2); border-color: var(--on-deep-2); }
 
 /* phones and tablets: wordmark, search button, menu button; the menu is a full-screen sheet under the bar */
 @media (max-width: 899.98px) {
@@ -151,7 +159,7 @@ main:focus { outline: none; }
   #search { flex-wrap: wrap; }
   #suggestions a { color: var(--on-deep); }
   #suggestions a:hover, #suggestions a:focus { background: var(--line-deep); }
-  #language { align-self: flex-start; }
+  #language, #sound { align-self: flex-start; }
 }
 /* from 900px: everything on one bar */
 @media (min-width: 900px) {
@@ -166,6 +174,8 @@ main:focus { outline: none; }
   .menu nav a[aria-current="page"] { color: var(--on-deep); box-shadow: inset 0 calc(-1 * var(--mark)) 0 var(--route-on-deep); }
   .menu nav a:focus-visible { outline-offset: calc(-1 * var(--rule) - var(--s1)); }
   #search { flex: 0 1 17rem; min-width: 11rem; }
+  #sound { padding: 0 var(--s3); }
+  #sound span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   #suggestions { position: absolute; z-index: 11; top: calc(100% + var(--s1)); left: 0; right: 0; background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r1); box-shadow: var(--lift); --focus: var(--route); }
   #suggestions a { color: var(--ink); }
   #suggestions a:hover, #suggestions a:focus { background: var(--chart-3); }
@@ -862,6 +872,16 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
   .hero-key { right: calc(8.5rem + 2 * var(--gutter)); }
 }
 .hero-down:hover { color: var(--on-deep); text-decoration: none; background: var(--deep-2); }
+/* the one invitation to turn sound on, until the reader chooses either way; its waves call a few times, never with
+   reduced motion */
+.sound-ask { display: flex; align-items: center; margin: 0; max-width: none; }
+.sound-ask button { padding: 0 var(--s2); color: var(--on-deep-2); font-size: var(--t-small); border-color: transparent; }
+.sound-ask button:hover { color: var(--on-deep); background: transparent; border-color: transparent; text-decoration: underline; }
+.sound-ask .no { min-width: var(--tap); font-size: var(--t-lede); }
+.sound-ask svg { flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sound-ask .hush { display: none; }
+@keyframes call { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: no-preference) { .sound-ask .wave { animation: call calc(var(--d-leg) * 2) var(--sail) 4; } }
 .hero-down svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--d-press) var(--sail); }
 .hero-down:hover svg { transform: translateY(var(--s1)); }
 @media (min-width: 900px) {
@@ -874,6 +894,8 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
   .hero-try { flex-direction: column; align-items: flex-start; gap: var(--s1); margin-top: var(--s4); }  /* the label above the chips: no hanging indent */
   .hero-try .chips { margin: 0; padding: var(--s1) 0; mask-image: none; }
   .hero-foot { max-width: 32rem; margin-top: var(--s4); }
+  .hero-foot { flex-wrap: nowrap; align-items: flex-start; }
+  .hero-foot > .hero-now { flex: 1 1 auto; }  /* the invitation stands beside what sails, not under it: the hero stays one screen */
   /* the dive is signposted at the foot of the first screen, in the middle */
   .hero-down { position: absolute; left: 50vw; bottom: var(--s5); transform: translateX(-50%); background: color-mix(in srgb, var(--deep) 70%, transparent); }
   .hero-down:hover { transform: translateX(-50%); }

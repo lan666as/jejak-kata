@@ -48,6 +48,32 @@ const lensText = (lens) => LENS_TEXT[lens.lens][language];
 /** What a word of the first page is, for a reader who may not know (text.js, GLOSS), in the language shown. */
 const gloss = (word) => GLOSS[word]?.[language] || "";
 
+// Sound (sound.js) is off until the reader turns it on. Nothing of it exists before that press: the press makes the
+// AudioContext (a browser lets sound start only in a gesture), then sound.js is fetched and handed it. Where it was
+// left on, the first press or key of a later visit does the same. A frame on another site (an embed) is silent unless
+// turned on there, and keeps no choice. Without Web Audio there is no toggle.
+const WebAudio = window.AudioContext || window.webkitAudioContext;
+let sounding = null, made = null, hearing = false, heard = "home";  // the layer once made; whether it is on; the page's family
+/** A sound of what the site does, if sound is on. */
+const hear = (name, ...args) => hearing && sounding?.play(name, ...args);
+const embedded = () => document.documentElement.classList.contains("embedded");
+function listen(on, chosen = true) {
+  hearing = on;
+  document.querySelectorAll(".sound-toggle").forEach((b) => b.setAttribute("aria-pressed", on));
+  if (chosen) document.querySelector(".sound-ask")?.remove();
+  if (chosen && !embedded()) kept("localStorage", "sound", on ? "on" : "off");
+  if (!on) return sounding?.off();
+  made ||= ((ctx) => import("./sound.js").then((m) => (sounding = m.sound(ctx))).catch(() => null))(new WebAudio());
+  made.then((s) => s && (hearing ? (s.on(), s.bed(heard), chosen && s.play("on")) : s.off()));  // off again before it was ready
+}
+/** The one invitation, on the first page's hero, until the reader has chosen either way. */
+const soundAsk = () => `<p class="sound-ask"><button type="button" class="yes">${document.querySelector("#sound svg").outerHTML}${t("sound_ask")}</button><button type="button" class="no" aria-label="${t("sound_no")}">×</button></p>`;
+function wake(e) {
+  if (e.target.closest?.(".sound-toggle, .sound-ask")) return;  // that press says for itself
+  for (const kind of ["click", "keydown"]) removeEventListener(kind, wake, true);
+  if (hearing) listen(true, false);
+}
+
 // ---- data ---------------------------------------------------------------
 
 const cache = new Map();
@@ -277,6 +303,12 @@ function played(figure, start = figure.labels.length - 1) {
   return box;
 }
 
+/** The numbers a step names, those on the beacon (plate.js), for the sound of the step: its notes follow them. */
+const beaconed = (room) => [...room.querySelectorAll(".plate:not(.off) .beacon[opacity='1']")].map((pill) => {
+  const said = pill.nextElementSibling?.textContent || "", n = (/(\d[\d.,]*)\s*%/.exec(said) || /(\d[\d.,]*)\D*$/.exec(said))?.[1];
+  return n ? parseFloat(n.replace(/[.,](?=\d{3}\b)/g, "").replace(",", ".")) : NaN;
+});
+
 /**
  * A scene of a story on its stage. The figure holds the screen and the caption sits in one place beside it (below
  * it on a narrow screen); moving a step turns the caption while the figure's marks travel. Step 0 opens the scene
@@ -337,10 +369,11 @@ function stage(part, k, of, steer, intro = "") {
   };
   const go = (j) => {
     if (j === at) return;
-    const backwards = j < at;
+    const backwards = j < at, was = at;
     at = j;
     box.dataset.step = j;
     show();
+    if (was >= 0) hear("step", backwards, j ? beaconed(room) : []);
     // The caption turns: the one that was leaves a few pixels the way the reader came from, the new one comes in.
     for (const old of caption.querySelectorAll(".turn:not(.out)")) {
       old.classList.add("out");
@@ -944,6 +977,7 @@ async function chartPage(name = MAIN, ...list) {
   // A map opened with no word shows one route already sailed, as an example, until the reader chooses a word.
   const demo = list.length || !lens.isEntry(lens.index.get(SHOWCASE[0])) ? null : SHOWCASE[0];
   const figure = await chartFigure(lens.lens, demo ? [demo] : list, (word) => {
+    hear("light");
     if (list.includes(word)) return visit(href("kata", word));
     if (list.length >= 4) list.shift();
     list.push(word);
@@ -958,7 +992,7 @@ async function chartPage(name = MAIN, ...list) {
     await figure.set(list);
     await rivalry();
   };
-  const pick = picker(lens, list, update, 4);
+  const pick = picker(lens, list, () => (hear("tick"), update()), 4);
   const rivalry = async () => {
     below.replaceChildren();
     if (list.length < 2) return below.append(el(`<p class="sub">${t("rival_hint")}</p>`));
@@ -1281,6 +1315,7 @@ function sharer(label, what, cls = "") {
   summary.addEventListener("focus", ready);
   summary.addEventListener("click", (e) => {
     const { title, url, image, embed } = what();
+    if (!box.open) hear("sheet");
     if (!box.open && navigator.share) {
       e.preventDefault();
       const data = { title, text: t("share_text", title), url }, file = image && sharedImage(...image).file;
@@ -1574,7 +1609,7 @@ async function storyPage(slug, scene, step, more) {
   const head = () => masthead.offsetHeight;
   const spot = (k, j) => scrollY + stages[k].node.getBoundingClientRect().top - head() + j * stages[k].node.querySelector(".beat").offsetHeight;
   const glide = (top) => scrollTo({ top, behavior: still() ? "instant" : "smooth" });
-  let aim = null, asked = false;
+  let aim = null, asked = false, landed = null;
   // Step j of scene k, or past either end of the scene into the one before or after, the cover or the landing.
   function steer(k, j) {
     if (j < 0 && k === 0) return (aim = null), glide(0);
@@ -1595,6 +1630,8 @@ async function storyPage(slug, scene, step, more) {
     if (aim && Math.abs(rects[aim[0]].top - top + aim[1] * beats[aim[0]]) < 2) aim = null;
     const seen = rects.findIndex((r) => r.top <= middle && r.bottom >= middle), shore = landing.getBoundingClientRect().top;
     if (seen >= 0) last = seen;
+    if (landed === false && shore < middle) hear("land");  // ashore
+    landed = shore < middle;
     if (!rendering && !menuOpen()) marks.set(history.state?.id, seen >= 0 ? [seen, stages[seen].on()] : shore <= top ? [-1, top - shore] : null);
     const sailed = (top - rects[0].top) / (rects.at(-1).bottom - height - rects[0].top);
     masthead.style.setProperty("--voyage", Math.max(0, Math.min(1, sailed)).toFixed(4));
@@ -1622,7 +1659,7 @@ async function storyPage(slug, scene, step, more) {
       steer(from, j + (forward ? 1 : -1));
     },
   };
-  cover.querySelector(".begin").addEventListener("click", () => (steer(0, 0), stages[0].stage.focus({ preventScroll: true })));
+  cover.querySelector(".begin").addEventListener("click", () => (hear("open"), steer(0, 0), stages[0].stage.focus({ preventScroll: true })));
   if (scene && stages[+scene]) scrollTo(0, spot(+scene, Math.max(0, Math.min(stages[+scene].steps - 1, +step || 0))));
   frame();
 
@@ -1662,6 +1699,7 @@ async function embedPage(slug, k = "0", j = "0") {
     at = Math.max(0, Math.min(n, at));
     const step = part.steps[Math.max(0, at - 1)], i = figure.labels.indexOf(step.at);
     if (i >= 0) figure.show(i, at ? step.focus : undefined, step.mark);
+    if (at !== +j) hear("step", at < +j, at ? beaconed(room) : []);
     caption.innerHTML = at ? `<p><b>${head(at)}.</b> ${part.steps[at - 1][language]}</p>` : `<p><b>${part[language].title}.</b> ${part[language].text || ""}</p>`;
     count.textContent = at ? `${at} / ${n}` : t("steps_n", n);
     link.href = open(at);
@@ -1670,6 +1708,8 @@ async function embedPage(slug, k = "0", j = "0") {
     history.replaceState(history.state, "", href("cerita", slug, EMBED, String(k), String(at)));
     j = at;
   };
+  if (WebAudio) box.querySelector(".embed-open").before(document.getElementById("sound").cloneNode(true));
+  box.querySelector(".embed-foot .sound-toggle")?.removeAttribute("id");
   box.querySelector(".back").addEventListener("click", () => go(+j - 1));
   box.querySelector(".on").addEventListener("click", () => go(+j + 1));
   go(+j || 0);
@@ -1689,7 +1729,7 @@ async function homePage() {
   const hero = el(`<section class="hero" aria-labelledby="hero-title"><div class="hero-track"><div class="hero-sea"><div class="chart night"></div>${key}</div></div>
     <div class="hero-text"><h1 id="hero-title">${t("title")}</h1><p class="hero-lede">${t("hero_lede")}</p><div class="hero-ask"></div>
       <div class="hero-try"><span id="hero-try">${t("hero_try")}</span><ul class="chips" aria-labelledby="hero-try">${SHOWCASE.map((w) => `<li><button type="button" aria-pressed="false"${glossed(w)}>${w}</button></li>`).join("")}</ul></div>
-      <div class="hero-foot"><p class="hero-now" role="status"></p><button type="button" class="hero-down quiet">${TIDE_MARK}<span class="dive-cue">${t("hero_dive")}</span><span class="no-dive">${t("hero_down")}</span>${down}</button></div></div></section>`);
+      <div class="hero-foot"><p class="hero-now" role="status"></p>${WebAudio && !kept("localStorage", "sound") ? soundAsk() : ""}<button type="button" class="hero-down quiet">${TIDE_MARK}<span class="dive-cue">${t("hero_dive")}</span><span class="no-dive">${t("hero_down")}</span>${down}</button></div></div></section>`);
   const featured = el(`<section class="featured" aria-labelledby="featured-title"><p class="kicker">${t("featured_kicker")}</p><h2 id="featured-title">${t("featured_title")}</h2>
     ${storyCards(STORIES.slice(0, 3), true)}<p class="more"><a class="button" href="${href("cerita")}">${t("all_stories_n", STORIES.length)}</a></p></section>`);
   const play = el(`<section class="play-home" aria-labelledby="play-title"><p class="kicker">${t("nav_play")}</p><h2 id="play-title">${t("play_home_title")}</h2><p class="sub">${t("play_lede")}</p>
@@ -1728,8 +1768,8 @@ async function homePage() {
     figure.node.dataset.route = word;
     const last = figure.labels.length - 1;
     // The one motion on the site that nobody asked for: the first route, drawn once, in about two legs.
-    if (intro) return figure.chart.time(last, still() ? 0 : 2 * LEG), setTimeout(wanted, still() ? 0 : 2 * LEG + 400);
-    setTimeout(() => figure.node.isConnected && sailing === word && figure.chart.time(last, still() ? 0 : 520 * last), LEG);
+    if (intro) return figure.chart.time(last, still() ? 0 : 2 * LEG), hear("route", last + 1, still() ? 0 : 2 * LEG), setTimeout(wanted, still() ? 0 : 2 * LEG + 400);
+    setTimeout(() => figure.node.isConnected && sailing === word && (figure.chart.time(last, still() ? 0 : 520 * last), hear("route", last + 1, still() ? 0 : 520 * last)), LEG);
   };
   hero.querySelector(".hero-ask").addEventListener("focusin", () => wanted());
   hero.querySelector(".hero-ask").append(suggest(lens, t("hero_ask"), t("hero_go"), async (word) => {
@@ -1765,6 +1805,7 @@ async function homePage() {
   if (drawn) moor(first);
   hero.querySelector(".hero-sea .chart").replaceWith(figure.node);
   const lit = arriving && drawn && figure.chart.arrive?.((n) => t("tally", thousands(n)));
+  if (lit) hear("arrive");
   await figure.chart.drawn();
   if (lit) {
     // Lit when the front has crossed the chart and the rest of the words are in (or have not come in time).
@@ -1804,6 +1845,7 @@ async function homePage() {
     hero.style.setProperty("--dive", p.toFixed(3));
     hero.classList.toggle("away", p > 0.3);
     figure.chart.dive(p);
+    if (hearing) sounding?.dive(p);  // and the sea is heard from under the water
   };
   const ask = () => asked || ((asked = true), requestAnimationFrame(dive));
   const lift = () => (hero.isConnected ? scrollY < hero.offsetHeight + 200 && figure.chart.lift(scrollY) : removeEventListener("scroll", lift));
@@ -1962,6 +2004,7 @@ async function quizPage() {
       box.querySelectorAll(".choices button").forEach((b) =>
         b.addEventListener("click", () => {
           const ok = b.textContent === q.answer;
+          hear(ok ? "right" : "wrong");
           results.push({ ok, label: kind === "year" ? q.answer : q.answer.split(" ")[0] });
           sailed();
           box.querySelectorAll(".choices button").forEach((x) => ((x.disabled = true), x.classList.toggle("right", x.textContent === q.answer), x.classList.toggle("chosen", x === b && !ok)));
@@ -2167,6 +2210,8 @@ function route() {
   query.setAttribute("aria-label", t("search_label"));
   menuLabels();
   shell();
+  heard = !page ? "home" : page === "cerita" && args[0] ? "story" : page === "peta" ? "map" : ["kata", "potret"].includes(page) ? "word" : "rest";
+  if (hearing) sounding?.bed(heard);
   const pages = { kata: wordPage, potret: portraitPage, kuis: quizPage, tebak: guessPage, menempel: stuckPage, pasang: tidePage, redaksi: roomsPage, lingkaran: circlePage, main: playPage,
     peta: chartPage, balap: racePage, tahun: yearsPage, temuan: findingsPage, bergeser: moversPage, entitas: entitiesPage, cerita: storyPage, metode: methodPage };
   const render = () => {
@@ -2371,6 +2416,24 @@ document.getElementById("language").addEventListener("click", () => {
   history.replaceState(history.state, "", href(...here));
   route();
 });
+// Sound: the toggle (in the header, and in an embed's foot), the invitation on the first page, and the sounds every
+// page shares: a barely heard tick as a control is pointed at with a mouse or reached by keyboard, a press, a share
+// sheet opening. A tab out of sight is silent (sound.js).
+if (!WebAudio) document.getElementById("sound").hidden = true;
+else if (kept("localStorage", "sound") === "on" && !embedded()) {
+  hearing = true;  // shown as on; heard from the reader's first press or key
+  document.getElementById("sound").setAttribute("aria-pressed", "true");
+  for (const kind of ["click", "keydown"]) addEventListener(kind, wake, true);
+}
+const CONTROLS = "button, [role=button], summary, a.card, .masthead nav a";
+document.addEventListener("click", (e) => {
+  if (e.target.closest?.(".sound-toggle")) return listen(!hearing);
+  if (e.target.closest?.(".sound-ask")) return listen(!!e.target.closest(".yes"));
+  if (e.target.closest?.("button, [role=button], summary")) hear("press");
+});
+addEventListener("pointerover", (e) => e.pointerType === "mouse" && e.target.closest?.(CONTROLS) && e.target.closest(CONTROLS) !== e.relatedTarget?.closest?.(CONTROLS) && hear("hover"));
+addEventListener("focusin", (e) => e.target.matches?.(CONTROLS) && e.target.matches(":focus-visible") && hear("hover"));
+
 /** The address changed (a link, the back button, a fragment typed by hand): its page, once. */
 function moved() {
   if (location.href === routed) return;
