@@ -15,6 +15,8 @@ export const inks = (node = document.documentElement) => (scope = node);
 const COLOURS = ["--cat-1", "--cat-2", "--cat-3", "--cat-4", "--cat-5", "--cat-6", "--cat-7", "--cat-8", "--cat-9"];
 const SITE = "Jejak Kata · zidan.dev/jejak-kata";
 // Marks travel on the site's curve, one after another (--k: the series or row they belong to), as a leg (--d-leg).
+/** What a step does not name stays as context: its text at GHOST (4.5:1 on a story's panel), its marks at GHOST × FAINT. */
+const GHOST = 0.55, FAINT = 0.64;
 const MOVE = "transition:transform var(--d-leg) var(--sail) calc(var(--k, 0) * 45ms),opacity var(--d-turn) var(--sail)";
 const percent = (v) => (v * 100).toLocaleString(document.documentElement.lang, { maximumSignificantDigits: 2 }) + "%";
 const points = (v) => (v * 100).toLocaleString(document.documentElement.lang, { maximumSignificantDigits: v < 0.0095 ? 1 : 2 });  // percentage points
@@ -146,9 +148,11 @@ export function plate(spec, width, height) {
     for (let j = rows.length - 1; j >= 0; j--) rows[j].at = Math.min(rows[j].at, j < rows.length - 1 ? rows[j + 1].at - rows[j].h : y(0) + 15 - rows[j].h);
     groups.forEach((g, k) => {
       const row = rows.find((r) => r.k === k), [dot, pill, text] = [g.querySelector("circle"), g.querySelector(".beacon"), g.querySelector("text")];
-      const named = !!row && !!focus?.includes(spec.series[k].label);
-      g.style.opacity = !row ? 0.25 : focus && !named ? 0.2 : 1;
-      dot.style.opacity = row ? 1 : 0;
+      const named = !!row && !!focus?.includes(spec.series[k].label), ghost = !!focus && !named;
+      // A line the step does not name stays readable as context: its name and value at GHOST, its line fainter still.
+      g.style.opacity = !row ? 0.25 : ghost ? GHOST : 1;
+      g.querySelectorAll("polyline").forEach((l) => (l.style.opacity = ghost ? FAINT : 1));
+      dot.style.opacity = row ? (ghost ? FAINT : 1) : 0;
       if (!row) name(k, spec.series[k].label);
       if (row) at(dot, x(i), y(row.v));
       at(text, 0, (row ? row.at : T + 15 * k) + 4);
@@ -208,8 +212,9 @@ export function strip(spec, width, height) {
     if (spec.pages) made.note(spec.pages(i));
     groups.forEach((g, k) => {
       const values = spec.rows[k].values[i], known = values.filter((v) => v !== null);
-      g.style.opacity = focus && !focus.includes(spec.rows[k].label) ? 0.28 : 1;
-      g.querySelectorAll(".dot").forEach((dot, j) => ((dot.style.opacity = values[j] === null ? 0 : 1), values[j] !== null && at(dot, x(values[j]), y(k))));
+      const ghost = !!focus && !focus.includes(spec.rows[k].label);
+      g.style.opacity = ghost ? GHOST : 1;  // a row the step does not name: its name and values readable, its dots fainter
+      g.querySelectorAll(".dot").forEach((dot, j) => ((dot.style.opacity = values[j] === null ? 0 : ghost ? FAINT : 1), values[j] !== null && at(dot, x(values[j]), y(k))));
       const [low, high] = [format(Math.min(...known)), format(Math.max(...known))], value = g.querySelector(".value"), pill = g.querySelector(".beacon");
       value.textContent = !known.length ? "" : low === high ? low : `${low.replace("%", "")}–${high.replace(/^[^0-9]+/, "")}`;
       // The rows the caption names: their numbers stand on the beacon, their names in bold.
