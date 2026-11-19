@@ -75,11 +75,11 @@ export const STORIES = [
     key: { number: "19%", id: "SBY pada 2015, dari tahun terakhirnya menjabat, di Kompas", en: "SBY in 2015, of his last year in office, in Kompas" },
     id: {
       title: "Setahun sesudah turun, tinggal seperlima",
-      teaser: "SBY pada 2015: 19% dari tahun terakhirnya menjabat di Kompas, 6% di Tempo, 16% di Tribunnews. Boediono: 6–10%. Dari 25 orang yang meninggalkan tujuh jabatan tertinggi pada 2012–2023, 23 cukup halamannya untuk dihitung; nilai tengahnya 16–25%. Yang tidak dilupakan: yang pindah jabatan, maju pemilu, atau diadili.",
+      teaser: "Setahun sesudah turun, SBY tinggal 19% dari tahun terakhirnya di Kompas, 6% di Tempo, 16% di Tribunnews. Dari 25 orang yang meninggalkan tujuh jabatan tertinggi pada 2012–2023, 23 cukup halamannya untuk dihitung; nilai tengahnya 16–25%. Yang tidak dilupakan: yang pindah jabatan, maju pemilu, atau diadili.",
     },
     en: {
       title: "A year after leaving, a fifth is left",
-      teaser: "SBY in 2015: 19% of his last year in office in Kompas, 6% in Tempo, 16% in Tribunnews. Boediono: 6–10%. Of the 25 people who left seven top offices in 2012–2023, 23 have enough pages to count; their median is 16–25%. Those not forgotten: the ones who took another post, ran for office, or stood trial.",
+      teaser: "A year out of office, SBY is down to 19% of his last year in Kompas, 6% in Tempo, 16% in Tribunnews. Of the 25 people who left seven top offices in 2012–2023, 23 have enough pages to count; their median is 16–25%. Those not forgotten: the ones who took another post, ran for office, or stood trial.",
     },
   },
   {
@@ -246,7 +246,7 @@ export const TEXT = {
     desc_method: "Sumber, ukuran, dan uji di balik Jejak Kata: dari mana teksnya, bagaimana pergeseran kata dihitung, dan seberapa peka tiap sumber menurut ujinya.",
     desc_chart: "Seluruh kosakata sebuah sumber pada satu peta: 20 ribu kata sebagai cahaya di laut malam, dengan rute sampai empat kata pilihanmu dari masa ke masa.",
     sail_one: "Berlayarkan:", nav_stories: "Cerita", nav_play: "Mainan", loading: "Memuat…", more_stories: "Cerita lain", next: "Berikutnya", again: "Main lagi",
-    stories_lede: "Tiap cerita berangkat dari pertanyaan yang diperdebatkan orang, berbelok pada sesuatu yang ditemukan hitungan, dan berakhir pada apa yang tidak dapat dikatakan data. Semua angka adalah hitungan halaman yang dapat diperiksa.",
+    stories_lede: "Tiap cerita berangkat dari pertanyaan yang biasa bikin ribut, berbelok pada sesuatu yang ditemukan hitungan, dan berhenti di batasnya: apa yang tidak bisa dikatakan data. Semua angka adalah hitungan halaman, dan semuanya bisa diperiksa.",
     play_lede: "Data yang sama, untuk dimainkan. Tidak satu pun dipilih dengan tangan.",
     chart_keys: "Peta kata. Panah untuk bergeser, plus dan minus untuk memperbesar, nol untuk melihat semua, Enter untuk memilih pulau yang dilingkari.",
     tally: (n) => `${n} kata`,
@@ -383,7 +383,7 @@ export const TEXT = {
     name: "Nama",
     traits_about: "Kata kerja dan kata sifat yang lebih sering daripada kebetulan muncul sehalaman dengan nama ini, masa demi masa; batang yang lebih panjang berarti lebih kuat. Daftar katanya disusun dengan tangan dan memuat pujian maupun tuduhan. Yang ditunjukkan adalah cara berita menulis, bukan siapa orang itu.",
     orbit_about: "Lingkar dalam: kata yang paling sering muncul bersama. Lingkar luar, bergaris putus: kata yang pergaulannya paling mirip. Yang berwarna baru masuk pada masa itu. Ketuk sebuah kata untuk membukanya.",
-    path_about: "Kata-kata di sekitar tidak bergerak: masing-masing ditaruh di tempat rata-ratanya, pada bidang yang paling memisahkan mereka. Yang bergerak adalah kata ini, ditaruh di antara mereka sekali untuk tiap masa. Bila masanya banyak, tiap langkah dirata-ratakan dengan langkah di sebelahnya, sebab dari tahun ke tahun kata lebih banyak bergoyang daripada berpindah. Gambar ini ringkasan kasar dari 4.000 ukuran, direntangkan agar memenuhi bingkai: arah lebih dapat dipercaya daripada jarak.",
+    path_about: "Kata-kata di sekitar diam di tempat: masing-masing ditaruh di posisi rata-ratanya, pada bidang yang paling memisahkan mereka. Yang berjalan hanya kata ini, selangkah untuk tiap masa. Bila masanya banyak, tiap langkah dirata-ratakan dengan langkah di sebelahnya, sebab dari tahun ke tahun kata lebih banyak bergoyang daripada berpindah. Ingat, ini ringkasan kasar dari 4.000 ukuran, direntangkan agar memenuhi bingkai. Percayai arahnya, jangan jaraknya.",
     near_early: (p) => `teman terdekatnya pada ${p}`,
     near_late: (p) => `teman terdekatnya pada ${p}`,
     near_now: (p) => `Teman terdekatnya pada ${p}`,
@@ -404,7 +404,7 @@ export const TEXT = {
     verbs: "Kata kerja",
     adjectives: "Kata sifat",
     chart_lede: "Seluruh kosakata sebuah sumber pada satu peta. Kata yang berdekatan bergaul dengan kata-kata yang sama. Ketuk sebuah pulau, atau ketik sampai empat kata, dan lihat rutenya dari masa ke masa.",
-    chart_about: "Letak pulau dihitung dari pergaulan tiap kata sepanjang masa; rute sebuah kata menunjukkan di antara kata-kata mana ia berada pada tiap masa. Peta meratakan 4.000 ukuran menjadi dua: yang dapat dipercaya adalah tetangga, bukan jarak. Warna pulau: seberapa jauh kata itu pernah bergeser. Tombol + dan − untuk mendekat; seret untuk bergeser.",
+    chart_about: "Letak tiap pulau dihitung dari pergaulan katanya sepanjang masa. Rute sebuah kata menunjukkan di antara kata-kata mana ia berada pada tiap masa. Peta ini meratakan 4.000 ukuran menjadi dua, jadi percayai tetangganya, bukan jaraknya. Warna pulau: seberapa jauh kata itu pernah bergeser. Tombol + dan − untuk mendekat; seret untuk bergeser.",
     moved: "Pergeseran terbesar:",
     add_word: "Tambah kata atau nama…",
     add: "Tambah",
@@ -492,7 +492,7 @@ export const TEXT = {
     demo_3: (w, y) => `Peta menaruh “${w}” di antara kata yang paling sering bersamanya: di sini pelabuhannya pada ${y}.`,
     demo_4: (w, y, list, shift, flag) => `Pada ${y} temannya berganti (${list}), dan “${w}” berlayar ke pelabuhan lain. Pergeserannya ${shift}${flag ? `, di atas ambang ${flag}: dari angka itu ke atas, sebuah pergeseran dianggap menonjol` : ""}.`,
     demo_source: "Angka dari data situs: halaman (meta.json), bagian dan teman kata (words), pelabuhan (paths), Kompas (web).",
-    swaps_rule: (n, all, lead) => `Dari ${all} pasangan yang ditemukan, ${n} lolos satu aturan lagi: garisnya bersilang dengan jelas. Pada sepertiga masa yang pertama kata yang naik lebih jarang daripada kata yang turun; pada sepertiga yang terakhir ia paling sedikit dua kali lebih sering. Pergeseran topik, ketika kedua kata tetap hidup berdampingan, tidak lolos. Urutannya menurut kemiripan pergaulan; ${lead} teratas di sini: yang pertama di depan, lalu sisanya menurut berapa kali lebih sering kata yang naik pada sepertiga terakhir.`,
+    swaps_rule: (n, all, lead) => `Dari ${all} pasangan yang ditemukan, ${n} lolos satu syarat lagi: garisnya harus bersilang dengan jelas. Di sepertiga masa pertama, kata yang naik masih lebih jarang daripada kata yang turun; di sepertiga terakhir, paling sedikit dua kali lebih sering. Kalau keduanya tetap hidup berdampingan, itu cuma pergeseran topik, dan tidak lolos. Urutannya menurut kemiripan pergaulan; ${lead} teratas di sini: yang pertama di depan, lalu sisanya menurut berapa kali lebih sering kata yang naik pada sepertiga terakhir.`,
     in_company: (w) => `di lingkungan yang dulu milik “${w}”`, show_rest: (n) => `Tampilkan ${n} lainnya`, list_rule: (n, all) => `${n} teratas dari ${all}, menurut tinggi puncaknya.`,
     map_hint_touch: "Usap untuk bergeser · cubit untuk mendekat · ketuk sebuah cahaya", map_hint_mouse: "Seret untuk bergeser · Ctrl dan gulir untuk mendekat · klik sebuah cahaya",
     map_demo: (w) => `Contoh: rute “${w}”. Pilih kata sendiri untuk menggantinya.`,
@@ -502,8 +502,8 @@ export const TEXT = {
     not_found: "Kata ini tidak termasuk kata-kata tersering di sumber mana pun.",
     is_name: "Kata ini hampir selalu ditulis dengan huruf kapital dan tidak punya artikel di Wikipedia bahasa Indonesia, jadi dianggap nama diri yang bukan milik umum dan tidak ditampilkan.",
     method: `
-      <p>Untuk tiap masa, setiap kata diberi <b>profil</b>: catatan, untuk tiap kata lain, apakah keduanya muncul sehalaman atau seartikel lebih sering atau lebih jarang daripada kebetulan. Profil dari dua masa dapat langsung dibandingkan, karena keduanya memakai daftar kata konteks yang sama.</p>
-      <p>Jarak antara dua profil tidak pernah nol, bahkan untuk dua contoh acak dari masa yang sama, dan makin besar untuk kata yang makin jarang. Karena itu tiap masa dibelah dua secara acak berulang kali: jarak antara belahan masa A dan belahan masa B dikurangi jarak antara dua belahan dari masa yang sama. Sisanya lalu dibandingkan dengan 500 kata lain yang paling dekat kekerapannya. Hasilnya angka <b>pergeseran</b>.</p>
+      <p>Untuk tiap masa, setiap kata diberi <b>profil</b>: daftar teman-temannya. Tepatnya, untuk tiap kata lain dicatat apakah keduanya muncul sehalaman atau seartikel lebih sering atau lebih jarang daripada kebetulan. Profil dari dua masa bisa langsung dibandingkan, karena keduanya memakai daftar kata konteks yang sama.</p>
+      <p>Masalahnya, jarak antara dua profil tidak pernah nol, bahkan untuk dua contoh acak dari masa yang sama, dan makin besar untuk kata yang makin jarang. Jadi tiap masa dibelah dua secara acak, berulang kali: jarak antara belahan masa A dan belahan masa B dikurangi jarak antara dua belahan dari masa yang sama. Sisanya lalu dibandingkan dengan 500 kata lain yang paling dekat kekerapannya. Hasilnya angka <b>pergeseran</b>.</p>
       <p>Ejaan lama (<i>tj, dj, j, oe</i>) diubah ke ejaan sekarang untuk tiap buku yang masih memakainya. Kata tidak dipotong menjadi kata dasar.</p>
       <p>Halaman web diberi tahun menurut tanggal pada alamatnya atau pada baris pembukanya, bukan menurut kapan halaman itu dirayapi; halaman tanpa tanggal dan halaman terjemahan mesin dibuang. Di teks web, kata-kata yang bersama-sama menjadi judul artikel Wikipedia dihitung sebagai satu (<i>ibu kota</i>, <i>tol laut</i>, <i>joko widodo</i>). Nama ditampilkan hanya bila punya artikel Wikipedia.</p>
       <p>Cara ini diuji dengan menanam perubahan buatan pada data nyata, dan dengan daftar kata yang perubahannya sudah dituliskan sebelum hasilnya dilihat. Rincian, kode, dan hasil ujinya ada di repositori.</p>`,
@@ -532,7 +532,7 @@ export const TEXT = {
     desc_method: "The sources, measures and tests behind Jejak Kata: where the text comes from, how a word's shift is counted, and how sensitive each source is to planted change.",
     desc_chart: "A source's whole vocabulary on one chart: 20,000 words as lights on a night sea, with the routes of up to four words you pick, period by period.",
     sail_one: "Set sail:", nav_stories: "Stories", nav_play: "Play", loading: "Loading…", more_stories: "More stories", next: "Next", again: "Play again",
-    stories_lede: "Each story starts from a question people argue about, turns on something the counting found, and ends on what the data cannot tell. Every number is a count of pages that can be checked.",
+    stories_lede: "Each story sets out from a question people fight about, turns on something the counting found, and stops at the edge: what the data cannot say. Every number is a count of pages, and every one can be checked.",
     play_lede: "The same data, to play with. Nothing is chosen by hand.",
     chart_keys: "Chart of words. Arrows to move, plus and minus to zoom, zero to see everything, Enter to choose the ringed island.",
     tally: (n) => `${n} words`,
@@ -669,7 +669,7 @@ export const TEXT = {
     name: "Name",
     traits_about: "The verbs and adjectives that share a page with this name more often than chance, period by period; a longer bar is a stronger tie. The word lists were made by hand and hold praise and blame alike. What is shown is how the news wrote, not who the person is.",
     orbit_about: "Inner ring: the words it most often appears with. Outer ring, dashed: the words whose company is most like its own. Coloured ones are new in that period. Tap a word to open it.",
-    path_about: "The surrounding words do not move: each is put at its average place, on the plane that spreads them most. What moves is this word, placed among them once for each period. With many periods, each step is averaged with the steps next to it, because from year to year a word jitters more than it moves. The picture is a rough summary of 4,000 measurements, stretched to fill the frame: trust the direction more than the distance.",
+    path_about: "The surrounding words stay put: each sits at its average place, on the plane that spreads them most. Only this word walks, one step per period. With many periods, each step is averaged with the steps next to it, because from year to year a word jitters more than it moves. Remember this is a rough summary of 4,000 measurements, stretched to fill the frame. Trust the direction, not the distance.",
     near_early: (p) => `its closest company in ${p}`,
     near_late: (p) => `its closest company in ${p}`,
     near_now: (p) => `Its closest company in ${p}`,
@@ -778,7 +778,7 @@ export const TEXT = {
     demo_3: (w, y) => `The chart puts “${w}” among the words it appears with most: here, its port in ${y}.`,
     demo_4: (w, y, list, shift, flag) => `In ${y} its company changes (${list}), and “${w}” sails to another port. Its shift is ${shift}${flag ? `, above the flag of ${flag}: from there up, a shift counts as standing out` : ""}.`,
     demo_source: "Numbers from the site's data: pages (meta.json), a word's share and company (words), its ports (paths), Kompas (web).",
-    swaps_rule: (n, all, lead) => `Of the ${all} pairs found, ${n} pass one more rule: their lines cross, and clearly. In the first third of the periods the rising word is less common than the falling one; in the last third it is at least twice as common. A drift of topic, where both words live on side by side, does not pass. In order of how alike their company is; the top ${lead} here: the first leads, the rest follow by how many times as common the rising word is in the last third.`,
+    swaps_rule: (n, all, lead) => `Of the ${all} pairs found, ${n} pass one more rule: their lines cross, and clearly. In the first third of the periods the rising word is less common than the falling one; in the last third it is at least twice as common. If both words live on side by side, that is only a drift of topic, and it does not pass. In order of how alike their company is; the top ${lead} here: the first leads, the rest follow by how many times as common the rising word is in the last third.`,
     in_company: (w) => `in the company “${w}” used to keep`, show_rest: (n) => `Show the other ${n}`, list_rule: (n, all) => `The top ${n} of ${all}, by the height of their peak.`,
     map_hint_touch: "Swipe to move · pinch to come closer · tap a light", map_hint_mouse: "Drag to move · Ctrl and scroll to come closer · click a light",
     map_demo: (w) => `An example: the route of “${w}”. Choose a word of your own to replace it.`,
@@ -788,8 +788,8 @@ export const TEXT = {
     not_found: "This word is not among the most common words of any source.",
     is_name: "This word is almost always capitalised and has no article on Indonesian Wikipedia, so it is treated as a private name and not shown.",
     method: `
-      <p>For each period, every word gets a <b>profile</b>: a record, for every other word, of whether the two share a page or an article more or less often than chance. Profiles from two periods can be compared directly, because both use the same list of context words.</p>
-      <p>The distance between two profiles is never zero, even for two random samples of one period, and it grows as a word gets rarer. So each period is split in two at random, many times over: the distance between a half of period A and a half of period B, minus the distance between two halves of the same period. What is left is then compared with the 500 words nearest in frequency. The result is the <b>shift</b>.</p>
+      <p>For each period, every word gets a <b>profile</b>: a list of the company it keeps. Precisely: for every other word, a record of whether the two share a page or an article more or less often than chance. Profiles from two periods can be compared directly, because both use the same list of context words.</p>
+      <p>The catch: the distance between two profiles is never zero, even for two random samples of one period, and it grows as a word gets rarer. So each period is split in two at random, many times over: the distance between a half of period A and a half of period B, minus the distance between two halves of the same period. What is left is then compared with the 500 words nearest in frequency. The result is the <b>shift</b>.</p>
       <p>Old spelling (<i>tj, dj, j, oe</i>) is converted to current spelling for each book that still uses it. Words are not reduced to their roots.</p>
       <p>A web page is dated by the date in its address or in its opening lines, not by when it was crawled; undated and machine-translated pages are dropped. In web text, words that together form the title of a Wikipedia article count as one (<i>ibu kota</i>, <i>tol laut</i>, <i>joko widodo</i>). A name is shown only if it has a Wikipedia article.</p>
       <p>The method is tested by planting artificial changes in real data, and against a list of words whose changes were written down before the results were looked at. Details, code and test results are in the repository.</p>`,
