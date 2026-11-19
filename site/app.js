@@ -1712,8 +1712,9 @@ async function storySea(holder, stages, parts) {
   if (!window.WebGL2RenderingContext) return null;
   const [module, first] = await Promise.all([import("./sea.js"), json(`${MAIN}/first.json`), painted()]).catch(() => []);
   if (!first || !holder.isConnected) return null;
-  // The words are looked up on the first screen of the chart; from 900px the whole chart and its lens follow, and the
-  // step is lit again with every word the lens has (a phone keeps to the first screen: it stays cheap).
+  // The words are looked up on the first screen of the chart; then the lens and the whole chart follow, and the step is
+  // lit again with every word the lens has: from 900px the whole chart, on a phone the first screen and, from the rest,
+  // only the story's own words (it stays cheap, and every step's words are there).
   let lens = null, k = 0, at = "", now = null, full = 0;
   const named = new Map(first.words.map((id, k) => [id, first.names[k]])), idOf = (w) => (lens ? lens.index.get(w) : first.words[first.names.indexOf(w)]);
   const ids = (list) => [...new Set(list.map(idOf).filter((id) => id !== undefined && sea.has(id)))];  // (only what the sea carries)
@@ -1722,11 +1723,15 @@ async function storySea(holder, stages, parts) {
   // controls and the key).
   const over = () => [...stages[k].stage.querySelectorAll(full ? ".sea-key, .stage-nav" : ".stage-meta, .caption .turn:not(.out), .sea-key, .stage-nav, .stage-figure .plate:not(.off) svg")];
   const wide = innerWidth >= 900, sea = module.nightSea({ chart: first, name: nameOf, pick: (id) => visit(href("kata", nameOf(id))), periods: first.periods, tip, label: t("sea_label"),
-    hold: true, fly: true, rung: window.seaRung ?? 0, most: wide ? Infinity : 2500, names: 0, over, host: holder.parentNode });
+    hold: true, fly: true, rung: window.seaRung ?? 0, names: 0, over, host: holder.parentNode });
   if (!sea) return null;
   holder.append(sea.node);
   addEventListener("resize", () => holder.isConnected && (at = ""));  // the open water is found again at the next step's look
-  if (wide) Promise.all([lensNamed(MAIN), json(`${MAIN}/chart.json`)]).then(([l, whole]) => ((lens = l), sea.more(whole), (at = ""), now && to(...now))).catch(() => {});
+  const own = (l, whole) => {
+    const want = new Set(parts.flatMap((part) => [...sceneWords(part), ...part.steps.flatMap((step) => step.focus || [])]).map((w) => l.index.get(w))), past = whole.words.flatMap((id, k) => (k >= first.words.length && want.has(id) ? [k] : []));
+    return Object.fromEntries(["words", "x", "y", "moved"].map((key) => [key, [...first[key], ...past.map((k) => whole[key][k])]]));
+  };
+  Promise.all([lensNamed(MAIN), json(`${MAIN}/chart.json`)]).then(([l, whole]) => ((lens = l), sea.more(wide ? whole : own(l, whole)), (at = ""), now && to(...now))).catch(() => {});
   const paths = new Map(), route = (id) => paths.get(id) || paths.set(id, json(`${MAIN}/paths/${Math.floor(id / BUCKET)}.json`).then((list) => list.find((p) => p.word === id)?.route || []).catch(() => [])).get(id);
   /** The open water of a stage as it now stands, [top, right, bottom, left] in pixels of the sea: under the caption
    *  (and beside the plate from 900px), at least a band above the controls (a long caption is shaded over it); with
@@ -1744,21 +1749,22 @@ async function storySea(holder, stages, parts) {
     if (label === at) return;
     at = label;
     k = scene;
-    const part = parts[scene], step = j ? part.steps[j - 1] : null, focus = ids(step?.focus || []), rest = ids(sceneWords(part)).filter((id) => !focus.includes(id)).slice(0, 12);
+    // What the step brings forward: its focus, else the word its plate is named after.
+    const part = parts[scene], step = j ? part.steps[j - 1] : null, brought = step?.focus || (sceneWords(part).includes(step?.at) ? [step.at] : []), focus = ids(brought), rest = ids(sceneWords(part)).filter((id) => !focus.includes(id)).slice(0, 12);
     // The sea takes the stage at once, with the gong; its flight starts as soon as the route is there.
     const stage = stages[scene].stage, taking = entering && !still();
     if (taking) (stages.forEach((s) => s.stage.classList.remove("sea-full")), stage.classList.add("sea-full"), (full = performance.now()));
     // The route sailed: the scene's own word, else the one word the step brings forward.
-    const one = ids([part.word || ""])[0] ?? (focus.length === 1 && (step.focus || []).length === 1 ? focus[0] : undefined), sailed = one === undefined ? [] : [{ id: one, route: await route(one) }];
+    const one = ids([part.word || ""])[0] ?? (focus.length === 1 && brought.length === 1 ? focus[0] : undefined), sailed = one === undefined ? [] : [{ id: one, route: await route(one) }];
     if (at !== label) return;  // moved on while the route came
     const year = first.periods.indexOf(String(step?.at ?? "").match(/\d{4}/g)?.at(-1)), sail = !j || !sailed[0]?.route.some(Boolean) ? 0 : year >= 0 ? year : first.periods.length - 1;
     // The key: the words lit (those the step brings forward first; as many named as fit its room, at most four, the
-    // rest counted) and the route as far as sailed.
+    // rest counted) and the route as far as sailed. Where the route leaves no room to name even the first word, the
+    // route is left to its pill on the sea: the key names the step's own word first.
     const shown = [...focus, ...rest], sailedTo = sail && sailed.length ? t("sea_key_route", nameOf(one), first.periods[sail]) : "", keyed = stage.querySelector(".sea-key");
-    for (let n = Math.min(4, shown.length); n >= 0; n--) {
-      keyed.textContent = shown.length || sailedTo ? t("sea_key", shown.slice(0, n).map(nameOf).join(", ") + (shown.length > n ? t(n ? "sea_key_more" : "sea_key_count", shown.length - n) : ""), sailedTo) : "";
-      if (keyed.scrollWidth <= keyed.clientWidth + 1) break;
-    }
+    const said = (n, route) => (shown.length || route ? t("sea_key", shown.slice(0, n).map(nameOf).join(", ") + (shown.length > n ? t(n ? "sea_key_more" : "sea_key_count", shown.length - n) : ""), route) : "");
+    const counts = [4, 3, 2, 1].filter((n) => n <= shown.length), ways = [...counts.map((n) => [n, sailedTo]), ...(sailedTo ? counts.map((n) => [n, ""]) : []), [0, sailedTo]];
+    for (const [n, route] of ways) if (((keyed.textContent = said(n, route)), keyed.scrollWidth <= keyed.clientWidth + 1)) break;
     const view = (box, ms) => {
       sea.inset(box);
       sea.routes(sailed);

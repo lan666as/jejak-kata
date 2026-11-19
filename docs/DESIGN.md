@@ -156,8 +156,9 @@ A story is a voyage in three parts.
    shown up to 1.5 times its drawn size, with larger marks and type, a strip's rows at most 72px apart so that a strip
    of few rows is not stretched; below 900px: a band under the figure). **The stages lie on the sea**: one held night
    sea under all of them (`storySea` in app.js), its camera flying (600 ms, `--sail`) to each step: to the words the step
-   brings forward (its `focus`), else the scene's words, each looked up on the first page's chart (its first screen on
-   a phone, the whole chart from 900px; a word not there is not lit), the step's ringed in `--beacon` and named, the scene's others ringed faintly; where the scene is about one
+   brings forward (its `focus`, or the word its plate is named after), else the scene's words, each looked up on the
+   first page's chart (the whole chart from 900px; on a phone its first screen and, from the rest, the story's own
+   words; a word not on the chart is not lit), the step's ringed in `--beacon` and named, the scene's others ringed faintly; where the scene is about one
    word over time (`word`, else the one word a step brings forward), its route is sailed to the step's year. The view
    is framed in the water the stage leaves open (under the caption, beside the figure from 900px). **At a new scene**
    (going on or back, and from the cover), in the frame its gong is heard, the sea takes the whole stage for a leg
@@ -165,7 +166,8 @@ A story is a voyage in three parts.
    named, the route sails; then the card comes back over it and the sea glides into the open water. Between steps of a
    scene the 600 ms flight stays under the card. Above the controls a **key** says in a line what the sea shows,
    made from what is lit ("Di peta: demokrat, golkar, pks dan 7 lagi · rute “korupsi” sampai 2014"; as many words named
-   as fit its room, the rest counted); its room is kept from the first frame. With reduced motion no flight and no
+   as fit its room, the rest counted, the step's own first; where the route leaves no room to name one, the route
+   is left to its pill); its room is kept from the first frame. With reduced motion no flight and no
    taking over, and the key. The figure stands on a panel of the deep (`--paper` at 92%)
    and a caption on a shade of it (88%): their text keeps 4.5:1 over the brightest the sea can be. The sea draws only
    while it flies, on the quality ladder from the rung the visit's moving sea settled on; with reduced motion a step

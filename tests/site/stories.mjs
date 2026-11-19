@@ -6,14 +6,22 @@
 // taller than its window on a phone: the window on screen, and the rows the step names inside it), and keep its caption
 // band on screen, showing the whole step or at least six lines (a caption longer than the band must scroll in it); on a
 // phone no caption is cut at all (an opening longer than the band rises over the figure's foot, wholly on screen).
+// Where the stages lie on the sea, the key above the controls names the step's own word (its focus, else the word its
+// plate is named after: the first of them the chart has), at both widths.
 // Then the step buttons and the ticks, and the whole story once more with reduced motion.
+import { readFileSync } from "node:fs";
 import { TEXT } from "../../site/text.js";
 import { STORIES } from "../../site/story.js";
+import { sceneWords } from "../../site/scenes.js";
 import { base, browser, done } from "./serve.mjs";
 const slugs = process.argv.length > 2 ? process.argv.slice(2) : STORIES.map((s) => s.slug);
 const plain = (html) => html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
 const dash = (s) => String(s).replace(/-/g, "–").replace(/\s+/g, " ").trim();
 const started = Date.now();
+const lens = (file) => JSON.parse(readFileSync(new URL(`../../site/data/id-web-news-kompas/${file}`, import.meta.url)));
+const charted = new Set(lens("chart.json").words), index = new Map(lens("meta.json").words.map((w, i) => [w, i]));
+/** The word the sea's key must name at a step: the first the step brings forward that the chart has. */
+const subject = (part, step) => (step.focus || (sceneWords(part).includes(step.at) ? [step.at] : [])).find((w) => charted.has(index.get(w)));
 
 /** In the page: the stage that holds the middle of the screen, and all that a reader would see of it. */
 const look = () => {
@@ -36,6 +44,7 @@ const look = () => {
     outside: named.filter((r) => { const b = r.querySelector("line").getBoundingClientRect(); return b.top < win.top || b.bottom > win.bottom; }).length,
     smallest: Math.min(...[...(shown[0]?.querySelectorAll("text, tspan") || [])].filter((t) => t.textContent.trim()).map((t) => parseFloat(getComputedStyle(t).fontSize) * (shown[0].querySelector("svg").getBoundingClientRect().width / shown[0].querySelector("svg").viewBox.baseVal.width))),
     pitch: (() => { const ys = [...(shown[0]?.querySelectorAll(".row > line") || [])].map((t) => t.getBoundingClientRect().top); return ys.length > 1 ? Math.round(Math.min(...ys.slice(1).map((y, i) => y - ys[i]))) : null; })(),
+    key: stage.querySelector(".sea-key").textContent, sea: !!document.querySelector(".story-sea .chart"),
     text: cap.querySelector(".turn:not(.out)")?.textContent.replace(/\s+/g, " ").trim() || "", count: stage.querySelector(".count").textContent,
     tick: [...stage.querySelectorAll(".ticks button")].findIndex((b) => b.getAttribute("aria-current") === "step") };
 };
@@ -78,6 +87,8 @@ function judge(story, k, j, s) {
   if (s.cap.some((d) => d < -1)) wrong.push(`the caption band is off screen (top, bottom: ${s.cap.join(", ")})`);
   if (!s.phone && s.longer && !s.scrolls) wrong.push("the caption is longer than its band and the band does not scroll");
   if (s.capHeight < 60) wrong.push(`the caption band is ${s.capHeight}px tall`);
+  const own = j && subject(part, step);
+  if (s.sea && own && !s.key.includes(own)) wrong.push(`the sea's key says "${s.key}", not the step's "${own}"`);
   return wrong;
 }
 
