@@ -309,7 +309,7 @@ export const TEXT = {
       <details class="foot-fold"><summary><h2>Lisensi dan kode</h2></summary><p>Kode: MIT. Hitungan, ukuran, dan data situs ini: CC BY 4.0, dengan atribusi sumber di atas.</p>
         <ul class="foot-links"><li><a href="https://github.com/lan666as/jejak-kata">Kode sumber</a></li><li><a href="https://github.com/lan666as/jejak-kata/tree/gh-pages/data">Data situs (JSON)</a></li><li><a href="#/metode">Cara kerja dan ujinya</a></li></ul></details>
     </div>`,
-    sound: "Suara", sound_ask: "Nyalakan suara", sound_no: "Tanpa suara",
+    sound: "Suara", sound_waiting: "Suara menyala: ketuk di mana saja untuk mendengar",
     skip: "Langsung ke isi", menu: "Menu", menu_close: "Tutup", search_open: "Cari", search_label: "Cari kata atau nama", nav_label: "Halaman utama",
     stories_kicker: (n) => `${n} cerita`, play_kicker: (n) => `${n} mainan`, findings_kicker: "Dihitung, bukan dipilih", method_kicker: "Sumber, ukuran, dan uji", method_title: "Cara kerja",
     intro: "Ini peta 20 ribu kata dalam berita Kompas, 2011–2024. Kata yang berdekatan bergaul dengan kata-kata yang sama. Ketuk sebuah pulau.",
@@ -583,7 +583,7 @@ export const TEXT = {
       <details class="foot-fold"><summary><h2>Licence and code</h2></summary><p>Code: MIT. The counts, measures and data of this site: CC BY 4.0, with the attributions above.</p>
         <ul class="foot-links"><li><a href="https://github.com/lan666as/jejak-kata">Source code</a></li><li><a href="https://github.com/lan666as/jejak-kata/tree/gh-pages/data">Site data (JSON)</a></li><li><a href="#/metode">How it works, and its tests</a></li></ul></details>
     </div>`,
-    sound: "Sound", sound_ask: "Turn sound on", sound_no: "No sound",
+    sound: "Sound", sound_waiting: "Sound is on: tap anywhere to hear it",
     skip: "Skip to content", menu: "Menu", menu_close: "Close", search_open: "Search", search_label: "Look up a word or a name", nav_label: "Main pages",
     stories_kicker: (n) => `${n} stories`, play_kicker: (n) => `${n} things to play with`, findings_kicker: "Counted, not chosen", method_kicker: "Sources, measures and tests", method_title: "How it works",
     intro: "This is a chart of 20,000 words in Kompas news, 2011–2024. Words that lie close keep the same company. Tap an island.",

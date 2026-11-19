@@ -390,13 +390,19 @@ heard.
   light is chosen, a share sheet opening (a swish up), a quiz answer (two gender notes up when right; two damped notes
   down when wrong, never a buzzer), a press, and a barely heard tick as a control is pointed at with a mouse or reached
   by keyboard (never by touch).
-- **Manners**: off by default. A toggle in the header (in the menu on a phone; in an embed's foot): a speaker, its waves
-  while on and a cross while off, named "Suara" / "Sound", `aria-pressed`. The first page's hero invites once ("Nyalakan
-  suara", with a "no" beside it); any choice ends the invitation; with reduced motion it is still. The choice is kept
-  per viewer (localStorage; nothing kept where storage is refused). Nothing of it exists until it is turned on: the
-  press makes the AudioContext, then `sound.js` is fetched; where it was left on, the first press or key of the next
-  visit does the same. Silent when the tab is hidden (a fade, then the context sleeps), once turned off (a 1.5 s fade)
-  and in an embed unless turned on there. Reduced motion does not silence it. Without Web Audio there is no toggle.
+- **Manners**: on by default, unless this viewer turned it off (the choice is kept per viewer in localStorage; where
+  storage is refused it is on at each visit). A toggle in the header (in the menu on a phone; in an embed's foot): a
+  speaker, its waves while on and a cross while off, named "Suara" / "Sound", `aria-pressed`, pressed from the first
+  frame. A browser lets sound start only after the reader has done something on the page, so once the page has been
+  painted (at its first idle moment, never holding up the first screen) the AudioContext is made: where the browser lets
+  it run, the sea is heard at once; else it waits for the first press, key or tap anywhere (a scroll or a hover does not
+  count, as browsers see it) and comes in with a slow fade. Until then the first page's hero says so plainly under its
+  status line ("Suara menyala: ketuk di mana saja untuk mendengar" / "Sound is on: tap anywhere to hear it"), with the
+  toggle beside it to turn it off; it fades once the sea is heard or turned off, keeping its room until the page changes
+  (nothing moves). Never an overlay or a gate. `sound.js` is fetched once the context can run. Turned off (one press),
+  it is remembered and nothing of it is made on later visits. Silent when the tab is hidden (a fade, then the context
+  sleeps), once turned off (a 1.5 s fade), and in an embed unless turned on there: an embed sits on other people's
+  pages. Reduced motion does not silence it. Without Web Audio there is no toggle.
 - **Level**: low. The bed sits near -35 dBFS (rms), its peaks about -15; the sounds over it at -42 (the hover tick) to
   -20 dBFS (peak), all through a compressor that only catches peaks; the gong ageng stays under its knee (-19 dBFS out),
   so its low fundamental never makes it pump. `tests/site/sound.mjs` renders the beds, every sound, a whole story and

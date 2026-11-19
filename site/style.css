@@ -937,14 +937,13 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
   .hero-key { right: calc(8.5rem + 2 * var(--gutter)); }
 }
 .hero-down:hover { color: var(--on-deep); text-decoration: none; background: var(--deep-2); }
-/* the one invitation to turn sound on, until the reader chooses either way; its waves call a few times, never with
-   reduced motion */
-.sound-ask { display: flex; align-items: center; margin: 0; max-width: none; }
-.sound-ask button { padding: 0 var(--s2); color: var(--on-deep-2); font-size: var(--t-small); border-color: transparent; }
-.sound-ask button:hover { color: var(--on-deep); background: transparent; border-color: transparent; text-decoration: underline; }
-.sound-ask .no { min-width: var(--tap); font-size: var(--t-lede); }
-.sound-ask svg { flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.sound-ask .hush { display: none; }
+/* while the sound waits for the reader's first gesture (on by default; a browser lets it start only then), a note under
+   the status line says so, with the toggle that turns it off; it goes once the sea is heard or turned off. Its waves
+   call a few times, never with reduced motion */
+.sound-ask { flex: 1 1 100%; display: flex; align-items: center; gap: var(--s2); margin: 0; max-width: none; font-size: var(--t-meta); line-height: var(--l-meta); color: var(--on-deep-2); }
+.sound-ask .sound-toggle { flex: none; min-width: var(--tap); padding: 0; color: var(--on-deep); border-color: var(--line-deep-2); border-radius: var(--pill); }
+.sound-ask .sound-toggle:hover { background: var(--deep-2); border-color: var(--on-deep); }
+.sound-ask.gone { visibility: hidden; opacity: 0; transition: opacity var(--d-turn) var(--sail), visibility 0s var(--d-turn); }
 @keyframes call { 50% { opacity: .25; } }
 @media (prefers-reduced-motion: no-preference) { .sound-ask .wave { animation: call calc(var(--d-leg) * 2) var(--sail) 4; } }
 .hero-down svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--d-press) var(--sail); }
@@ -959,8 +958,6 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
   .hero-try { flex-direction: column; align-items: flex-start; gap: var(--s1); margin-top: var(--s4); }  /* the label above the chips: no hanging indent */
   .hero-try .chips { margin: 0; padding: var(--s1) 0; mask-image: none; }
   .hero-foot { max-width: 32rem; margin-top: var(--s4); }
-  .hero-foot { flex-wrap: nowrap; align-items: flex-start; }
-  .hero-foot > .hero-now { flex: 1 1 auto; }  /* the invitation stands beside what sails, not under it: the hero stays one screen */
   /* the dive is signposted at the foot of the first screen, in the middle */
   .hero-down { position: absolute; left: 50vw; bottom: var(--s5); transform: translateX(-50%); background: color-mix(in srgb, var(--deep) 70%, transparent); }
   .hero-down:hover { transform: translateX(-50%); }

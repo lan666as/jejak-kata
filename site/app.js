@@ -48,29 +48,45 @@ const lensText = (lens) => LENS_TEXT[lens.lens][language];
 /** What a word of the first page is, for a reader who may not know (text.js, GLOSS), in the language shown. */
 const gloss = (word) => GLOSS[word]?.[language] || "";
 
-// Sound (sound.js) is off until the reader turns it on. Nothing of it exists before that press: the press makes the
-// AudioContext (a browser lets sound start only in a gesture), then sound.js is fetched and handed it. Where it was
-// left on, the first press or key of a later visit does the same. A frame on another site (an embed) is silent unless
-// turned on there, and keeps no choice. Without Web Audio there is no toggle.
+// Sound (sound.js) is on unless this viewer turned it off (the choice is kept; where storage is refused it is on at
+// each visit). A browser lets sound start only after the reader has done something on the page, so once the page has
+// been painted the AudioContext is made and sound.js fetched: where the browser lets it run, the sea is heard at once;
+// else the first press, key or tap anywhere starts it (a scroll or a hover does not count, as browsers see it), with a
+// slow fade in, and until then the first page's hero says so ("Sound is on: tap anywhere to hear it", with the toggle).
+// Turned off, nothing of it is made on later visits. A frame on another site (an embed) is silent unless turned on
+// there, and keeps no choice. Without Web Audio there is no toggle.
 const WebAudio = window.AudioContext || window.webkitAudioContext;
-let sounding = null, made = null, hearing = false, heard = "home";  // the layer once made; whether it is on; the page's family
+let sounding = null, made = null, context = null, hearing = false, heard = "home";  // the layer once made, its context; whether it is on; the page's family
 /** A sound of what the site does, if sound is on. */
 const hear = (name, ...args) => hearing && sounding?.play(name, ...args);
 const embedded = () => document.documentElement.classList.contains("embedded");
+/** Whether the sound is waiting for the reader's first gesture (on, but not yet allowed to play). */
+const waiting = () => hearing && context?.state !== "running";
+const GESTURES = ["pointerdown", "keydown", "touchend"];
+/** Sound on (or off). `chosen`: the reader pressed the toggle (kept, and the sound "on" is heard). Called within a
+ *  gesture, it lets the context run; outside one it makes the layer ready and waits. */
 function listen(on, chosen = true) {
   hearing = on;
   document.querySelectorAll(".sound-toggle").forEach((b) => b.setAttribute("aria-pressed", on));
-  if (chosen) document.querySelector(".sound-ask")?.remove();
   if (chosen && !embedded()) kept("localStorage", "sound", on ? "on" : "off");
-  if (!on) return sounding?.off();
-  made ||= ((ctx) => import("./sound.js").then((m) => (sounding = m.sound(ctx))).catch(() => null))(new WebAudio());
-  made.then((s) => s && (hearing ? (s.on(), s.bed(heard), chosen && s.play("on")) : s.off()));  // off again before it was ready
+  if (!on) return heardNow(), sounding?.off();
+  if (!context) (context = new WebAudio()).addEventListener("statechange", heardNow);  // (where the browser lets it, it runs at once)
+  if (context.state !== "running") return void (navigator.userActivation?.isActive !== false && context.resume().then(() => hearing && listen(true, chosen), () => {}));  // (sound.js is fetched once it can be heard: nothing on a first visit's line before)
+  made ||= import("./sound.js").then((m) => (sounding = m.sound(context))).catch(() => null);
+  made.then((s) => s && (!hearing ? s.off() : (s.on(chosen ? 1.5 : 4), s.bed(heard), chosen && s.play("on"))));  // off again before it was ready
 }
-/** The one invitation, on the first page's hero, until the reader has chosen either way. */
-const soundAsk = () => `<p class="sound-ask"><button type="button" class="yes">${document.querySelector("#sound svg").outerHTML}${t("sound_ask")}</button><button type="button" class="no" aria-label="${t("sound_no")}">×</button></p>`;
+/** Sound is playing, or turned off: the first gesture is no longer waited for, and the hero's note fades (keeping its
+ *  room until the page changes: nothing moves). */
+function heardNow() {
+  if (waiting()) return;
+  for (const kind of GESTURES) removeEventListener(kind, wake, true);
+  document.querySelector(".sound-ask")?.classList.add("gone");
+  if (hearing && !made) listen(true, false);
+}
+/** The hero's note while the sound waits for the reader: what is the case, and the toggle to turn it off. */
+const soundAsk = () => `<p class="sound-ask" role="status">${document.getElementById("sound").outerHTML.replace(' id="sound"', "").replace(/<span[^>]*>[^<]*<\/span>/, `<span class="hidden">${t("sound")}</span>`)}<span>${t("sound_waiting")}</span></p>`;
 function wake(e) {
-  if (e.target.closest?.(".sound-toggle, .sound-ask")) return;  // that press says for itself
-  for (const kind of ["click", "keydown"]) removeEventListener(kind, wake, true);
+  if (e.target.closest?.(".sound-toggle")) return;  // that press says for itself
   if (hearing) listen(true, false);
 }
 
@@ -1864,7 +1880,7 @@ async function homePage() {
   const hero = el(`<section class="hero" aria-labelledby="hero-title"><div class="hero-track"><div class="hero-sea"><div class="chart night"></div>${key}</div></div>
     <div class="hero-text"><h1 id="hero-title">${t("title")}</h1><p class="hero-lede">${t("hero_lede")}</p><div class="hero-ask"></div>
       <div class="hero-try"><span id="hero-try">${t("hero_try")}</span><ul class="chips" aria-labelledby="hero-try">${SHOWCASE.map((w) => `<li><button type="button" aria-pressed="false"${glossed(w)}>${w}</button></li>`).join("")}</ul></div>
-      <div class="hero-foot"><p class="hero-now" role="status"></p>${WebAudio && !kept("localStorage", "sound") ? soundAsk() : ""}<button type="button" class="hero-down quiet">${TIDE_MARK}<span class="dive-cue">${t("hero_dive")}</span><span class="no-dive">${t("hero_down")}</span>${down}</button></div></div></section>`);
+      <div class="hero-foot"><p class="hero-now" role="status"></p>${waiting() ? soundAsk() : ""}<button type="button" class="hero-down quiet">${TIDE_MARK}<span class="dive-cue">${t("hero_dive")}</span><span class="no-dive">${t("hero_down")}</span>${down}</button></div></div></section>`);
   const featured = el(`<section class="featured" aria-labelledby="featured-title"><p class="kicker">${t("featured_kicker")}</p><h2 id="featured-title">${t("featured_title")}</h2>
     ${storyCards(STORIES.slice(0, 3), true)}<p class="more"><a class="button" href="${href("cerita")}">${t("all_stories_n", STORIES.length)}</a></p></section>`);
   const play = el(`<section class="play-home" aria-labelledby="play-title"><p class="kicker">${t("nav_play")}</p><h2 id="play-title">${t("play_home_title")}</h2><p class="sub">${t("play_lede")}</p>
@@ -2555,15 +2571,16 @@ document.getElementById("language").addEventListener("click", () => {
 // page shares: a barely heard tick as a control is pointed at with a mouse or reached by keyboard, a press, a share
 // sheet opening. A tab out of sight is silent (sound.js).
 if (!WebAudio) document.getElementById("sound").hidden = true;
-else if (kept("localStorage", "sound") === "on" && !embedded()) {
-  hearing = true;  // shown as on; heard from the reader's first press or key
+else if (kept("localStorage", "sound") !== "off" && !embedded()) {
+  hearing = true;  // shown as on from the start; heard as soon as the browser lets it
   document.getElementById("sound").setAttribute("aria-pressed", "true");
-  for (const kind of ["click", "keydown"]) addEventListener(kind, wake, true);
+  for (const kind of GESTURES) addEventListener(kind, wake, true);
+  // After the first paint, at the first idle moment: making the context never holds up the page or its sea.
+  painted().then(() => (window.requestIdleCallback ? requestIdleCallback(() => hearing && listen(true, false), { timeout: 3000 }) : setTimeout(() => hearing && listen(true, false), 1500)));
 }
 const CONTROLS = "button, [role=button], summary, a.card, .masthead nav a";
 document.addEventListener("click", (e) => {
   if (e.target.closest?.(".sound-toggle")) return listen(!hearing);
-  if (e.target.closest?.(".sound-ask")) return listen(!!e.target.closest(".yes"));
   if (e.target.closest?.("button, [role=button], summary")) hear("press");
 });
 addEventListener("pointerover", (e) => e.pointerType === "mouse" && e.target.closest?.(CONTROLS) && e.target.closest(CONTROLS) !== e.relatedTarget?.closest?.(CONTROLS) && hear("hover"));

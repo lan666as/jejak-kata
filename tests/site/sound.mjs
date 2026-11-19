@@ -1,11 +1,14 @@
-// node tests/site/sound.mjs   Sound (site/sound.js) as a reader meets it: off by default, and nothing of it made (no
-// AudioContext, sound.js not fetched) until the toggle is pressed; the toggle in the header (in the menu on a phone), named
-// in both languages and pressed by keyboard; the choice kept across a reload and heard from the first press; silent in a
-// hidden tab and once turned off; an embed silent unless turned on there; nothing broken where storage is refused or Web
-// Audio is missing. Then the sound itself, rendered offline: every family's bed, every sound alone and 40 s of the first
-// page (the bed, the arrival, two routes, the dive, a story's steps), each peak under CEILING and no sample NaN.
+// node tests/site/sound.mjs   Sound (site/sound.js) as a reader meets it: on by default, the toggle pressed from the
+// start; where the browser lets sound start at once it is heard at once, else it waits for the reader's first press, key
+// or tap (a browser that asks for a gesture is emulated: the context stays suspended until one), the first page saying so
+// with the toggle beside it; turned off, it is remembered and nothing of it is made on later visits; the toggle named in
+// both languages, by keyboard and in the phone's menu; silent in a hidden tab; an embed silent unless turned on there;
+// nothing broken where storage is refused or Web Audio is missing. Then the sound itself, rendered offline: every
+// family's bed, every sound alone and 40 s of the first page (the bed, the arrival, two routes, the dive, a story's
+// steps), each peak under CEILING and no sample NaN.
 // SOUND_WAV=<dir> also writes those renders as WAV files, to listen to.
 import { base, browser, done } from "./serve.mjs";
+import { chromium } from "playwright-core";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 const CEILING = 0.5; // -6 dBFS: no sound may come near full scale
@@ -17,20 +20,30 @@ const COUNT = () => {
   const A = window.AudioContext;
   if (A) window.AudioContext = class extends A { constructor(...a) { super(...a); window.__contexts.push(this); } };
 };
-const fresh = async ({ init = [], width = 1440, height = 900 } = {}) => {
-  const p = await browser.newPage({ viewport: { width, height } });
+/** A browser that lets sound start only after a gesture (as Chrome and Safari do on a first visit): every AudioContext
+ *  says "suspended" and resumes only while the page has the reader's activation. */
+const GESTURE = () => {
+  const A = window.AudioContext;
+  window.AudioContext = class extends A {
+    constructor(...a) { super(...a); this.locked = true; }
+    get state() { return this.locked ? "suspended" : super.state; }
+    resume() { if (this.locked && !navigator.userActivation.isActive) return new Promise(() => {}); if (this.locked) (this.locked = false), this.dispatchEvent(new Event("statechange")); return super.resume(); }
+  };
+};
+const fresh = async ({ init = [], width = 1440, height = 900, using = browser } = {}) => {
+  const p = await using.newPage({ viewport: { width, height } });
   p.errors = [];
   p.fetched = [];
   p.on("pageerror", (e) => p.errors.push(e.message));
   p.on("console", (m) => m.type() === "error" && !/Failed to load resource/.test(m.text()) && p.errors.push(m.text()));
   p.on("request", (r) => p.fetched.push(r.url()));
-  for (const f of [COUNT, ...init]) await p.addInitScript(f);
+  for (const f of [...init, COUNT]) await p.addInitScript(f);
   return p;
 };
 const look = (p) => p.evaluate(() => {
   const b = document.getElementById("sound");
   return { shown: !!b && !b.hidden && b.getClientRects().length > 0, pressed: b?.getAttribute("aria-pressed"), contexts: window.__contexts.length,
-    state: window.__contexts.at(-1)?.state || "none", ask: document.querySelector(".sound-ask .yes")?.textContent.trim() || null, kept: (() => { try { return localStorage.getItem("sound"); } catch { return "refused"; } })() };
+    state: window.__contexts.at(-1)?.state || "none", ask: document.querySelector(".sound-ask:not(.gone) > span:last-child")?.textContent.trim() || null, kept: (() => { try { return localStorage.getItem("sound"); } catch { return "refused"; } })() };
 });
 const sounded = (p) => p.fetched.some((u) => u.endsWith("/sound.js"));
 const hide = (p, hidden) => p.evaluate((h) => {
@@ -39,91 +52,99 @@ const hide = (p, hidden) => p.evaluate((h) => {
   document.dispatchEvent(new Event("visibilitychange"));
 }, hidden);
 
-{ // off by default; on with a press; kept across a reload; silent in a hidden tab; off again
-  const p = await fresh();
+{ // on by default, waiting for a gesture; heard from the first press; silent in a hidden tab; turned off, kept off and nothing made
+  const p = await fresh({ init: [GESTURE] });
   await p.goto(base); await p.waitForTimeout(2500);
   const first = await look(p), name = await p.getByRole("button", { name: "Suara", exact: true }).count();
-  log("off by default, nothing made", first.shown && first.pressed === "false" && first.contexts === 0 && !sounded(p) && first.ask === "Nyalakan suara" && name === 1,
-    `toggle ${first.shown ? "shown" : "missing"}, named "Suara" ${name}x, pressed ${first.pressed}; ${first.contexts} AudioContext; sound.js ${sounded(p) ? "fetched" : "not fetched"}; invitation "${first.ask}"`);
-  await p.click("#sound"); await p.waitForTimeout(1000);
+  log("on by default, waiting for a gesture", first.shown && first.pressed === "true" && first.contexts === 1 && first.state === "suspended" && first.ask === "Suara menyala: ketuk di mana saja untuk mendengar" && name >= 1 && first.kept === null,
+    `toggle ${first.shown ? "shown" : "missing"}, named "Suara" ${name}x, pressed ${first.pressed}; ${first.contexts} AudioContext, ${first.state}; sound.js ${sounded(p) ? "fetched" : "not fetched"}; note "${first.ask}"; kept ${first.kept}`);
+  await p.mouse.wheel(0, 300); await p.waitForTimeout(400);
+  const scrolled = await look(p);
+  await p.evaluate(() => scrollTo(0, 0)); await p.click("h1"); await p.waitForTimeout(1200);
   const on = await look(p);
-  log("on with a press", on.pressed === "true" && on.contexts === 1 && on.state === "running" && sounded(p) && on.ask === null && on.kept === "on",
-    `pressed ${on.pressed}; ${on.contexts} AudioContext, ${on.state}; sound.js ${sounded(p) ? "fetched" : "not fetched"}; invitation ${on.ask ? "still there" : "gone"}; kept "${on.kept}"`);
+  log("a scroll does not start it; the first press does", scrolled.state === "suspended" && on.pressed === "true" && on.contexts === 1 && on.state === "running" && sounded(p) && on.ask === null,
+    `after a scroll ${scrolled.state}; after a press ${on.state}, ${on.contexts} AudioContext; sound.js ${sounded(p) ? "fetched" : "not fetched"}; note ${on.ask ? "still there" : "gone"}`);
   await hide(p, true); await p.waitForTimeout(1200);
   const hidden = await look(p);
   await hide(p, false); await p.waitForTimeout(600);
   const back = await look(p);
   log("silent while hidden", hidden.state === "suspended" && back.state === "running", `hidden: ${hidden.state}; shown again: ${back.state}`);
-  p.fetched = [];
-  await p.reload(); await p.waitForTimeout(2500);
-  const again = await look(p);
-  await p.click("h1"); await p.waitForTimeout(1000);
-  const woken = await look(p);
-  log("kept after a reload, heard from the first press", again.pressed === "true" && again.contexts === 0 && !again.ask && woken.contexts === 1 && woken.state === "running",
-    `after reload pressed ${again.pressed}, ${again.contexts} AudioContext; after a press on the page ${woken.contexts}, ${woken.state}`);
   await p.click("#sound"); await p.waitForTimeout(2000);
   const off = await look(p);
-  await p.reload(); await p.waitForTimeout(2000); await p.click("h1"); await p.waitForTimeout(500);
+  p.fetched = [];
+  await p.reload(); await p.waitForTimeout(2500); await p.click("h1"); await p.keyboard.press("a"); await p.waitForTimeout(800);
   const stays = await look(p);
-  log("off again, and kept off", off.pressed === "false" && off.state === "suspended" && off.kept === "off" && stays.pressed === "false" && stays.contexts === 0,
-    `pressed ${off.pressed}, ${off.state}, kept "${off.kept}"; after reload pressed ${stays.pressed}, ${stays.contexts} AudioContext`);
-  log("no errors (Indonesian, 1440px)", !p.errors.length, p.errors.join(" | ") || "none");
+  log("off with one press, kept off, nothing made on the next visit", off.pressed === "false" && off.state === "suspended" && off.kept === "off" && stays.pressed === "false" && stays.contexts === 0 && !sounded(p) && stays.ask === null,
+    `pressed ${off.pressed}, ${off.state}, kept "${off.kept}"; after reload and a press pressed ${stays.pressed}, ${stays.contexts} AudioContext, sound.js ${sounded(p) ? "fetched" : "not fetched"}, note ${stays.ask ? "shown" : "none"}`);
+  log("no errors (Indonesian, 1440px, a gesture asked for)", !p.errors.length, p.errors.join(" | ") || "none");
   await p.close();
 }
-{ // English, and the keyboard
-  const p = await fresh();
+// Where the browser lets sound start at once: a Chromium launched with the policy that says so.
+for (const [name, using] of [["--autoplay-policy=no-user-gesture-required", await chromium.launch({ args: ["--autoplay-policy=no-user-gesture-required"] })]]) {
+  const p = await fresh({ using });
+  await p.goto(base); await p.waitForTimeout(2500);
+  const s = await look(p);
+  log(`heard at once where allowed (${name})`, s.pressed === "true" && s.contexts === 1 && s.state === "running" && s.ask === null && sounded(p) && !p.errors.length,
+    `pressed ${s.pressed}; ${s.contexts} AudioContext, ${s.state}, no press; note ${s.ask ? "shown" : "none"}; errors ${p.errors.length} ${p.errors[0] || ""}`);
+  await p.close();
+  if (using !== browser) await using.close();
+}
+{ // English (opened in English: pressing the language button is a gesture, and starts the sound), and the keyboard
+  const p = await fresh({ init: [GESTURE, () => { try { localStorage.setItem("language", "en"); } catch {} }] });
   await p.goto(base); await p.waitForTimeout(2000);
-  await p.click("#language"); await p.waitForTimeout(1500);
-  const en = await look(p), name = await p.getByRole("button", { name: "Sound", exact: true }).count(), no = await p.getByRole("button", { name: "No sound", exact: true }).count();
+  const en = await look(p), name = await p.getByRole("button", { name: "Sound", exact: true }).count();
   let tabs = 0;
   while (tabs < 40 && !(await p.evaluate(() => document.activeElement?.id === "sound"))) (await p.keyboard.press("Tab"), tabs++);
   await p.keyboard.press("Enter"); await p.waitForTimeout(800);
   const entered = await look(p);
-  await p.keyboard.press("Space"); await p.waitForTimeout(400);
+  await p.keyboard.press("Space"); await p.waitForTimeout(800);
   const spaced = await look(p);
-  log("English labels", name === 1 && no === 1 && en.ask === "Turn sound on", `"Sound" ${name}x, "No sound" ${no}x, invitation "${en.ask}"`);
-  log("by keyboard", tabs < 40 && entered.pressed === "true" && entered.state === "running" && spaced.pressed === "false",
-    `reached in ${tabs} tabs; Enter: pressed ${entered.pressed}, ${entered.state}; Space: pressed ${spaced.pressed}`);
+  log("English labels", name >= 1 && en.ask === "Sound is on: tap anywhere to hear it", `"Sound" ${name}x, note "${en.ask}"`);
+  log("by keyboard", tabs < 40 && entered.pressed === "false" && spaced.pressed === "true" && spaced.state === "running",
+    `reached in ${tabs} tabs; Enter: pressed ${entered.pressed}; Space: pressed ${spaced.pressed}, ${spaced.state}`);
   log("no errors (English, keyboard)", !p.errors.length, p.errors.join(" | ") || "none");
   await p.close();
 }
-{ // a phone: in the menu, its name written beside it; the invitation's "no" is a choice too
-  const p = await fresh({ width: 390, height: 780 });
+{ // a phone: in the menu, its name written beside it; the note's own toggle turns it off
+  const p = await fresh({ width: 390, height: 780, init: [GESTURE] });
   await p.goto(base); await p.waitForTimeout(2000);
   const closed = await look(p);
-  await p.click(".sound-ask .no"); await p.waitForTimeout(300);
+  await p.click(".sound-ask .sound-toggle"); await p.waitForTimeout(300);
   const declined = await look(p);
   await p.click("#menu-button"); await p.waitForTimeout(500);
   const open = await look(p), label = await p.evaluate(() => document.querySelector("#sound span").getBoundingClientRect().width);
-  log("phone: in the menu, named", !closed.shown && open.shown && label > 20 && declined.ask === null && declined.kept === "off" && declined.contexts === 0,
-    `menu closed: ${closed.shown ? "shown" : "not shown"}; open: ${open.shown ? "shown" : "not shown"}, its name ${Math.round(label)}px wide; "no" to the invitation: kept "${declined.kept}", ${declined.contexts} AudioContext`);
+  log("phone: in the menu, named; the note's toggle turns it off", !closed.shown && open.shown && label > 20 && closed.ask && declined.ask === null && declined.kept === "off" && declined.pressed === "false" && open.pressed === "false",
+    `menu closed: ${closed.shown ? "shown" : "not shown"}; open: ${open.shown ? "shown" : "not shown"}, its name ${Math.round(label)}px wide; the note's toggle: kept "${declined.kept}", pressed ${declined.pressed}, note ${declined.ask ? "still there" : "gone"}`);
   await p.close();
 }
-{ // an embed is silent though sound was left on elsewhere, unless turned on there
-  const p = await fresh({ init: [() => { try { localStorage.setItem("sound", "on"); } catch {} }] });
-  await p.goto(base + "#/cerita/oknum/embed/0/0"); await p.waitForTimeout(3000);
-  const toggle = await p.evaluate(() => document.querySelector(".embed-foot .sound-toggle")?.getAttribute("aria-pressed"));
-  await p.click(".embed-foot .on"); await p.waitForTimeout(500);
-  const quiet = await look(p);
-  await p.click(".embed-foot .sound-toggle"); await p.waitForTimeout(800);
-  const on = await look(p);
-  log("embed: silent unless turned on there", toggle === "false" && quiet.contexts === 0 && on.contexts === 1 && on.state === "running" && !p.errors.length,
-    `its toggle pressed ${toggle}; after a step ${quiet.contexts} AudioContext; turned on there: ${on.contexts}, ${on.state}; errors ${p.errors.length}`);
-  await p.close();
+{ // an embed is silent, by default and though sound was left on elsewhere, unless turned on there
+  for (const left of [null, "on"]) {
+    const p = await fresh({ init: [GESTURE, ...(left ? [() => { try { localStorage.setItem("sound", "on"); } catch {} }] : [])] });
+    await p.goto(base + "#/cerita/oknum/embed/0/0"); await p.waitForTimeout(3000);
+    const toggle = await p.evaluate(() => document.querySelector(".embed-foot .sound-toggle")?.getAttribute("aria-pressed"));
+    await p.click(".embed-foot .on"); await p.waitForTimeout(500);
+    const quiet = await look(p);
+    await p.click(".embed-foot .sound-toggle"); await p.waitForTimeout(800);
+    const on = await look(p);
+    log(`embed (${left ? "left on elsewhere" : "by default"}): silent unless turned on there`, toggle === "false" && quiet.contexts === 0 && !quiet.kept === !left && on.contexts === 1 && on.state === "running" && !p.errors.length,
+      `its toggle pressed ${toggle}; after a step ${quiet.contexts} AudioContext; turned on there: ${on.contexts}, ${on.state}; errors ${p.errors.length}`);
+    await p.close();
+  }
 }
-{ // storage refused (Safari with cookies blocked): works, remembers nothing, throws nothing
-  const p = await fresh({ init: [() => { for (const name of ["localStorage", "sessionStorage"]) Object.defineProperty(window, name, { get() { throw new DOMException("refused", "SecurityError"); } }); }] });
+{ // storage refused (Safari with cookies blocked): on at each visit, heard from the first press, nothing thrown
+  const p = await fresh({ init: [GESTURE, () => { for (const name of ["localStorage", "sessionStorage"]) Object.defineProperty(window, name, { get() { throw new DOMException("refused", "SecurityError"); } }); }] });
   await p.goto(base); await p.waitForTimeout(2500);
-  await p.click("#sound"); await p.waitForTimeout(800);
+  const before = await look(p);
+  await p.click("h1"); await p.waitForTimeout(800);
   const s = await look(p);
-  log("storage refused", s.pressed === "true" && s.state === "running" && !p.errors.length, `pressed ${s.pressed}, ${s.state}; errors ${p.errors.length}${p.errors.length ? " " + p.errors[0] : ""}`);
+  log("storage refused", before.pressed === "true" && s.state === "running" && !p.errors.length, `pressed ${before.pressed}, ${before.state} -> ${s.state} after a press; errors ${p.errors.length}${p.errors.length ? " " + p.errors[0] : ""}`);
   await p.close();
 }
-{ // no Web Audio: no toggle, no invitation, nothing thrown
+{ // no Web Audio: no toggle, no note, nothing thrown
   const p = await fresh({ init: [() => { delete window.AudioContext; delete window.webkitAudioContext; }] });
   await p.goto(base); await p.waitForTimeout(2500);
-  const s = await p.evaluate(() => ({ hidden: document.getElementById("sound").hidden, ask: !!document.querySelector(".sound-ask") }));
-  log("no Web Audio: no toggle", s.hidden && !s.ask && !p.errors.length, `toggle hidden ${s.hidden}, invitation ${s.ask}; errors ${p.errors.length}`);
+  const s = await p.evaluate(() => ({ hidden: document.getElementById("sound").hidden, ask: !!document.querySelector(".sound-ask:not(.gone)") }));
+  log("no Web Audio: no toggle", s.hidden && !s.ask && !p.errors.length, `toggle hidden ${s.hidden}, note ${s.ask}; errors ${p.errors.length}`);
   await p.close();
 }
 
