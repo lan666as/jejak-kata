@@ -124,7 +124,9 @@ it.
   paper in the page's inks. Its scale runs from 0 in round steps (1, 2, 2.5 or 5 times a power of ten, at most five)
   to the step at or past the largest value; where the values are a part of a base year, the 100% line is drawn stronger. Title is a sentence with the number in it. The
   numbers a step's caption names (its `focus`) stand on the beacon: a pill of `--beacon` behind the value, the text in
-  `--deep`. A line's name and value stand at its right at the height of its value, in the order of the values,
+  `--deep`. A row of a strip with no value at the state shown (fewer pages than the story's rule asks) has an open dash where its
+  dots would start, and the first such row says so ("terlalu sedikit halaman" / "too few pages"). A line's name and
+  value stand at its right at the height of its value, in the order of the values,
   pushed apart where their pills would touch, each then placed on the one board (`labels.js`). The tools under a figure save it as an image and download the numbers it draws as CSV (from what the
   figure loaded: a row per period, or per row and state).
 - **Footer** on a phone folds "Data" and "Licence and code" (a line each, opened by a tap); from 900px they stand open.
