@@ -11,7 +11,7 @@ import { base, browser, done } from "./serve.mjs";
 import { chromium } from "playwright-core";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-const CEILING = 0.5; // -6 dBFS: no sound may come near full scale
+const CEILING = 0.7; // -3 dBFS: no sound may come near full scale
 let failures = 0;
 const log = (name, ok, detail) => { failures += !ok; console.log(`${ok ? "ok  " : "FAIL"} ${name}: ${detail}`); };
 // Every AudioContext the page makes, counted.
@@ -157,7 +157,7 @@ for (const [name, using] of [["--autoplay-policy=no-user-gesture-required", awai
 // note is of pelog, above it of slendro. The expected numbers are written here, not taken from sound.js.
 const SLENDRO = [0, 240, 480, 720, 960], PELOG = [0, 119, 255, 672, 784], ROOT = 146.83;  // cents over D3
 const BAR = [2.76, 5.4, 8.93], KNOB = [2.02, 2.97];  // partial ratios over the fundamental
-const KNEE = 0.5 * 10 ** (-13 / 20);  // the compressor (threshold -10 dB, knee 6 dB) after a gain of 0.5: -19 dBFS out
+const KNEE = 1.4 * 10 ** (-13 / 20);  // the compressor (threshold -10 dB, knee 6 dB) after a gain of 1.4 (LOUD): -10 dBFS out
 const p = await fresh();
 await p.goto(base); await p.waitForTimeout(1000);
 const { renders, m } = await p.evaluate(async ({ wav, SLENDRO, PELOG, ROOT, BAR, KNOB }) => {

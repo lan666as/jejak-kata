@@ -37,8 +37,10 @@ for (const [name, options, init, expect] of [
     // Scrolled halfway down the hero's dive, the sea is still on screen under the header (held there while diving).
     await page.evaluate(() => scrollTo(0, innerHeight * 0.4)); await page.waitForTimeout(600);
     const held = await page.evaluate(() => Math.round(document.querySelector(".hero-sea").getBoundingClientRect().top - document.querySelector(".masthead").offsetHeight));
-    const ok = expect(first) && ladder && first.route && after.route === "prabowo" && (!first.gl || after.label.includes("prabowo")) && (first.dives ? held === 0 : true) && !errors.length;
-    log(`hero, ${name} @${width}px`, ok, `${first.gl ? "3D sea" : "flat chart"} (${first.role}, ${first.extra}px past the sea); first route ${first.route}, then ${after.route}; dive ${first.dives ? `${first.extra}px, sea ${held}px under the header halfway` : "none"}; ladder ${steps.length ? `${rungs[0][1]} -> ${steps.at(-1)[1]}, ${Math.round(steps.at(-1)[0] - steps[0][0])} ms from its first step to its last` : rungs.length ? `stays at ${rungs[0][1]}` : "none"}; ${first.state ? JSON.stringify(first.state) : ""}; errors ${errors.length}${errors.length ? " " + errors[0].slice(0, 90) : ""}`);
+    // And the dive has gone as far as the scroll has: the camera has pitched down (the sea's own depth says so).
+    const depth = await page.evaluate(() => document.querySelector(".hero .chart").sea?.state?.().depth ?? 0);
+    const ok = expect(first) && ladder && first.route && after.route === "prabowo" && (!first.gl || after.label.includes("prabowo")) && (first.dives ? held === 0 && depth > 0.1 : true) && !errors.length;
+    log(`hero, ${name} @${width}px`, ok, `${first.gl ? "3D sea" : "flat chart"} (${first.role}, ${first.extra}px past the sea); first route ${first.route}, then ${after.route}; dive ${first.dives ? `${first.extra}px, sea ${held}px under the header halfway, depth ${depth}` : "none"}; ladder ${steps.length ? `${rungs[0][1]} -> ${steps.at(-1)[1]}, ${Math.round(steps.at(-1)[0] - steps[0][0])} ms from its first step to its last` : rungs.length ? `stays at ${rungs[0][1]}` : "none"}; ${first.state ? JSON.stringify(first.state) : ""}; errors ${errors.length}${errors.length ? " " + errors[0].slice(0, 90) : ""}`);
     await page.close();
   }
 }

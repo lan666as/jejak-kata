@@ -439,7 +439,7 @@ heard.
   frame. A browser lets sound start only after the reader has done something on the page, so once the page has been
   painted (at its first idle moment, never holding up the first screen) the AudioContext is made: where the browser lets
   it run, the sea is heard at once; else it waits for the first press, key or tap anywhere (a scroll or a hover does not
-  count, as browsers see it) and comes in with a slow fade. Until then the first page's hero says so plainly under its
+  count, as browsers see it) and comes in over a second and a half. Until then the first page's hero says so plainly under its
   status line ("Suara menyala: ketuk di mana saja untuk mendengar" / "Sound is on: tap anywhere to hear it"), with the
   toggle beside it to turn it off; it fades once the sea is heard or turned off, keeping its room until the page changes
   (nothing moves). Never an overlay or a gate. `sound.js` is fetched once the context can run. Turned off (one press),

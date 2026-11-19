@@ -63,7 +63,7 @@ const hear = (name, ...args) => hearing && sounding?.play(name, ...args);
 const embedded = () => document.documentElement.classList.contains("embedded");
 /** Whether the sound is waiting for the reader's first gesture (on, but not yet allowed to play). */
 const waiting = () => hearing && context?.state !== "running";
-const GESTURES = ["pointerdown", "keydown", "touchend"];
+const GESTURES = ["pointerdown", "pointerup", "keydown", "touchend", "click"];
 /** Sound on (or off). `chosen`: the reader pressed the toggle (kept, and the sound "on" is heard). Called within a
  *  gesture, it lets the context run; outside one it makes the layer ready and waits. */
 function listen(on, chosen = true) {
@@ -74,7 +74,7 @@ function listen(on, chosen = true) {
   if (!context) (context = new WebAudio()).addEventListener("statechange", heardNow);  // (where the browser lets it, it runs at once)
   if (context.state !== "running") return void (navigator.userActivation?.isActive !== false && context.resume().then(() => hearing && listen(true, chosen), () => {}));  // (sound.js is fetched once it can be heard: nothing on a first visit's line before)
   made ||= import("./sound.js").then((m) => (sounding = m.sound(context))).catch(() => null);
-  made.then((s) => s && (!hearing ? s.off() : (s.on(chosen ? 1.5 : 4), s.bed(heard), chosen && s.play("on"))));  // off again before it was ready
+  made.then((s) => s && (!hearing ? s.off() : (s.on(1.5), s.bed(heard), chosen && s.play("on"))));  // off again before it was ready
 }
 /** Sound is playing, or turned off: the first gesture is no longer waited for, and the hero's note fades (keeping its
  *  room until the page changes: nothing moves). */
@@ -2068,24 +2068,15 @@ async function homePage() {
   if (drawn) go(first, !pending);
   // Once the first route has sailed, two notes say what a light's height and the route are.
   if (drawn && !pending) figure.chart.notes?.({ rise: t("note_rise"), route: (word, from, to) => t("note_route", word, from, to) });
-  if (still() || figure.chart.hand) return;  // (the sea answers the hand itself: sea.js)
-  // Depth: on the flat chart the far islands follow the pointer a little, and the tilt of a phone where the browser
-  // gives it without asking.
-  hero.addEventListener("pointermove", (e) => {
-    if (e.pointerType !== "mouse" || e.buttons) return;  // not while the chart is being dragged
-    const box = hero.getBoundingClientRect();
-    figure.chart.tilt(((e.clientX - box.left) / box.width) * 2 - 1, ((e.clientY - box.top) / box.height) * 2 - 1);
-  });
-  hero.addEventListener("pointerleave", () => figure.chart.tilt(0, 0));
-  if (diving && window.DeviceOrientationEvent && !DeviceOrientationEvent.requestPermission && matchMedia("(pointer: coarse)").matches) {
-    let rest = null;
-    const tilt = (e) => {
-      if (!hero.isConnected) return removeEventListener("deviceorientation", tilt);
-      if (e.gamma === null) return;
-      rest ??= [e.gamma, e.beta];
-      figure.chart.tilt(Math.max(-1, Math.min(1, (e.gamma - rest[0]) / 25)), Math.max(-1, Math.min(1, (e.beta - rest[1]) / 25)));
-    };
-    addEventListener("deviceorientation", tilt);
+  if (still()) return;
+  // Depth: on the flat chart the far islands follow the pointer a little (the sea answers the hand itself: sea.js).
+  if (!figure.chart.hand) {
+    hero.addEventListener("pointermove", (e) => {
+      if (e.pointerType !== "mouse" || e.buttons) return;  // not while the chart is being dragged
+      const box = hero.getBoundingClientRect();
+      figure.chart.tilt(((e.clientX - box.left) / box.width) * 2 - 1, ((e.clientY - box.top) / box.height) * 2 - 1);
+    });
+    hero.addEventListener("pointerleave", () => figure.chart.tilt(0, 0));
   }
   // The dive: scrolling out of the hero pitches the camera down until the sea is the paper of the page below. The
   // sea is held on screen (sticky) while the hero's last part scrolls past; the text gives way as it goes.

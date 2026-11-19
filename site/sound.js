@@ -21,7 +21,7 @@ const SLENDRO = [0, 240, 480, 720, 960], PELOG = [0, 119, 255, 672, 784];
 const BAR = [[1, 1, 1], [2.76, 0.3, 0.35], [5.4, 0.12, 0.18], [8.93, 0.05, 0.1]];
 const KNOB = [[1, 1, 1], [2.02, 0.32, 0.55], [2.97, 0.18, 0.35], [4.37, 0.08, 0.08], [6.1, 0.04, 0.05]];
 const SINE = [[1, 1, 1]];
-const LOUD = 0.5; // the whole layer's gain after the compressor
+const LOUD = 1.4; // the whole layer's gain after the compressor
 // Each family's sea: how high the waves run (waves) and how bright they break (bright), the drone's root (in degrees
 // from the scale's), how many seconds pass between far phrases on average (bells), and how wide the waves stand (wide).
 const BEDS = {
