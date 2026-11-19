@@ -347,27 +347,49 @@ text has been painted. What is on screen is the data and nothing else:
 ## Sound (`site/sound.js`)
 
 The night sea can be heard. Everything is made in the page with the Web Audio API: no files, no samples, no library.
+It is a synthesised sound that borrows from Javanese and Balinese gamelan (two of its tunings, the bronze of its
+metallophones and gongs, and its colotomic form) and, for one voice, from the plucked strings of the sasando (Rote) and
+the kacapi (Sunda). It is not gamelan, it quotes no piece, and it does not stand for the music of the whole
+archipelago. Nobody has yet judged it by ear: what is claimed below is measured offline (`tests/site/sound.mjs`), not
+heard.
 
-- **The bed**: the sea at night, quiet. Two lines of waves (white noise through a lowpass that opens as each wave rises,
-  one to each side) on a swell of 5.5 to 12 s whose every wave has its own height and length, so nothing repeats; a
-  low drone (the root, the near fifth above it and the root again, faint and a few cents apart), breathing slowly; now
-  and then a bell buoy far off, struck by a wave and often again, softer, as it rocks back. Each family of pages hears
-  its own sea, as each has its own sea scene, by a few numbers (`BEDS`): the home hero open water, a story's stage
-  further off and lower, the map wider with more bells, a word's page and the rest quieter.
+- **The bed**: the sea at night, quiet. Two lines of surf, one to each side and not alike: a body of white noise
+  through a lowpass that opens as each wave rises, and foam, a brighter hiss (highpassed noise) that flares as the wave
+  breaks at its crest and runs out after it; on a swell of 5.5 to 12 s whose every wave has its own height and length,
+  so nothing repeats. A low drone (the root, the near fifth above it and the root again, faint and a few cents apart),
+  breathing slowly. Now and then, far off and under the water's filter, two or three notes of a gender (bars) or a
+  bonang (knobbed gongs), wandering by a step or two: never the same phrase. Each family of pages hears its own sea, as
+  each has its own sea scene, by a few numbers (`BEDS`): the home hero open water, a story's stage further off and
+  lower, the map wider with more far phrases, a word's page and the rest quieter.
+- **Two scales on D, five notes each**: slendro above water (idealised as five equal steps of 240 cents; real sets are
+  uneven) and pelog under it: tones 1 2 3 5 6 of the seven (those of pathet lima and nem) at 0, 119, 255, 672 and 784
+  cents, the average of the 20 Central Javanese pelog saron sets measured by Surjodiningrat, Sudarjana and Susanto
+  (1972). Every gamelan is tuned on its own; these are one choice. Every pitch, the bed's and every sound's, is of the
+  scale now heard.
 - **The dive** is the one to remember: one lowpass lies over the whole bed (the water). As the hero's dive goes, it
-  closes an octave every quarter of the way, the drone sinks a step and the waves slow, so the sea is heard from under
-  the water; where the tide line rises (halfway) the water closes over with a sweep down and a few bubbles, and coming
-  back up, a sweep the other way.
-- **What the site does**, short and soft, from two voices (a ringing tone with a bell's partials, a breath of noise):
-  the arrival (a slow chord from below, a few lights pinging on), a route sailed (a low tone rising under it and a
-  pluck at each port, left to right, rising), a story's step (a page turning, then its numbers: the values on the
-  beacon, lowest to highest, each pitched by where it lies between the lowest and the highest, so the chart can be
-  heard), the cover opening (four notes up), the landing (a wave on the beach and a low gong), on the map a tick as a
-  word is added or taken away and a bell as a light is chosen, a share sheet opening (a swish up), a quiz answer (two
-  notes up when right; a soft step down when wrong, never a buzzer), a press, and a barely heard tick as a control is
-  pointed at with a mouse or reached by keyboard (never by touch).
-- **One scale**: every pitch is a note of slendro (five near-equal steps to the octave, a gamelan's scale) on D, so the
-  bed, the bells and every sound are in tune with each other.
+  closes an octave every quarter of the way and the waves slow, so the sea is heard from under the water; where the
+  tide line rises (halfway) the water closes over with a sweep down and a few bubbles, the scale turns to pelog and the
+  drone sinks a degree of it; coming back up, a sweep the other way and slendro again. A story's sea, flying from one
+  step's view to the next, closes the water a little (15%) and opens it again; that never reaches pelog.
+- **Bronze**: tones are struck with a soft mallet (an 8 to 30 ms rise, no click) and their partials are inharmonic, each
+  dying on its own, higher ones sooner. A bar (gender, saron) rings as a free bar: 1, 2.76, 5.40, 8.93. A knobbed gong
+  (bonang, kenong, kempul, gong) has a strong fundamental, partials a little off 2 and 3 (2.02, 2.97) and a high clang
+  (4.37, 6.1) gone at once. Sustained tones are paired as Balinese instruments are (ngumbang and ngisep): the
+  fundamental is two voices a few Hz apart, and their beating is a slow shimmer (4 Hz on bars, 3 on kenong and kempul,
+  2.5 on the gong suwukan), on the gong ageng its ombak, the wave (2 Hz).
+- **A story is a gong cycle** (the colotomic structure): each step forward a stroke, odd steps a kenong (degrees 5, 6,
+  7 in turn), even ones a kempul (degrees 1, 2, 3), so no two steps in a row are one pitch; each new scene (and the
+  first, coming from the cover) a gong suwukan (degree -3, about 97 Hz); the landing the gong ageng (degree -7, about
+  56 Hz, low and long, with a wave on the beach). A step back is the same stroke, soft and damped by the hand; back
+  into the scene before, the suwukan damped. After its stroke a step's numbers (the values on the beacon) are notes on
+  a gender, lowest to highest, each pitched by where it lies between the lowest and the highest, so the chart can be
+  heard. The cover opening is a swish and two bonang notes.
+- **What else the site does**, short and soft: the arrival (a soft low gong and a few plucked lights coming on), a
+  route sailed (a low tone rising under it and a plucked string, after the sasando or kacapi, at each port, left to
+  right, rising), on the map a tick (a click and a damped knob) as a word is added or taken away and a bonang note as a
+  light is chosen, a share sheet opening (a swish up), a quiz answer (two gender notes up when right; two damped notes
+  down when wrong, never a buzzer), a press, and a barely heard tick as a control is pointed at with a mouse or reached
+  by keyboard (never by touch).
 - **Manners**: off by default. A toggle in the header (in the menu on a phone; in an embed's foot): a speaker, its waves
   while on and a cross while off, named "Suara" / "Sound", `aria-pressed`. The first page's hero invites once ("Nyalakan
   suara", with a "no" beside it); any choice ends the invitation; with reduced motion it is still. The choice is kept
@@ -375,9 +397,11 @@ The night sea can be heard. Everything is made in the page with the Web Audio AP
   press makes the AudioContext, then `sound.js` is fetched; where it was left on, the first press or key of the next
   visit does the same. Silent when the tab is hidden (a fade, then the context sleeps), once turned off (a 1.5 s fade)
   and in an embed unless turned on there. Reduced motion does not silence it. Without Web Audio there is no toggle.
-- **Level**: low. The bed sits near -35 dBFS (rms), the sounds over it at -45 (the tick) to -19 dBFS (peak), all
-  through a compressor that only catches peaks; `tests/site/sound.mjs` renders the bed and every sound offline and
-  fails above -6 dBFS.
+- **Level**: low. The bed sits near -35 dBFS (rms), its peaks about -15; the sounds over it at -42 (the hover tick) to
+  -20 dBFS (peak), all through a compressor that only catches peaks; the gong ageng stays under its knee (-19 dBFS out),
+  so its low fundamental never makes it pump. `tests/site/sound.mjs` renders the beds, every sound, a whole story and
+  the dive offline, fails above -6 dBFS, and measures the claims above: the gong's energy under 120 Hz and its 1-3 Hz
+  ombak, the partial ratios, the pairs' beating, steps on different pitches, slendro above water and pelog under it.
 
 ## Quality bar
 
