@@ -124,7 +124,8 @@ it.
   paper in the page's inks. Its scale runs from 0 in round steps (1, 2, 2.5 or 5 times a power of ten, at most five)
   to the step at or past the largest value; where the values are a part of a base year, the 100% line is drawn stronger. Title is a sentence with the number in it. The
   numbers a step's caption names (its `focus`) stand on the beacon: a pill of `--beacon` behind the value, the text in
-  `--deep`. The tools under a figure save it as an image and download the numbers it draws as CSV (from what the
+  `--deep`. A line's name and value stand at its right at the height of its value, in the order of the values,
+  pushed apart where their pills would touch, each then placed on the one board (`labels.js`). The tools under a figure save it as an image and download the numbers it draws as CSV (from what the
   figure loaded: a row per period, or per row and state).
 - **Footer** on a phone folds "Data" and "Licence and code" (a line each, opened by a tap); from 900px they stand open.
 - **Menu sheet** (phone): the chart at night, its graticule faint behind the links.
@@ -176,7 +177,9 @@ A story is a voyage in three parts.
    tallest step and the figure gets the rest, at least half (a strip that slides, up to three fifths); where the tallest
    step would not fit beside that, the stage's captions are set a size smaller (1rem, then `--t-small`) and at the last
    the figure gives up a little more (to two fifths); an opening longer still rises over the figure's foot while it is
-   read (a move, not a change of layout), the scene's name and count with it. From 900px a story's captions take at most two sizes: `--t-caption` where a
+   read (a move, not a change of layout), the scene's name and count with it, and never over a mark: lines give it
+   the room (down to three tenths), and a strip keeps the room its rows need, the window it is seen in ending where the
+   opening begins and fading there, as a sliding strip's does. From 900px a story's captions take at most two sizes: `--t-caption` where a
    step fits its column at it, and for every other step one size, the largest (`--t-lede`, the body's, `--t-small`) at
    which the story's longest caption fits, measured in the language and at the width shown. No caption is cut, and
    none scrolls. On a phone a short caption leaves the rest of the band to the sea (its shade is only as tall as its text).
