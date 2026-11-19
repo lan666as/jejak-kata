@@ -184,7 +184,8 @@ export function plate(spec, width, height) {
 /**
  * Rows on one scale. `spec`: {title, note, states: [labels], series: [names], rows: [{label, values: [state][series]}],
  * format: (v) => text, pages: (i) => text, most: the value at the right edge (else the round tick at or past the largest),
- * base: as for lines}. One dot per series in every row; `show(i, focus)` moves the dots to
+ * base: as for lines, empty: what a row with no value at a state means (its rule: too few pages)}. A row with no
+ * value at the state shown has an open dash where its dots would start, and the first such row says why (`empty`). One dot per series in every row; `show(i, focus)` moves the dots to
  * state i and leaves a ring where they were at the first state; rows not named in `focus` fade.
  */
 export function strip(spec, width, height) {
@@ -215,6 +216,7 @@ export function strip(spec, width, height) {
       <line x1="${L}" x2="${W - R}" y1="${y(k)}" y2="${y(k)}" stroke="${line}" stroke-dasharray="1 3"/>
       ${spec.series.map((_, j) => (row.values[0][j] === null || spec.states.length < 2 ? "" : `<circle cx="${x(row.values[0][j])}" cy="${y(k)}" r="4" fill="none" stroke="${css(COLOURS[j])}" stroke-width="1.2" opacity=".65"/>`)).join("")}
       ${spec.series.map((_, j) => `<circle class="dot" r="${Math.min(narrow ? 7 : 9, gap * 0.42)}" fill="${css(COLOURS[j])}" stroke="${paper}" stroke-width="1.5" style="${MOVE}"/>`).join("")}
+      ${spec.empty ? `<g class="empty" opacity="0"><rect x="${L + 6}" y="${y(k) - 3}" width="18" height="6" rx="3" fill="none" stroke="${soft}" stroke-width="1.2"/><text x="${L + 32}" y="${y(k) + 4}" style="font-size:12px;fill:${soft}"></text></g>` : ""}
       <rect class="beacon" x="${W - R + 3}" y="${y(k) - 10}" height="20" rx="4" fill="${beacon}" opacity="0"/>
       <text class="value" x="${W - R + 8}" y="${y(k) + size * 0.35}" style="font-size:12px;font-weight:700;fill:${ink}"></text></g>`).join("")}`;
   }, stripLeast(spec.title, rows, width, spec.series, PITCH.floor));
@@ -222,6 +224,7 @@ export function strip(spec, width, height) {
   const show = (i, focus) => {
     state.textContent = spec.states[i];
     if (spec.pages) made.note(spec.pages(i));
+    let told = false;
     groups.forEach((g, k) => {
       const values = spec.rows[k].values[i], known = values.filter((v) => v !== null);
       const ghost = !!focus && !focus.includes(spec.rows[k].label);
@@ -234,6 +237,8 @@ export function strip(spec, width, height) {
       pill.setAttribute("width", wide(value.textContent, 12) + 10);
       pill.setAttribute("opacity", +named);
       value.style.fill = named ? made.deep : inked;
+      const empty = g.querySelector(".empty");
+      if (empty) (empty.setAttribute("opacity", +!known.length), (empty.lastElementChild.textContent = !known.length && !told ? ((told = true), spec.empty) : ""));
     });
   };
   show(spec.states.length - 1);
