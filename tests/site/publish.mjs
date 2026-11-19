@@ -123,7 +123,7 @@ function content(parts, lang, facts) {
   if (story) {
     const w = story[lang], scenes = story.scenes.map((part) => {
       const s = part[lang], plates = [].concat(s.plate).filter((x) => typeof x === "string");
-      const steps = part.steps.map((step) => `<li><b>${esc(dash(step.head ?? step.mark ?? step.at))}.</b> ${step[lang]}</li>`).join("");
+      const steps = part.steps.map((step) => `<li><b>${esc(dash(step.head?.[lang] ?? step.head ?? step.mark ?? step.at))}.</b> ${step[lang]}</li>`).join("");
       return `<section><h2>${s.title}</h2>${s.text ? `<p>${s.text}</p>` : ""}<figure><figcaption>${plates.join(" / ")}</figcaption><ol>${steps}</ol></figure></section>`;
     }).join("");
     const next = STORIES[(STORIES.indexOf(story) + 1) % STORIES.length];

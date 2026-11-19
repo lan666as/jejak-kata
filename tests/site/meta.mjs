@@ -105,6 +105,7 @@ for (const parts of ROUTES) for (const lang of LANGUAGES) {
   check(parts[0] !== "metode" || kinds.includes("Dataset"), `${name}: the method page without its Dataset`);
   // The page's own text, there without a script, headings in order.
   const pre = html.match(/<div class="prerender">([\s\S]*?)<\/main>/)?.[1] || "", headings = [...pre.matchAll(/<h(\d)/g)].map((x) => +x[1]);
+  check(!/\[object Object\]|>undefined<|\bNaN\b/.test(pre), `${name}: a value printed as it is not meant to be read ([object Object], undefined or NaN)`);
   check(headings[0] === 1 && headings.filter((h) => h === 1).length === 1 && headings.every((h, i) => !i || h <= headings[i - 1] + 1), `${name}: headings ${headings}`);
   if (parts[0] === "cerita" && parts[1]) check(pre.includes(TEXT[lang].limits_title) && (pre.match(/<figure>/g) || []).length >= 1, `${name}: the story's text`);
   report.push({ name, title: t, description: d, text: Buffer.byteLength(textOf(html)), image: bytes.length });
