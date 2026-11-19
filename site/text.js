@@ -419,7 +419,7 @@ export const TEXT = {
     both: "keduanya",
     race_lede: "Ketik nama atau kata apa saja dan lihat mereka berkejaran dari tahun ke tahun: bagian teks yang menyebut masing-masing.",
     race_empty: "Tambahkan kata untuk memulai.",
-    findings_lede: "Hal-hal yang ditemukan hitungan itu sendiri, tanpa daftar dari kami: siapa menggantikan siapa, kata yang datang lalu pergi, dan kata yang datang untuk tinggal.",
+    findings_lede: "Tidak ada daftar dari kami di halaman ini. Hitungannya sendiri yang menemukan: siapa menggantikan siapa, kata yang datang lalu pergi, dan kata yang datang untuk tinggal.",
     swaps_title: "Yang menggantikan",
     swaps_about: "Pasangan yang ditemukan otomatis: kata yang naik (garis magenta) kini bergaul dengan teman-teman yang dulu dimiliki kata yang turun (garis abu-abu). Ini kesamaan pergaulan, bukan pergantian makna: ada pengganti jabatan dan ejaan baru, ada pula pergantian topik di satu rubrik.",
     duet_label: (a, b, year) => `Garis “${a}” dan “${b}” dari masa ke masa${year ? `; “${a}” melewati “${b}” pada ${year}` : ""}.`,
@@ -504,6 +504,7 @@ export const TEXT = {
     method: `
       <p>Untuk tiap masa, setiap kata diberi <b>profil</b>: daftar teman-temannya. Tepatnya, untuk tiap kata lain dicatat apakah keduanya muncul sehalaman atau seartikel lebih sering atau lebih jarang daripada kebetulan. Profil dari dua masa bisa langsung dibandingkan, karena keduanya memakai daftar kata konteks yang sama.</p>
       <p>Masalahnya, jarak antara dua profil tidak pernah nol, bahkan untuk dua contoh acak dari masa yang sama, dan makin besar untuk kata yang makin jarang. Jadi tiap masa dibelah dua secara acak, berulang kali: jarak antara belahan masa A dan belahan masa B dikurangi jarak antara dua belahan dari masa yang sama. Sisanya lalu dibandingkan dengan 500 kata lain yang paling dekat kekerapannya. Hasilnya angka <b>pergeseran</b>.</p>
+      <p>Dengan kata lain: seberapa jauh sebuah kata berpindah dari satu masa ke masa lain, dikurangi seberapa jauh ia tampak berpindah hanya karena untung-untungan contoh, lalu dibandingkan dengan kata-kata yang sama seringnya.</p>
       <p>Ejaan lama (<i>tj, dj, j, oe</i>) diubah ke ejaan sekarang untuk tiap buku yang masih memakainya. Kata tidak dipotong menjadi kata dasar.</p>
       <p>Halaman web diberi tahun menurut tanggal pada alamatnya atau pada baris pembukanya, bukan menurut kapan halaman itu dirayapi; halaman tanpa tanggal dan halaman terjemahan mesin dibuang. Di teks web, kata-kata yang bersama-sama menjadi judul artikel Wikipedia dihitung sebagai satu (<i>ibu kota</i>, <i>tol laut</i>, <i>joko widodo</i>). Nama ditampilkan hanya bila punya artikel Wikipedia.</p>
       <p>Cara ini diuji dengan menanam perubahan buatan pada data nyata, dan dengan daftar kata yang perubahannya sudah dituliskan sebelum hasilnya dilihat. Rincian, kode, dan hasil ujinya ada di repositori.</p>`,
@@ -705,7 +706,7 @@ export const TEXT = {
     both: "both",
     race_lede: "Type any names or words and watch them chase each other year by year: the share of text that mentions each.",
     race_empty: "Add a word to begin.",
-    findings_lede: "Things the counting found by itself, with no list from us: who took whose place, words that came and went, and words that came to stay.",
+    findings_lede: "No list from us on this page. The counting found these by itself: who took whose place, words that came and went, and words that came to stay.",
     swaps_title: "Who took whose place",
     swaps_about: "Pairs found automatically: the rising word (magenta line) now keeps the company the falling word (grey line) used to keep. This is shared company, not a change of meaning: some are successors in office or new spellings, some a change of topic within one section.",
     duet_label: (a, b, year) => `The lines of “${a}” and “${b}” over time${year ? `; “${a}” passes “${b}” in ${year}` : ""}.`,
@@ -790,6 +791,7 @@ export const TEXT = {
     method: `
       <p>For each period, every word gets a <b>profile</b>: a list of the company it keeps. Precisely: for every other word, a record of whether the two share a page or an article more or less often than chance. Profiles from two periods can be compared directly, because both use the same list of context words.</p>
       <p>The catch: the distance between two profiles is never zero, even for two random samples of one period, and it grows as a word gets rarer. So each period is split in two at random, many times over: the distance between a half of period A and a half of period B, minus the distance between two halves of the same period. What is left is then compared with the 500 words nearest in frequency. The result is the <b>shift</b>.</p>
+      <p>In other words: how far a word moved from one period to another, minus how far it would seem to move by the luck of the sample alone, set against words just as common.</p>
       <p>Old spelling (<i>tj, dj, j, oe</i>) is converted to current spelling for each book that still uses it. Words are not reduced to their roots.</p>
       <p>A web page is dated by the date in its address or in its opening lines, not by when it was crawled; undated and machine-translated pages are dropped. In web text, words that together form the title of a Wikipedia article count as one (<i>ibu kota</i>, <i>tol laut</i>, <i>joko widodo</i>). A name is shown only if it has a Wikipedia article.</p>
       <p>The method is tested by planting artificial changes in real data, and against a list of words whose changes were written down before the results were looked at. Details, code and test results are in the repository.</p>`,
