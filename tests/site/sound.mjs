@@ -128,50 +128,178 @@ const hide = (p, hidden) => p.evaluate((h) => {
 }
 
 // ---- the sound itself, offline -----------------------------------------------------------------------------------
+// Nobody can listen here, so what can be measured is: every render's peak and NaNs, and from spectra and envelopes
+// the things the design claims (docs/DESIGN.md, "Sound"): (a) the gong ageng's energy lies low (under 120 Hz) and beats
+// (its ombak) at 1 to 3 Hz, and it never reaches the compressor's knee; (b) bronze partials are inharmonic, at the
+// ratios chosen; (c) paired tones beat at the rate intended; (d) successive steps differ in pitch; (e) under water every
+// note is of pelog, above it of slendro. The expected numbers are written here, not taken from sound.js.
+const SLENDRO = [0, 240, 480, 720, 960], PELOG = [0, 119, 255, 672, 784], ROOT = 146.83;  // cents over D3
+const BAR = [2.76, 5.4, 8.93], KNOB = [2.02, 2.97];  // partial ratios over the fundamental
+const KNEE = 0.5 * 10 ** (-13 / 20);  // the compressor (threshold -10 dB, knee 6 dB) after a gain of 0.5: -19 dBFS out
 const p = await fresh();
 await p.goto(base); await p.waitForTimeout(1000);
-const renders = await p.evaluate(async (wav) => {
+const { renders, m } = await p.evaluate(async ({ wav, SLENDRO, PELOG, ROOT, BAR, KNOB }) => {
   const { sound } = await import("./sound.js");
   const RATE = 44100, QUANTUM = 128 / RATE;
   /** `seconds` of sound; `events` [time, (s) => ...] are played at their time (the context paused there). */
-  const render = async (seconds, events) => {
+  const make = async (seconds, events) => {
     const ctx = new OfflineAudioContext(2, RATE * seconds, RATE), s = sound(ctx), at = new Map();
     for (const [t, f] of events) { const q = Math.round(t / QUANTUM) * QUANTUM; at.set(q, [...(at.get(q) || []), f]); }
     for (const [t, fs] of at) if (t > 0) ctx.suspend(t).then(() => (fs.forEach((f) => f(s)), ctx.resume()));
     s.on(0.01);
     (at.get(0) || []).forEach((f) => f(s));
-    const buffer = await ctx.startRendering(), channels = [0, 1].map((c) => buffer.getChannelData(c));
-    let peak = 0, nan = 0, sum = 0;
-    for (const d of channels) for (const v of d) (Number.isFinite(v) ? ((peak = Math.max(peak, Math.abs(v))), (sum += v * v)) : nan++);
-    const out = { peak, nan, rms: Math.sqrt(sum / (2 * buffer.length)) };
-    if (!wav) return out;
-    const bytes = new DataView(new ArrayBuffer(44 + buffer.length * 4)), text = (o, s) => [...s].forEach((c, i) => bytes.setUint8(o + i, c.charCodeAt(0)));
-    text(0, "RIFF"); bytes.setUint32(4, 36 + buffer.length * 4, true); text(8, "WAVEfmt "); bytes.setUint32(16, 16, true); bytes.setUint16(20, 1, true); bytes.setUint16(22, 2, true);
-    bytes.setUint32(24, RATE, true); bytes.setUint32(28, RATE * 4, true); bytes.setUint16(32, 4, true); bytes.setUint16(34, 16, true); text(36, "data"); bytes.setUint32(40, buffer.length * 4, true);
-    for (let i = 0; i < buffer.length; i++) for (const c of [0, 1]) bytes.setInt16(44 + i * 4 + c * 2, Math.max(-1, Math.min(1, channels[c][i])) * 32767, true);
-    let b = "";
-    const u8 = new Uint8Array(bytes.buffer);
-    for (let i = 0; i < u8.length; i += 0x8000) b += String.fromCharCode(...u8.subarray(i, i + 0x8000));
-    return { ...out, wav: btoa(b) };
+    const b = await ctx.startRendering(), L = b.getChannelData(0), R = b.getChannelData(1), mono = new Float32Array(b.length);
+    for (let i = 0; i < b.length; i++) mono[i] = (L[i] + R[i]) / 2;
+    return { channels: [L, R], mono, length: b.length };
   };
+  const stats = (b) => {
+    let peak = 0, nan = 0, sum = 0;
+    for (const d of b.channels) for (const v of d) (Number.isFinite(v) ? ((peak = Math.max(peak, Math.abs(v))), (sum += v * v)) : nan++);
+    const out = { peak, nan, rms: Math.sqrt(sum / (2 * b.length)) };
+    if (!wav) return out;
+    const bytes = new DataView(new ArrayBuffer(44 + b.length * 4)), text = (o, s) => [...s].forEach((c, i) => bytes.setUint8(o + i, c.charCodeAt(0)));
+    text(0, "RIFF"); bytes.setUint32(4, 36 + b.length * 4, true); text(8, "WAVEfmt "); bytes.setUint32(16, 16, true); bytes.setUint16(20, 1, true); bytes.setUint16(22, 2, true);
+    bytes.setUint32(24, RATE, true); bytes.setUint32(28, RATE * 4, true); bytes.setUint16(32, 4, true); bytes.setUint16(34, 16, true); text(36, "data"); bytes.setUint32(40, b.length * 4, true);
+    for (let i = 0; i < b.length; i++) for (const c of [0, 1]) bytes.setInt16(44 + i * 4 + c * 2, Math.max(-1, Math.min(1, b.channels[c][i])) * 32767, true);
+    let s = "";
+    const u8 = new Uint8Array(bytes.buffer);
+    for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode(...u8.subarray(i, i + 0x8000));
+    return { ...out, wav: btoa(s) };
+  };
+  const render = async (seconds, events) => stats(await make(seconds, events));
+  // ---- measuring -------------------------------------------------------------------------------------------------
+  const fft = (re, im) => {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) {
+      let bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) ([re[i], re[j]] = [re[j], re[i]], [im[i], im[j]] = [im[j], im[i]]);
+    }
+    for (let len = 2; len <= n; len <<= 1) {
+      const a = (-2 * Math.PI) / len, wr = Math.cos(a), wi = Math.sin(a), h = len / 2;
+      for (let i = 0; i < n; i += len) for (let k = 0, cr = 1, ci = 0; k < h; k++) {
+        const xr = re[i + k + h] * cr - im[i + k + h] * ci, xi = re[i + k + h] * ci + im[i + k + h] * cr;
+        re[i + k + h] = re[i + k] - xr; im[i + k + h] = im[i + k] - xi; re[i + k] += xr; im[i + k] += xi;
+        [cr, ci] = [cr * wr - ci * wi, cr * wi + ci * wr];
+      }
+    }
+  };
+  /** The magnitude spectrum of the mono mix from `from` seconds, `size` samples (a power of two), Hann-windowed. */
+  const spectrum = (b, from, size) => {
+    const re = new Float64Array(size), im = new Float64Array(size), o = Math.round(from * RATE);
+    for (let i = 0; i < size; i++) re[i] = (b.mono[o + i] || 0) * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / size));
+    fft(re, im);
+    const mag = new Float64Array(size / 2);
+    for (let i = 0; i < size / 2; i++) mag[i] = Math.hypot(re[i], im[i]);
+    return { mag, bin: RATE / size };
+  };
+  /** The strongest frequency between lo and hi Hz (a parabola through its bin and their neighbours), and its strength. */
+  const strongest = ({ mag, bin }, lo, hi) => {
+    let k = Math.ceil(lo / bin);
+    for (let i = k; i <= Math.floor(hi / bin); i++) if (mag[i] > mag[k]) k = i;
+    const [a, b, c] = [mag[k - 1], mag[k], mag[k + 1]].map((v) => Math.log(v + 1e-12)), d = (0.5 * (a - c)) / (a - 2 * b + c || 1);
+    return { hz: (k + d) * bin, mag: mag[k] };
+  };
+  /** The peaks between lo and hi Hz no more than `floor` dB under the strongest there, one per `near` Hz. */
+  const peaks = (s, lo, hi, floor = 26, near = 8) => {
+    const top = strongest(s, lo, hi).mag, found = [];
+    for (let i = Math.ceil(lo / s.bin) + 1; i < hi / s.bin; i++) if (s.mag[i] > s.mag[i - 1] && s.mag[i] >= s.mag[i + 1] && s.mag[i] > top * 10 ** (-floor / 20)) {
+      const f = strongest(s, (i - 1) * s.bin, (i + 1) * s.bin), last = found.at(-1);
+      if (last && f.hz - last.hz < near) { if (f.mag > last.mag) found[found.length - 1] = f; } else found.push(f);
+    }
+    return found;
+  };
+  /** The rate (Hz) at which the loudness beats between `from` and `to` seconds: the envelope (rms of 10 ms) in dB, less
+   *  its own one-second average (the decay), then the strongest of its frequencies from lo to hi Hz. */
+  const beating = (b, from, to, lo = 0.5, hi = 10) => {
+    const step = RATE / 100, env = [];
+    for (let i = Math.round(from * RATE); i + step <= to * RATE; i += step) {
+      let sum = 0;
+      for (let j = 0; j < step; j++) sum += b.mono[i + j] ** 2;
+      env.push(10 * Math.log10(sum / step + 1e-20));
+    }
+    const r = env.map((v, i) => { const w = env.slice(Math.max(0, i - 50), i + 50); return v - w.reduce((a, x) => a + x, 0) / w.length; }).slice(50, -50);
+    let best = { hz: 0, power: 0 };
+    for (let f = lo; f <= hi; f += 0.02) {
+      let c = 0, s = 0;
+      r.forEach((v, i) => ((c += v * Math.cos((2 * Math.PI * f * i) / 100)), (s += v * Math.sin((2 * Math.PI * f * i) / 100))));
+      if (c * c + s * s > best.power) best = { hz: f, power: c * c + s * s };
+    }
+    return +best.hz.toFixed(2);
+  };
+  const cents = (a, b) => 1200 * Math.log2(a / b);
+  /** How far f lies from the nearest note of a scale (in any octave), in cents. */
+  const off = (f, scale) => Math.min(...scale.map((c) => { const x = (((cents(f, ROOT) - c) % 1200) + 1200) % 1200; return Math.min(x, 1200 - x); }));
+  const m = {};
+  // (a) the gong ageng, alone (the landing): where its energy lies, its ombak, its peak
+  const gong = await make(10, [[0.05, (s) => s.play("land")]]), gs = spectrum(gong, 0.1, 131072);
+  let low = 0, all = 0;
+  gs.mag.forEach((v, i) => ((all += v * v), i * gs.bin < 120 && (low += v * v)));
+  m.gong = { hz: strongest(gs, 20, 4000).hz, low: low / all, ombak: beating(gong, 2, 9), peak: stats(gong).peak };
+  // (b) partials: a bar (the "on" tone, one gender note) and a knobbed gong (a kenong: the first step)
+  const bar = await make(4, [[0.05, (s) => s.play("on")]]), bs = spectrum(bar, 0.06, 65536), f0 = strongest(bs, 150, 600);
+  m.bar = { f: f0.hz, ratios: BAR.map((r) => +(strongest(bs, f0.hz * r * 0.97, f0.hz * r * 1.03).hz / f0.hz).toFixed(4)),
+    harmonics: [2, 3].map((h) => +(20 * Math.log10(strongest(bs, f0.hz * h * 0.995, f0.hz * h * 1.005).mag / f0.mag)).toFixed(1)), beat: beating(bar, 0.3, 3.5) };
+  const kenong = await make(4, [[0.05, (s) => s.play("step", false, [], 1)]]), ks = spectrum(kenong, 0.06, 65536), k0 = strongest(ks, 150, 600);
+  m.knob = { f: k0.hz, ratios: KNOB.map((r) => +(strongest(ks, k0.hz * r * 0.99, k0.hz * r * 1.01).hz / k0.hz).toFixed(4)), beat: beating(kenong, 0.3, 3.5) };
+  // (c) a kempul (the second step) and its pair
+  m.kempul = { beat: beating(await make(5, [[0.05, (s) => s.play("step", false, [], 2)]]), 0.3, 4.5) };
+  // (d) six steps forward, each one's pitch
+  const six = await make(10, [1, 2, 3, 4, 5, 6].map((j) => [0.05 + (j - 1) * 1.6, (s) => s.play("step", false, [], j)]));
+  m.steps = [0, 1, 2, 3, 4, 5].map((i) => +strongest(spectrum(six, 0.1 + i * 1.6, 32768), 60, 1000).hz.toFixed(1));
+  // (e) a step's numbers above water and under it: every peak a note of the scale (or a partial of the step's kenong)
+  const heard = async (under) => {
+    const b = await make(3, [[0, (s) => under && s.dive(1, true)], [0.05, (s) => s.play("step", false, [0, 1, 2, 3, 4], 1)]]);
+    return peaks(spectrum(b, 0.32, 65536), 420, 1230);
+  };
+  const kenongPartials = KNOB.map((r) => ROOT * 2 * r);  // the kenong of step 1 is degree 5, D4, in both scales
+  for (const [name, scale, other] of [["above", SLENDRO, PELOG], ["under", PELOG, SLENDRO]]) {
+    const found = (await heard(name === "under")).filter((f) => Math.min(...kenongPartials.map((k) => Math.abs(cents(f.hz, k)))) > 12);
+    m[name] = { notes: found.map((f) => +f.hz.toFixed(1)), in: found.filter((f) => off(f.hz, scale) < 12).length, other: found.filter((f) => off(f.hz, other) < 12).length };
+  }
+  // ---- the renders, to listen to -------------------------------------------------------------------------------
   const planned = (seconds) => [...Array(Math.ceil(seconds / 2))].map((_, i) => [i * 2, (s) => s.ahead(i * 2 + 4)]);  // as the live layer plans, every 2 s, 4 s ahead
-  const results = {};
-  for (const family of ["home", "story", "map", "word", "rest"]) results[`bed-${family}`] = await render(30, [[0, (s) => s.bed(family)], ...planned(30)]);
-  const args = { route: [14, 1800], "route-slow": [14, 6760], step: [false, [0.12, 0.3, 0.45]], "step-back": [true, []] };
-  for (const name of ["on", "hover", "press", "tick", "light", "sheet", "right", "wrong", "arrive", "route", "route-slow", "step", "step-back", "open", "land", "under", "surface"])
-    results[name] = await render(name.startsWith("route") ? 9 : 4, [[0.05, (s) => s.play(name.replace(/-.*/, ""), ...(args[name] || []))]]);
+  const flown = (t) => [[t, (s) => s.dive(0.15, true)], [t + 0.6, (s) => s.dive(0, true)]];  // the story's sea flies on each step
+  const renders = {};
+  for (const family of ["home", "story", "map", "word", "rest"]) renders[`bed-${family}`] = await render(30, [[0, (s) => s.bed(family)], ...planned(30)]);
+  const args = { route: [14, 1800], "route-slow": [14, 6760], step: [false, [0.12, 0.3, 0.45], 1], "step-back": [true, [], 2], scene: [1, false] };
+  for (const name of ["on", "hover", "press", "tick", "light", "sheet", "right", "wrong", "arrive", "route", "route-slow", "step", "step-back", "scene", "open", "land", "under", "surface"])
+    renders[name] = await render(name.startsWith("route") ? 9 : name === "land" ? 10 : 4, [[0.05, (s) => s.play(name.replace(/-.*/, ""), ...(args[name] || []))]]);
   // The first page, then a story: the bed comes in, the words arrive, the first route sails, a chip sails another, the
   // reader dives into the chart and comes back up a little, then opens a story and steps through it to its landing.
   const dive = [...Array(61)].map((_, i) => [16 + i * 0.1, (s) => s.dive(i / 60)]), rise = [...Array(11)].map((_, i) => [23.5 + i * 0.1, (s) => s.dive(1 - i / 20)]);
-  results.home = await render(40, [[0, (s) => (s.bed("home"), s.play("on"))], ...planned(40), [0.6, (s) => s.play("arrive")], [3.2, (s) => s.play("route", 14, 1800)],
+  renders.home = await render(40, [[0, (s) => (s.bed("home"), s.play("on"))], ...planned(40), [0.6, (s) => s.play("arrive")], [3.2, (s) => s.play("route", 14, 1800)],
     [7, (s) => (s.play("hover"), s.play("press"))], [7.9, (s) => s.play("route", 14, 6760)], ...dive, [22.5, (s) => s.play("hover")], ...rise,
-    [26.5, (s) => (s.play("press"), s.bed("story"))], [28, (s) => s.play("open")], [30, (s) => s.play("step", false, [])], [32.2, (s) => s.play("step", false, [0.21, 0.08])],
-    [34.4, (s) => s.play("step", false, [0.05, 0.11, 0.32])], [35.6, (s) => s.play("sheet")], [36.8, (s) => s.play("step", true, [0.21, 0.08])], [38.4, (s) => s.play("land")]]);
-  return results;
-}, !!process.env.SOUND_WAV);
+    [26.5, (s) => (s.play("press"), s.bed("story"))], [28, (s) => s.play("open")], [29, (s) => s.play("scene", 0)], [30, (s) => s.play("step", false, [], 1)], [32.2, (s) => s.play("step", false, [0.21, 0.08], 2)],
+    [34.4, (s) => s.play("step", false, [0.05, 0.11, 0.32], 3)], [35.6, (s) => s.play("sheet")], [36.8, (s) => s.play("step", true, [0.21, 0.08], 2)], [38.4, (s) => s.play("land")]]);
+  // A whole story, one gong cycle: the cover opens, scene one's gong, three steps, scene two's gong, three steps (and one
+  // back and on again), the landing's gong ageng.
+  const story = [[1, (s) => s.play("open")], [2.2, (s) => s.play("scene", 0)], [4.6, (s) => s.play("step", false, [0.21, 0.08], 1)], [7, (s) => s.play("step", false, [], 2)],
+    [9.4, (s) => s.play("step", false, [0.05, 0.11, 0.32], 3)], [12.4, (s) => s.play("scene", 1)], [14.8, (s) => s.play("step", false, [], 1)], [17.2, (s) => s.play("step", false, [0.4, 0.62], 2)],
+    [19.6, (s) => s.play("step", true, [], 1)], [21.2, (s) => s.play("step", false, [0.4, 0.62], 2)], [23.6, (s) => s.play("step", false, [0.3, 0.12, 0.55, 0.2], 3)], [27, (s) => s.play("land")]];
+  renders.story = await render(38, [[0, (s) => (s.bed("story"), s.play("on"))], ...planned(38), ...story, ...story.slice(1, -1).flatMap(([t]) => flown(t))]);
+  // The dive: a few notes above (slendro), down under the water, the same notes there (pelog), and back up.
+  const notes = (t) => [[t, (s) => s.play("right")], [t + 1.6, (s) => s.play("light")], [t + 3, (s) => s.play("step", false, [0, 1, 2, 3, 4], 1)]];
+  renders.dive = await render(30, [[0, (s) => s.bed("home")], ...planned(30), ...notes(1), ...[...Array(41)].map((_, i) => [6 + i * 0.1, (s) => s.dive(i / 40)]),
+    ...notes(11), ...[...Array(41)].map((_, i) => [17 + i * 0.1, (s) => s.dive(1 - i / 40)]), ...notes(22)]);
+  return { renders, m };
+}, { wav: !!process.env.SOUND_WAV, SLENDRO, PELOG, ROOT, BAR, KNOB });
 const db = (v) => (v > 0 ? `${(20 * Math.log10(v)).toFixed(1)} dBFS` : "silent");
+const near = (a, b, tol) => Math.abs(a - b) <= tol;
+log("(a) gong ageng: low, its ombak 1-3 Hz, under the knee", m.gong.hz < 120 && m.gong.low > 0.5 && m.gong.ombak >= 1 && m.gong.ombak <= 3 && m.gong.peak < KNEE,
+  `strongest at ${m.gong.hz.toFixed(1)} Hz, ${(m.gong.low * 100).toFixed(0)}% of its energy under 120 Hz; beats at ${m.gong.ombak} Hz; peak ${db(m.gong.peak)} (knee at ${db(KNEE)})`);
+log("(b) bar partials inharmonic, at 2.76 5.40 8.93", m.bar.ratios.every((r, i) => near(r, BAR[i], BAR[i] * 0.005)) && m.bar.harmonics.every((d) => d < -25),
+  `fundamental ${m.bar.f.toFixed(1)} Hz; partials at ${m.bar.ratios.join(", ")} x; at 2x and 3x ${m.bar.harmonics.join(" and ")} dB`);
+log("(b) knob partials a little off 2 and 3", m.knob.ratios.every((r, i) => near(r, KNOB[i], 0.004) && Math.abs(r - Math.round(r)) > 0.01),
+  `fundamental ${m.knob.f.toFixed(1)} Hz; partials at ${m.knob.ratios.join(", ")} x`);
+log("(c) paired tones beat as intended", near(m.bar.beat, 4, 0.25) && near(m.knob.beat, 3, 0.25) && near(m.kempul.beat, 3, 0.25),
+  `gender ${m.bar.beat} Hz (4 intended), kenong ${m.knob.beat} Hz, kempul ${m.kempul.beat} Hz (3 intended)`);
+log("(d) successive steps differ in pitch", m.steps.every((f, i) => !i || Math.abs(1200 * Math.log2(f / m.steps[i - 1])) > 50), `steps 1-6 at ${m.steps.join(", ")} Hz`);
+log("(e) above water slendro, under water pelog", ["above", "under"].every((k) => m[k].notes.length >= 4 && m[k].in === m[k].notes.length && m[k].other <= m[k].notes.length - 3),
+  ["above", "under"].map((k) => `${k}: ${m[k].notes.join(", ")} Hz, ${m[k].in}/${m[k].notes.length} in its scale, ${m[k].other} also in the other`).join("; "));
 for (const [name, r] of Object.entries(renders)) {
-  log(`offline: ${name}`, r.nan === 0 && r.peak < CEILING && r.peak > 0, `peak ${db(r.peak)}, rms ${db(r.rms)}${r.nan ? `, ${r.nan} samples NaN` : ""}`);
+  log(`(f) offline: ${name}`, r.nan === 0 && r.peak < CEILING && r.peak > 0, `peak ${db(r.peak)}, rms ${db(r.rms)}${r.nan ? `, ${r.nan} samples NaN` : ""}`);
   if (process.env.SOUND_WAV) (mkdirSync(process.env.SOUND_WAV, { recursive: true }), writeFileSync(join(process.env.SOUND_WAV, `${name}.wav`), Buffer.from(r.wav, "base64")));
 }
 log("no errors (offline)", !p.errors.length, p.errors.join(" | ") || "none");
