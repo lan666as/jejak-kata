@@ -122,7 +122,12 @@ it.
 - **Figure plate**: paper `--chart-2` on the chart; on a story's stage (the deep in both schemes) it is drawn on the
   stage itself in the night's inks (the dark scheme's values, `.stage-figure` in style.css), and saved as an image on
   paper in the page's inks. Its scale runs from 0 in round steps (1, 2, 2.5 or 5 times a power of ten, at most five)
-  to the step at or past the largest value; where the values are a part of a base year, the 100% line is drawn stronger. Title is a sentence with the number in it. The
+  to the step at or past the largest value; where the values are a part of a base year, the 100% line is drawn stronger. Title is a sentence with the number in it. A
+  title is read beside what the plate shows at every step: it names only that moment, or one the plate shows at every
+  step (a line plate's periods; a strip's first moment, which stays on it as hollow rings, named in its legend:
+  "lingkaran kosong: 2010–2014" / "hollow rings: 2010–2014"); a strip whose finding spans its moments has a title for
+  each moment it is stepped to (`plate` a function of the moment), all drawn in the room the longest needs, so nothing
+  moves when it changes. The
   numbers a step's caption names (its `focus`) stand on the beacon: a pill of `--beacon` behind the value, the text in
   `--deep`. A row of a strip with no value at the state shown (fewer pages than the story's rule asks) has an open dash where its
   dots would start, and the first such row says so ("terlalu sedikit halaman" / "too few pages"). A line's name and

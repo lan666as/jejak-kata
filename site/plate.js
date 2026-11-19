@@ -84,7 +84,7 @@ function sheet(spec, width, height, body, least = 0) {
   const page = document.documentElement;
   node.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${spec.title.replace(/"/g, "")}" style="font-family:${css("--type").replace(/"/g, "'")}">
     <rect width="${W}" height="${H}" fill="${paper}"/>
-    <text y="${size + 6}" style="font-size:${size}px;font-weight:800;fill:${ink}">${lines.map((l, k) => `<tspan x="12" dy="${k ? size * 1.14 : 0}">${l}</tspan>`).join("")}</text>
+    <text class="title" y="${size + 6}" style="font-size:${size}px;font-weight:800;fill:${ink}">${lines.map((l, k) => `<tspan x="12" dy="${k ? size * 1.14 : 0}">${l}</tspan>`).join("")}</text>
     ${body({ W, H, narrow, top, ink, soft, paper, line: css("--line"), beacon: css("--beacon") })}
     <text class="note" y="${H - 23}" style="font-size:12px;fill:${soft}"></text>
     <text x="12" y="${H - 7}" style="font-size:12px;font-weight:700;fill:${ink}">${SITE}</text>
@@ -98,7 +98,12 @@ function sheet(spec, width, height, body, least = 0) {
   };
   note(spec.note || "");
   if (scope !== page) drawnOn.set(node.firstElementChild, scope);
-  return { node, svg: node.firstElementChild, W, H, narrow, top, note, hue: COLOURS.map((c) => css(c)), deep: css("--deep") };
+  /** The title written again (a strip's title that follows its moment), in the room the longest took. */
+  const title = (text) => {
+    node.querySelector(".title").innerHTML = heading(text, width).lines.map((l, k) => `<tspan x="12" dy="${k ? size * 1.14 : 0}">${escape(l)}</tspan>`).join("");
+    node.firstElementChild.setAttribute("aria-label", text.replace(/"/g, ""));
+  };
+  return { node, svg: node.firstElementChild, W, H, narrow, top, note, title, hue: COLOURS.map((c) => css(c)), deep: css("--deep") };
 }
 
 /**
@@ -199,26 +204,34 @@ function rowName(label, y, L, size, gap, ink) {
   return `<text x="${L - 9}" y="${y + small * 0.35 - (parts.length - 1) * small * 0.55}" text-anchor="end" style="font-size:${small}px;font-weight:600;fill:${ink}">${parts.map((part, i) => `<tspan x="${L - 9}" dy="${i ? small * 1.1 : 0}">${part}</tspan>`).join("")}</text>`;
 }
 
+/** Where a strip's title follows its moment (`title(moment)`), of its titles the one that takes the most room at
+ *  `width`: the room every one of them is drawn in. */
+export const longestTitle = (title, states, width) => (typeof title !== "function" ? title
+  : states.map(title).reduce((a, b) => (heading(b, width).lines.length > heading(a, width).lines.length ? b : a)));
+
 /**
- * Rows on one scale. `spec`: {title, note, states: [labels], series: [names], rows: [{label, values: [state][series]}],
+ * Rows on one scale. `spec`: {title (or, to follow the moment shown, title(moment)), note, states: [labels], series: [names], rows: [{label, values: [state][series]}],
  * format: (v) => text, pages: (i) => text, most: the value at the right edge (else the round tick at or past the largest),
  * base: as for lines, empty: what a row with no value at a state means (its rule: too few pages)}. A row with no
  * value at the state shown has an open dash where its dots would start, and the first such row says why (`empty`). One dot per series in every row; `show(i, focus)` moves the dots to
  * state i and leaves a ring where they were at the first state; rows not named in `focus` fade.
  */
 export function strip(spec, width, height) {
+  const titles = spec.states.map((s) => (typeof spec.title === "function" ? spec.title(s) : spec.title));
+  spec = { ...spec, title: longestTitle(spec.title, spec.states, width) };
   const format = spec.format || percent, rows = spec.rows.length;
   const tick = ticks(spec.most || Math.max(...spec.rows.flatMap((r) => r.values.flat().map((v) => v || 0))) || 1).filter((v) => !spec.most || v <= spec.most + 1e-9), most = spec.most || tick.at(-1);
   let x, y;
   const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line, beacon }) => {
     const longest = Math.max(...spec.rows.map((r) => r.label.length)), L = narrow ? Math.min(W * 0.45, 16 + 7 * longest) : 200, R = narrow ? 80 : 84;
-    const legend = key(spec.series, W, narrow), extra = (legend.lines - 1) * 16;
+    // The legend names the series, and where the first moment stays on the strip as rings, what they are (`rings`).
+    const legend = key([...spec.series, ...(spec.rings ? [spec.rings] : [])], W, narrow), extra = (legend.lines - 1) * 16;
     legend.beside &&= legend.end + 9 * Math.max(...spec.states.map((s) => s.length)) < W - 12;
     const below = narrow && !legend.beside, T = top + (below ? 50 : 34) + extra, B = 76, gap = (H - T - B) / rows;  // the margins stripRoom counts
     x = (v) => L + ((W - L - R) * v) / most;
     y = (k) => T + gap * (k + 0.5);
     const size = Math.max(12, Math.min(narrow ? 13 : 14, gap * 0.9)), name = (label, k) => rowName(label, y(k), L, size, gap, ink);
-    return `${legend.marks.map((m, k) => `<circle cx="${m.x + 5}" cy="${top + 10 + m.line * 16}" r="4.5" fill="${css(COLOURS[k])}"/>${legendName(m, top, soft)}`).join("")}
+    return `${legend.marks.map((m, k) => `<circle cx="${m.x + 5}" cy="${top + 10 + m.line * 16}" ${k < spec.series.length ? `r="4.5" fill="${css(COLOURS[k])}"` : `r="4" fill="none" stroke="${soft}" stroke-width="1.2"`}/>${legendName(m, top, soft)}`).join("")}
     <text class="state" x="${below ? 12 : W - 12}" y="${top + (below ? 32 + extra : 15)}" text-anchor="${below ? "start" : "end"}" style="font-size:14px;font-weight:800;fill:${ink}"></text>
     ${rules(tick, spec.base, line, soft, (v, stroke, width) => `<line x1="${x(v)}" x2="${x(v)}" y1="${T - 4}" y2="${H - B + 2}" stroke="${stroke}" stroke-width="${width}"/><text x="${x(v)}" y="${H - B + 14}" text-anchor="middle" style="font-size:12px;fill:${soft}">${format(v)}</text>`)}
     ${spec.rows.map((row, k) => `<g class="row" style="--k:${k};transition:opacity var(--d-turn) var(--sail)">${name(row.label, k)}
@@ -228,10 +241,11 @@ export function strip(spec, width, height) {
       ${spec.empty ? `<g class="empty" opacity="0"><rect x="${L + 6}" y="${y(k) - 3}" width="18" height="6" rx="3" fill="none" stroke="${soft}" stroke-width="1.2"/><text x="${L + 32}" y="${y(k) + 4}" style="font-size:12px;fill:${soft}"></text></g>` : ""}
       <rect class="beacon" x="${W - R + 3}" y="${y(k) - 10}" height="20" rx="4" fill="${beacon}" opacity="0"/>
       <text class="value" x="${W - R + 8}" y="${y(k) + size * 0.35}" style="font-size:12px;font-weight:700;fill:${ink}"></text></g>`).join("")}`;
-  }, stripLeast(spec.title, rows, width, spec.series, PITCH.floor));
+  }, stripLeast(spec.title, rows, width, [...spec.series, ...(spec.rings ? [spec.rings] : [])], PITCH.floor));
   const groups = [...made.svg.querySelectorAll(".row")], state = made.svg.querySelector(".state"), inked = css("--ink");
   const show = (i, focus) => {
     state.textContent = spec.states[i];
+    made.title(titles[i]);
     if (spec.pages) made.note(spec.pages(i));
     let told = false;
     groups.forEach((g, k) => {

@@ -14,8 +14,8 @@ import { figureOf, focused, lensFrom, sceneWords, seaWords, stepAt, FELL, OUTLET
 
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
 // cold on a phone, does without them. `plating()` resolves once these names are there.
-let plate, strip, units, plates, savePlate, plateImage, stripLeast, inks, plated = null;
-const plating = () => (plated ||= import("./plate.js").then((m) => ({ plate, strip, units, plates, savePlate, plateImage, stripLeast, inks } = m)));
+let plate, strip, units, plates, longestTitle, savePlate, plateImage, stripLeast, inks, plated = null;
+const plating = () => (plated ||= import("./plate.js").then((m) => ({ plate, strip, units, plates, savePlate, plateImage, stripLeast, longestTitle, inks } = m)));
 
 const DATA = "data";
 const STEPS = [2, 4, 7, 12, 20]; // shift boundaries of the colour steps
@@ -1311,6 +1311,8 @@ const thousands = (n) => Math.round(n).toLocaleString(language);
 /** The title of plate i of a scene: a sentence, one per plate, or made from the plate's name (or its pair). */
 const plateTitle = (scene, p, i) => {
   const title = p.read ? scene.read[language].plate : scene[language].plate;
+  // (a strip's title that follows its moment stays a function of the moment: plate.js, strip)
+  if (typeof title === "function" && p.name === null && scene.type !== "pairs") return title;
   return typeof title === "function" ? title(...(scene.type === "pairs" ? scene.pairs[i] : [p.name])) : Array.isArray(title) ? title[i] : title;
 };
 /** What a plate's note says at state i: over how many pages. */
@@ -1339,8 +1341,8 @@ async function sceneFigure(scene, w, h, on) {
     // (a hand count is seen whole in the figure's room, where a strip beside it may be drawn taller to slide)
     const made = p.read ? units({ ...spec, note: scene.read[language].note, rows: p.rows, fills: p.fills, rest: p.rest }, w, on ? Math.min(h, figureSize(on)[1]) : h) : f.draw === "plate"
       ? plate({ ...spec, periods: p.states, series: p.rows.map((r) => ({ label: r.label, values: r.values.map((v) => v[0]), off: r.off?.map((v) => v[0]) })) }, w, h)
-      : strip({ ...spec, states: p.states, series: p.series, rows: p.rows, most: p.most, format: f.times ? (v) => "÷" + number(v) : undefined, empty: t("too_few") }, w,
-        sideBySide() ? Math.min(h, stripLeast(spec.title, p.rows.length, w, p.series, ROOMY)) : h);
+      : strip({ ...spec, states: p.states, series: p.series, rows: p.rows, most: p.most, format: f.times ? (v) => "÷" + number(v) : undefined, empty: t("too_few"), rings: p.states.length > 1 ? t("rings", p.states[0]) : undefined }, w,
+        sideBySide() ? Math.min(h, stripLeast(longestTitle(spec.title, p.states, w), p.rows.length, w, [...p.series, p.states.length > 1 ? t("rings", p.states[0]) : ""], ROOMY)) : h);
     return { ...made, show: (i, focus) => made.show(i, focused(p, focus)) };
   };
   inks(on);  // on a stage (`on`), drawn in the night's inks
@@ -1357,12 +1359,12 @@ async function sceneFigure(scene, w, h, on) {
 /** The rows and series of a scene drawn as a strip (plate.js), known before its data comes: what its stage must make
  *  room for. */
 const STRIPS = {
-  stuck: (p) => [p.rows.length + (p.all ? 1 : 0), OUTLET],
-  asked: (p) => (p.rows === "shares" ? [p.shares.length, p.publishers.map((x) => said(PUBLISHER[x]))] : [p.publishers.length, p.shares.map(([, label]) => said(label))]),
+  stuck: (p) => [p.rows.length + (p.all ? 1 : 0), [...OUTLET, t("rings", "2010–2014")]],
+  asked: (p) => [...(p.rows === "shares" ? [p.shares.length, p.publishers.map((x) => said(PUBLISHER[x]))] : [p.publishers.length, p.shares.map(([, label]) => said(label))])].map((x, k) => (k && p.periods ? [...x, t("rings", p.periods[0])] : x)),
   fell: () => [FELL(innerWidth > 760), OUTLET],
-  left: (p) => [p.names.length, OUTLET],
-  split: (p) => [p.pairs.length, [p[language].series]],
-};
+  left: (p) => [p.names.length, [...OUTLET, t("rings", "+1")]],
+  split: (p) => [p.pairs.length, [p[language].series, t("rings", p.periods[0])]],
+};  // (rows, and the legend's names: the series, and where the first moment stays as rings, what they are)
 /**
  * Stacked (a phone held upright, a tablet), a stage shares its height between the figure and the caption band by need
  * (--fig): the band keeps room for its tallest step and, where the stages lie on the sea, a band of the sea under it
@@ -1379,7 +1381,7 @@ const BAND = 76;  // the sea's band under the longest caption: room for a ring a
 function share(s, part) {
   const box = s.stage, side = box.querySelector(".stage-side"), style = getComputedStyle(box);
   const whole = box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - parseFloat(style.rowGap), chrome = side.offsetHeight - s.caption.offsetHeight;
-  const titles = [].concat(part[language].plate).filter((x) => typeof x === "string"), [rows, series] = STRIPS[part.type]?.(part) || [0, []];
+  const titles = [].concat(part[language].plate).flatMap((x) => (typeof x === "function" ? part.steps.map((step) => x(dash(step.at))) : [x])).filter((x) => typeof x === "string"), [rows, series] = STRIPS[part.type]?.(part) || [0, []];
   const need = rows ? Math.max(...titles.map((title) => stripLeast(title, rows, s.room.clientWidth, series))) : 0;
   // The figure wants half the stage, a strip taller than that up to three fifths (its window shows more of its rows).
   const want = need ? Math.min(need, whole * 0.6) : whole / 2;

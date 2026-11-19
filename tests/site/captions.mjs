@@ -9,7 +9,9 @@
 // - a range ("2–10%") is exactly the lowest and highest of what it covers: one row, one outlet, or everything the step
 //   shows, less the rows the sentence gives numbers of its own;
 // - a plate's title is reproducible from all it draws, and, as it is read at every step, from what the plate shows at
-//   that step (its moment, or one the title names by its label: "2010–2014", "+1"); a card's teaser and key number
+//   that step (its moment, or one the title names by its label that the plate shows at every step: a line plate's
+//   periods, a strip's first state, kept as rings and named in its legend: "2010–2014"); a strip's title may follow
+//   its moment (a function of it), and is then read at each moment; a card's teaser and key number
 //   from all its figure(s) draw;
 // - the Indonesian and English texts carry the same numbers in the same order;
 // - a count read by hand is one the figure draws where the scene has its reading (`read`: a plate of one mark per place,
@@ -208,7 +210,9 @@ const same = (story, place, id, en) => {
   if (a.join(" ") !== b.join(" ")) failures.push({ story: story.slug, place, lang: "id/en", text: plain(en), token: `${a.join(" ")} | ${b.join(" ")}`, why: "the two languages do not carry the same numbers in the same order" });
 };
 /** The title of plate i of a scene, as the site writes it (app.js, plateTitle). */
-const titleOf = (scene, lang, f, i) => { const t = f.plates[i].read ? scene.read[lang].plate : scene[lang].plate; return typeof t === "function" ? t(...(scene.type === "pairs" ? scene.pairs[i] : [f.plates[i].name])) : Array.isArray(t) ? t[i] : t; };
+/** (a strip's title that follows its moment is a function of the moment: `state`, the moment's label) */
+const titleOf = (scene, lang, f, i, state = f.plates[i].states.at(-1)) => { const t = f.plates[i].read ? scene.read[lang].plate : scene[lang].plate;
+  return typeof t === "function" ? t(...(scene.type === "pairs" ? scene.pairs[i] : [f.plates[i].name ?? state])) : Array.isArray(t) ? t[i] : t; };
 const labelsOf = (f) => [...new Set(f.plates.filter((p) => !p.read).flatMap((p) => [p.name, ...p.series, ...p.rows.map((r) => r.label)]).filter(Boolean))];  // (a hand count's names, "lainnya", "other", are no names to bind a number to: its counts match unbound)
 /** Page counts a caption may give: those the figure's notes give at that moment. */
 const countsOf = (scene, f, si) => {
@@ -229,22 +233,27 @@ for (const story of STORIES.filter((s) => slugs.includes(s.slug))) {
       const fb = await figureOf(wider, data, lang, { wide: true }), broad = cells(fb, { fig: k }), undrawn = labelsOf(fb).filter((x) => !all.includes(x));
       whole[lang].push(...broad);
       // The titles of its plates, against everything they draw (the image saved).
-      f.plates.forEach((p, i) => {
-        const title = titleOf(scene, lang, f, i);
-        if (!title) return;
-        for (const problem of check(plain(title), lang, cells(f, { plates: [i] }), all, { broad, undrawn })) fail(story, `${k}.plate${f.plates.length > 1 ? i : ""}`, lang, plain(title), problem);
-        if (lang === "id") same(story, `${k}.plate`, title, titleOf(scene, "en", f, i));
-      });
+      f.plates.forEach((p, i) => p.states.forEach((state) => {
+        const title = titleOf(scene, lang, f, i, state);
+        if (!title || (state !== p.states.at(-1) && title === titleOf(scene, lang, f, i))) return;  // (each title once)
+        // (a title that follows its moment, against what the plate draws at that moment and its rings)
+        const moment = typeof scene[lang].plate === "function" && p.name === null ? [p.states.indexOf(state), 0] : null;
+        for (const problem of check(plain(title), lang, cells(f, { plates: [i], states: moment }), all, { broad, undrawn })) fail(story, `${k}.plate${f.plates.length > 1 ? i : ""}`, lang, plain(title), problem);
+        if (lang === "id") same(story, `${k}.plate`, title, titleOf(scene, "en", f, i, state));
+      }));
       // Each step: the plate it shows, at its moment, the rows it brings forward.
       scene.steps.forEach((step, j) => {
         const [pi, si] = stepAt(f.plates, step), p = f.plates[pi];
         if (pi < 0 || si < 0) return failures.push({ story: story.slug, place: `${k}.${j + 1}`, lang, text: step[lang], token: step.at, why: "the step's moment is not on its figure" });
         // The caption, about the rows the step brings forward; and the plate's title above it, which is read at every
         // step beside the values the plate shows then: its numbers too must be at the step's moment, or at one it names.
-        const text = plain(step[lang]), title = plain(titleOf(scene, lang, f, pi) || "");
+        const text = plain(step[lang]), title = plain(titleOf(scene, lang, f, pi, p.states[si]) || "");
         for (const [place, said, rows] of [[`${k}.${j + 1}`, text, step.focus ? focused(p, step.focus) : null], [`${k}.${j + 1}.plate`, title, null]]) for (const sentence of sentences(said)) {
           const plates = [pi, ...f.plates.map((q, i) => (i !== pi && !q.read && mentions(sentence, q.name) ? i : -1)).filter((i) => i >= 0)];
-          const states = [si, ...p.states.map((s, i) => (i !== si && mentions(sentence, String(s)) ? i : -1)).filter((i) => i >= 0)];
+          // (a title may name a moment it does not stand at only where the plate shows it at every step: a line's every
+          // period, a strip's first state, kept as rings; a caption may name any)
+          const shows = (i) => place.endsWith(".plate") ? f.draw === "plate" || (i === 0 && p.states.length > 1) : true;
+          const states = [si, ...p.states.map((s, i) => (i !== si && shows(i) && mentions(sentence, String(s)) ? i : -1)).filter((i) => i >= 0)];
           for (const problem of check(sentence, lang, cells(f, { plates, states, rows }), all, { counts: countsOf(scene, f, si), broad, wide: cells(f, { plates, rows }), undrawn })) fail(story, place, lang, sentence, problem);
         }
         if (lang === "id") same(story, `${k}.${j + 1}`, step.id, step.en);
