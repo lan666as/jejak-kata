@@ -719,7 +719,7 @@ main.voyage { max-width: none; padding: 0; }
 html.voyaging { scroll-snap-type: y proximity; }
 html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: var(--rule); background: var(--route-on-deep);
   transform-origin: 0 50%; transform: scaleX(var(--voyage, 0)); }
-.voyage { --stage-h: calc(100svh - var(--head, var(--head-h))); --beat: calc(var(--stage-h) * .7); --side: clamp(20rem, 30vw, 26rem); }
+.voyage { --stage-h: calc(100svh - var(--head, var(--head-h))); --beat: calc(var(--stage-h) * .7); --side: clamp(min(20rem, 40vw), 30vw, 26rem); }
 
 /* 1. the cover, on the deep, with the chart's graticule faintly behind */
 .cover { position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: center; min-height: var(--stage-h); overflow: hidden;
@@ -771,16 +771,6 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
   background: linear-gradient(var(--line-deep) 0 1px, transparent 1px) 0 0 / 100% 96px, linear-gradient(90deg, var(--line-deep) 0 1px, transparent 1px) 0 0 / 96px 100%;
   mask-image: radial-gradient(ellipse 60% 70% at 38% 50%, #000 20%, transparent 75%); }
 .stage { isolation: isolate; }  /* --fig: the figure's share on a phone, by need (app.js, share) */
-/* the opening, where it is longer than the band, rises over the figure's foot (--rise; a move, not a change of layout),
-   on the deep */
-@media (max-width: 899.98px) {
-  .stage[data-step="0"] .caption { overflow: visible; mask-image: none; }
-  .stage[data-step="0"] .turn:not(.out) { position: relative; z-index: 1; transform: translateY(calc(-1 * var(--rise, 0px))); padding-top: var(--s4);
-    margin-top: calc(-1 * var(--s4)); background: var(--deep); }
-  /* ... and takes the scene's name and the count up with it, over the figure's foot */
-  .stage-meta { position: relative; z-index: 2; transition: transform var(--d-turn) var(--sail); }
-  .stage[data-step="0"] .stage-meta { transform: translateY(calc(-1 * var(--rise, 0px))); padding-top: var(--s4); margin-top: calc(-1 * var(--s4)); background: linear-gradient(transparent, var(--deep) var(--s4)); }
-}
 .stage-figure > * { grid-area: 1 / 1; max-width: 100%; }
 /* the stage is the deep in both schemes: its figure is drawn on it, in the night's inks (the dark scheme's own values;
    plate.js reads them here, and saves the image on paper), on a panel of the deep that the sea under the stages
@@ -814,15 +804,12 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .sea-on .stage-nav .step { background: var(--deep); }
 .sea-on .stage-nav .step:hover { background: var(--deep-2); }
 .stage-figure .sub { color: var(--on-deep-2); }
-/* on a phone, a strip of more rows than its room keeps apart is drawn at its own height in a window of that room and
+/* stacked, a strip of more rows than its room keeps apart is drawn at its own height in a window of that room and
    slides through it as the page scrolls (app.js, share and slide); its edges fade where it goes on */
-@media (max-width: 899.98px) {
+@media not ((width >= 900px) or ((orientation: landscape) and (width >= 560px))) {
   .stage.tall .stage-figure { overflow: hidden; place-items: start center; mask-image: linear-gradient(transparent, #000 var(--above, 0px), #000 calc(100% - var(--below, 0px)), transparent); }
   .stage.tall .stage-figure > * { transform: translateY(calc(-1 * var(--slide, 0px))); }
   .stage.tall .stage-figure .plate svg { max-height: none; }
-  /* an opening that rises over a strip's rows (app.js, share: `risen`), or over a sliding strip: the window ends where
-     the opening (and its shade, --s1 over the figure's edge) begins, fading there like a sliding strip's edge */
-  .stage:is(.tall, .risen)[data-step="0"] .stage-figure { overflow: hidden; mask-image: linear-gradient(transparent, #000 var(--above, 0px), #000 calc(100% - var(--rise, 0px) - var(--s6)), transparent calc(100% - var(--rise, 0px) - var(--s1))); }
 }
 .stage-side { grid-area: side; display: flex; flex-direction: column; gap: var(--s2); min-height: 0; }
 .stage-meta { display: flex; justify-content: space-between; gap: var(--s3); max-width: none; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); font-weight: 600; color: var(--on-deep-2); font-variant-numeric: tabular-nums; }
@@ -848,7 +835,8 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .ticks button:hover { background: var(--deep-2); }
 .ticks button::before { content: ""; width: 100%; height: var(--mark); border-radius: var(--pill); background: var(--line-deep); transition: background-color var(--d-turn) var(--sail); }
 .ticks li:first-child { flex: 0 0 auto; }
-.ticks li:first-child button { min-width: calc(var(--tap) / 2); }
+.ticks li:first-child button { min-width: var(--tap); }
+.ticks.glance { pointer-events: none; }  /* too narrow to be targets (app.js, glance): a picture of how far one is */
 .ticks li:first-child button::before { width: var(--s3); height: var(--s3); border-radius: 50%; background: none; box-shadow: inset 0 0 0 var(--rule) var(--line-deep); }
 .ticks .past::before { background: var(--on-deep-2); }
 .ticks li:first-child .past::before { background: var(--on-deep-2); box-shadow: none; }
@@ -858,7 +846,19 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .beat { position: relative; height: var(--beat); scroll-snap-align: start; }
 .beat:last-child { height: calc(var(--stage-h) + var(--s1)); }  /* a little slack, so that rounded beats never unstick the last step */
 .beat > .hidden { top: 50%; }
-@media (min-width: 900px) {
+/* where the stage cannot hold its longest caption (app.js, share and fit), the captions flow as cards, each in its beat,
+   standing where the caption's band is when its step is reached; the figure, the meta and the controls stay over them */
+.scene.flow .stage { background: transparent; }
+.scene.flow .caption { visibility: hidden; }
+.scene.flow .sea-key { display: none; }  /* (the band under the figure is the cards', not the sea's) */
+.scene.flow .said p { font-size: var(--t-body); line-height: var(--l-body); }
+.scene.flow .said .head { font-size: var(--t-h3); line-height: var(--l-h3); }
+.scene.flow .said .title { font-size: var(--t-h2); line-height: var(--l-h2); }
+.scene.flow :is(.stage-meta, .stage-nav) { background: var(--deep); box-shadow: 0 0 0 var(--s2) var(--deep); }
+.scene.flow .beat { height: var(--beat-flow); }
+.scene.flow .beat:last-child { height: calc(var(--stage-h) + var(--said-more) + var(--s1)); }
+.said { position: absolute; top: var(--said-top); left: var(--said-left); width: var(--said-width); pointer-events: auto; }
+@media ((width >= 900px) or ((orientation: landscape) and (width >= 560px))) {
   .stage { grid-template: "figure side" minmax(0, 1fr) / minmax(0, 1fr) var(--side); gap: var(--s7); padding: var(--s5) max(var(--gutter), (100% - var(--content)) / 2); }
   .stage-figure { height: auto; min-height: 0; }
   .stage-figure .plate svg { max-height: calc(var(--stage-h) - 2 * var(--s5)); }
@@ -868,6 +868,9 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
   .turn .head { font-size: var(--t-h2); line-height: var(--l-h2); }
   .turn .title { font-size: var(--caption-title, var(--t-h1)); line-height: var(--l-h1); }
   .turn .hint { display: block; margin-top: var(--s5); }
+}
+/* on a tall enough screen side by side, the controls take two rows: the ticks, then the steps with their names */
+@media (width >= 900px) and (height >= 640px) {
   .stage-nav { grid-template: "ticks ticks" auto "back on" auto / auto auto; justify-content: space-between; row-gap: var(--s3); }
   .stage-nav .ticks { grid-area: ticks; }
   .stage-nav .back { grid-area: back; } .stage-nav .on { grid-area: on; }

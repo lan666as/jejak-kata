@@ -47,16 +47,23 @@ function heading(title, width) {
  *  plate the moment shown keeps the end of the first line). */
 function key(series, W, narrow) {
   let x = 12, line = 0;
+  const room = (l) => W - 12 - (narrow || l ? 0 : 130), width = (text) => 24 + wide(text, 12);  // (measured bold: a little wider than the 12px set, which keeps names apart)
   const marks = series.map((name) => {
-    const width = 22 + name.length * 7;
-    if (x > 12 && x + width - 8 > W - 12 - (narrow || line ? 0 : 130)) (x = 12), line++;
-    const mark = { name, x, line };
-    x += width;
+    // A name longer than a whole line takes as many lines as it needs, broken at spaces, on lines of its own.
+    const parts = [""];
+    for (const word of name.split(" ")) width((parts.at(-1) + " " + word).trim()) > room(1) - 12 && parts.at(-1) ? parts.push(word) : (parts[parts.length - 1] = (parts.at(-1) + " " + word).trim());
+    const w = Math.max(...parts.map(width));
+    if (x > 12 && (x + w - 8 > room(line) || parts.length > 1)) (x = 12), line++;
+    const mark = { name, parts, x, line };
+    if (parts.length > 1) (line += parts.length - 1), (x = W);
+    else x += w;
     return mark;
   });
   // On a phone the moment shown stands on the legend's line when that line is short enough (else under it).
   return { marks, lines: line + 1, beside: narrow && !line && x + 130 < W - 12, end: x };
 }
+/** A legend's name beside its mark, on the lines key() broke it into. */
+const legendName = (m, top, soft) => `<text x="${m.x + 14}" y="${top + 14 + m.line * 16}" style="font-size:12px;fill:${soft}">${m.parts.map((p, i) => `<tspan x="${m.x + 14}" dy="${i ? 16 : 0}">${escape(p)}</tspan>`).join("")}</text>`;
 // A strip's rows stand this far apart where they can (a name too long for its column then takes two lines), and never
 // closer than the floor (the name then a little smaller instead); above and below them, the strip's own margins.
 const PITCH = { narrow: 26, wide: 22, floor: 18 };
@@ -211,7 +218,7 @@ export function strip(spec, width, height) {
     x = (v) => L + ((W - L - R) * v) / most;
     y = (k) => T + gap * (k + 0.5);
     const size = Math.max(12, Math.min(narrow ? 13 : 14, gap * 0.9)), name = (label, k) => rowName(label, y(k), L, size, gap, ink);
-    return `${legend.marks.map((m, k) => `<circle cx="${m.x + 5}" cy="${top + 10 + m.line * 16}" r="4.5" fill="${css(COLOURS[k])}"/><text x="${m.x + 14}" y="${top + 14 + m.line * 16}" style="font-size:12px;fill:${soft}">${m.name}</text>`).join("")}
+    return `${legend.marks.map((m, k) => `<circle cx="${m.x + 5}" cy="${top + 10 + m.line * 16}" r="4.5" fill="${css(COLOURS[k])}"/>${legendName(m, top, soft)}`).join("")}
     <text class="state" x="${below ? 12 : W - 12}" y="${top + (below ? 32 + extra : 15)}" text-anchor="${below ? "start" : "end"}" style="font-size:14px;font-weight:800;fill:${ink}"></text>
     ${rules(tick, spec.base, line, soft, (v, stroke, width) => `<line x1="${x(v)}" x2="${x(v)}" y1="${T - 4}" y2="${H - B + 2}" stroke="${stroke}" stroke-width="${width}"/><text x="${x(v)}" y="${H - B + 14}" text-anchor="middle" style="font-size:12px;fill:${soft}">${format(v)}</text>`)}
     ${spec.rows.map((row, k) => `<g class="row" style="--k:${k};transition:opacity var(--d-turn) var(--sail)">${name(row.label, k)}
@@ -260,7 +267,7 @@ export function units(spec, width, height) {
     const longest = Math.max(...spec.rows.map((r) => r.label.length)), L = narrow ? Math.min(W * 0.4, 16 + 7 * longest) : 200, room = W - L - 40;
     const two = (label) => label.length > Math.floor((L - 14) / (size * 0.53));  // (rowName: such a name takes two lines)
     // The largest pitch at which every block fits: a line of marks `pitch` tall, a block at least as tall as its name.
-    const tall = (p) => spec.rows.map((r) => Math.max(Math.ceil(r.marks.length / Math.floor(room / p)) * p, two(r.label) ? size * 2.3 : 0));
+    const tall = (p) => spec.rows.map((r) => Math.max(Math.ceil(r.marks.length / Math.floor(room / p)) * p, two(r.label) ? size * 2.3 : size * 1.2));
     let pitch = narrow ? 18 : 26;
     while (pitch > 6 && tall(pitch).reduce((a, b) => a + b, pitch * 0.7 * (spec.rows.length - 1)) > H - T - B) pitch -= 0.5;
     const per = Math.floor(room / pitch), heights = tall(pitch), r = pitch * 0.36, mark = (f) => (spec.rest && f === spec.fills.length - 1 ? `fill="none" stroke="${soft}" stroke-width="1.2"` : `fill="${css(COLOURS[f])}"`);
@@ -271,7 +278,7 @@ export function units(spec, width, height) {
       y += heights[g] + pitch * 0.7;
       return `<g class="group">${rowName(row.label, mid, L, size, heights[g] + pitch * 0.7, ink)}${marks}<text x="${L + Math.min(row.marks.length, per) * pitch + 5}" y="${mid + 4.5}" style="font-size:13px;font-weight:800;fill:${ink}">${row.marks.length}</text></g>`;
     });
-    return `${legend.marks.map((m, f) => `<circle cx="${m.x + 5}" cy="${top + 10 + m.line * 16}" r="4.5" ${mark(f)}/><text x="${m.x + 14}" y="${top + 14 + m.line * 16}" style="font-size:12px;fill:${soft}">${escape(m.name)}</text>`).join("")}${blocks.join("")}`;
+    return `${legend.marks.map((m, f) => `<circle cx="${m.x + 5}" cy="${top + 10 + m.line * 16}" r="4.5" ${mark(f)}/>${legendName(m, top, soft)}`).join("")}${blocks.join("")}`;
   });
   const table = () => [["row", "fill", "places"], ...spec.rows.flatMap((r) => spec.fills.map((f, i) => [r.label, f.label, r.marks.filter((x) => x === i).length]))];
   return { node: made.node, labels: [String(spec.rows.reduce((n, r) => n + r.marks.length, 0))], show: () => {}, table };

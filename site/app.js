@@ -371,6 +371,7 @@ function stage(part, k, of, steer, intro = "") {
   const head = (j) => dash(part.steps[j - 1].head?.[language] ?? part.steps[j - 1].head ?? part.steps[j - 1].mark ?? part.steps[j - 1].at);
   const name = (j) => (j ? t("step_name", j, n, head(j)) : t("opening", words.title));
   const arrow = (d) => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="${d}"/></svg>`;
+  const hidden = (j) => (j ? `<p><b>${head(j)}.</b> ${part.steps[j - 1][language]}</p>` : `<h2 id="scene-${k}-title">${words.title}</h2>${words.text ? `<p>${words.text}</p>` : ""}`);
   const node = el(`<section class="scene" id="scene-${k}" aria-labelledby="scene-${k}-title">
     <div class="stage" data-step="0" tabindex="-1"><div class="stage-figure"></div>
       <div class="stage-side"><p class="stage-meta"><span class="stage-part">${of > 1 ? words.title : ""}</span><span class="count"></span></p>
@@ -378,8 +379,7 @@ function stage(part, k, of, steer, intro = "") {
         <div class="stage-nav"><button type="button" class="step back">${arrow("M15 5l-7 7 7 7")}<span>${t("step_back")}</span></button>
           <ol class="ticks" aria-label="${t("steps_label")}">${[...Array(n + 1)].map((_, j) => `<li><button type="button" aria-label="${escape(name(j).replace(/<[^>]+>/g, ""))}"></button></li>`).join("")}</ol>
           <button type="button" class="step on"><span>${t("step_on")}</span>${arrow("M9 5l7 7-7 7")}</button></div></div></div>
-    <ol class="beats">${[...Array(n + 1)].map((_, j) => `<li class="beat"><div class="hidden">${j ? `<p><b>${head(j)}.</b> ${part.steps[j - 1][language]}</p>`
-      : `<h2 id="scene-${k}-title">${words.title}</h2>${words.text ? `<p>${words.text}</p>` : ""}`}</div></li>`).join("")}</ol></section>`);
+    <ol class="beats">${[...Array(n + 1)].map((_, j) => `<li class="beat"><div class="hidden">${hidden(j)}</div></li>`).join("")}</ol></section>`);
   const box = node.firstElementChild, room = box.firstElementChild, caption = box.querySelector(".caption"), count = box.querySelector(".count");
   const ticks = [...box.querySelectorAll(".ticks button")], [back, ahead] = box.querySelectorAll(".step");
   let at = -1, figure = null, sizes = [];
@@ -449,7 +449,25 @@ function stage(part, k, of, steer, intro = "") {
   go(0);
   // Each step's caption at the size that fits its band (fit, from 900px).
   const sized = (list) => ((sizes = list), caption.querySelector(".turn:not(.out)")?.setAttribute("style", sizes[at] || ""), more());
-  return { node, stage: box, room, caption, said, sized, steps: n + 1, on: () => at, go, slide, figure: () => figure, hold: (made) => ((figure = made), box.classList.contains("tall") ? reach() : show()) };
+  // Where the stage cannot hold its longest caption beside its figure (share, fit), the captions leave it: each step's
+  // caption is a card in its beat, in the page's flow, standing where the caption's band is when the step is reached and
+  // read on by scrolling the page; the beats are as tall as the longest card needs (--beat-flow). The figure stays.
+  const beats = [...node.querySelectorAll(".beat")];
+  const flow = (on) => {
+    node.classList.toggle("flow", on);
+    beats.forEach((b, j) => (b.innerHTML = on ? `<div class="said turn"${j ? "" : ` id="scene-${k}-title"`}>${said(j)}</div>` : `<div class="hidden">${hidden(j)}</div>`));
+    if (!on) return node.style.removeProperty("--beat-flow");
+    const at = box.getBoundingClientRect(), band = caption.getBoundingClientRect(), end = box.querySelector(".stage-nav").getBoundingClientRect().top - box.querySelector(".sea-key").offsetHeight - 8;
+    node.style.setProperty("--said-top", band.top - at.top + "px");
+    const pad = getComputedStyle(caption), inset = parseFloat(pad.paddingLeft);
+    node.style.setProperty("--said-left", band.left - at.left + inset + "px");
+    node.style.setProperty("--said-width", band.width - inset - parseFloat(pad.paddingRight) + "px");
+    // A card longer than the band is read on by scrolling the page: it stays its step's until half the beat has passed.
+    const tallest = Math.max(...beats.map((b) => b.firstElementChild.offsetHeight)), room = end - band.top;
+    node.style.setProperty("--beat-flow", Math.ceil(Math.max(box.clientHeight * 0.7, tallest + 32, 2 * (tallest - room) + 64)) + "px");
+    node.style.setProperty("--said-more", Math.ceil(Math.max(0, tallest - room + 16)) + "px");  // (the last step's card is read on before the stage goes)
+  };
+  return { node, stage: box, room, caption, said, sized, flow, steps: n + 1, on: () => at, go, slide, figure: () => figure, hold: (made) => ((figure = made), box.classList.contains("tall") ? reach() : show()) };
 }
 
 // ---- figures --------------------------------------------------------------
@@ -1284,7 +1302,7 @@ async function entitiesPage() {
  *  shown up to 1.5 times larger (a 1920px screen's stage), never wider or taller than its room, and beside the
  *  caption never much taller than wide. */
 const figureSize = (room) => {
-  const width = room.clientWidth, height = innerWidth >= 900 ? Math.min(room.clientHeight, width * 0.9) : room.clientHeight;
+  const width = room.clientWidth, height = sideBySide() ? Math.min(room.clientHeight, width * 0.9) : room.clientHeight;
   const zoom = Math.min(1.5, Math.max(1, width / 760));
   return [Math.floor(width / zoom), Math.floor(height / zoom), zoom];
 };
@@ -1318,10 +1336,11 @@ async function sceneFigure(scene, w, h, on) {
   const f = await figureOf(scene, { json, lens: lensNamed, entry: entryOf }, language, { wide: innerWidth > 760 });
   const make = (p, k) => {
     const spec = { title: plateTitle(scene, p, k), pages: p.read ? null : PLATE_NOTES[scene.type](f, scene, k, p), base: ["forget", "left"].includes(scene.type) ? 1 : undefined };
-    const made = p.read ? units({ ...spec, note: scene.read[language].note, rows: p.rows, fills: p.fills, rest: p.rest }, w, h) : f.draw === "plate"
+    // (a hand count is seen whole in the figure's room, where a strip beside it may be drawn taller to slide)
+    const made = p.read ? units({ ...spec, note: scene.read[language].note, rows: p.rows, fills: p.fills, rest: p.rest }, w, on ? Math.min(h, figureSize(on)[1]) : h) : f.draw === "plate"
       ? plate({ ...spec, periods: p.states, series: p.rows.map((r) => ({ label: r.label, values: r.values.map((v) => v[0]), off: r.off?.map((v) => v[0]) })) }, w, h)
       : strip({ ...spec, states: p.states, series: p.series, rows: p.rows, most: p.most, format: f.times ? (v) => "÷" + number(v) : undefined, empty: t("too_few") }, w,
-        innerWidth >= 900 ? Math.min(h, stripLeast(spec.title, p.rows.length, w, p.series, ROOMY)) : h);
+        sideBySide() ? Math.min(h, stripLeast(spec.title, p.rows.length, w, p.series, ROOMY)) : h);
     return { ...made, show: (i, focus) => made.show(i, focused(p, focus)) };
   };
   inks(on);  // on a stage (`on`), drawn in the night's inks
@@ -1345,16 +1364,18 @@ const STRIPS = {
   split: (p) => [p.pairs.length, [p[language].series]],
 };
 /**
- * On a phone a stage shares its height between the figure and the caption band by need (--fig): the band keeps room
- * for its tallest step, and the figure gets the rest, at least half (a strip that slides, up to three fifths). Where the
- * tallest step would not fit beside that, the stage's captions are set a size smaller (--turn: 1rem, then --t-small),
- * and at the last the figure gives up a little more (to two fifths). The opening (step 0: the scene's title and text, and on the first stage the story's intro),
- * where it is longer still, rises over the figure's foot while it is read (--rise). No caption is cut. A strip of more rows
- * than that room keeps 26px apart is drawn at the height that does (`tall`), in a window of that room, and slides
- * through it as the page scrolls through the scene (stage, `slide`).
+ * Stacked (a phone held upright, a tablet), a stage shares its height between the figure and the caption band by need
+ * (--fig): the band keeps room for its tallest step and, where the stages lie on the sea, a band of the sea under it
+ * (BAND), and the figure gets the rest, at least two fifths (a strip that slides, up to three fifths). Where the tallest
+ * step would not fit beside that, the captions are set a size smaller (--turn: 1rem, then --t-small). A strip that would
+ * be seen whole if the sea's band gave way takes that room, and one that slides anyway keeps its window: the sea's band
+ * gives way first. A strip of more rows than its room keeps 26px apart is drawn at the height that does (`tall`), in a
+ * window of that room, and slides through it as the page scrolls through the scene (stage, `slide`). Where even the
+ * smallest captions would leave the figure less than two fifths of the stage (a short screen, large text, a long
+ * caption), the captions leave the stage and flow under the figure as cards (stage, `flow`), at the body's size.
  */
-const TURN = ["", "1rem", "var(--t-small)"], FOOT = 50;  // (a plate's note and the site's name: plate.js, sheet)
-const BAND = 76;  // on a phone, the sea's band under the longest caption: room for a ring and its name (a 30px pill) clear of the text and the controls
+const TURN = ["", "1rem", "var(--t-small)"];
+const BAND = 76;  // the sea's band under the longest caption: room for a ring and its name (a 30px pill) clear of the text and the controls
 function share(s, part) {
   const box = s.stage, side = box.querySelector(".stage-side"), style = getComputedStyle(box);
   const whole = box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - parseFloat(style.rowGap), chrome = side.offsetHeight - s.caption.offsetHeight;
@@ -1366,33 +1387,31 @@ function share(s, part) {
   side.append(probe);
   let band = box.closest(".sea-on") ? BAND : 0;  // (where the stages lie on the sea)
   const high = (j) => ((probe.innerHTML = `<div class="turn">${s.said(j)}</div>`), probe.scrollHeight);
-  let text = 0, open = 0;
+  let text = 0;
   for (const size of TURN) {
-    box.style.setProperty("--turn", size || "var(--t-body)");
-    [open, text] = [high(0), Math.max(0, ...[...Array(s.steps - 1)].map((_, j) => high(j + 1)))];
+    s.node.style.setProperty("--turn", size || "var(--t-body)");
+    text = Math.max(...[...Array(s.steps)].map((_, j) => high(j)));
     if (whole - chrome - text - band >= want) break;
   }
   probe.remove();
-  // The opening may rise over the figure's foot (FOOT: its note and the site's name), never over a mark: where it is
-  // longer, lines give it the room (down to three tenths of the stage), and a strip keeps the room its rows need: the
-  // window it is seen in then ends where the opening begins, fading there as a sliding strip's window does (`risen`).
-  const clear = Math.floor(whole - chrome - open + FOOT);
-  if (need > whole - chrome - text) band = 0;  // a strip that slides anyway keeps its window: no band under it
-  let fig = Math.floor(Math.max(whole * 0.4, whole - chrome - text - band));
-  if (need > fig && need <= fig + band) fig = need;  // a strip seen whole, title to foot, before the sea's band (a step then left without one drops it)
-  if (!need && fig > clear) fig = Math.max(Math.floor(whole * 0.3), clear);
-  else if (need && need <= fig) fig = Math.max(need, Math.min(fig, clear));
+  // A hand count (a scene's `read`, a mark per place) is seen whole only at three fifths of the stage or so: the captions flow
+  // beside it where they would not leave it that.
+  const least = part.read ? Math.floor(whole * 0.62) : 0, flow = whole - chrome - text < Math.max(whole * 0.4, least);
+  if (flow) s.node.style.setProperty("--turn", "var(--t-body)");
+  if (flow || need > whole - chrome - text) band = 0;  // a strip that slides anyway keeps its window: no band under it
+  // (flowing, the figure keeps all but a band of about seven lines for the cards: a strip shows as much as it can)
+  let fig = Math.floor(flow ? Math.max(least, need ? Math.min(need, whole - chrome - 160) : whole * 0.5) : Math.max(whole * 0.4, least, whole - chrome - text - band));
+  if (!flow && need > fig && need <= fig + band) fig = need;  // a strip seen whole, title to foot, before the sea's band (a step then left without one drops it)
   box.style.setProperty("--fig", fig + "px");
   s.tall = need > fig ? need : 0;
   box.classList.toggle("tall", !!s.tall);
-  const rise = Math.ceil(Math.max(0, open - (whole - chrome - fig)));
-  box.style.setProperty("--rise", rise + "px");
-  box.classList.toggle("risen", rise > FOOT);
+  s.flow(flow);
 }
-/** From 900px a story's captions take at most two sizes: --t-caption where a step fits its band at it, and for every
- *  other step one size smaller, the largest of the ladder at which the longest caption of the whole story fits (an
- *  opening's title then at --t-h2). Measured in the language and at the width shown: no caption is cut, none scrolls,
- *  and the type does not step from size to size. */
+/** Side by side (from 900px, and a phone or tablet held sideways) a story's captions take at most two sizes:
+ *  --t-caption where a step fits its band at it, and for every other step one size smaller, the largest of the ladder
+ *  at which the longest caption of the whole story fits (an opening's title then at --t-h2). Measured in the language and
+ *  at the width shown: no caption is cut, none scrolls, and the type does not step from size to size. A stage whose
+ *  longest caption does not fit its band at the smallest size flows its captions as cards beside the figure (`flow`). */
 const CAPTION = ["", "--caption:var(--t-lede);--caption-title:var(--t-h2)", "--caption:var(--t-body);--caption-title:var(--t-h2)", "--caption:var(--t-small);--caption-title:var(--t-h3)"];
 function fit(stages) {
   const fits = stages.map((s) => {
@@ -1402,9 +1421,20 @@ function fit(stages) {
     probe.remove();
     return rows;
   });
-  const small = CAPTION.findIndex((_, c) => c && fits.every((rows) => rows.every((row) => row[c]))), smaller = CAPTION[small < 0 ? CAPTION.length - 1 : small];
-  stages.forEach((s, k) => s.sized(fits[k].map((row) => (row[0] ? "" : smaller))));
+  const flowing = fits.map((rows) => !rows.every((row) => row.at(-1))), held = fits.filter((_, k) => !flowing[k]);
+  const small = CAPTION.findIndex((_, c) => c && held.every((rows) => rows.every((row) => row[c]))), smaller = CAPTION[small < 0 ? CAPTION.length - 1 : small];
+  stages.forEach((s, k) => (s.sized(flowing[k] ? [] : fits[k].map((row) => (row[0] ? "" : smaller))), s.flow(flowing[k])));
 }
+/** Stacked or side by side: the one rule for a story's stages (style.css says the same). */
+const SIDE = "(width >= 900px) or ((orientation: landscape) and (width >= 560px))";
+const sideBySide = () => matchMedia(SIDE).matches;
+/** Under 44px a tick is no target: the row of ticks is then only a picture of how far one is (the step buttons step). */
+const glance = (s) => {
+  const ticks = s.stage.querySelector(".ticks"), small = ticks.clientWidth / s.steps < 44;
+  ticks.classList.toggle("glance", small);
+  ticks.toggleAttribute("aria-hidden", small);
+  ticks.querySelectorAll("button").forEach((b) => (b.tabIndex = small ? -1 : 0));
+};
 const SCENE_DATA = { together: "together.json", stuck: "together.json", yearly: "years.json", forget: "years.json", left: "years.json", fell: "stopped.json" };
 
 /** A button that copies `text()` and says so. */
@@ -1750,7 +1780,7 @@ async function storySea(holder, stages, parts) {
   // What lies over the sea on the stage shown: no name is written under it (while the sea has the stage, only the
   // controls and the key).
   const over = () => [...stages[k].stage.querySelectorAll(full ? ".sea-key, .stage-nav" : ".stage-meta, .caption .turn:not(.out), .sea-key, .stage-nav, .stage-figure .plate:not(.off) svg")];
-  const wide = innerWidth >= 900, sea = module.nightSea({ chart: first, name: nameOf, pick: (id) => visit(href("kata", nameOf(id))), periods: first.periods, tip, label: t("sea_label"),
+  const wide = sideBySide(), sea = module.nightSea({ chart: first, name: nameOf, pick: (id) => visit(href("kata", nameOf(id))), periods: first.periods, tip, label: t("sea_label"),
     hold: true, fly: true, rung: window.seaRung ?? 0, names: 0, over, host: holder.parentNode });
   if (!sea) return null;
   holder.append(sea.node);
@@ -1805,8 +1835,8 @@ async function storySea(holder, stages, parts) {
       if (at !== label) return;
       if (sea.state().gliding) return void setTimeout(wait, 60);
       const named = new Set(sea.labels().names.map((n) => n.text));
-      // (on a phone, a band that names none of the step's own words is dropped rather than name others)
-      write(!wide && focus.length && !focus.some((id) => named.has(nameOf(id))) ? [] : [...focus, ...rest].filter((id) => named.has(nameOf(id))));
+      // (a band that names none of the step's own words is dropped rather than name others)
+      write(focus.length && !focus.some((id) => named.has(nameOf(id))) ? [] : [...focus, ...rest].filter((id) => named.has(nameOf(id))));
       // Where the sea names nothing (a phone's caption too long to leave it a band), the caption's shade covers the band:
       // an empty band is worse than none.
       stage.classList.toggle("mute", !keyed.textContent);
@@ -1958,8 +1988,17 @@ async function storyPage(slug, scene, step, more) {
   frame();
 
   // The figures, each at the size of its stage, with the step each stage is on; then the sea under them.
-  if (innerWidth < 900) stages.forEach((s, k) => share(s, parts[k]));
-  else fit(stages);
+  if (sideBySide()) fit(stages);
+  else stages.forEach((s, k) => share(s, parts[k]));
+  stages.forEach(glance);
+  // A screen turned or resized lays the story out again, at the step it is on (not when only a browser's bar comes and goes).
+  const laid = [innerWidth, innerHeight], again = () => {
+    if (!landing.isConnected) return removeEventListener("resize", turned);
+    if (Math.abs(innerWidth - laid[0]) > 1 || Math.abs(innerHeight - laid[1]) > 160) route();
+  };
+  let waiting = 0;
+  const turned = () => (clearTimeout(waiting), (waiting = setTimeout(again, 300)));
+  addEventListener("resize", turned);
   storySea(scenes.firstElementChild, stages, parts).then((to) => ((sea = to), frame()));
   await Promise.all(parts.map((part, k) => {
     const [w, h, zoom] = figureSize(stages[k].room);

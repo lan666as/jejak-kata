@@ -194,11 +194,19 @@ A story is a voyage in three parts.
    that slides anyway keeps its window: the sea's band gives way first. On a step where the sea then names nothing, the
    caption's shade covers the band and the key is not shown (an empty band is worse than none); on a phone a step's own
    words come before the scene's route (the route is sailed only where the step brings no word of its own). Where the tallest
-   step would not fit beside that, the stage's captions are set a size smaller (1rem, then `--t-small`) and at the last
-   the figure gives up a little more (to two fifths); an opening longer still rises over the figure's foot while it is
-   read (a move, not a change of layout), the scene's name and count with it, and never over a mark: lines give it
-   the room (down to three tenths), and a strip keeps the room its rows need, the window it is seen in ending where the
-   opening begins and fading there, as a sliding strip's does. From 900px a story's captions take at most two sizes: `--t-caption` where a
+   step would not fit beside that, the stage's captions are set a size smaller (1rem, then `--t-small`). A hand count
+   is given three fifths of the stage. **Where even that leaves the figure too little** (under two fifths: a short screen,
+   large text, a long caption), the captions leave the stage and **flow**: each step's caption is a card in its beat, in
+   the page's own scroll, standing exactly where the caption's band begins when its step is reached, at the body's size;
+   a card longer than the band is read on by scrolling the page (the beats are as tall as the longest card needs, so
+   the step does not change before its card's end has passed above the controls; the last card is read before the
+   stage leaves). The figure, the scene's name and count and the controls stay; a card passes under them as it goes,
+   never sits under them when read. No caption ever scrolls inside a box. **Stacked or side by side** is one rule
+   (`SIDE` in app.js, the same media query in style.css): side by side from 900px wide, and on any screen held sideways
+   from 560px (a phone in landscape gets the figure beside its captions, not over them); the controls take two rows only
+   from 900px wide and 640px tall. A screen turned or resized lays the story out again at the step it is on (a
+   browser's bar coming and going does not: the stage is `100svh` tall). Ticks narrower than a 44px target are only a
+   picture of the way through (`glance`); the step buttons step. From 900px a story's captions take at most two sizes: `--t-caption` where a
    step fits its column at it, and for every other step one size, the largest (`--t-lede`, the body's, `--t-small`) at
    which the story's longest caption fits, measured in the language and at the width shown. No caption is cut, and
    none scrolls. On a phone a short caption leaves the rest of the band to the sea (its shade is only as tall as its text).
