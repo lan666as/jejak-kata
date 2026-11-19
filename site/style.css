@@ -530,6 +530,31 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .path-near h3:not(:first-child) { margin-top: var(--s5); }
 .path-near a { color: var(--ink); }
 .legend i.route-key { width: 18px; height: var(--mark); border-radius: var(--pill); background: var(--route); }
+.spur { fill: none; stroke: var(--ink-3); stroke-width: 1.5; stroke-dasharray: 2 4; stroke-linecap: round; }  /* the far islands, hung from the route's end */
+/* a word's route as a stage of its own: a band of the deep, edge to edge, between two tide lines, drawn in the
+   night's inks; the years under it a rail to scrub the route through */
+.deep-band { position: relative; margin: var(--s5) calc(50% - 50vw) 0; padding: calc(var(--tide-h) + var(--s5)) max(var(--gutter), (100vw - var(--content)) / 2) calc(var(--tide-h) + var(--s5));
+  background: var(--deep); color: var(--on-deep); }
+.deep-band > :not(.tide-line) { --chart: var(--deep); --chart-2: var(--deep); --ink: var(--on-deep); --ink-2: var(--on-deep-2); --ink-3: var(--on-deep-2);
+  --line: var(--line-deep); --route: var(--route-on-deep); --link: #7fc0ea; --focus: var(--route-on-deep); }
+.deep-band .path-plate { padding: 0; background: none; border: 0; }
+.deep-band .path-near { border-color: var(--line-deep); }
+.deep-band .path-near a { color: var(--on-deep); }
+.deep-band .player button { background: var(--on-deep); color: var(--deep); border-color: var(--on-deep); }
+.deep-band .player button:hover { background: var(--route-on-deep); border-color: var(--route-on-deep); }
+.deep-band .about summary, .deep-band .sub { color: var(--on-deep-2); }
+.deep-band > .tide-line:first-child { top: -1px; bottom: auto; }
+.rail { display: flex; justify-content: space-between; margin: calc(-1 * var(--s1)) 0 var(--s3) calc(var(--tap) + var(--s3)); margin-right: calc(4.4em * 1.5 + var(--s3)); padding: 0; list-style: none;
+  font: 600 var(--t-meta)/1 var(--type); color: var(--ink-3); font-variant-numeric: tabular-nums; touch-action: none; cursor: ew-resize; user-select: none; }
+.rail li { min-width: 0; padding: var(--s2) 0; }
+.rail li.on { color: var(--route); font-weight: 800; }
+.rail li.quiet:not(.on) { color: transparent; }  /* still a stop; named where there is room */
+/* what to do next with a word: three cards */
+.actions { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); margin-top: var(--s7); }
+.card.action { color: var(--ink); text-decoration: none; border-color: var(--line-2); transition: border-color var(--d-press) var(--sail); }
+.card.action .card-title { color: var(--link); font-size: var(--t-lede); line-height: var(--l-lede); }
+.card.action .card-title::after { content: " →"; }
+.card.action:hover { border-color: var(--route); } .card.action:hover .card-title { color: var(--route); }
 
 /* duel and bars: adjectives and verbs */
 .duel { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--s1) var(--s3); align-items: center; font-size: var(--t-small); }

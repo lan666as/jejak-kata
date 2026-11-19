@@ -277,10 +277,23 @@ function played(figure, start = figure.labels.length - 1) {
   const bar = el(`<div class="player"><button type="button" aria-label="${t("play")}">▶</button>
     <input type="range" min="0" max="${figure.labels.length - 1}" value="${start}" aria-label="${t("period")}"><output></output></div>`);
   const [button, slider, output] = bar.children;
+  // A figure that asks for a rail (a word's route) has its years under the slider, each a stop to go to: pressing one
+  // and drawing the finger or the mouse along them scrubs the figure through the years.
+  const n = figure.labels.length, every = Math.ceil(n / Math.max(2, (Math.min(innerWidth, 1120) - 160) / 44));  // a year named every so often, as many as fit
+  const rail = figure.rail && el(`<ol class="rail" aria-hidden="true">${figure.labels.map((l, i) => `<li${(i % every && i < n - 1) || (i < n - 1 && n - 1 - i < every) ? ' class="quiet"' : ""}>${i && i < n - 1 ? "’" + String(l).slice(-2) : l}</li>`).join("")}</ol>`);
+  if (rail) {
+    let held = false;
+    const at = (e) => { const r = rail.getBoundingClientRect(); return Math.round(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (figure.labels.length - 1)); };
+    rail.addEventListener("pointerdown", (e) => ((held = true), rail.setPointerCapture(e.pointerId), stop(), go(at(e))));
+    rail.addEventListener("pointermove", (e) => held && +slider.value !== at(e) && go(at(e)));
+    rail.addEventListener("pointerup", () => (held = false));
+    rail.addEventListener("pointercancel", () => (held = false));
+  }
   let timer = null;
   const go = (i) => {
     slider.value = i;
     output.textContent = figure.labels[i];
+    rail?.querySelectorAll("li").forEach((li, j) => li.classList.toggle("on", j === +i));
     figure.show(i);
   };
   const stop = () => {
@@ -298,7 +311,7 @@ function played(figure, start = figure.labels.length - 1) {
   });
   slider.addEventListener("input", () => (stop(), go(+slider.value)));
   figure.goto = go; // so that a click inside the figure can move the slider too
-  box.append(figure.node, bar);
+  box.append(figure.node, bar, ...(rail ? [rail] : []));
   go(start);
   return box;
 }
@@ -525,12 +538,12 @@ function pathFigure(lens, path) {
   // The view is fitted to the route and the islands near it: an island far out (more than half the route's own extent
   // beyond it) stands at the edge, an arrow pointing on to where it lies, so that one far word does not shrink the
   // route into a corner.
-  const all = [...path.at, ...moved];
+  const reach = [0, 1].map((d) => { const lo = Math.min(...moved.map((xy) => xy[d])), hi = Math.max(...moved.map((xy) => xy[d])), span = Math.max(hi - lo, 1e-9); return [lo - span / 2, hi + span / 2]; });
+  const inside = (xy) => reach.every(([lo, hi], d) => xy[d] >= lo && xy[d] <= hi), all = [...path.at.filter(inside), ...moved];  // (the far ones hang from the route's end, below)
   const scale = (d, size, pad) => {
-    const lo = Math.min(...moved.map((xy) => xy[d])), hi = Math.max(...moved.map((xy) => xy[d])), span = Math.max(hi - lo, 1e-9);
-    const low = Math.max(lo - span / 2, Math.min(...all.map((xy) => xy[d]))), high = Math.min(hi + span / 2, Math.max(...all.map((xy) => xy[d])));
+    const low = Math.min(...all.map((xy) => xy[d])), high = Math.max(...all.map((xy) => xy[d]));
     const f = (v) => pad + ((size - 2 * pad) * (Math.max(low, Math.min(high, v)) - low)) / (high - low || 1);
-    f.out = (v) => (v < low ? -1 : v > high ? 1 : 0);
+    f.out = (v) => (v < reach[d][0] ? -1 : v > reach[d][1] ? 1 : 0);
     return f;
   };
   const x = scale(0, W, SIDE), y = scale(1, H, P);
@@ -546,6 +559,11 @@ function pathFigure(lens, path) {
   // of the route, or the plate's edge.
   const mid = { x: steps.reduce((s, p) => s + p.x, 0) / steps.length, y: steps.reduce((s, p) => s + p.y, 0) / steps.length };
   const marks = path.near.map((id, k) => ({ id, late: k >= path.early, x: x(path.at[k][0]), y: y(path.at[k][1]), out: [x.out(path.at[k][0]), y.out(path.at[k][1])] }));
+  // An island far out is hung on a dotted spur from the route's last port (towards the plate's roomier side), one under
+  // the other, its arrow pointing on to where it lies: it belongs to the route's end, not to the plate's edge.
+  const last = steps.at(-1), far = marks.filter((m) => m.out[0] || m.out[1]), down = last.y < H / 2 ? 1 : -1;
+  far.forEach((m, j) => Object.assign(m, { x: last.x, y: Math.max(P, Math.min(H - P, last.y + down * (34 + 24 * j))) }));
+  const spur = far.length ? `<path class="spur" d="M${last.x},${last.y}V${far.at(-1).y}"/>` : "";
   // The years along the route: each port that stands clear of the last one named, on the side away from the
   // route's turn, with the first and the last always named.
   const years = [];
@@ -558,7 +576,8 @@ function pathFigure(lens, path) {
   // What a name may not cover: the years, the route itself (a point every few pixels along it) and the ship's year at
   // the last port.
   const along = steps.slice(1).flatMap((p, k) => [...Array(Math.ceil(Math.hypot(p.x - steps[k].x, p.y - steps[k].y) / 6))].map((_, i, a) => [steps[k].x + ((p.x - steps[k].x) * i) / a.length, steps[k].y + ((p.y - steps[k].y) * i) / a.length]));
-  const end = steps.at(-1), taken = years.map((v) => [v.tx - 14, v.ty - 12, v.tx + 14, v.ty + 3]).concat(along.map(([px, py]) => [px - 4, py - 4, px + 4, py + 4]), [[end.x - 22, end.y - 32, end.x + 22, end.y + 10]]);
+  const end = steps.at(-1), taken = years.map((v) => [v.tx - 14, v.ty - 12, v.tx + 14, v.ty + 3]).concat(along.map(([px, py]) => [px - 4, py - 4, px + 4, py + 4]), [[end.x - 22, end.y - 32, end.x + 22, end.y + 10]],
+    far.length ? [[end.x - 3, Math.min(end.y, far.at(-1).y), end.x + 3, Math.max(end.y, far.at(-1).y)]] : []);
   // A spot's cost: past the plate's edge never, else how many things it would touch (the first with none is taken).
   const cost = ([l, t, r, b]) => (l < 2 || r > W - 2 || t < 2 || b > H - 2 ? 1e3 : 0) + taken.filter((k) => l < k[2] && r > k[0] && t < k[3] && b > k[1]).length;
   for (const m of [...marks].sort((a, b) => a.y - b.y)) {
@@ -576,7 +595,7 @@ function pathFigure(lens, path) {
     <div class="path-body"><svg viewBox="0 0 ${W} ${H}" width="${W}" role="img" aria-label="${t("path")}">
     <defs><marker id="head" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--route)"/></marker><marker id="far" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-3)"/></marker></defs>
     ${marks.map((m) => `<line class="leader" x1="${m.x}" y1="${m.y}" x2="${m.tie}" y2="${m.ly - 3}"/><circle class="island ${m.late ? "late" : ""}" cx="${m.x}" cy="${m.y}" r="5"/>${m.out[0] || m.out[1] ? `<path class="leader" d="M${m.x + 7 * m.out[0]},${m.y + 7 * m.out[1]}l${8 * m.out[0]},${8 * m.out[1]}" marker-end="url(#far)"/>` : ""}`).join("")}
-    <path class="casing" d="${d}"/><path class="route-line draw" pathLength="1" marker-end="url(#head)" d="${d}"/>
+    ${spur}<path class="casing" d="${d}"/><path class="route-line draw" pathLength="1" marker-end="url(#head)" d="${d}"/>
     ${steps.map((s, k) => `<circle class="route-step" data-k="${k}" cx="${s.x}" cy="${s.y}" r="4.5"><title>${lens.periods[s.p]}</title></circle>`).join("")}
     ${years.map((v) => `<text class="route-year" x="${v.tx.toFixed(1)}" y="${v.ty.toFixed(1)}" text-anchor="middle">${v.text}</text>`).join("")}
     ${marks.map((m) => `<text class="island-label" data-word="${escape(lens.words[m.id])}" x="${m.lx + 2}" y="${m.ly + 1}">${lens.words[m.id]}</text>`).join("")}
@@ -584,7 +603,7 @@ function pathFigure(lens, path) {
   </svg>${beside ? `<aside class="path-near"><h3><i class="early"></i>${lens.periods[steps[0].p]}</h3><p>${near(false).join(", ")}</p>
     <h3><i class="late"></i>${lens.periods[steps.at(-1).p]}</h3><p>${near(true).join(", ")}</p></aside>` : ""}</div></div>`);
   const ship = node.querySelector(".ship"), label = node.querySelector(".when-label");
-  const figure = { node, labels: steps.map((s) => lens.periods[s.p]) };
+  const figure = { node, labels: steps.map((s) => lens.periods[s.p]), rail: true };
   figure.show = (k) => {
     ship.setAttribute("cx", steps[k].x);
     ship.setAttribute("cy", steps[k].y);
@@ -831,6 +850,8 @@ function numbers(lens, e) {
   return body;
 }
 
+/** A figure as a band of the deep, edge to edge, the tide line above and under it: a word's route, a stage of its own. */
+const onDeep = (box) => (box.classList.add("deep-band"), box.prepend(el(tideLine(true))), box.append(el(tideLine())), box);
 /** A figure with its player and a line under it saying how to read it. */
 const explained = (figure, about, start, fold = false) => {
   const box = played(figure, start);
@@ -853,7 +874,7 @@ async function lensSection(lens, e) {
     return box;
   };
   const views = [
-    path?.path && [t("path"), () => explained(pathFigure(lens, path), t("path_about"), undefined, true)],
+    path?.path && [t("path"), () => onDeep(explained(pathFigure(lens, path), t("path_about"), undefined, true))],
     path?.route && [t("chart"), async () => explained(await chartFigure(lens.lens, [word]), t("chart_about"), undefined, true)],
     known(e).length > 1 && [t("orbit"), () => explained(orbit(lens, e), t("orbit_about"))],
     [t("numbers"), () => numbers(lens, e)],
@@ -962,7 +983,9 @@ async function wordPage(word, opened) {
     most,
   );
   const lens = found[most];
-  view.append(el(`<ul class="links">${named ? `<li><a href="${href("potret", word)}">${t("portrait_ask")}</a></li>` : ""}<li><a href="${href("peta", lens.lens, word)}">${t("rival_ask")}</a></li><li><a href="${href("balap", lens.lens, word)}">${t("race_ask")}</a></li></ul>`), tools(href("kata", word, lens.lens), {}));
+  // What to do next with the word, as cards: its portrait (for a name), the chart with other words, a race.
+  const action = (to, what) => `<li><a class="card action" href="${to}"><b class="card-title">${t(what + "_ask")}</b><span class="card-text">${t(what + "_do")}</span></a></li>`;
+  view.append(el(`<ul class="cards actions">${named ? action(href("potret", word), "portrait") : ""}${action(href("peta", lens.lens, word), "rival")}${action(href("balap", lens.lens, word), "race")}</ul>`), tools(href("kata", word, lens.lens), {}));
 }
 
 /** The chart of a lens, with up to four words of the reader's choosing sailing across it; two of them are compared below. */
@@ -2000,7 +2023,7 @@ async function portraitPage(word) {
     el(`<h3>${t("most_alike")} (${lens.periods[last]})</h3>`),
     el(words(lens, e.like[last])),
   );
-  if (path?.path) view.append(el(`<h3>${t("path")}</h3>`), played(pathFigure(lens, path)));
+  if (path?.path) view.append(el(`<h3>${t("path")}</h3>`), onDeep(played(pathFigure(lens, path))));
   view.append(el(`<p class="sub">${lensText(lens).title}. ${t("traits_about")}</p>`),
     el(`<ul class="links"><li><a href="${href("lingkaran", word)}">${t("play_lingkaran")}</a></li><li><a href="${href("redaksi", word)}">${t("play_redaksi")}</a></li></ul>`), tools(href("potret", word), { check: [word] }));
 }

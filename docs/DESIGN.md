@@ -238,10 +238,14 @@ A story keeps its place by step (not by pixels) across a language switch and the
 - **Word and portrait**: the word in display type rises in, letter by letter; behind it the sea with the word's
   route on the first page's lens (Kompas, year by year) when it has one there; what the word is in one line (`GLOSS`),
   then what we know about it (that it is a name and what it names, our note) stands under it in the head. The
-  voyage among its neighbours is on paper like a plate: the route with its years along it (each port clear of the
-  last one named), a legend in plain words ("its closest company in 2011", ringed; "in 2024", filled), and from 900px
-  the two lists of neighbours beside it. Below the tide line the lens chips, then the
-  figure tabs and the figure (on a 1440x900 screen the figure begins on the first screen), then what the lens is.
+  voyage among its neighbours is a stage of its own: a band of the deep, edge to edge between two tide lines, in the
+  night's inks: the route with its years along it (each port clear of the last one named), fitted to the route and the
+  islands near it; an island far out hangs on a dotted spur from the route's last port, its arrow pointing to where
+  it lies; a legend in plain words ("its closest company in 2011", ringed; "in 2024", filled), and from 900px the two
+  lists of neighbours beside it. Under it the player and a **year rail**: the years, each a stop, pressed and drawn
+  along to scrub the route. Below the tide line the lens chips, then the figure tabs and the figure (on a 1440x900
+  screen the figure begins on the first screen), then what the lens is, and what to do next as three cards (its
+  portrait, the chart with other words, a race), each a title and a line of what it does.
 - **Map**: the head runs on into a band of the deep, edge to edge, that holds the sea itself (below), the lens, the
   words picked (up to four, in the route colours, as chips that match their routes), the player that sails every
   ship through the years, and the legend in the colours the sea shows (the lights by night, the dots by day); the
@@ -254,8 +258,10 @@ A story keeps its place by step (not by pixels) across a language switch and the
   Without WebGL2 the flat chart on paper.
 - **Findings**: each list is the counting's own ranking, shown by a stated rule, never picked: of the pairs, only
   those whose lines cross clearly (the rising word starts below the falling one and ends at least twice as common:
-  a drift of topic, where both words live on, does not pass), the top six as figures, the first leading
-  (two columns and two rows from 900px, drawn larger) (both lines on one scale, each word named where its line is, the year they cross marked), the rest folded; of the words
+  a drift of topic, where both words live on, does not pass), the top six as figures (both lines on one scale, each
+  word named where its line is, the year they cross marked), drawn at the size they are shown: the first leading across
+  the page, large, the year they cross named; the next five under it, smaller, by how many times as common the rising
+  word ends, each with only its first and last year; the rest folded; of the words
   that came and went or came to stay, the top eight, the rest folded. The rule is written on the page beside a rule
   of `--beacon`. The page shows its first source as soon as that source has come, not after every source.
 - **Play**: the first thing to play leads, on the deep, its picture large (two rows tall from 900px); the next two
