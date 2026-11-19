@@ -564,12 +564,15 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     // The route: a leader from its middle port, down or up to where there is room.
     const r = first?.r, sailed = first && first.here.done >= r.legs.length - 1.01;
     if (r && sailed && r.legs.length > 2) {
-      const mid = r.legs[Math.floor(r.legs.length / 2)], at = project(mid.x, 0, mid.z), text = notes.said.route(name(r.id), periods[r.legs[0].p], periods[r.legs.at(-1).p]), wide = ctx.measureText(text).width;
-      for (const dy of [44, -44, 64, -64]) {
-        const y = at && at[1] + dy, x = at && Math.min(W - wide - 12, at[0] + 18), k = at && [x - 4, y - 10, x + wide + 4, y + 10];
+      const mid = r.legs[Math.floor(r.legs.length / 2)], at = project(mid.x, 0, mid.z), text = notes.said.route(name(r.id), periods[r.legs[0].p], periods[r.legs.at(-1).p]);
+      // On one line where it fits inside the gutter (16px), else on two, broken at the space nearest its middle.
+      const cut = [...text].map((c, i) => (c === " " ? i : -1)).filter((i) => i > 0).sort((a, b) => Math.abs(a - text.length / 2) - Math.abs(b - text.length / 2))[0];
+      const lines = at && ctx.measureText(text).width > W - 32 - Math.max(0, at[0] + 18 - 16) && cut ? [text.slice(0, cut), text.slice(cut + 1)] : [text], wide = Math.max(...lines.map((l) => ctx.measureText(l).width)), tall = 15 * (lines.length - 1);
+      for (const dy of [44, -44 - tall, 64, -64 - tall]) {
+        const y = at && at[1] + dy, x = at && Math.max(16, Math.min(W - wide - 16, at[0] + 18)), k = at && [x - 4, y - 10, x + wide + 4, y + 10 + tall];
         if (!at || !inOpen(at) || !free(k)) continue;
         ctx.beginPath(); ctx.moveTo(at[0], at[1] + Math.sign(dy) * 6); ctx.lineTo(at[0], y); ctx.lineTo(x - 4, y); ctx.stroke();
-        write(text, x, y + 1);
+        lines.forEach((l, i) => write(l, x, y + 1 + 15 * i));
         taken.push(k, [at[0] - 3, Math.min(at[1], y), at[0] + 3, Math.max(at[1], y)]);
         break;
       }

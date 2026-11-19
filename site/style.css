@@ -890,7 +890,7 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .hero-try { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s3); font-size: var(--t-small); color: var(--on-deep-2); }
 .hero-try > span { flex: none; font-size: var(--t-meta); font-weight: 600; }
 .hero-try .chips { flex: 1; min-width: 0; margin: 0 calc(-1 * var(--gutter)) 0 0; padding: var(--s1) var(--s7) var(--s1) var(--s1);
-  mask-image: linear-gradient(to right, #000 calc(100% - var(--s7)), transparent); }  /* a row that scrolls on a phone: it fades where it goes on */
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--s6)), transparent); }  /* a row that scrolls on a phone: it fades where it goes on (app.js sets its gap so the next chip peeks out) */
 .hero-try .chips button { min-height: var(--chip); padding: 0 var(--s3); color: var(--on-deep); background: transparent; border-color: var(--line-deep-2); }
 .hero-try .chips button:hover { border-color: var(--on-deep); background: var(--deep-2); }
 .hero-try .chips button[aria-pressed="true"] { color: var(--deep); background: var(--on-deep); border-color: var(--on-deep); }
@@ -1068,7 +1068,7 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
   .play-top li:first-child { grid-row: span 2; }
   .play-top .lead { justify-content: flex-end; } .play-top .lead .play-pic { height: 250px; margin-bottom: var(--s2); }
   .play-top .play-card:not(.lead) { display: grid; grid-template: "title pic" auto "text pic" 1fr "text note" auto / minmax(0, 1fr) minmax(0, 1.1fr); column-gap: var(--s5); }
-  .play-top .play-card:not(.lead) .play-pic { grid-area: pic; } .play-top .play-card:not(.lead) .play-note { grid-area: note; margin: 0; }
+  .play-top .play-card:not(.lead) .play-pic { grid-area: pic; height: auto; min-height: 136px; }  /* the picture fills the card's height: no empty band over the note */ .play-top .play-card:not(.lead) .play-note { grid-area: note; margin: 0; }
   .play-top .play-card:not(.lead) .card-title { grid-area: title; } .play-top .play-card:not(.lead) .card-text { grid-area: text; }
   .play-more { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: dense; }
   .play-more .wide { grid-column: span 2; } .play-more .wide.right { grid-column: 2 / span 2; }

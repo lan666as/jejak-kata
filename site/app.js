@@ -1435,10 +1435,11 @@ const peaksOf = (y) => Object.entries(y.share).map(([w, by]) => {
 const svgText = (x, y, text, cls = "", anchor = "start") => `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}"${cls ? ` class="${cls}"` : ""}${anchor === "start" ? "" : ` text-anchor="${anchor}"`}>${escape(String(text))}</text>`;
 /** Rows of names with a dot each on one scale, the first in the route's colour (menempel, bergeser). */
 const dotRows = (rows, W, H, value) => {
-  const n = rows.length, pitch = H / n, L = Math.min(W * 0.46, 10 + 7 * Math.max(...rows.map((r) => r.label.length))), R = 44, most = Math.max(...rows.map((r) => r.v)) * 1.04;
+  // The names keep a column of at most 128px, clear of the picture's left edge: a longer one is cut with an ellipsis.
+  const n = rows.length, pitch = H / n, L = Math.min(W * 0.55, 128, 18 + 6.6 * Math.max(...rows.map((r) => r.label.length))), R = 44, most = Math.max(...rows.map((r) => r.v)) * 1.04, fits = Math.floor((L - 18) / 6.6);
   return rows.map((r, k) => {
     const y = pitch * (k + 0.5), x = L + ((W - L - R) * r.v) / most;
-    return `<g class="in" style="--i:${k}">${svgText(L - 8, y + 4.5, r.label, k ? "" : "strong", "end")}<path class="line dotted" d="M${L} ${y}H${W - R}"/>
+    return `<g class="in" style="--i:${k}">${svgText(L - 8, y + 4.5, r.label.length > fits ? r.label.slice(0, fits - 1).trimEnd() + "…" : r.label, k ? "" : "strong", "end")}<path class="line dotted" d="M${L} ${y}H${W - R}"/>
       <circle class="${k ? "mute" : "on"}" cx="${x.toFixed(1)}" cy="${y}" r="5.5"/>${svgText(W - R + 8, y + 4.5, value(r.v), "soft")}</g>`;
   }).join("");
 };
@@ -1456,8 +1457,9 @@ const PICTURES = {
     const peaks = peaksOf(y).filter((x) => x.stand >= 2.5), count = (p) => peaks.filter((x) => x.p === p).length;
     const p = y.years.map((_, i) => i).sort((a, b) => count(b) - count(a) || b - a)[0], clue = peaks.filter((x) => x.p === p).slice(0, 3).map((x) => x.w);
     const choices = [...new Set([p - 6, p - 3, p, p + 3, p + 5].map((i) => Math.max(0, Math.min(y.years.length - 1, i))))].slice(0, 4).sort((a, b) => a - b);
-    const w = Math.min(72, (W - 24) / 4), h = 30, top = Math.min(H - h - 2, clue.length * 22 + 14);
-    return { svg: clue.map((word, k) => svgText(0, 18 + k * 22, word, k ? "" : "strong")).join("") + choices.map((c, k) => {
+    // The year's words over the picture's height, the four years at its foot: no empty band under them.
+    const w = Math.min(72, (W - 24) / 4), h = 30, top = H - h - 2, pitch = Math.max(22, Math.min(44, (top - 12) / clue.length));
+    return { svg: clue.map((word, k) => svgText(0, 20 + k * pitch, word, k ? "" : "strong word")).join("") + choices.map((c, k) => {
       const x = k * (w + 8);
       return `<g class="in" style="--i:${k}"><rect class="${c === p ? "on" : "line"}" x="${x.toFixed(1)}" y="${top}" width="${w.toFixed(1)}" height="${h}" rx="${h / 2}"/>${svgText(x + w / 2, top + h / 2 + 4.5, y.years[c], c === p ? "on-text" : "", "middle")}</g>`;
     }).join(""), note: `Kompas ${y.years[p]}` };
@@ -1877,6 +1879,18 @@ async function homePage() {
     if (!l?.isEntry(l.index.get(word))) return visit(href("kata", word));
     sail(word);
   }));
+  // On a phone the row of chips scrolls: its gap is set so that about 30px of the first chip it cannot show peek out
+  // under its fade, a clear sign that it goes on.
+  const row = hero.querySelector(".hero-try .chips"), peek = () => {
+    row.style.gap = "";
+    if (getComputedStyle(row).overflowX !== "auto") return;
+    const w = [...row.children].map((li) => li.offsetWidth), room = row.getBoundingClientRect().right - row.firstElementChild.getBoundingClientRect().left;
+    let best = null;
+    for (let m = 1, sum = w[0]; m < w.length; sum += w[m++]) { const g = (room - 30 - sum) / m; if (g >= 4 && g <= 20 && (best === null || Math.abs(g - 8) < Math.abs(best - 8))) best = g; }
+    if (best !== null) row.style.gap = best.toFixed(1) + "px";
+  };
+  document.fonts.ready.then(peek);
+  addEventListener("resize", peek);
   hero.querySelector(".hero-try").addEventListener("click", (e) => e.target.matches("button") && (wanted(), sail(e.target.textContent)));
 
   // The 3D sea is fetched beside the data, and made only once the hero's text has been painted.
