@@ -10,12 +10,12 @@ import { seaChart } from "./chart.js";
 import { TEXT, LENS_TEXT, NOTES, GLOSS, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
 import { address, routeOf, named, canonical, EMBED, PAGES, PLAY, QUIZ_NAMES, GUESS_WORDS } from "./address.js";
 import { board, measure } from "./labels.js";
-import { figureOf, focused, lensFrom, sceneWords, seaWords, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
+import { figureOf, focused, lensFrom, sceneWords, seaWords, stepAt, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
 
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
 // cold on a phone, does without them. `plating()` resolves once these names are there.
-let plate, strip, plates, savePlate, plateImage, stripLeast, inks, plated = null;
-const plating = () => (plated ||= import("./plate.js").then((m) => ({ plate, strip, plates, savePlate, plateImage, stripLeast, inks } = m)));
+let plate, strip, units, plates, savePlate, plateImage, stripLeast, inks, plated = null;
+const plating = () => (plated ||= import("./plate.js").then((m) => ({ plate, strip, units, plates, savePlate, plateImage, stripLeast, inks } = m)));
 
 const DATA = "data";
 const STEPS = [2, 4, 7, 12, 20]; // shift boundaries of the colour steps
@@ -368,7 +368,7 @@ const beaconed = (room) => [...room.querySelectorAll(".plate:not(.off) .beacon[o
  */
 function stage(part, k, of, steer, intro = "") {
   const words = part[language], n = part.steps.length;
-  const head = (j) => dash(part.steps[j - 1].head ?? part.steps[j - 1].mark ?? part.steps[j - 1].at);
+  const head = (j) => dash(part.steps[j - 1].head?.[language] ?? part.steps[j - 1].head ?? part.steps[j - 1].mark ?? part.steps[j - 1].at);
   const name = (j) => (j ? t("step_name", j, n, head(j)) : t("opening", words.title));
   const arrow = (d) => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="${d}"/></svg>`;
   const node = el(`<section class="scene" id="scene-${k}" aria-labelledby="scene-${k}-title">
@@ -387,9 +387,7 @@ function stage(part, k, of, steer, intro = "") {
     : `<p class="title">${words.title}</p>${intro ? `<p class="intro">${intro}</p>` : ""}${words.text ? `<p>${words.text}</p>` : ""}${k ? "" : `<p class="hint">${t("stage_hint")}</p>`}`);
   const show = (j = at) => {
     if (!figure || j < 0) return;
-    const step = part.steps[Math.max(0, j - 1)], i = figure.labels.indexOf(step.at);
-    box.dataset.plate = i;
-    if (i >= 0) figure.show(i, j ? step.focus : undefined, step.mark);
+    box.dataset.plate = figure.at(part.steps[Math.max(0, j - 1)], j);
   };
   // A strip taller than its window (share, on a phone) slides through it as the page scrolls through the scene: at
   // each step to the rows the step brings forward (at the opening to its top; where a step names none, as far down
@@ -410,6 +408,7 @@ function stage(part, k, of, steer, intro = "") {
     places = [...Array(n + 1)].map((_, j) => {
       show(j);
       const rows = [...room.querySelectorAll(".plate:not(.off) .row")], named = rows.filter((r) => r.style.opacity === "1");
+      if (!rows.length) return 0;  // (a plate of the stack with no rows, a hand count: seen from its top)
       if (!j || named.length === rows.length) return (most * j) / n;
       const ys = named.map((r) => +r.querySelector("line").getAttribute("y1") * scale), top = Math.min(...ys) - 32, bottom = Math.max(...ys) + 32;
       return Math.max(0, Math.min(most, bottom - top <= open ? (top + bottom - open) / 2 : top));
@@ -1293,7 +1292,7 @@ const thousands = (n) => Math.round(n).toLocaleString(language);
 
 /** The title of plate i of a scene: a sentence, one per plate, or made from the plate's name (or its pair). */
 const plateTitle = (scene, p, i) => {
-  const title = scene[language].plate;
+  const title = p.read ? scene.read[language].plate : scene[language].plate;
   return typeof title === "function" ? title(...(scene.type === "pairs" ? scene.pairs[i] : [p.name])) : Array.isArray(title) ? title[i] : title;
 };
 /** What a plate's note says at state i: over how many pages. */
@@ -1318,16 +1317,23 @@ const ROOMY = 72;  // beside the caption a strip's rows stand at most this far a
 async function sceneFigure(scene, w, h, on) {
   const f = await figureOf(scene, { json, lens: lensNamed, entry: entryOf }, language, { wide: innerWidth > 760 });
   const make = (p, k) => {
-    const spec = { title: plateTitle(scene, p, k), pages: PLATE_NOTES[scene.type](f, scene, k, p), base: ["forget", "left"].includes(scene.type) ? 1 : undefined };
-    const made = f.draw === "plate"
+    const spec = { title: plateTitle(scene, p, k), pages: p.read ? null : PLATE_NOTES[scene.type](f, scene, k, p), base: ["forget", "left"].includes(scene.type) ? 1 : undefined };
+    const made = p.read ? units({ ...spec, note: scene.read[language].note, rows: p.rows, fills: p.fills, rest: p.rest }, w, h) : f.draw === "plate"
       ? plate({ ...spec, periods: p.states, series: p.rows.map((r) => ({ label: r.label, values: r.values.map((v) => v[0]), off: r.off?.map((v) => v[0]) })) }, w, h)
       : strip({ ...spec, states: p.states, series: p.series, rows: p.rows, most: p.most, format: f.times ? (v) => "÷" + number(v) : undefined, empty: t("too_few") }, w,
         innerWidth >= 900 ? Math.min(h, stripLeast(spec.title, p.rows.length, w, p.series, ROOMY)) : h);
     return { ...made, show: (i, focus) => made.show(i, focused(p, focus)) };
   };
   inks(on);  // on a stage (`on`), drawn in the night's inks
-  try { return f.plates[0].name === null ? make(f.plates[0], 0) : plates(f.plates.map((p) => p.name), (k) => make(f.plates[k], k)); }
-  finally { inks(); }
+  try {
+    const one = f.plates.length === 1 && f.plates[0].name === null, made = one ? make(f.plates[0], 0) : plates(f.plates.map((p) => p.name), (k) => make(f.plates[k], k));
+    // `at(step, j)`: the figure at a step (j: its number, 0 at the opening): its plate and moment (scenes.js, stepAt).
+    return { ...made, at: (step, j) => {
+      const [i, k] = stepAt(f.plates, step), focus = j ? step.focus : undefined;
+      if (i >= 0 && k >= 0) one ? made.show(k, focus) : made.show(i, focus, k);
+      return i;
+    } };
+  } finally { inks(); }
 }
 /** The rows and series of a scene drawn as a strip (plate.js), known before its data comes: what its stage must make
  *  room for. */
@@ -1794,8 +1800,10 @@ async function storySea(holder, stages, parts) {
     };
     write([...focus, ...rest]);
     delete keyed.dataset.at;
-    const landed = (ms) => setTimeout(() => {
+    // (landed: once the glide is over and a frame has been drawn where it ended)
+    const landed = (ms) => setTimeout(function wait() {
       if (at !== label) return;
+      if (sea.state().gliding) return void setTimeout(wait, 60);
       const named = new Set(sea.labels().names.map((n) => n.text));
       // (on a phone, a band that names none of the step's own words is dropped rather than name others)
       write(!wide && focus.length && !focus.some((id) => named.has(nameOf(id))) ? [] : [...focus, ...rest].filter((id) => named.has(nameOf(id))));
@@ -1869,7 +1877,7 @@ async function storyPage(slug, scene, step, more) {
   const landing = el(`<section class="landing">${tideLine()}<div class="limits"><h2>${t("limits_title")}</h2>${limitsList(words.limits)}</div></section>`);
   landing.append(tools(() => href("cerita", slug, String(last)), { image: () => stages[last].room, table: () => stages[last].figure()?.table?.(),
     share: () => ({ ...shared(), embed: whole(href("cerita", slug, "embed", String(last), String(stages[last].on()))) }), check: [...new Set(parts.flatMap((part) => part.check || []))],
-    data: [...new Set(parts.map((part) => (part.type === "asked" ? `pages/${part.name}.json` : SCENE_DATA[part.type])).filter(Boolean))] }),
+    data: [...new Set(parts.flatMap((part) => (part.type === "asked" ? [`pages/${part.name}.json`, part.read && `pages/${part.read.name}-read.json`] : [SCENE_DATA[part.type]])).filter(Boolean))] }),
     cite(story, whole(href("cerita", slug))),
     el(`<a class="card next-story" href="${href("cerita", next.slug)}"><span class="kicker">${t("next_story")}</span><b class="card-title">${next[language].title}</b><span class="card-text">${next[language].teaser}</span></a>`),
     el(`<ul class="links"><li><a href="${href("cerita")}">${t("all_stories")}</a></li></ul>`));
@@ -1980,12 +1988,11 @@ async function embedPage(slug, k = "0", j = "0") {
   const room = box.querySelector(".embed-figure"), caption = box.querySelector(".embed-caption"), count = box.querySelector(".count"), link = box.querySelector(".embed-open");
   const width = Math.min(760, room.clientWidth), height = Math.max(240, innerHeight - box.offsetHeight - 120);
   let figure = null;
-  const head = (at) => dash(part.steps[at - 1].head ?? part.steps[at - 1].mark ?? part.steps[at - 1].at);
+  const head = (at) => dash(part.steps[at - 1].head?.[language] ?? part.steps[at - 1].head ?? part.steps[at - 1].mark ?? part.steps[at - 1].at);
   const go = (at) => {
     if (!figure) return;
     at = Math.max(0, Math.min(n, at));
-    const step = part.steps[Math.max(0, at - 1)], i = figure.labels.indexOf(step.at);
-    if (i >= 0) figure.show(i, at ? step.focus : undefined, step.mark);
+    figure.at(part.steps[Math.max(0, at - 1)], at);
     if (at !== +j) hear("step", at < +j, at ? beaconed(room) : [], at);
     caption.innerHTML = at ? `<p><b>${head(at)}.</b> ${part.steps[at - 1][language]}</p>` : `<p><b>${part[language].title}.</b> ${part[language].text || ""}</p>`;
     count.textContent = at ? `${at} / ${n}` : t("steps_n", n);

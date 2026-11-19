@@ -4,6 +4,7 @@
     python -m idhist.pages oknum      # one of them
     python -m idhist.pages read oknum polisi+salah oknum 200    # 200 places to read: pages of the question "oknum"
                                       # that match "polisi" and "salah", shown around their first "oknum"
+    python -m idhist.pages readings harga oknum   # what a person read in them, for the site to draw
 
 The counts under data/counts know which words share a page, for the words of a lens and by year. What they
 cannot answer (a phrase that is not a Wikipedia title, three things on one page, a count by month) is counted
@@ -23,7 +24,10 @@ interval, from the same six folds of days as everywhere else (`together.interval
 
 A count of pages says two patterns share a page, not that one is said of the other. `read` draws places at
 random (the same ones every time) into data/read/<name>.tsv, to be read by a person: what share of them mean
-what the story says is the precision the story states.
+what the story says is the precision the story states. The person writes what they read in each place into
+data/read/<name>-labels.tsv (a line per place: its number, a code for each thing read, a note); `readings` copies the
+codes to site/data/pages/<name>-read.json, {"read": places, "from": provenance, "codes": [a list per thing read]}, so
+that a story draws the hand count it writes (scenes.js, a scene's `read`).
 """
 
 import json
@@ -120,7 +124,18 @@ def read(ask: dict, of: str, show: str, n: int) -> list[str]:
     return places
 
 
+def readings(name: str) -> dict:
+    """The codes a person gave the places of data/read/<name>.tsv, a list per thing read, in the order of the places."""
+    rows = [line.split("\t") for line in Path(f"data/read/{name}-labels.tsv").read_text().splitlines() if line.strip()]
+    return {"read": len(rows), "from": f"data/read/{name}.tsv (python -m idhist.pages read), each place read by a person: data/read/{name}-labels.tsv",
+            "codes": [[row[i] for row in rows] for i in range(1, len(rows[0]) - 1)]}
+
+
 if __name__ == "__main__":
+    if sys.argv[1:2] == ["readings"]:
+        for name in sys.argv[2:]:
+            (SITE / f"{name}-read.json").write_text(json.dumps(readings(name), separators=(",", ":")))
+        sys.exit()
     if sys.argv[1:2] == ["read"]:
         name, of, show, n = sys.argv[2:6]
         ask = next(ask for ask in json.loads(ASKED.read_text()) if ask["name"] == name)

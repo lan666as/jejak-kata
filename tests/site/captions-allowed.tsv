@@ -1,33 +1,6 @@
 # Numbers a story writes that no figure gives: one line each, tab-separated. A number not here and not on its figure
 # fails tests/site/captions.mjs; a line no text uses any more fails too. "where" is <scene>.<step>, <scene>.plate, teaser or key.
 # story	where	number as the Indonesian text writes it	why no figure gives it
-penyesuaian	0.5	200	places read by hand (python -m idhist.pages read): the sample's size
-penyesuaian	0.5	139	read by hand: of the 200, those where the word means a rise
-penyesuaian	0.5	19	read by hand: of the 200, those where it means a cut
-penyesuaian	0.5	12	read by hand: of the 200, those where it means both
-penyesuaian	0.5	30	read by hand: of the 200, those that are unclear
-penyesuaian	0.5	120	read by hand: of the 200, those spoken by the government or a state company
-penyesuaian	0.5	41	read by hand: of the 200, those in the paper's own voice
-penyesuaian	teaser	200	read by hand: the sample's size (step 0.5)
-penyesuaian	teaser	139	read by hand (step 0.5)
-penyesuaian	teaser	120	read by hand (step 0.5)
-penyesuaian	key	139	read by hand (step 0.5)
-penyesuaian	key	200	read by hand (step 0.5)
-oknum	0.6	200	places read by hand: the sample's size
-oknum	0.6	47	read by hand: police among the 200
-oknum	0.6	31	read by hand: civil servants among the 200
-oknum	0.6	23	read by hand: teachers among the 200
-oknum	0.6	11	read by hand: village officials among the 200
-oknum	0.6	8	read by hand: court and prosecution staff among the 200
-oknum	0.6	5	read by hand: soldiers among the 200
-oknum	0.6	6	read by hand: politicians among the 200
-oknum	0.6	40	read by hand: ordinary people among the 200
-oknum	0.6	150	read by hand: of the 200, not named
-oknum	0.6	30	read by hand: of the 200, named by initials only
-oknum	teaser	200	read by hand (step 0.6)
-oknum	teaser	150	read by hand (step 0.6)
-oknum	key	150	read by hand (step 0.6)
-oknum	key	200	read by hand (step 0.6)
 dilupakan	3.4	240	“one in 240”: 1 / ahok's 0.425% of Kompas pages in 2018 = 235, said to two figures
 dilupakan	teaser	25	people who left the seven offices in 2012–2023, counted by hand (limits panel)
 dilupakan	teaser	23	of those 25, the ones with 80 pages in their last year (the two left figures draw them)

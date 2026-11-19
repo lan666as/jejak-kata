@@ -1190,6 +1190,9 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .pt { animation: fade var(--d-turn) var(--sail) var(--d-leg) both; }
 .plate .series .draw { animation-delay: calc(var(--k) * 120ms); } .plate .band { animation: fade var(--d-leg) var(--sail) both; }
 .plate .row { animation: surface var(--d-turn) var(--sail) calc(var(--k) * 35ms) both; }
+/* a count read by hand (plate.js, units): its marks come in one after another each time its plate is shown */
+.plates > .off .tally { opacity: 0; transition: none; }
+@media (prefers-reduced-motion: no-preference) { .plate .tally { transition: opacity var(--d-turn) var(--sail) calc(var(--k) * 4ms); } }
 :is(.race, .bars, .duel) .bar { transform-origin: 0 50%; animation: grow var(--d-leg) var(--sail) both; }
 .duel .left .bar { transform-origin: 100% 50%; }
 .cell, .play-pic .in { animation: fade var(--d-turn) var(--sail) calc(var(--i, 0) * 45ms) both; }

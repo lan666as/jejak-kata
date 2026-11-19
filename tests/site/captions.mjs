@@ -12,13 +12,15 @@
 //   that step (its moment, or one the title names by its label: "2010–2014", "+1"); a card's teaser and key number
 //   from all its figure(s) draw;
 // - the Indonesian and English texts carry the same numbers in the same order;
-// - any other number (a count read by hand, a number of pages) is explained in captions-allowed.tsv, one line each.
+// - a count read by hand is one the figure draws where the scene has its reading (`read`: a plate of one mark per place,
+//   its rows' and its marks' counts and the places read);
+// - any other number (a number of pages) is explained in captions-allowed.tsv, one line each.
 // A number the figure does not show is reported with what the data has (and where), never corrected here.
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { STORIES } from "../../site/story.js";
-import { figureOf, focused, lensFrom, dash } from "../../site/scenes.js";
+import { figureOf, focused, lensFrom, stepAt } from "../../site/scenes.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2), dir = args[0] && !STORIES.some((s) => s.slug === args[0]) ? args.shift() : join(here, "../../site/data");
@@ -69,6 +71,11 @@ function cells(f, { plates = f.plates.map((_, i) => i), states = null, rows = nu
   const out = [];
   for (const pi of plates) {
     const p = f.plates[pi];
+    // A count read by hand: its rows', its fills' and its whole count, as numbers (`count`), not shares.
+    if (p.counts) {
+      for (const r of [...p.rows.map((r) => ({ label: r.label, n: r.marks.length })), ...p.fills, { label: "", n: p.total }]) out.push({ v: r.n, count: true, row: r.label, series: "", plate: p.name, state: p.states[0], k: 0, ri: 0, pi, si: 0, fig });
+      continue;
+    }
     p.rows.forEach((r) => {
       if (rows && !rows.includes(r.label)) return;
       p.states.forEach((state, si) => {
@@ -106,6 +113,9 @@ const groupsOf = (list, ...keys) => keys.flatMap((key) => Object.values(Object.g
  */
 function check(text, lang, pool, all, { counts = [], broad = [], wide = pool, loose = false, undrawn = [] } = {}) {
   all = [...all, ...undrawn];
+  // Counts read by hand stand apart: a number with no unit may be one of them (bound to its row where it names one).
+  const tallied = pool.filter((c) => c.count);
+  [pool, wide, broad] = [pool, wide, broad].map((list) => list.filter((c) => !c.count));
   const problems = [];
   for (const sentence of sentences(text)) {
     const tokens = numbers(sentence, lang).filter((n) => n.unit || (!/^\d{4}$/.test(n.text) && sentence[n.at - 1] !== "+")), said = names(sentence, all);
@@ -147,7 +157,7 @@ function check(text, lang, pool, all, { counts = [], broad = [], wide = pool, lo
           const at = (x, d) => ratios.some((r) => near(r, x, d));
           return at(n.lo, n.d) && (n.hi === undefined || at(n.hi, n.dh)) ? [true] : [];
         }
-        return counts.some((c) => c === n.lo) ? [true] : [];
+        return counts.some((c) => c === n.lo) || tallied.some((c) => c.v === n.lo && (fits(c) || !n.bound.length)) ? [true] : [];
       })();
       n.cells = ok;
       if (n.bound.length && n.bound.every((b) => undrawn.includes(b))) problems.push({ token: n.text + n.unit, why: `bound to “${n.bound.join(", ")}”, which the data has but this figure does not draw` });
@@ -198,8 +208,8 @@ const same = (story, place, id, en) => {
   if (a.join(" ") !== b.join(" ")) failures.push({ story: story.slug, place, lang: "id/en", text: plain(en), token: `${a.join(" ")} | ${b.join(" ")}`, why: "the two languages do not carry the same numbers in the same order" });
 };
 /** The title of plate i of a scene, as the site writes it (app.js, plateTitle). */
-const titleOf = (scene, lang, f, i) => { const t = scene[lang].plate; return typeof t === "function" ? t(...(scene.type === "pairs" ? scene.pairs[i] : [f.plates[i].name])) : Array.isArray(t) ? t[i] : t; };
-const labelsOf = (f) => [...new Set(f.plates.flatMap((p) => [p.name, ...p.series, ...p.rows.map((r) => r.label)]).filter(Boolean))];
+const titleOf = (scene, lang, f, i) => { const t = f.plates[i].read ? scene.read[lang].plate : scene[lang].plate; return typeof t === "function" ? t(...(scene.type === "pairs" ? scene.pairs[i] : [f.plates[i].name])) : Array.isArray(t) ? t[i] : t; };
+const labelsOf = (f) => [...new Set(f.plates.filter((p) => !p.read).flatMap((p) => [p.name, ...p.series, ...p.rows.map((r) => r.label)]).filter(Boolean))];  // (a hand count's names, "lainnya", "other", are no names to bind a number to: its counts match unbound)
 /** Page counts a caption may give: those the figure's notes give at that moment. */
 const countsOf = (scene, f, si) => {
   const s = f.source;
@@ -227,14 +237,13 @@ for (const story of STORIES.filter((s) => slugs.includes(s.slug))) {
       });
       // Each step: the plate it shows, at its moment, the rows it brings forward.
       scene.steps.forEach((step, j) => {
-        const named = f.plates[0].name !== null, pi = named ? f.plates.findIndex((p) => p.name === step.at) : 0, p = f.plates[pi];
-        const si = named ? (step.mark === undefined ? p.states.length - 1 : p.states.indexOf(step.mark)) : p.states.indexOf(dash(step.at)) >= 0 ? p.states.indexOf(dash(step.at)) : p.states.indexOf(step.at);
+        const [pi, si] = stepAt(f.plates, step), p = f.plates[pi];
         if (pi < 0 || si < 0) return failures.push({ story: story.slug, place: `${k}.${j + 1}`, lang, text: step[lang], token: step.at, why: "the step's moment is not on its figure" });
         // The caption, about the rows the step brings forward; and the plate's title above it, which is read at every
         // step beside the values the plate shows then: its numbers too must be at the step's moment, or at one it names.
         const text = plain(step[lang]), title = plain(titleOf(scene, lang, f, pi) || "");
         for (const [place, said, rows] of [[`${k}.${j + 1}`, text, step.focus ? focused(p, step.focus) : null], [`${k}.${j + 1}.plate`, title, null]]) for (const sentence of sentences(said)) {
-          const plates = [pi, ...f.plates.map((q, i) => (i !== pi && mentions(sentence, q.name) ? i : -1)).filter((i) => i >= 0)];
+          const plates = [pi, ...f.plates.map((q, i) => (i !== pi && !q.read && mentions(sentence, q.name) ? i : -1)).filter((i) => i >= 0)];
           const states = [si, ...p.states.map((s, i) => (i !== si && mentions(sentence, String(s)) ? i : -1)).filter((i) => i >= 0)];
           for (const problem of check(sentence, lang, cells(f, { plates, states, rows }), all, { counts: countsOf(scene, f, si), broad, wide: cells(f, { plates, rows }), undrawn })) fail(story, place, lang, sentence, problem);
         }

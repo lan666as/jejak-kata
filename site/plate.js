@@ -181,6 +181,17 @@ export function plate(spec, width, height) {
   return { node: made.node, labels: spec.periods, show, table };
 }
 
+/** A row's name, ending at `L - 9`, at height y: a name too long for its column on two lines where the rows are `gap`
+ *  apart or more, else a little smaller. */
+function rowName(label, y, L, size, gap, ink) {
+  if (label.length <= Math.floor((L - 14) / (size * 0.53))) return `<text x="${L - 9}" y="${y + size * 0.35}" text-anchor="end" style="font-size:${size}px;font-weight:600;fill:${ink}">${label}</text>`;
+  // Two lines broken at the space that leaves the longer line shortest, then as large as that line allows.
+  const cut = [...label].map((c, i) => (c === " " ? i : -1)).filter((i) => i > 0).sort((a, b) => Math.max(a, label.length - a) - Math.max(b, label.length - b))[0];
+  const parts = cut && gap >= size * 1.9 ? [label.slice(0, cut), label.slice(cut + 1)] : [label];
+  const small = Math.max(10, Math.min(size, (L - 14) / Math.max(...parts.map((p) => p.length)) / 0.53));
+  return `<text x="${L - 9}" y="${y + small * 0.35 - (parts.length - 1) * small * 0.55}" text-anchor="end" style="font-size:${small}px;font-weight:600;fill:${ink}">${parts.map((part, i) => `<tspan x="${L - 9}" dy="${i ? small * 1.1 : 0}">${part}</tspan>`).join("")}</text>`;
+}
+
 /**
  * Rows on one scale. `spec`: {title, note, states: [labels], series: [names], rows: [{label, values: [state][series]}],
  * format: (v) => text, pages: (i) => text, most: the value at the right edge (else the round tick at or past the largest),
@@ -199,16 +210,7 @@ export function strip(spec, width, height) {
     const below = narrow && !legend.beside, T = top + (below ? 50 : 34) + extra, B = 76, gap = (H - T - B) / rows;  // the margins stripRoom counts
     x = (v) => L + ((W - L - R) * v) / most;
     y = (k) => T + gap * (k + 0.5);
-    const size = Math.max(12, Math.min(narrow ? 13 : 14, gap * 0.9)), fits = Math.floor((L - 14) / (size * 0.53));
-    // A name too long for its column: on two lines where the rows are far enough apart, else a little smaller.
-    const name = (label, k) => {
-      if (label.length <= fits) return `<text x="${L - 9}" y="${y(k) + size * 0.35}" text-anchor="end" style="font-size:${size}px;font-weight:600;fill:${ink}">${label}</text>`;
-      // Two lines broken at the space that leaves the longer line shortest, then as large as that line allows.
-      const cut = [...label].map((c, i) => (c === " " ? i : -1)).filter((i) => i > 0).sort((a, b) => Math.max(a, label.length - a) - Math.max(b, label.length - b))[0];
-      const parts = cut && gap >= size * 1.9 ? [label.slice(0, cut), label.slice(cut + 1)] : [label];
-      const small = Math.max(10, Math.min(size, (L - 14) / Math.max(...parts.map((p) => p.length)) / 0.53));
-      return `<text x="${L - 9}" y="${y(k) + small * 0.35 - (parts.length - 1) * small * 0.55}" text-anchor="end" style="font-size:${small}px;font-weight:600;fill:${ink}">${parts.map((part, i) => `<tspan x="${L - 9}" dy="${i ? small * 1.1 : 0}">${part}</tspan>`).join("")}</text>`;
-    };
+    const size = Math.max(12, Math.min(narrow ? 13 : 14, gap * 0.9)), name = (label, k) => rowName(label, y(k), L, size, gap, ink);
     return `${legend.marks.map((m, k) => `<circle cx="${m.x + 5}" cy="${top + 10 + m.line * 16}" r="4.5" fill="${css(COLOURS[k])}"/><text x="${m.x + 14}" y="${top + 14 + m.line * 16}" style="font-size:12px;fill:${soft}">${m.name}</text>`).join("")}
     <text class="state" x="${below ? 12 : W - 12}" y="${top + (below ? 32 + extra : 15)}" text-anchor="${below ? "start" : "end"}" style="font-size:14px;font-weight:800;fill:${ink}"></text>
     ${rules(tick, spec.base, line, soft, (v, stroke, width) => `<line x1="${x(v)}" x2="${x(v)}" y1="${T - 4}" y2="${H - B + 2}" stroke="${stroke}" stroke-width="${width}"/><text x="${x(v)}" y="${H - B + 14}" text-anchor="middle" style="font-size:12px;fill:${soft}">${format(v)}</text>`)}
@@ -247,18 +249,47 @@ export function strip(spec, width, height) {
 }
 
 /**
+ * A count read by hand, one mark per place read (a unit chart). `spec`: {title, note, rows: [{label, marks: [the fill
+ * of each mark]}], fills: [{label, n}], rest: the last fill is what the reading did not sort (an open ring)}. Each
+ * row's marks stand in a block after its name, ordered by fill, its count at the block's end; the fills are named with
+ * their counts above. Its marks come in one after another each time it is shown (style.css, .tally).
+ */
+export function units(spec, width, height) {
+  const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft }) => {
+    const legend = key(spec.fills.map((f) => `${f.label} ${f.n}`), W, true), T = top + 34 + (legend.lines - 1) * 16, B = 52, size = narrow ? 13 : 14;
+    const longest = Math.max(...spec.rows.map((r) => r.label.length)), L = narrow ? Math.min(W * 0.4, 16 + 7 * longest) : 200, room = W - L - 40;
+    const two = (label) => label.length > Math.floor((L - 14) / (size * 0.53));  // (rowName: such a name takes two lines)
+    // The largest pitch at which every block fits: a line of marks `pitch` tall, a block at least as tall as its name.
+    const tall = (p) => spec.rows.map((r) => Math.max(Math.ceil(r.marks.length / Math.floor(room / p)) * p, two(r.label) ? size * 2.3 : 0));
+    let pitch = narrow ? 18 : 26;
+    while (pitch > 6 && tall(pitch).reduce((a, b) => a + b, pitch * 0.7 * (spec.rows.length - 1)) > H - T - B) pitch -= 0.5;
+    const per = Math.floor(room / pitch), heights = tall(pitch), r = pitch * 0.36, mark = (f) => (spec.rest && f === spec.fills.length - 1 ? `fill="none" stroke="${soft}" stroke-width="1.2"` : `fill="${css(COLOURS[f])}"`);
+    let y = T, k = 0;
+    const blocks = spec.rows.map((row, g) => {
+      const first = y + pitch / 2, lines = Math.ceil(row.marks.length / per), mid = first + ((lines - 1) * pitch) / 2;
+      const marks = row.marks.map((f, i) => `<circle class="tally" style="--k:${k++}" cx="${L + (i % per) * pitch + pitch / 2}" cy="${first + Math.floor(i / per) * pitch}" r="${r}" ${mark(f)}/>`).join("");
+      y += heights[g] + pitch * 0.7;
+      return `<g class="group">${rowName(row.label, mid, L, size, heights[g] + pitch * 0.7, ink)}${marks}<text x="${L + Math.min(row.marks.length, per) * pitch + 5}" y="${mid + 4.5}" style="font-size:13px;font-weight:800;fill:${ink}">${row.marks.length}</text></g>`;
+    });
+    return `${legend.marks.map((m, f) => `<circle cx="${m.x + 5}" cy="${top + 10 + m.line * 16}" r="4.5" ${mark(f)}/><text x="${m.x + 14}" y="${top + 14 + m.line * 16}" style="font-size:12px;fill:${soft}">${escape(m.name)}</text>`).join("")}${blocks.join("")}`;
+  });
+  const table = () => [["row", "fill", "places"], ...spec.rows.flatMap((r) => spec.fills.map((f, i) => [r.label, f.label, r.marks.filter((x) => x === i).length]))];
+  return { node: made.node, labels: [String(spec.rows.reduce((n, r) => n + r.marks.length, 0))], show: () => {}, table };
+}
+
+/**
  * Several plates in one place, of which one is seen: `labels[i]` names plate i. All are made once and none is
- * made again. `show(i, focus, mark)` shows plate i at its moment `mark` (a label of its own; the last if not given).
+ * made again. `show(i, focus, k)` shows plate i at its moment k (the last if not given).
  */
 export function plates(labels, make) {
   const node = document.createElement("div"), made = labels.map((_, i) => make(i));
   let shown = 0;
   node.className = "plates";
   node.append(...made.map((m) => m.node));
-  const show = (i, focus, mark) => {
+  const show = (i, focus, k = made[i].labels.length - 1) => {
     shown = i;
-    made.forEach((m, k) => m.node.classList.toggle("off", k !== i));
-    made[i].show(Math.max(0, mark === undefined ? made[i].labels.length - 1 : made[i].labels.indexOf(mark)), focus);
+    made.forEach((m, j) => m.node.classList.toggle("off", j !== i));
+    made[i].show(k, focus);
   };
   show(0);
   return { node, labels, show, table: () => made[shown].table() };

@@ -129,6 +129,11 @@ it.
   value stand at its right at the height of its value, in the order of the values,
   pushed apart where their pills would touch, each then placed on the one board (`labels.js`). The tools under a figure save it as an image and download the numbers it draws as CSV (from what the
   figure loaded: a row per period, or per row and state).
+- **A count read by hand** (a scene's `read`; plate.js, `units`): where a story writes what it found reading a sample of
+  places one by one, the step that says so shows a plate of its own: one mark per place read, in a block per reading
+  (named at the left, its count at the block's end), each mark in the colour of a second reading (named with its count
+  above; the rest an open ring). Its marks come in one after another each time it is shown. The codes come from the
+  reading itself (`python -m idhist.pages readings`); `captions.mjs` holds the caption's counts to them.
 - **Footer** on a phone folds "Data" and "Licence and code" (a line each, opened by a tap); from 900px they stand open.
 - **Menu sheet** (phone): the chart at night, its graticule faint behind the links.
 - **Footer**: every page closes with the sea: the tide line (paper above, the deep below), a band of the night sea

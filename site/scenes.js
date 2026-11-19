@@ -89,9 +89,26 @@ export async function figureOf(scene, data, language, { wide = true } = {}) {
     const rows = scene.rows === "shares"
       ? scene.shares.map(([key, label]) => ({ label: said(label, language), key, values: column.map((c) => scene.publishers.map((p) => value(key, p, c))) }))
       : scene.publishers.map((p, k) => ({ label: names[k], key: p, values: column.map((c) => scene.shares.map(([key]) => value(key, p, c))) }));
-    return { draw: "strip", source: d, plates: [{ name: null, states: states.map(dash), series: scene.rows === "shares" ? names : scene.shares.map(([, label]) => said(label, language)), rows }] };
+    const read = scene.read && readPlate(scene.read, await data.json(`pages/${scene.read.name}-read.json`), language);
+    return { draw: "strip", source: d, plates: [{ name: null, states: states.map(dash), series: scene.rows === "shares" ? names : scene.shares.map(([, label]) => said(label, language)), rows }, ...(read ? [read] : [])] };
   }
   throw new Error(`no figure for ${scene.type}`);
+}
+
+/**
+ * A count read by hand (a scene's `read`: idhist/pages.py, readings), as a plate of its own named after it: the places
+ * in rows by what they were read as (`groups`, then the rest), each marked by a second reading (`fills`, then the rest).
+ * Drawn one mark per place (plate.js, units); a row's value, and each fill's, is its count (`counts`), which is what
+ * tests/site/captions.mjs holds a caption's hand counts to.
+ */
+function readPlate(read, r, language) {
+  const rest = [null, TEXT[language].read_rest], places = r.codes[0].map((_, i) => i);
+  const sorted = (list, codes) => (i) => ((k) => (k < 0 ? list.length : k))(list.findIndex(([code]) => code === codes[i]));
+  const [group, fill] = [sorted(read.groups, r.codes[read.by]), sorted(read.fills, r.codes[read.fill])];
+  const fills = [...read.fills, rest].map(([key, label], k) => ({ label: said(label, language), key, n: places.filter((i) => fill(i) === k).length }));
+  const rows = [...read.groups, rest].map(([key, label], g) => ({ label: said(label, language), key, marks: places.filter((i) => group(i) === g).map(fill).sort((a, b) => a - b) }))
+    .filter((row) => row.marks.length).map((row) => ({ ...row, values: [[row.marks.length]] }));
+  return { name: read.name, read: true, draw: "units", counts: true, total: r.read, states: [String(r.read)], series: [""], rows, fills: fills.at(-1).n ? fills : fills.slice(0, -1), rest: !!fills.at(-1).n };
 }
 
 /** The words a scene is about: its word, the words its figure draws, those it asks the reader to check. */
@@ -112,4 +129,13 @@ export const seaWords = (part, step) => {
   const rows = (step.focus || []).filter((key) => key !== "*").flatMap((key) => String(said(row(key), "id")).toLowerCase().split(", "));
   const italics = [...step.id.matchAll(/<i>([^<]+)<\/i>/g)].map((m) => m[1].toLowerCase());
   return [...new Set([...rows, ...(sceneWords(part).includes(step.at) ? [step.at] : []), ...italics].filter(Boolean))];
+};
+
+/** Which plate of a figure a step shows, and at which of its moments: the plate its `at` names, at its `mark` (else
+ *  its last moment); else the figure's first, unnamed plate at the moment `at`. [-1, -1] where the figure has neither. */
+export const stepAt = (plates, step) => {
+  const named = plates.findIndex((p) => p.name !== null && p.name === step.at), pi = named >= 0 ? named : plates[0].name === null ? 0 : -1;
+  if (pi < 0) return [-1, -1];
+  const moment = named >= 0 ? step.mark : step.at, states = plates[pi].states;
+  return [pi, moment === undefined ? states.length - 1 : [moment, dash(moment)].map((m) => states.indexOf(m)).find((i) => i >= 0) ?? -1];
 };

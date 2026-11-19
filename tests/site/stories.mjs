@@ -39,7 +39,7 @@ const look = () => {
   const fig = tall ? win : shown[0]?.querySelector("svg").getBoundingClientRect(), cap = stage.querySelector(".caption"), c = cap.getBoundingClientRect();
   const rows = [...(shown[0]?.querySelectorAll(".row") || [])], named = rows.filter((r) => r.style.opacity === "1").length < rows.length ? rows.filter((r) => r.style.opacity === "1") : [];
   return { k, y: scrollY, landing, step: +stage.dataset.step, plate: +stage.dataset.plate, shownAt: plates.findIndex((p) => !p.classList.contains("off")), stack: !!stage.querySelector(".plates"),
-    plates: shown.length, stuck: Math.round(stage.getBoundingClientRect().top - head),
+    plates: shown.length, units: !!shown[0]?.querySelector(".tally"), stuck: Math.round(stage.getBoundingClientRect().top - head),
     fig: fig && [fig.top - head, vh - fig.bottom, fig.left, vw - fig.right].map(Math.round), moment: shown[0]?.querySelector(".state, .marker text")?.textContent || "",
     cap: [c.top - head, vh - c.bottom].map(Math.round), capHeight: Math.round(c.height),
     longer: cap.scrollHeight > cap.clientHeight + 1, scrolls: ["auto", "scroll"].includes(getComputedStyle(cap).overflowY),
@@ -82,7 +82,9 @@ function judge(story, k, j, s, before = null) {
   else {
     if (s.fig.some((d) => d < -1)) wrong.push(`the figure is cut (top, bottom, left, right: ${s.fig.join(", ")})`);
     if (s.stack && (s.plate < 0 || s.shownAt !== s.plate)) wrong.push(`plate ${s.shownAt} shown, the step asks for plate ${s.plate}`);
-    const moment = step.mark ?? (s.stack ? null : step.at);
+    // (a scene with a hand count stacks its strip and the count: a step on the strip is still at its moment)
+    const moment = step.mark ?? (!s.stack || (part.read && step.at !== part.read.name) ? step.at : null);
+    if (part.read && (step.at === part.read.name) !== s.units) wrong.push(s.units ? "the hand count is shown at a step not about it" : "the step's hand count is not shown");
     if (moment !== null && dash(s.moment) !== dash(moment)) wrong.push(`the figure is at "${s.moment}", the step at "${moment}"`);
   }
   if (s.pitch !== null && s.pitch < 17) wrong.push(`the figure's rows are ${s.pitch}px apart on screen`);

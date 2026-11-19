@@ -138,7 +138,9 @@ others stand, a count by month. For those the text of ten publishers of the news
 machine. `site/pages.json` holds the questions asked of it and `idhist/pages.py` answers them. A count
 of pages says that two things share a page, not that one is said of the other, so each story built on
 it states a precision: places are drawn at random (`python -m idhist.pages read ...`) and read, and the
-story says how many of them mean what it claims.
+story says how many of them mean what it claims. What was read in each place is kept as codes beside it
+(`data/read/<name>-labels.tsv`), and `python -m idhist.pages readings harga oknum` copies the codes (not the
+text) to the site, where the story draws each place read as one mark.
 
 ## What the site shows
 
