@@ -611,7 +611,7 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .tide { overflow-x: auto; margin: var(--s4) 0; } .tide table { border-collapse: separate; border-spacing: 2px; width: auto; }
 .tide th { font-weight: 400; font-size: var(--t-meta); color: var(--ink-2); padding: 0 var(--s1) 0 0; text-align: right; white-space: nowrap; border: 0; vertical-align: middle; }
 .tide tr:first-child th { text-align: center; padding: 0; } .tide th a { color: var(--ink); text-decoration: none; } .tide th a:hover { text-decoration: underline; }
-.tide td { width: 26px; min-width: 15px; height: 18px; padding: 0; border: 0; border-radius: 2px; }
+.tide td { width: 26px; min-width: 18px; height: 18px; padding: 0; border: 0; border-radius: 2px; }
 .t0 { background: var(--seq-0); opacity: .45; } .t1 { background: var(--seq-1); } .t2 { background: var(--seq-2); } .t3 { background: var(--seq-3); } .t4 { background: var(--seq-4); } .t5 { background: var(--seq-5); }
 .tx { background: none; outline: var(--hair) dashed var(--line); outline-offset: -1px; }
 .legend i.t0, .legend i.t1, .legend i.t2, .legend i.t3, .legend i.t4, .legend i.t5 { width: 18px; height: 12px; border-radius: 2px; }
