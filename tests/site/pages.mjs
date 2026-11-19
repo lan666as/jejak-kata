@@ -1,5 +1,6 @@
 // node tests/site/pages.mjs   Uses the site like a reader: language switch, back button, shared link, slow line, chart, games, saved image.
 import { base, browser, done } from "./serve.mjs";
+import { PAGED } from "../../site/words.js";
 let failures = 0;
 const log = (name, ok, detail) => { failures += !ok; console.log(`${ok ? "ok  " : "FAIL"} ${name}: ${detail}`); };
 const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport: { width: 390, height: 780 }, ...opts }); p.errors = []; p.on("pageerror", (e) => p.errors.push(e.message)); return p; };
@@ -15,6 +16,11 @@ const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport:
   const h = await p.evaluate(() => { const node = document.querySelector(".masthead"), r = node.getBoundingClientRect(), bg = getComputedStyle(node).backgroundColor;
     const alpha = bg.startsWith("rgba") ? +bg.split(",")[3].replace(")", "") : 1; return { top: r.top, height: r.height, alpha, y: scrollY, wide: document.documentElement.scrollWidth > innerWidth + 1 }; });
   log("header at 390px is opaque and stuck after a scroll", h.y > 500 && Math.abs(h.top) < 1 && h.height === 56 && h.alpha === 1 && !h.wide, `scrolled ${h.y}px; header top ${h.top}px, ${h.height}px tall, opacity ${h.alpha}; sideways scroll ${h.wide}`); await p.close(); }
+{ // a word's page says once, under its source chips, what the number on each chip is, in both languages
+  const p = await fresh(); await p.goto(base + "#/kata/kpk"); await p.waitForTimeout(2500);
+  const said = () => p.evaluate(() => { const n = document.querySelector(".chips-note"); return n && n.previousElementSibling?.matches(".chips") && /Kompas/.test(n.previousElementSibling.textContent) ? n.textContent : ""; });
+  const id = await said(); await p.click("#menu-button"); await p.click("#language"); await p.waitForTimeout(2500); const en = await said();
+  log("a word's source chips say what their number is", /pergeseran terbesar/.test(id) && /largest shift/.test(en) && (await p.locator(".chips-note").count()) === 1, `“${id.slice(0, 60)}…” / “${en.slice(0, 60)}…”`); await p.close(); }
 { // the menu at 390px: opens, keeps focus inside, Escape closes it, a link in it navigates and closes it
   const p = await fresh(); await p.goto(base + "#/temuan"); await p.waitForTimeout(2000);
   await p.click("#menu-button"); await p.waitForTimeout(400);
@@ -30,9 +36,14 @@ const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport:
   await p.click("#menu-button"); await p.waitForTimeout(400); await p.click("#menu nav a[data-to='main']"); await p.waitForTimeout(1500);
   const went = await p.evaluate(() => ({ at: location.pathname + location.hash, shown: document.getElementById("menu").getClientRects().length > 0, locked: getComputedStyle(document.documentElement).overflow === "hidden", current: document.querySelector("#menu nav a[aria-current]")?.dataset.to }));
   log("a link in the menu navigates and closes it", went.at === "/main/" && !went.shown && !went.locked && went.current === "main", JSON.stringify(went));
-  await p.click("#search-button"); await p.waitForTimeout(300); await p.keyboard.type("korup"); await p.waitForTimeout(1500);
-  const offered = await p.locator("#suggestions a").count(); await p.locator("#suggestions a").first().click(); await p.waitForTimeout(1200);
-  log("search from the menu offers words and opens one", offered > 0 && /^\/(#\/)?kata\//.test(await p.evaluate(() => location.pathname + location.hash)) && !(await p.evaluate(() => document.getElementById("menu").getClientRects().length)), `${offered} offers; address ${await p.evaluate(() => location.pathname + location.hash)}; errors ${p.errors.length}`); await p.close(); }
+  // A word with a page of its own (site/words.js) lands on its real address; any other on "#/kata/<word>".
+  for (const typed of ["korupsi", "batik"]) {
+    await p.click("#search-button"); await p.waitForTimeout(300); await p.keyboard.type(typed); await p.waitForTimeout(1500);
+    const offered = await p.locator("#suggestions a").count(); await p.locator("#suggestions a", { hasText: new RegExp(`^${typed}$`) }).first().click(); await p.waitForTimeout(1200);
+    const to = await p.evaluate(() => location.pathname + location.hash), want = PAGED.includes(typed) ? `/kata/${typed}/` : `/#/kata/${typed}`;
+    log(`search from the menu offers words and opens "${typed}" at its address`, offered > 0 && to === want && !(await p.evaluate(() => document.getElementById("menu").getClientRects().length)), `${offered} offers; address ${to}, wanted ${want}; errors ${p.errors.length}`);
+  }
+  await p.close(); }
 { // back button
   const p = await fresh(); await p.goto(base + "#/cerita/kata-korupsi"); await p.waitForTimeout(2500); await p.mouse.wheel(0, 1800); await p.waitForTimeout(500);
   const before = await p.evaluate(() => scrollY); await p.evaluate(() => (location.hash = "#/kata/kpk")); await p.waitForTimeout(1500); await p.goBack(); await p.waitForTimeout(2500);

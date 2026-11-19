@@ -577,9 +577,10 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
    figure tabs, and on into the route's band; where the figure chosen is on paper, the tide line comes under the tabs */
 .word > .page-head { margin-bottom: 0; padding-bottom: var(--s4); }
 .word > .page-head > .tide-line { display: none; }
-.word > div > .chips, .word .lens-section > div > .tabs, .word .ashore { background: var(--deep); box-shadow: 0 0 0 100vmax var(--deep); clip-path: inset(0 -100vmax);
+.word > div > :is(.chips, .chips-note), .word .lens-section > div > .tabs, .word .ashore { background: var(--deep); box-shadow: 0 0 0 100vmax var(--deep); clip-path: inset(0 -100vmax);
   --chart: var(--deep); --chart-2: var(--deep); --ink: var(--on-deep); --ink-2: var(--on-deep-2); --ink-3: var(--on-deep-2); --line: var(--line-deep); --line-2: var(--line-deep-2); --route: var(--route-on-deep); --focus: var(--route-on-deep); }
 .word > div > .chips { margin-block: 0; padding-block: var(--s2) var(--s4); }
+.word > div > .chips-note { margin-block: 0; padding-bottom: var(--s4); }
 .word .lens-section > div > .tabs { margin-block: 0; padding-block: var(--s2) 0; }
 .word .lens-section .deep-band { margin-top: 0; padding-top: var(--s5); }
 .word .lens-section .deep-band > .tide-line:first-child { display: none; }

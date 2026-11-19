@@ -1029,6 +1029,8 @@ async function wordPage(word, opened) {
     most,
   );
   const lens = found[most];
+  // What the number on each source's chip is (largest(), of the entry's shifts), said once, under the chips.
+  view.lastElementChild.firstElementChild.after(el(`<p class="sub chips-note">${t("source_number", lens.flag)}</p>`));
   // What to do next with the word, as cards: its portrait (for a name), the chart with other words, a race.
   const action = (to, what) => `<li><a class="card action" href="${to}"><b class="card-title">${t(what + "_ask")}</b><span class="card-text">${t(what + "_do")}</span></a></li>`;
   view.append(el(`<ul class="cards actions">${named ? action(href("potret", word), "portrait") : ""}${action(href("peta", lens.lens, word), "rival")}${action(href("balap", lens.lens, word), "race")}</ul>`), tools(href("kata", word, lens.lens), {}));
