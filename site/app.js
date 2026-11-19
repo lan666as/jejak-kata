@@ -2649,7 +2649,9 @@ function describe(page, args) {
 // ---- the header: search, and below 900px the menu sheet ---------------------
 
 const menu = document.getElementById("menu"), menuButton = document.getElementById("menu-button"), searchButton = document.getElementById("search-button");
-const wideHeader = matchMedia("(min-width: 900px)");
+// The bar holds everything where it has room for it (style.css: a container query, in the bar's own type, so that larger
+// text folds it as a narrower screen does); else the menu button stands for it.
+const wideHeader = () => !menuButton.getClientRects().length;
 const menuOpen = () => menu.classList.contains("open");
 function menuLabels() {
   menuButton.querySelector("span").textContent = t(menuOpen() ? "menu_close" : "menu");
@@ -2657,7 +2659,7 @@ function menuLabels() {
 /** What can take focus in the header while the sheet is open: the bar and the sheet, nothing behind. */
 const focusable = () => [...masthead.querySelectorAll("a[href], button, input, [tabindex]:not([tabindex='-1'])")].filter((node) => node.getClientRects().length && !node.closest("[hidden], [inert]"));
 function openMenu(focus) {
-  if (wideHeader.matches || menuOpen()) return focus?.focus();
+  if (wideHeader() || menuOpen()) return focus?.focus();
   menu.classList.add("open");
   menu.setAttribute("role", "dialog");
   menu.setAttribute("aria-modal", "true");
@@ -2690,7 +2692,7 @@ masthead.addEventListener("keydown", (e) => {
   else if (!e.shiftKey && at === list.length - 1) (e.preventDefault(), list[0].focus());
 });
 menu.addEventListener("click", (e) => e.target.closest("a[href]") && closeMenu());  // a link to the page one is on changes no address
-wideHeader.addEventListener("change", () => closeMenu());
+new ResizeObserver(() => wideHeader() && closeMenu()).observe(masthead);
 document.getElementById("skip").addEventListener("click", (e) => (e.preventDefault(), view.focus()));
 
 function search() {

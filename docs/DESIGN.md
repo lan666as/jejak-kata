@@ -90,7 +90,7 @@ it.
 
 ## Components
 
-- **Header** (56px, `--deep`, sticky everywhere, opaque): wordmark; from 900px the five links inline, search field,
+- **Header** (56px, `--deep`, sticky everywhere, opaque): wordmark; where the bar is at least 52em wide inside its padding, in its own type (a 900px screen at 16px; a container query, so that larger text folds it as a narrower screen does) the five links inline, search field,
   sound (a speaker, below), language. Below 900px: wordmark, search button, menu button; the menu is a full-screen
   sheet on `--deep` with the five links set in display type, the search field, the sound toggle with its name, and the
   language switch. The current page is marked in `--route`. Inside a story a 2px route-coloured line along the

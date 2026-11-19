@@ -130,7 +130,7 @@ main:focus { outline: none; }
 
 /* ==== 4. header and the menu sheet ============================================================================ */
 
-.masthead { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: var(--s2); height: var(--head-h);
+.masthead { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: var(--s2); height: var(--head-h); container: head / inline-size;
   padding: 0 max(var(--gutter), (100% - var(--content)) / 2); background: var(--deep); color: var(--on-deep); box-shadow: inset 0 calc(-1 * var(--hair)) 0 var(--line-deep); --focus: var(--route-on-deep); }
 .brand { display: inline-flex; align-items: center; min-height: var(--tap); margin-right: auto; font: 800 1.5rem/1 var(--type); font-stretch: 75%; letter-spacing: -.01em; color: var(--on-deep); text-decoration: none; white-space: nowrap; }
 .masthead svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
@@ -161,8 +161,9 @@ main:focus { outline: none; }
 #sound:hover { background: var(--deep-2); border-color: var(--on-deep-2); }
 #sound[aria-pressed="true"] { background: var(--deep-2); border-color: var(--on-deep-2); }
 
-/* phones and tablets: wordmark, search button, menu button; the menu is a full-screen sheet under the bar */
-@media (max-width: 899.98px) {
+/* a narrow bar (phones, tablets, and larger text: the bar inside its padding in its own type, 52em: a 900px screen at 16px):
+   wordmark, search button, menu button; the menu is a full-screen sheet under the bar */
+@container head (width < 52em) {
   .menu { display: none; }
   .menu.open { position: fixed; inset: var(--head-h) 0 0; z-index: 9; display: flex; flex-direction: column; gap: var(--s6);
     padding: var(--s5) var(--gutter) var(--s8); overflow-y: auto; overscroll-behavior: contain; background: var(--deep);
@@ -182,10 +183,9 @@ main:focus { outline: none; }
   #suggestions a:hover, #suggestions a:focus { background: var(--line-deep); }
   #language, #sound { align-self: flex-start; }
 }
-/* from 900px: everything on one bar */
-@media (min-width: 900px) {
-  .masthead { gap: var(--s5); }
-  .brand { margin-right: 0; }
+/* a wide bar: everything on it */
+@container head (width >= 52em) {
+  .brand { margin-right: var(--s3); }
   .head-button { display: none; }
   .menu { display: flex; flex: 1; align-items: center; gap: var(--s4); height: 100%; }
   .menu nav { display: flex; gap: var(--s1); height: 100%; margin-right: auto; }
