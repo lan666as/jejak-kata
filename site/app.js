@@ -386,7 +386,7 @@ function stage(part, k, of, steer, intro = "") {
     at = j;
     box.dataset.step = j;
     show();
-    if (was >= 0) hear("step", backwards, j ? beaconed(room) : []);
+    if (was >= 0) hear("step", backwards, j ? beaconed(room) : [], j);
     // The caption turns: the one that was leaves a few pixels the way the reader came from, the new one comes in.
     for (const old of caption.querySelectorAll(".turn:not(.out)")) {
       old.classList.add("out");
@@ -1718,7 +1718,7 @@ async function storyPage(slug, scene, step, more) {
   const head = () => masthead.offsetHeight;
   const spot = (k, j) => scrollY + stages[k].node.getBoundingClientRect().top - head() + j * stages[k].node.querySelector(".beat").offsetHeight;
   const glide = (top) => scrollTo({ top, behavior: still() ? "instant" : "smooth" });
-  let aim = null, asked = false, landed = null, sea = null;
+  let aim = null, asked = false, landed = null, sea = null, heardScene = null;
   // Step j of scene k, or past either end of the scene into the one before or after, the cover or the landing.
   function steer(k, j) {
     if (j < 0 && k === 0) return (aim = null), glide(0);
@@ -1739,6 +1739,9 @@ async function storyPage(slug, scene, step, more) {
     if (aim && Math.abs(rects[aim[0]].top - top + aim[1] * beats[aim[0]]) < 2) aim = null;
     const seen = rects.findIndex((r) => r.top <= middle && r.bottom >= middle), shore = landing.getBoundingClientRect().top;
     if (seen >= 0) (last = seen), sea?.(seen, stages[seen].on());
+    // A new scene is heard as the larger gong of its cycle (sound.js): going on, or back from the scene after or the landing.
+    if (seen >= 0 && heardScene !== null && seen !== heardScene) hear("scene", seen, heardScene >= 0 ? seen < heardScene : !!landed);
+    heardScene = seen;
     if (landed === false && shore < middle) hear("land");  // ashore
     landed = shore < middle;
     if (!rendering && !menuOpen()) marks.set(history.state?.id, seen >= 0 ? [seen, stages[seen].on()] : shore <= top ? [-1, top - shore] : null);
@@ -1809,7 +1812,7 @@ async function embedPage(slug, k = "0", j = "0") {
     at = Math.max(0, Math.min(n, at));
     const step = part.steps[Math.max(0, at - 1)], i = figure.labels.indexOf(step.at);
     if (i >= 0) figure.show(i, at ? step.focus : undefined, step.mark);
-    if (at !== +j) hear("step", at < +j, at ? beaconed(room) : []);
+    if (at !== +j) hear("step", at < +j, at ? beaconed(room) : [], at);
     caption.innerHTML = at ? `<p><b>${head(at)}.</b> ${part.steps[at - 1][language]}</p>` : `<p><b>${part[language].title}.</b> ${part[language].text || ""}</p>`;
     count.textContent = at ? `${at} / ${n}` : t("steps_n", n);
     link.href = open(at);
