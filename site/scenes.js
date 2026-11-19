@@ -94,5 +94,8 @@ export async function figureOf(scene, data, language, { wide = true } = {}) {
   throw new Error(`no figure for ${scene.type}`);
 }
 
+/** The words a scene is about: its word, the words its figure draws, those it asks the reader to check. */
+export const sceneWords = (part) => [part.word, ...[part.words, part.with, Array.isArray(part.rows) && part.rows, part.names?.map(([w]) => w), part.pairs?.flat(), part.check].flatMap((l) => l || [])].filter((w) => typeof w === "string");
+
 /** The labels of the rows a step's `focus` names (by key: a word, "*" for all pages, a publisher's address, a share). */
 export const focused = (plate, focus) => focus?.map((key) => plate.rows.find((r) => r.key === key)?.label ?? key);

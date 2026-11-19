@@ -199,10 +199,14 @@ A story keeps its place by step (not by pixels) across a language switch and the
 
 ## Addresses and sharing
 
-- **Addresses.** Every story, main page, play page and word the first page shows has a real path (`cerita/oknum/`),
-  English under `en/`; the rest of a route follows after `#/` (a story's step: `cerita/oknum/#/1/2`, which opens on
-  that step). Routes without a page of their own stay `#/kata/batik`, and every old `#/...` link still works
-  (`site/address.js`). The address bar always shows the address of what is on screen, in its language. Each page is
+- **Addresses.** Every story, main page and play page has a real path (`cerita/oknum/`), English under `en/`, and so
+  has every word the site names by itself (the first page's, the stories', the games', the findings'), the company
+  each of those is named with on its page, and the 200 most frequent (`site/words.js`, written from the data by
+  `tests/site/publish.mjs words`; the deploy fails where it is stale); the rest of a route follows after `#/` (a
+  story's step: `cerita/oknum/#/1/2`, which opens on that step). Any other word stays `#/kata/batik` on the first
+  page's address, so no link leads to a missing page (the deploy crawls every generated page's links), and every old
+  `#/...` link still works (`site/address.js`). A word's share image is its own where the first page shows it, else
+  one for all words. A page's title in a link preview is its title without the site's name. The address bar always shows the address of what is on screen, in its language. Each page is
   called what a search engine shows whole: a title of 50 to 60 characters and a description of 120 to 160, unique,
   in each language (`address.js` picks the first of a few wordings that fits; `tests/site/meta.mjs` holds it to it).
 - **A figure on another site**: `cerita/oknum/embed/#/1/2` frames the plate of scene 1 at step 2 for an iframe, with

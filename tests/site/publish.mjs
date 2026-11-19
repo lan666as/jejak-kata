@@ -13,13 +13,19 @@
 // out of the sitemap, so that it is never found twice. The images are drawn
 // by the app itself in the test browser, from site/ and its data. Deploy runs this every time, so a published page
 // never carries an old title, number or image.
+// A word's page is made for every word the site names by itself (wordsNamed below); their list is site/words.js, so
+// that the app writes the same addresses: `node tests/site/publish.mjs words` writes it from the data, and meta.mjs
+// fails a deploy where it is not what the data says. A word's share image is its own for the words the first page
+// shows, and one for all the others (kata/og.jpg): drawing 3,000 seas would take an hour and 500 MB.
 // node tests/site/publish.mjs icons   Remakes site/icon-*.png (the installed app's icons) from the favicon.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
-import { TEXT, SITE } from "../../site/text.js";
+import { TEXT, SITE, SHOWCASE } from "../../site/text.js";
 import { STORIES } from "../../site/story.js";
-import { address, named, cut, EMBED, PLAY, WORDS, ALIASES } from "../../site/address.js";
+import { address, named, cut, EMBED, PLAY, WORDS, ALIASES, QUIZ_NAMES, GUESS_WORDS } from "../../site/address.js";
+import { PAGED } from "../../site/words.js";
+import { lensFrom, sceneWords } from "../../site/scenes.js";
 
 const REPO = new URL("../../", import.meta.url).pathname, SRC = join(REPO, "site");
 const ROOT = new URL(SITE.url).pathname, LANGUAGES = ["id", "en"], LOCALE = { id: "id_ID", en: "en_GB" };
@@ -36,7 +42,7 @@ const file = (out, parts, lang, name = "index.html") => join(out, decodeURICompo
 const a = (parts, lang, text) => `<a href="${path(parts, lang)}">${text}</a>`;
 
 /** Every route with a page of its own. */
-export const ROUTES = [[], ["cerita"], ...STORIES.map((s) => ["cerita", s.slug]), ["main"], ...PLAY.map((p) => [p]), ["peta"], ["temuan"], ["metode"], ...WORDS.map((w) => ["kata", w])];
+export const ROUTES = [[], ["cerita"], ...STORIES.map((s) => ["cerita", s.slug]), ["main"], ...PLAY.map((p) => [p]), ["peta"], ["temuan"], ["metode"], ...PAGED.map((w) => ["kata", w])];
 const storyOf = ([page, slug]) => page === "cerita" && STORIES.find((s) => s.slug === slug);
 
 // ---- facts: dates from git, a word's company from the data ------------------------------------------------------
@@ -48,7 +54,8 @@ function modified(story) {
     .map(([range, source]) => { try { return git("log", "-1", "--format=%cs", "-L", `${range}:${source}`).split("\n")[0]; } catch { return ""; } });
   return [story.published, ...days].filter((d) => /^\d{4}-\d\d-\d\d$/.test(d)).sort().at(-1);
 }
-const json = async (p) => JSON.parse(await readFile(join(SRC, "data", p), "utf8"));
+const read = new Map();
+const json = (p) => read.get(p) || read.set(p, readFile(join(SRC, "data", p), "utf8").then(JSON.parse)).get(p);
 /** What the data says of a word on the first page's lens: its company in the first and last period it has, and its
  *  largest shift. Nothing where the word is not an entry there. */
 async function company(word) {
@@ -61,7 +68,42 @@ async function company(word) {
   const shifts = e.shift.filter((s) => s !== null);
   return { first: meta.periods[first], last: meta.periods[last], early: names(first), late: names(last), shift: shifts.length ? Math.max(...shifts) : null, flag: meta.flag };
 }
-const list = (lang, words) => new Intl.ListFormat(lang, { type: "conjunction" }).format(words.map((w) => `“${w}”`));
+const list = (lang, words, quote = (w) => `“${w}”`) => new Intl.ListFormat(lang, { type: "conjunction" }).format(words.map(quote));
+
+// ---- the words with a page of their own ----------------------------------------------------------------------------
+
+/** The words the games name on their own pages, as their pages open (app.js: the quiz's names, the guesses' words,
+ *  and the word or name each of the others opens on). */
+const GAMES = { kuis: QUIZ_NAMES, entitas: QUIZ_NAMES, tebak: GUESS_WORDS, menempel: ["tersangka"], redaksi: ["pdip"], lingkaran: ["prabowo"] };
+const FREQUENT = 200;
+/** Every word the site names by itself, by where: the first page's (address.js WORDS), each story's (the words its
+ *  scenes draw and ask to check), the games', the findings' (every source's own ranking, folded ones too); then one
+ *  hop on, the company each of those words is named with on its page (company(): three in its first and three in its
+ *  last year), and the FREQUENT most frequent words of the first page's source. Only words that are an entry of some
+ *  source, so that a word's page has something to show. `all`: the words with a page, in order. */
+export async function wordsNamed() {
+  const lenses = await Promise.all((await json("lenses.json")).map(async (l) => lensFrom(await json(`${l}/meta.json`))));
+  const entry = (w) => lenses.some((l) => l.isEntry(l.index.get(w))), only = (words) => [...new Set(words)].filter(entry);
+  const story = Object.fromEntries(STORIES.map((s) => [s.slug, only(s.scenes.flatMap(sceneWords))]));
+  const games = Object.fromEntries(Object.entries(GAMES).map(([g, words]) => [g, only(words)]));
+  const findings = { swaps: [], went: [], stayed: [] };
+  for (const l of lenses) {
+    const h = await json(`${l.lens}/highlights.json`).catch(() => ({}));
+    findings.swaps.push(...(h.swaps || []).flatMap(([fell, rose]) => [l.words[rose], l.words[fell]]));
+    for (const kind of ["went", "stayed"]) findings[kind].push(...(h.arrivals?.[kind] || []).map(([w]) => l.words[w]));
+  }
+  for (const kind in findings) findings[kind] = only(findings[kind]);
+  const seeds = only([...WORDS, ...Object.values(story).flat(), ...Object.values(games).flat(), ...Object.values(findings).flat()]);
+  const hop = only((await Promise.all(seeds.map(company))).flatMap((c) => (c ? [...c.early, ...c.late] : [])));
+  const main = lenses.find((l) => l.lens === MAIN), frequent = main.words.filter((w, i) => main.isEntry(i)).slice(0, FREQUENT);
+  const all = [...new Set([...seeds, ...hop, ...frequent])].sort((a, b) => a.localeCompare(b, "id"));
+  return { shown: WORDS, story, games, findings, frequent, all };
+}
+/** site/words.js as it should be. */
+export const wordsModule = (all) => `// The words with a page of their own (address.js), from the data: written by \`node tests/site/publish.mjs words\`
+// (wordsNamed there says which), checked by tests/site/meta.mjs. Not to be edited by hand.
+export const PAGED = ${JSON.stringify(all)};
+`;
 /** The years the data covers, from every lens's periods. */
 async function covered() {
   const years = (await Promise.all((await json("lenses.json")).map((l) => json(`${l}/meta.json`)))).flatMap((m) => m.periods.join(" ").match(/\d{4}/g) || []).map(Number);
@@ -75,7 +117,7 @@ function content(parts, lang, facts) {
   const twin = `<p><a href="${path(parts, other)}" hreflang="${other}" lang="${other}">${other === "en" ? "English" : "Bahasa Indonesia"}</a></p>`;
   const storyList = (list) => `<ul>${list.map((s) => `<li>${a(["cerita", s.slug], lang, s[lang].title)}: ${s.key.number[lang] || s.key.number} ${s.key[lang]}. ${s[lang].teaser}</li>`).join("")}</ul>`;
   const games = `<ul>${PLAY.map((p) => `<li>${a([p], lang, T[`play_${p}`])}: ${T[`play_${p}_about`]}</li>`).join("")}</ul>`;
-  const words = (list) => `<ul>${list.map((w) => `<li>${a(["kata", w], lang, w)}</li>`).join("")}</ul>`;
+  const words = (list) => `<ul>${list.map((w) => `<li>${a(["kata", w], lang, w)}</li>`).join("")}</ul>`, named = facts.named;
   const nav = `<nav><ul><li>${a(["cerita"], lang, T.nav_stories)}</li><li>${a(["main"], lang, T.nav_play)}</li><li>${a(["peta"], lang, T.nav_chart)}</li><li>${a(["temuan"], lang, T.nav_findings)}</li><li>${a(["metode"], lang, T.nav_method)}</li></ul></nav>`;
   let body;
   if (story) {
@@ -87,19 +129,21 @@ function content(parts, lang, facts) {
     const next = STORIES[(STORIES.indexOf(story) + 1) % STORIES.length];
     body = `<article><p>${a(["cerita"], lang, T.nav_stories)} · <time datetime="${story.published}">${story.published}</time></p><h1>${w.title}</h1><p>${w.teaser}</p>
       <p><b>${story.key.number[lang] || story.key.number}</b> ${story.key[lang]}</p><p>${w.intro}</p>${scenes}
+      <section><h2>${T.story_words}</h2>${words(named.story[story.slug])}</section>
       <section><h2>${T.limits_title}</h2>${w.limits}</section>
       <p>${T.cite}: ${esc(`${SITE.author} (${story.published.slice(0, 4)}). ${w.title}. ${SITE.name}. ${whole(parts, lang)}`)}</p>
       <p>${T.next_story}: ${a(["cerita", next.slug], lang, next[lang].title)}</p></article>`;
   } else if (page === "kata") {
     const c = facts.company[arg];
-    body = `<article><h1>${esc(arg)}</h1><p>${T.desc_word(arg)}</p>${c ? `<p>${T.word_company(arg, c.first, list(lang, c.early), c.last, list(lang, c.late))}</p>` : ""}
+    const linked = (list_) => list(lang, list_, (w) => `“${a(["kata", w], lang, esc(w))}”`);
+    body = `<article><h1>${esc(arg)}</h1><p>${T.desc_word(arg)}</p>${c ? `<p>${T.word_company(arg, c.first, linked(c.early), c.last, linked(c.late))}</p>` : ""}
       ${c?.shift != null ? `<p>${T.word_shift(c.shift.toLocaleString(lang, { maximumFractionDigits: 1 }), c.shift >= c.flag)}</p>` : ""}
-      <h2>${T.word_more}</h2>${words(WORDS.filter((w) => w !== arg))}</article>`;
+      <h2>${T.word_more}</h2>${words(SHOWCASE.filter((w) => w !== arg))}</article>`;
   } else if (page === "cerita") body = `<h1>${T.nav_stories}</h1><p>${T.stories_lede}</p>${storyList(STORIES)}`;
   else if (page === "main") body = `<h1>${T.nav_play}</h1><p>${T.play_lede}</p>${games}`;
-  else if (PLAY.includes(page)) body = `<h1>${T[`play_${page}`]}</h1><p>${T[`play_${page}_about`]}</p><p>${a(["main"], lang, T.all_play_n(PLAY.length))}</p>`;
-  else if (page === "peta") body = `<h1>${T.nav_chart}</h1><p>${T.desc_chart}</p><p>${T.hero_lede}</p>${words(WORDS)}`;
-  else if (page === "temuan") body = `<h1>${T.nav_findings}</h1><p>${T.findings_lede}</p>`;
+  else if (PLAY.includes(page)) body = `<h1>${T[`play_${page}`]}</h1><p>${T[`play_${page}_about`]}</p>${named.games[page]?.length ? words(named.games[page]) : ""}<p>${a(["main"], lang, T.all_play_n(PLAY.length))}</p>`;
+  else if (page === "peta") body = `<h1>${T.nav_chart}</h1><p>${T.desc_chart}</p><p>${T.hero_lede}</p>${words(WORDS)}<h2>${T.frequent_words}</h2>${words(named.frequent)}`;
+  else if (page === "temuan") body = `<h1>${T.nav_findings}</h1><p>${T.findings_lede}</p>${["swaps", "went", "stayed"].map((k) => `<h2>${T[`${k}_title`]}</h2>${words(named.findings[k])}`).join("")}`;
   else if (page === "metode") body = `<h1>${T.method_title}</h1><p>${T.method_kicker}</p>${T.method}${T.caveats}`;
   else body = `<h1>${T.title}</h1><p>${T.hero_lede}</p><h2>${T.nav_stories}</h2>${storyList(STORIES)}<h2>${T.nav_play}</h2>${games}<h2>${T.word_more}</h2>${words(WORDS)}`;
   return `<div class="prerender">${body}${nav}${twin}${T.footer.replace(/href="#\/([a-z]+)"/g, (_, to) => `href="${path([to], lang)}"`)}</div>`;
@@ -112,16 +156,19 @@ function card(parts, lang, facts) {
   const T = TEXT[lang], [page, arg] = parts, story = storyOf(parts), c = page === "kata" && facts.company[arg];
   if (!page) return { home: true, alt: T.card_alt_home };
   if (story) return { kicker: T.story, key: story.key.number[lang] || story.key.number, label: story.key[lang], title: story[lang].title };
+  if (page === "kata" && !WORDS.includes(arg)) return { kicker: T.word, title: T.title, line: T.hero_lede, shared: true };
   if (page === "kata") return { kicker: T.word, title: arg, line: c ? T.word_company(arg, c.first, list(lang, c.early), c.last, list(lang, c.late)) : T.desc_word(arg) };
   const title = { cerita: T.nav_stories, main: T.nav_play, peta: T.nav_chart, temuan: T.nav_findings, metode: T.method_title }[page] || T[`play_${page}`];
   return { kicker: PLAY.includes(page) ? T.nav_play : SITE.name, title, line: named(parts, lang).description };
 }
+/** Where a route's share image is, relative to the site's root: its own, or the one all words without their own share. */
+const imageOf = (parts, lang) => (parts[0] === "kata" && !WORDS.includes(parts[1]) ? `${lang === "en" ? "en/" : ""}kata/og.jpg` : address(parts, lang) + "og.jpg");
 const altOf = (c) => c.alt || cut([c.kicker, c.key && `${c.key} ${c.label}`, c.title, c.line].filter(Boolean).join(". ").replace(/\.\./g, "."), 400);
 
 function head(parts, lang, facts) {
   const T = TEXT[lang], own = named(parts, lang), story = storyOf(parts), [page] = parts, url = whole(parts, lang);
-  const image = { url: SITE.url + address(parts, lang) + "og.jpg", alt: altOf(card(parts, lang, facts)) };
-  const title = !page ? T.doc_title : story ? story[lang].title : own.title.replace(/ \| Jejak Kata$/, "");  // where the site's name is shown beside it
+  const image = { url: SITE.url + imageOf(parts, lang), alt: altOf(card(parts, lang, facts)) };
+  const title = !page ? T.doc_title : own.shared;  // where the site's name is shown beside it
   const description = story ? cut(story[lang].teaser, 300) : own.description;
   const meta = (key, value, attr = "property") => `<meta ${attr}="${key}" content="${esc(value)}">`;
   const person = { "@type": "Person", name: SITE.author, url: SITE.authorUrl };
@@ -243,8 +290,11 @@ async function images(out, facts) {
       if (jpeg.length <= MOST || quality < 50) return await writeFile(to, jpeg), sizes.push([to.slice(out.length), jpeg.length]);
     }
   };
+  const drawn = new Set();
   for (const parts of ROUTES) for (const lang of LANGUAGES) {
-    const c = card(parts, lang, facts), to = file(out, parts, lang, "og.jpg");
+    const c = card(parts, lang, facts), to = join(out, decodeURIComponent(imageOf(parts, lang)));
+    if (drawn.has(to)) continue;
+    drawn.add(to);
     if (c.home) {  // the first page's hero as it stands once its first route has sailed (the image people know)
       const p = await browser.newPage({ viewport: { width: W, height: H } });
       await p.addInitScript((l) => localStorage.setItem("language", l), lang);
@@ -257,7 +307,7 @@ async function images(out, facts) {
       await p.close();
       continue;
     }
-    const background = await (storyOf(parts) ? sea(`#/cerita/${parts[1]}`, ".cover.lit") : parts[0] === "kata" ? sea(`#/kata/${encodeURIComponent(parts[1])}`, ".page-head.lit") : sea("#/", ".hero .chart[data-route]"));
+    const background = await (storyOf(parts) ? sea(`#/cerita/${parts[1]}`, ".cover.lit") : parts[0] === "kata" && !c.shared ? sea(`#/kata/${encodeURIComponent(parts[1])}`, ".page-head.lit") : sea("#/", ".hero .chart[data-route]"));
     const p = await browser.newPage({ viewport: { width: W, height: H } });
     await p.route(base + "card.html", (r) => r.fulfill({ contentType: "text/html", body: cardPage(c, background, lang) }));
     await p.goto(base + "card.html");
@@ -291,8 +341,9 @@ async function icons() {
 
 export async function publish(out, { drawn = true } = {}) {
   const template = await readFile(join(SRC, "index.html"), "utf8");
-  const facts = { modified: Object.fromEntries(STORIES.map((s) => [s.slug, modified(s)])), company: {}, years: await covered() };
-  for (const w of WORDS) facts.company[w] = await company(w);
+  const facts = { modified: Object.fromEntries(STORIES.map((s) => [s.slug, modified(s)])), company: {}, years: await covered(), named: await wordsNamed() };
+  if (facts.named.all.join("\n") !== PAGED.join("\n")) throw new Error("site/words.js is not what the data says: node tests/site/publish.mjs words");
+  for (const w of PAGED) facts.company[w] = await company(w);
   const write = async (to, text) => (await mkdir(dirname(to), { recursive: true }), writeFile(to, text));
   for (const parts of ROUTES) for (const lang of LANGUAGES) await write(file(out, parts, lang), page(template, parts, lang, facts));
   for (const story of STORIES) for (const lang of LANGUAGES) await write(file(out, ["cerita", story.slug, EMBED], lang), page(template, ["cerita", story.slug], lang, facts));
@@ -311,11 +362,16 @@ export async function publish(out, { drawn = true } = {}) {
 if (process.argv[1] === new URL(import.meta.url).pathname) {
   const [out, flag] = process.argv.slice(2);
   if (out === "icons") await icons();
+  else if (out === "words") {
+    const { all } = await wordsNamed();
+    await writeFile(join(SRC, "words.js"), wordsModule(all));
+    console.log(`${all.length} words with a page of their own in site/words.js`);
+  }
   else if (!out) (console.error("node tests/site/publish.mjs <out> [--no-images] | icons"), process.exit(2));
   else {
     const sizes = await publish(out, { drawn: flag !== "--no-images" });
     const kb = sizes.map(([, n]) => n / 1000);
-    console.log(`${ROUTES.length * 2} pages, ${sizes.length} images${sizes.length ? ` (${Math.round(Math.min(...kb))}–${Math.round(Math.max(...kb))} kB)` : ""} in ${out}`);
+    console.log(`${ROUTES.length * 2} pages (${PAGED.length * 2} of words), ${sizes.length} images${sizes.length ? ` (${Math.round(Math.min(...kb))}–${Math.round(Math.max(...kb))} kB)` : ""} in ${out}`);
   }
   process.exit(0);
 }

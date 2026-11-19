@@ -5,16 +5,20 @@
 // and a description of 120 to 160, each unique), its JSON-LD (the properties
 // Google requires of Article, BreadcrumbList and Dataset), its share image (JPEG, 1200x630, under 300 kB), canonical
 // and language twins that answer each other, unique titles and descriptions, its text, that every page is reached by
-// following links from the first; parses the sitemap and the feeds; and opens every page in the browser, where the
-// app must take it over at the right route and language without the page moving.
+// following links from the first; that every address a generated page links to inside the site is a file that is
+// there (a crawl of the whole tree, every <a> and <link>); that site/words.js is what the data says (publish.mjs
+// wordsNamed); parses the sitemap and the feeds; and opens every page in the browser, where the app must take it over
+// at the right route and language without the page moving (of the words' pages, those the first page shows and every
+// 50th of the rest: each is the same page with another word, and the 3,500 would take two hours).
 import { createServer } from "node:http";
-import { readFile, stat, mkdtemp, rm } from "node:fs/promises";
+import { readFile, readdir, stat, mkdtemp, rm } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { chromium } from "playwright-core";
 import { SITE, TEXT } from "../../site/text.js";
-import { address, named, TITLE, DESCRIPTION } from "../../site/address.js";
-import { publish, ROUTES } from "./publish.mjs";
+import { address, named, TITLE, DESCRIPTION, WORDS } from "../../site/address.js";
+import { PAGED } from "../../site/words.js";
+import { publish, ROUTES, wordsNamed } from "./publish.mjs";
 
 const SRC = new URL("../../site/", import.meta.url).pathname, ROOT = new URL(SITE.url).pathname, LANGUAGES = ["id", "en"];
 let built = process.argv[2], temporary = false;
@@ -116,6 +120,30 @@ while (queue.length) for (const href of (pages.get(queue.shift()) || "").match(/
 }
 check(reached.size === pages.size, `${pages.size - reached.size} pages not reached by links: ${[...pages.keys()].filter((u) => !reached.has(u)).slice(0, 5)}`);
 
+// The words with a page are the words the data says (site/words.js is written from it, not by hand).
+check((await wordsNamed()).all.join("\n") === PAGED.join("\n"), "site/words.js is not what the data says: node tests/site/publish.mjs words");
+
+// Every address inside the site that a generated page links to is there: a file, or a folder with its index.html.
+const walk = async (dir) => (await readdir(dir, { withFileTypes: true })).flatMap((d) => (d.isDirectory() ? [] : d.name.endsWith(".html") ? [join(dir, d.name)] : []))
+  .concat(...await Promise.all((await readdir(dir, { withFileTypes: true })).filter((d) => d.isDirectory() && d.name !== "data").map((d) => walk(join(dir, d.name)))));
+const crawled = { pages: 0, links: 0, addresses: new Set() };
+for (const at of await walk(built)) {
+  const html = await readFile(at, "utf8");
+  crawled.pages++;
+  for (const tag of html.match(/<(a|link) [^>]*>/g) || []) {
+    const to = attr(tag, "href");
+    if (!to || /^(mailto|tel|javascript):/.test(to)) continue;
+    const url = new URL(to, SITE.url);
+    if (url.origin !== new URL(SITE.url).origin || !url.pathname.startsWith(ROOT)) continue;
+    crawled.links++;
+    const p = decodeURIComponent(url.pathname).slice(ROOT.length);
+    if (crawled.addresses.has(p)) continue;
+    crawled.addresses.add(p);
+    const hit = await found(p), file = hit?.folder ? await found(join(p, "index.html")) : hit;
+    check(file && (!hit.folder || p === "" || p.endsWith("/")), `${at.slice(built.length)} links to /${p}, which is not there`);
+  }
+}
+
 // The sitemap and the feeds parse, and say the same addresses.
 const browser = await chromium.launch(), page = await browser.newPage();
 const parse = (xml) => page.evaluate((x) => { const d = new DOMParser().parseFromString(x, "application/xml"); return d.querySelector("parsererror") ? null : d.documentElement.outerHTML; }, xml);
@@ -143,7 +171,8 @@ check(lost.status === 404 && lostHtml.includes("noindex") && lostHtml.includes("
 // ---- as a reader sees it: the app takes each page over --------------------------------------------------------------
 
 const opened = await browser.newContext({ viewport: { width: 1200, height: 800 } });
-for (const parts of ROUTES) for (const lang of LANGUAGES) {
+const others = ROUTES.filter((r) => r[0] === "kata" && !WORDS.includes(r[1]));
+for (const parts of ROUTES.filter((r) => !others.includes(r) || others.indexOf(r) % 50 === 0)) for (const lang of LANGUAGES) {
   const url = SITE.url + address(parts, lang), p = await opened.newPage(), errors = [];
   p.on("pageerror", (e) => errors.push(e.message));
   await p.addInitScript(() => { window.__shift = 0; new PerformanceObserver((l) => l.getEntries().forEach((e) => !e.hadRecentInput && (__shift += e.value))).observe({ type: "layout-shift", buffered: true }); });
@@ -187,7 +216,8 @@ server.close();
 const kb = report.map((r) => r.image / 1000), lengths = report.map((r) => r.title.length);
 console.log(`${report.length} pages: titles ${Math.min(...lengths)}–${Math.max(...lengths)} characters, images ${Math.round(Math.min(...kb))}–${Math.round(Math.max(...kb))} kB, text ${Math.min(...report.map((r) => r.text))}–${Math.max(...report.map((r) => r.text))} bytes`);
 for (const r of report.filter((r) => /^(id|en) \/((en\/)?|(en\/)?cerita\/oknum\/)$/.test(r.name))) console.log(`  ${r.name}: "${r.title}" | ${r.description} | text ${r.text} B, image ${Math.round(r.image / 1000)} kB`);
-for (const p of problems) console.log(`FAIL ${p}`);
+console.log(`crawl: ${crawled.pages} generated pages, ${crawled.links} links inside the site to ${crawled.addresses.size} addresses, each there`);
+for (const p of problems.slice(0, 60)) console.log(`FAIL ${p}`);
 console.log(failures ? `${failures} problems` : "ok   every page as crawlers and readers see it");
 if (temporary) await rm(built, { recursive: true });
 process.exit(failures ? 1 : 0);

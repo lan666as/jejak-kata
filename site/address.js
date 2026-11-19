@@ -6,20 +6,28 @@
 // of its own is all after "#/" ("#/kata/batik"), as every address was before the pages existed; those old addresses
 // still lead to their route.
 import { STORIES, SHOWCASE, FEATURED, TEXT } from "./text.js";
+import { PAGED } from "./words.js";
 
 /** Every page of the app, as the first part of a route. */
 export const PAGES = ["cerita", "kata", "potret", "peta", "balap", "main", "kuis", "tebak", "menempel", "pasang", "redaksi", "lingkaran", "tahun", "temuan", "bergeser", "entitas", "metode"];
 /** Other names a page is reached by, as the menu calls it ("Mainan", "Cara"): each leads to its page, whose address
  *  stays its own (the app writes it in the address bar; the generated page names it as canonical). */
 export const ALIASES = { mainan: "main", cara: "metode" };
-/** The words that have a page of their own: those the first page shows. */
+/** The words the first page shows. */
 export const WORDS = [...new Set([...SHOWCASE, ...FEATURED])];
+/** The names the play pages ask about, and the words "guess the number" asks about. */
+export const QUIZ_NAMES = ["jokowi", "prabowo", "ahok", "anies baswedan", "gibran"];
+export const GUESS_WORDS = ["tersangka", "korupsi", "viral", "kritik", "survei", "istri", "anak", "maaf", "mahasiswa", "video", "keluarga", "rakyat", "janji", "sidang"];
+/** The words that have a page of their own: every word the site names by itself, its company one hop on, and the
+ *  most frequent (site/words.js, written from the data by `node tests/site/publish.mjs words`, which says the rule). Any
+ *  other word is reached at "#/kata/<word>" on the first page's address, so no link leads to a missing page. */
+const HAS_PAGE = new Set(PAGED);
 
 /** How many leading parts of a route have a page of their own: a story's frame for other sites 3 (`cerita/<slug>/embed`,
  *  its scene and step after "#/"), a story or a shown word 2, a page that needs no word 1, the first page 0, anything
  *  else none (-1). */
 export const paged = ([page, arg, more]) =>
-  !page ? 0 : page === "cerita" && STORIES.some((s) => s.slug === arg) ? (more === EMBED ? 3 : 2) : page === "kata" ? (WORDS.includes(arg) ? 2 : -1) : page === "potret" ? -1 : PAGES.includes(page) ? 1 : -1;
+  !page ? 0 : page === "cerita" && STORIES.some((s) => s.slug === arg) ? (more === EMBED ? 3 : 2) : page === "kata" ? (HAS_PAGE.has(arg) ? 2 : -1) : page === "potret" ? -1 : PAGES.includes(page) ? 1 : -1;
 /** The part of a story's address that frames one of its figures for another site; and the story's own route, which
  *  such a frame names as its canonical address. */
 export const EMBED = "embed";
@@ -60,8 +68,14 @@ const fit = (titles) => [].concat(titles).map((x) => [x, x.length < TITLE[0] ? T
 const describe = (...said) => cut(said.filter(Boolean).join(" "), DESCRIPTION[1], DESCRIPTION[0]);
 
 /** The title and description a route is found and shared by, written for someone searching (the site's name last),
- *  in a language; undefined for a route that has none of its own. */
-export function named([page, arg], language) {
+ *  in a language, and the title as a link preview shows it (`shared`: the same title without the site's name, which
+ *  the preview names on its own line); undefined for a route that has none of its own. A story's title is its own
+ *  title with words after it, never before, so the window and the preview begin alike. */
+export function named(parts, language) {
+  const own = words(parts, language);
+  return own && { ...own, shared: own.title.replace(/ \| Jejak Kata$/, "") };
+}
+function words([page, arg], language) {
   const T = TEXT[language], game = PLAY.includes(page);
   if (page === "cerita" && arg) {
     const story = STORIES.find((s) => s.slug === arg);

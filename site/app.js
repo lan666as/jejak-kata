@@ -8,9 +8,9 @@
 
 import { seaChart } from "./chart.js";
 import { TEXT, LENS_TEXT, NOTES, GLOSS, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
-import { address, routeOf, named, canonical, EMBED, PAGES, PLAY } from "./address.js";
+import { address, routeOf, named, canonical, EMBED, PAGES, PLAY, QUIZ_NAMES, GUESS_WORDS } from "./address.js";
 import { board, measure } from "./labels.js";
-import { figureOf, focused, lensFrom, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
+import { figureOf, focused, lensFrom, sceneWords, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
 
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
 // cold on a phone, does without them. `plating()` resolves once these names are there.
@@ -243,10 +243,6 @@ const fromPlay = () => ({ kicker: t("nav_play"), to: href("main") });
 // What the sea behind each family of pages shows (shore, `words`): only the routes of words the page is about.
 /** The words of the first screen that moved most, among its frequent ones: for the pages about change. */
 const MOVED = (first) => first.words.map((_, k) => k).filter((k) => k < 800 && first.moved[k] !== null).sort((a, b) => first.moved[b] - first.moved[a]).map((k) => first.names[k]);
-/** The names the play pages ask about. */
-const QUIZ_NAMES = ["jokowi", "prabowo", "ahok", "anies baswedan", "gibran"];
-/** The words "guess the number" asks about. */
-const GUESS_WORDS = ["tersangka", "korupsi", "viral", "kritik", "survei", "istri", "anak", "maaf", "mahasiswa", "video", "keluarga", "rakyat", "janji", "sidang"];
 /** The words these stories ask the reader to check, one list per story (story.js, fetched for it). */
 const storyWords = (list) => import("./story.js").then((m) => list.map((s) => m.STORIES.find((x) => x.slug === s.slug)?.scenes.flatMap((part) => part.check || []) || []));
 
@@ -1659,7 +1655,6 @@ function storiesPage() {
 
 /** The words a scene is about, as story.js names them: its word, its rows, lines, pairs or names, then those it asks
  *  the reader to check. */
-const sceneWords = (part) => [part.word, ...[part.words, part.with, Array.isArray(part.rows) && part.rows, part.names?.map(([w]) => w), part.pairs?.flat(), part.check].flatMap((l) => l || [])].filter((w) => typeof w === "string");
 const FLIGHT = 600;  // ms the story's sea takes from one step's view to the next
 /**
  * The sea under a story's stages (DESIGN.md, "The story"): one held sea behind every stage's figure, whose camera
