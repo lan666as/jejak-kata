@@ -220,10 +220,11 @@ A story keeps its place by step (not by pixels) across a language switch and the
 
 - **Home**: hero on the deep, full height: the map of words as a night sea with one route sailed (below); headline
   in display type; one field ("Ketik kata, lihat rutenya") and a few chips, their label above them from 900px (on a
-  phone a row that scrolls and fades at its right edge). What the reader needs in the first ten seconds is on the
+  phone a row that scrolls and fades at its right edge, about 30px of the next chip peeking out under the fade). What the reader needs in the first ten seconds is on the
   sea: a legend of two glyphs (a light and its height, a route and its ports) in its sky; once the first route has
   sailed, two notes drawn like marginalia (from the light that moved most in the open water a line down to the water,
-  "higher: moved more"; from the route's middle a leader, "jokowi, 2012–2024: a port each year"), which fade when
+  "higher: moved more"; from the route's middle a leader, "jokowi, 2012–2024: a port each year", on two lines where
+  one would pass the gutter), which fade when
   the reader picks a word; the year as a marker that counts as the ship sails, over a line from the first year to the
   last; and at the foot of the first screen the dive signposted ("Scroll: the sea becomes the chart"). Under the field,
   the word sailing and what it is (`GLOSS` in text.js: the names in both languages, the common words in English); the
@@ -336,7 +337,8 @@ text has been painted. What is on screen is the data and nothing else:
   scrolls the page. By touch, as on a map: one finger moves over the water, two fingers pinch to come nearer and twist
   to turn, two fingers moved up or down together tilt (up lays the sea flatter), and a tap chooses the nearest word
   (within 24px). The sea takes the finger; the page scrolls from the band around it. No name is drawn under the buttons
-  or the year.
+  or the year; the names are what the reader reads here, so they stand at full strength (12px, on a halo of the deep),
+  where a held sea names quietly.
 - **Touch on the hero**: a swipe up or down scrolls the page and a pinch zooms it, as anywhere; a finger moved sideways
   turns the view the few degrees a mouse does and lets it settle back; a tap sails the nearest word.
 - Covers, heads and the footer hold one frame of a sea that is no larger than the chart's first screen: a quiet
