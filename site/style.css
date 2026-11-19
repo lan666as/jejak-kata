@@ -810,6 +810,8 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
   .stage.tall .stage-figure { overflow: hidden; place-items: start center; mask-image: linear-gradient(transparent, #000 var(--above, 0px), #000 calc(100% - var(--below, 0px)), transparent); }
   .stage.tall .stage-figure > * { transform: translateY(calc(-1 * var(--slide, 0px))); }
   .stage.tall .stage-figure .plate svg { max-height: none; }
+  /* flowing, the deep stands behind the figure's whole room, its faded edges too: a card read on passes under it unseen */
+  .scenes .scene.flow .stage { background: linear-gradient(var(--deep) calc(var(--fig) + 2 * var(--s3)), transparent 0); }
 }
 .stage-side { grid-area: side; display: flex; flex-direction: column; gap: var(--s2); min-height: 0; }
 .stage-meta { display: flex; justify-content: space-between; gap: var(--s3); max-width: none; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); font-weight: 600; color: var(--on-deep-2); font-variant-numeric: tabular-nums; }
@@ -854,7 +856,7 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .scene.flow .said p { font-size: var(--t-body); line-height: var(--l-body); }
 .scene.flow .said .head { font-size: var(--t-h3); line-height: var(--l-h3); }
 .scene.flow .said .title { font-size: var(--t-h2); line-height: var(--l-h2); }
-.scene.flow :is(.stage-meta, .stage-nav) { background: var(--deep); box-shadow: 0 0 0 var(--s2) var(--deep); }
+.scene.flow :is(.stage-figure, .stage-meta, .stage-nav) { background: var(--deep); box-shadow: 0 0 0 var(--s2) var(--deep); }  /* (a card read on passes under them, unseen) */
 .scene.flow .beat { height: var(--beat-flow); }
 .scene.flow .beat:last-child { height: calc(var(--stage-h) + var(--said-more) + var(--s1)); }
 .said { position: absolute; top: var(--said-top); left: var(--said-left); width: var(--said-width); pointer-events: auto; }
