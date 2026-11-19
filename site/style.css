@@ -986,7 +986,7 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 @media (min-width: 900px) {
   .hero-text { justify-content: center; }
   .hero-sea::after { background: linear-gradient(to right, var(--deep) 0, var(--deep) calc((100% - var(--content)) / 2 + 30rem), color-mix(in srgb, var(--deep) 60%, transparent) calc((100% - var(--content)) / 2 + 40rem), transparent calc((100% - var(--content)) / 2 + 50rem)); }
-  .hero-text { width: min(46rem, 58%); padding: var(--s8) 0 var(--s8) max(var(--gutter), (100% - var(--content)) / 2); }
+  .hero-text { width: min(46rem, 58%); padding: var(--s8) 0 var(--s7) max(var(--gutter), (100% - var(--content)) / 2); }  /* (less below: room for the sound note under the status line, the hero one screen) */
   .hero h1 { margin-bottom: var(--s5); font-size: clamp(4rem, 7.4vw, 7rem); }
   .hero-lede { font-size: var(--t-lede); line-height: var(--l-lede); margin-bottom: var(--s6); }
   .hero .offers { top: calc(100% + var(--s1)); bottom: auto; }
