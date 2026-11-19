@@ -245,6 +245,10 @@ main:focus { outline: none; }
 
 /* the shore: the night sea behind a head on the deep, darker where the text lies; the graticule until it is there */
 .shore-sea { position: absolute; z-index: -1; top: 0; bottom: 0; left: calc(50% - 50vw); width: 100vw; overflow: hidden; pointer-events: none; }
+/* a sea is pointed at, not read: a press and a drag on its water start no selection (the text over it is selected as
+   any text is, from the text) */
+:is(.shore, .shore-sea, .hero-sea, .story-sea) { -webkit-user-select: none; user-select: none; }
+.shore :is(h1, h2, p, li, dl) { -webkit-user-select: text; user-select: text; }
 .shore-sea > .chart { position: absolute; inset: 0; height: 100%; background: none; border: 0; border-radius: 0; pointer-events: auto; animation: fade calc(var(--d-leg) * 1.5) var(--sail) both; }
 .shore-sea .chart.gl :is(.when, .tally) { display: none; }
 .shore-sea::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, var(--deep) 30%, color-mix(in srgb, var(--deep) 80%, transparent) 55%, color-mix(in srgb, var(--deep) 58%, transparent)); }  /* on a phone the title lies over the sea: the lights stay dim behind it */
