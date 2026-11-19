@@ -117,7 +117,7 @@ b, strong { font-weight: 700; }
 @media (prefers-reduced-motion: no-preference) { .skeleton { animation: breathe 2.4s var(--sail) infinite; } }
 .failed { max-width: var(--measure); margin: var(--s6) 0; padding: var(--s5); background: var(--chart-2); border: var(--hair) solid var(--line-2); border-radius: var(--r2); }
 .failed p { margin: 0 0 var(--s4); }
-.stage-figure .failed { align-self: center; margin: 0; color: var(--on-deep); background: var(--deep-2); border-color: var(--line-deep); }
+.stage-figure .failed { align-self: start; margin: 0; color: var(--on-deep); background: var(--deep-2); border-color: var(--line-deep); } /* at the figure's top: a phone's opening rises over its foot */
 details { margin: var(--s5) 0; }
 summary { min-height: var(--tap); display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--ink); }
 
