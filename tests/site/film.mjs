@@ -1,4 +1,4 @@
-// node tests/site/film.mjs <site url> <out dir> [desktop|phone] [--frames] [--seconds N]   The site presented to a jury,
+// node tests/site/film.mjs <site url> <out dir> [desktop|phone] [--frames] [--seconds N] [--from PART]   The site presented to a jury,
 // as a person would show it: at 1440x900 with a mouse, and at 390x844 by touch. In order: the arrival on the first page
 // (the sea lights up, the first route sails, the notes say what a light and a route are); a word typed and sailed; the
 // dive, the sea turning into the chart; a story opened from its card (the cover, several steps, the landing); the map
@@ -14,7 +14,8 @@
 //   (HeadlessExperimental.beginFrame), so the film does not depend on how fast the machine is. 1440x900 at 2x and
 //   390x844 at 3x; the frames go to ffmpeg (H.264, CRF 16, yuv420p) as <out>/film-<name>.mp4. ffmpeg is looked for in
 //   $FFMPEG, then on the PATH, then in ~/.cache/ffmpeg-static; without it the frames are written to <out>/<name>/ as PNG.
-//   --seconds N stops each film after N seconds (to check a setup). The shell is $HEADLESS_SHELL or Playwright's own
+//   --seconds N stops each film after N seconds (to check a setup); --from PART (word, dive, story, map, page, share)
+//   starts there, the parts before it passed through without pausing (to check one part). The shell is $HEADLESS_SHELL or Playwright's own
 //   (npx playwright install chromium-headless-shell).
 import { mkdirSync, renameSync, readdirSync, existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -22,7 +23,7 @@ import { homedir } from "node:os";
 import { spawn, spawnSync } from "node:child_process";
 
 const args = process.argv.slice(2), flag = (name) => args.includes(name), value = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined);
-const [url, out = "film", only] = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--seconds");
+const [url, out = "film", only] = args.filter((a, i) => !a.startsWith("--") && !["--seconds", "--from"].includes(args[i - 1]));
 if (!url) (console.error("node tests/site/film.mjs <site url> <out dir> [desktop|phone] [--frames] [--seconds N]"), process.exit(2));
 mkdirSync(out, { recursive: true });
 const FPS = 60, FRAME = 1000 / FPS, LIMIT = value("--seconds") ? +value("--seconds") * FPS : Infinity;
@@ -87,14 +88,18 @@ function presenter(d, touch) {
 
 /** The choreography, the same for both ways of recording. */
 async function show(name, d, viewport, touch) {
+  const from = value("--from");
+  let on = !from;
+  const part = (key) => (on ||= key === from);  // whether this part is shown, or only passed through (--from)
   const p = presenter(d, touch);
   const nav = async (to) => (touch ? (await p.press("#menu-button", 500), await p.pause(700), await p.press(`#menu nav a[data-to="${to}"]`, 600)) : await p.press(`.masthead nav a[data-to="${to}"]`, 900));
 
   say(`${name}: the arrival`);
   await d.goto(at("#/"));
   await d.until(".hero .chart[data-route]", 60000);
-  await p.pause(5200);  // the words come on, the first route sails, the notes appear
+  if (part("arrival")) await p.pause(5200);  // the words come on, the first route sails, the notes appear
 
+  if (part("word")) {
   say(`${name}: a word typed and sailed`);
   await p.press(".hero .suggest input", 1100);
   await d.type("nusantara", 110);
@@ -103,25 +108,37 @@ async function show(name, d, viewport, touch) {
   await p.pause(5500);
   if (!touch) (await p.glide([viewport.width * 0.78, viewport.height * 0.45], 1600), await p.glide([viewport.width * 0.62, viewport.height * 0.6], 1600));  // the sea leans to the pointer
   else await p.press(".hero-try li:nth-child(3) button", 600), await p.pause(5000);  // by touch, a chip sails another word
+  }
 
   say(`${name}: the dive`);
-  await p.scroll(".featured", 5200);
-  await p.pause(1800);
+  await p.scroll(".featured", part("dive") ? 5200 : 300);
+  if (part("dive")) await p.pause(1800);
 
+  if (part("story")) {
+  // A story whose stages show the sea at its best: each step flies the sea to the parties it names, and the route of
+  // "korupsi" sails to the step's years. Opened from its card on the stories index.
   say(`${name}: a story, from its card`);
-  if (!touch) await p.glide(".featured .story-card", 1200), await p.pause(900);  // the card leans to the pointer
-  await p.press(".featured .story-card", 600);
+  await nav("cerita");
+  await d.until('.story-cards a[href*="kata-korupsi"]', 30000);
+  await p.pause(1500);
+  const card = '.story-cards a[href*="kata-korupsi"]';
+  if (!touch) await p.glide(card, 1200), await p.pause(900);  // the card leans to the pointer
+  await p.press(card, 600);
   await d.until(".cover .chart, .cover.lit", 30000);
   await p.pause(3500);
   await p.press(".begin", 900);
-  await p.pause(2600);
-  for (let i = 0; i < 4; i++) {
-    touch ? await p.fingers([[[viewport.width / 2, viewport.height * 0.7], [viewport.width / 2, viewport.height * 0.35]]], 450) : await d.key("ArrowDown");
+  await p.pause(3000);
+  // A step at a time: by key, or by touch on "Lanjut" (a swipe that scrolls the page never finishes a frame in the
+  // headless shell's begin-frame mode, on any page: --frames could not film it).
+  for (let i = 0; i < 6; i++) {
+    touch ? await p.press("#scene-0 .step.on", 500) : await d.key("ArrowDown");
     await p.pause(2600);
   }
   await p.scroll(".landing", 3000);
   await p.pause(3200);
+  }
 
+  if (part("map")) {
   say(`${name}: the map`);
   await p.scroll(0, 1200);
   await nav("peta");
@@ -149,7 +166,9 @@ async function show(name, d, viewport, touch) {
   await p.pause(3200);
   await p.press('.map-deep .zoom [data-k="above"]', 700);
   await p.pause(2500);
+  }
 
+  if (part("page")) {
   say(`${name}: a word's page`);
   await d.goto(at("#/kata/kpk"));
   await d.until(".lens-section svg", 30000);
@@ -158,13 +177,16 @@ async function show(name, d, viewport, touch) {
   await p.pause(1200);
   await p.press(".lens-section .player button", 900);
   await p.pause(6000);
+  }
 
+  if (part("share")) {
   say(`${name}: the share sheet`);
   await d.goto(at("#/cerita/oknum"));
   await d.until(".cover .share", 30000);
   await p.pause(2500);
   await p.press(".cover .share > summary", 1000);
   await p.pause(3200);
+  }
 }
 
 // ---- as it plays: Playwright's video ---------------------------------------------------------------------------------
