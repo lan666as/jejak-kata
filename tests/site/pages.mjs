@@ -1,6 +1,7 @@
 // node tests/site/pages.mjs   Uses the site like a reader: language switch, back button, shared link, slow line, chart, games, saved image.
 import { base, browser, done } from "./serve.mjs";
 import { PAGED } from "../../site/words.js";
+import { along } from "../../site/deal.js";
 let failures = 0;
 const log = (name, ok, detail) => { failures += !ok; console.log(`${ok ? "ok  " : "FAIL"} ${name}: ${detail}`); };
 const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport: { width: 390, height: 780 }, ...opts }); p.errors = []; p.on("pageerror", (e) => p.errors.push(e.message)); return p; };
@@ -132,13 +133,15 @@ for (const [width, height] of [[360, 740], [768, 1000], [1440, 900]]) { // the m
     log(`${hash} at 390px`, (await p.locator(test).count()) > 0 && !wide && !p.errors.length, `${await p.locator(test).count()} marks; sideways scroll: ${wide}; errors ${p.errors.length}`); }
   await p.goto(base + "#/tebak"); await p.waitForTimeout(2000); let n = 0;
   { // the answer sails from the guess to the truth, its wake drawn between the two
-    await p.locator(".gauge input").fill("90"); await p.locator(".quiz-go").click(); await p.waitForTimeout(1200);
-    const g = await p.evaluate(() => ({ truth: +document.querySelectorAll(".verdict b")[1].textContent.match(/\d+/)[0], clip: getComputedStyle(document.querySelector(".gauge .sail")).clipPath,
+    // (set by keys on the stepped scale: End is 100, a stop down is 95, another 90)
+    await p.locator(".gauge .track").focus(); for (const k of ["End", "ArrowLeft", "ArrowLeft"]) await p.keyboard.press(k); await p.locator(".quiz-go").click(); await p.waitForTimeout(1200);
+    const g = await p.evaluate(() => ({ truth: +document.querySelector(".verdict .numbers").textContent.match(/\d+/g)[1], clip: getComputedStyle(document.querySelector(".gauge .sail")).clipPath,
       moved: Math.round(document.querySelector(".gauge .truth").getBoundingClientRect().left - document.querySelector(".gauge .scale").getBoundingClientRect().left) }));
     const [right, left] = (g.clip.match(/inset\(0px ([\d.]+)% 0px ([\d.]+)%\)/) || []).slice(1).map(Number), [lo, hi] = [Math.min(g.truth, 90), Math.max(g.truth, 90)];
-    log("guess: the answer sails to the truth over its wake", left === lo && 100 - right === hi, `truth ${g.truth}, guess 90; wake ${g.clip}; truth's mark ${g.moved}px along`);
+    const near = (a, b) => Math.abs(a - b) < 0.01;  // (deal.js, along: where a value stands on the stepped scale, in %)
+    log("guess: the answer sails to the truth over its wake", near(left, 100 * along(lo)) && near(100 - right, 100 * along(hi)), `truth ${g.truth}, guess 90; wake ${g.clip}; truth's mark ${g.moved}px along`);
     await p.goto(base + "#/tebak"); await p.waitForTimeout(2000); }
-  for (let i = 0; i < 6; i++) { await p.locator(".gauge input").fill(String(20 + 10 * i)); await p.locator(".quiz-go").click(); await p.waitForTimeout(200); n += await p.locator(".verdict .context").count(); await p.locator(".quiz-go").click(); await p.waitForTimeout(250); }
+  for (let i = 0; i < 6; i++) { await p.locator(".gauge .track").focus(); for (let j = 0; j <= 4 * i; j++) await p.keyboard.press("ArrowRight"); await p.locator(".quiz-go").click(); await p.waitForTimeout(200); n += await p.locator(".verdict .context").count(); await p.locator(".quiz-go").click(); await p.waitForTimeout(250); }
   log("guess the number plays six rounds to a score", (await p.locator(".score").count()) === 1, `${n} verdicts; score: ${await p.locator(".score").innerText().catch(() => "-")}; errors ${p.errors.length}`);
   await p.close(); }
 { // no chart text under 11px on a phone (360 and 430 wide): every figure drawn as SVG, on every page with figures, scrolled
