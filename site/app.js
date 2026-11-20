@@ -2512,7 +2512,7 @@ async function guessPage() {
   VISIT.guess ||= guessDecks(guessPool(s), Math.random);
   view.replaceChildren(pageHead(t("play_tebak"), { ...fromPlay(), lede: t("guess_lede"), sea: { words: GUESS_WORDS } }));
   const { board, box, go, log, tally } = gameBoard();
-  view.append(board);
+  view.append(el(`<p class="game-rule">${t("guess_rule")}</p>`), board);
   let rounds = [], results = [], score = 0, k = 0;
   const sailed = () => ((log.innerHTML = voyageMark(results, rounds.length)), (tally.textContent = `${score} / ${rounds.length * 100}`));
   const ask = () => {
@@ -2547,7 +2547,7 @@ async function guessPage() {
       truth.style.transform = at(q.v);
       sail.style.clipPath = `inset(0 ${100 - hi}% 0 ${lo}%)`;
       const c = q.context;
-      verdict.innerHTML = `<span><b>${escape(t("said_near")[nearness(guess, q.v)])}</b> ${t("guess_truth", q.v, thousands(q.pages), escape(q.name), escape(q.w), won)}</span>
+      verdict.innerHTML = `<span><b>${escape(t("said_near")[nearness(guess, q.v)])}</b> ${escape(t("guess_off", guess, q.v))} ${t("guess_truth", q.v, thousands(q.pages), escape(q.name), escape(q.w), won)}</span>
         <span class="context">${escape(t("guess_context", q.w, c.of, c.hi[0], c.hi[1], c.lo[0], c.lo[1]))} <a href="${href("menempel", q.w, "0", "2", BODIES.includes(q.name) ? "o" : "p")}">${t("guess_more", escape(q.w))}</a></span>`;
       go.textContent = k + 1 === rounds.length ? t("guess_score") : t("next");
       verdict.scrollIntoView({ block: "nearest", behavior: still() ? "auto" : "smooth" });

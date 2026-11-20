@@ -732,6 +732,7 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
   .reveal .draw { stroke-dasharray: 2000; animation: reveal-draw var(--d-leg) var(--sail) both; } .reveal .in { animation: fade var(--d-turn) var(--sail) calc(var(--i, 0) * 45ms + 200ms) both; }
 }
 @keyframes reveal-draw { from { stroke-dashoffset: 2000; } to { stroke-dashoffset: 0; } }
+.game-rule { max-width: var(--measure); margin: 0 0 var(--s3); font-size: var(--t-small); color: var(--ink-2); }
 .next-toy { margin: var(--s4) 0 0; font-weight: 600; }
 .gauge input[type="range"] { height: var(--tap); accent-color: var(--route); cursor: pointer; }
 .gauge .scale { cursor: pointer; touch-action: none; }

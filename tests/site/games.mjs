@@ -11,7 +11,7 @@
 // information only a hover shows.
 import { readFileSync, writeFileSync } from "node:fs";
 import { quizData } from "./quiz-data.mjs";
-import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, seeded, MARGIN, KINDS, ROUNDS, GUESS_ROUNDS, SENSITIVE, OUTLET_NAMES } from "../../site/deal.js";
+import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, seeded, MARGIN, KINDS, ROUNDS, GUESS_ROUNDS, SENSITIVE, OUTLET_NAMES, POINTED, PEOPLE, BODIES } from "../../site/deal.js";
 import { TEXT } from "../../site/text.js";
 
 const FILE = new URL("../../site/data/quiz.json", import.meta.url).pathname, started = Date.now();
@@ -113,6 +113,10 @@ let constant = Array(101).fill(0), played = 0;
     for (const q of game) {
       seen[q.bin].push(q.key);
       for (const t of q.topics) { if (topics.has(t)) gbad.push(`game ${g}: “${t}” twice`); topics.add(t); }
+      // Only a name a reader knows as one person or body (deal.js's list: no bare first name, no common word), and only
+      // a word with a point (POINTED: not "anak", "video").
+      if (!PEOPLE.includes(q.name) && !BODIES.includes(q.name)) gbad.push(`game ${g}: “${q.name}” is not a name a reader knows`);
+      if (!POINTED.includes(q.w)) gbad.push(`game ${g}: “${q.w}” is an everyday word`);
       const i = stick.names.indexOf(q.name);
       if (stick.pages[i][2] < MARGIN.guessPages || (stick.share[q.w][i][2] * stick.pages[i][2]) / 1000 < MARGIN.guessHits) gbad.push(`game ${g}: ${q.key} on too few pages`);
       if (Math.round(stick.share[q.w][i][2] / 10) !== q.v) gbad.push(`game ${g}: ${q.key} is not ${q.v}`);
@@ -131,7 +135,7 @@ log("no one fixed guess wins: the best (always guessing " + at + ") scores under
 const KEYS = ["said_right", "said_wrong", "said_streak", "said_near", "said_rank", "ask_freq", "ask_peak", "ask_resmi", "ask_room", "ask_trend", "trend_up", "trend_down", "trend_same",
   "room_era", "ev_freq", "ev_peak", "ev_room", "ev_trend", "ev_year", "ev_who", "caveat", "quiz_status", "quiz_streak", "quiz_keys", "quiz_plate_all", "guess_context", "next_toy",
   "played_best", "played_once", "quiz_year_ask", "quiz_who_ask", "quiz_tally", "quiz_save", "quiz_log", "quiz_next", "quiz_share", "guess_ask", "guess_truth", "guess_lock", "guess_score",
-  "guess_more", "guess_done", "guess_share", "copy_score", "copied", "again", "next", "nav_quiz", "play_tebak", "play_kuis", "quiz_lede", "guess_lede", "guess_yours"];
+  "guess_more", "guess_done", "guess_rule", "guess_off", "try_label", "guess_share", "copy_score", "copied", "again", "next", "nav_quiz", "play_tebak", "play_kuis", "quiz_lede", "guess_lede", "guess_yours"];
 const missing = ["id", "en"].flatMap((l) => KEYS.filter((k) => TEXT[l][k] === undefined).map((k) => `${l}.${k}`));
 const lengths = ["said_right", "said_wrong", "said_near", "said_rank"].filter((k) => TEXT.id[k]?.length !== TEXT.en[k]?.length);
 log("every string of the games in both languages", !missing.length && !lengths.length, [...missing, ...lengths].join(", "));

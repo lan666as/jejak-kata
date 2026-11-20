@@ -42,6 +42,11 @@ export const SENSITIVE = ["tersangka", "korupsi", "suap", "ditangkap", "ditahan"
   "tambang", "kekerasan", "ham", "etik", "oknum", "marah", "gagal", "polisi", "pengadilan", "sidang", "dilaporkan", "membantah", "klarifikasi",
   // (and, never among the words that tell "who" who it is: the verbs of a case at law)
   "bersalah", "dijerat", "menjerat", "ditetapkan", "dipenjara", "dituntut", "didakwa", "tertangkap", "diadili", "terjerat", "dicopot", "dipecat"];
+/** The words "guess the number" asks about: words that say something about how the news writes about someone (a case,
+ *  a stir, a reproach, a promise, a poll), never an everyday word ("anak", "video", "keluarga" are on a page for any
+ *  reason, and a share of them says nothing). */
+export const POINTED = ["tersangka", "korupsi", "suap", "ditangkap", "diperiksa", "saksi", "divonis", "terdakwa", "mundur", "maaf", "viral", "kritik", "mengkritik", "demo",
+  "hoaks", "janji", "utang", "etik", "oknum", "survei", "elektabilitas", "tegas", "marah", "gagal", "sukses", "rakyat", "sidang", "dilaporkan", "membantah", "klarifikasi"];
 export const OUTLET_NAMES = ["Kompas", "Tempo", "Tribunnews"];
 
 /** The quiz: ten rounds, three easy, four middling, three hard; the kinds in a rhythm, never the same twice running. */
@@ -249,7 +254,7 @@ export function deal(d, rng, P) {
 export function guessPool(s, era = 2) {
   const names = s.names.map((n, i) => i).filter((i) => (PEOPLE.includes(s.names[i]) || BODIES.includes(s.names[i])) && s.pages[i][era] >= MARGIN.guessPages);
   const out = [];
-  for (const w of s.words) {
+  for (const w of s.words.filter((w) => POINTED.includes(w))) {
     const known = names.filter((i) => s.share[w][i][era] !== null && (s.share[w][i][era] * s.pages[i][era]) / 1000 >= MARGIN.guessHits);
     if (known.length < 3) continue;
     const by = [...known].sort((a, b) => s.share[w][b][era] - s.share[w][a][era]), [hi, lo] = [by[0], by.at(-1)];

@@ -364,10 +364,11 @@ its line); once the first route has
   length (a cut with reduced motion). A question that sets a name beside a word carries the caution "sharing a page is
   not being accused" in sight, and never asks it of a word that reads as an accusation (deal.js, `SENSITIVE`): those are
   asked only as "guess the number" asks them. In "guess the number" (six rounds, two each of a low, a middle and a high
-  true value, so that no one guess always pays; points by how far off as a part of the truth) the answer is not simply
+  true value, so that no one guess always pays; only names a reader knows and words with a point, `POINTED`; points by
+  how far off as a part of the truth, said in a line above the board before the first round) the answer is not simply
   shown: its mark sails (`--d-leg`) from the reader's guess to the truth along the scale, drawing its wake in the
   route, so how far off the guess was is a distance one sees travelled (a cut with reduced motion); then a line by how
-  far off, and one of context (who has the most and the least of that word). A tap on the scale sets the guess there;
+  far off, how far in plain numbers, and one of context (who has the most and the least of that word). A tap on the scale sets the guess there;
   the arrows move it.
 - **Method, stories index, other play pages**: the page head pattern, the same cards, fields, chips and tables;
   figures on plates. The method opens with the method on one word the first page sails (`jokowi`, 2013 then 2014), in
