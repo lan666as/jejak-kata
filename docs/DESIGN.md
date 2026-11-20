@@ -402,7 +402,8 @@ phone has none: there they are left out, `sky` in app.js, never on the headline)
   under the table of "Menempel", for its first name: the portrait of each name links on to three newsrooms). A name
   in the circle is a pill with a 44px target. Every name is shown as a name, everywhere an explorer, a game, a card or a
   tip shows it, through the one function (`shown` in deal.js, kind "name" where the page knows it shows a name; the
-  word page's title too): "Fauzi Bowo", "Tripoli", "WNI"; a roman numeral ("III") is not a name and is left out of a
+  word page's and the portrait's titles, a word's company lists, its route plate's names and a race's chips too):
+  "Fauzi Bowo", "Tripoli", "WNI" (the seas' own names on the canvas stay as counted); a roman numeral ("III") is not a name and is left out of a
   list of names. `games.mjs` fails on an explorer without such links, with one that is not as the rest, a row whose link
   is narrower than the row or under 44px on a touch screen, one-line rows of one list of different heights, a second
   link in a row, or a name in lower case. The tide table's colours

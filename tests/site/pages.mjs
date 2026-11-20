@@ -118,7 +118,7 @@ for (const [width, height] of [[360, 740], [768, 1000], [1440, 900]]) { // the m
   log("quiz plays ten rounds to a score", (await p.locator(".score").count()) === 1, `${rounds} rounds; score shown: ${(await p.locator(".score").count()) === 1}; errors ${p.errors.length}`); await p.close(); }
 { // portrait cold
   const p = await fresh(); await p.goto(base + "#/potret/setya%20novanto"); await p.waitForTimeout(3000);
-  log("portrait opens cold", (await p.locator("h1").innerText()).includes("setya"), `${(await p.locator("#view").innerText()).slice(0, 70).replace(/\s+/g, " ")}; errors ${p.errors.length}`); await p.close(); }
+  log("portrait opens cold", (await p.locator("h1").innerText()).toLowerCase().includes("setya"), `${(await p.locator("#view").innerText()).slice(0, 70).replace(/\s+/g, " ")}; errors ${p.errors.length}`); await p.close(); }
 { // chart by keyboard
   const p = await fresh({ viewport: { width: 1200, height: 800 } }); await p.goto(base + "#/peta"); await p.waitForSelector(".chart > canvas"); await p.waitForTimeout(2500);
   await p.keyboard.press("Tab"); for (let i = 0; i < 30 && !(await p.evaluate(() => document.activeElement?.tagName === "CANVAS")); i++) await p.keyboard.press("Tab");

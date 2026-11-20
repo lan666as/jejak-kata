@@ -167,6 +167,8 @@ const TOUCH = () => (matchMedia("(pointer: coarse)").matches ? 44 : undefined);
 const kindIn = (lens, i) => (!lens.articles?.has(i) ? "" : lens.kind(i) === "person" ? "person" : "name");
 /** How an entry of a lens is written wherever it is shown: a name as a name, a word as counted (one rule: toWord's). */
 const sayIn = (lens, i) => (kindIn(lens, i) ? shown(lens.words[i], "name") : lens.words[i]);
+/** An entry of a lens in a list of its company: a link to its page where it has one, written by that one rule. */
+const linkIn = (lens, i) => (lens.isEntry(i) ? `<a href="${href("kata", lens.words[i])}">${escape(sayIn(lens, i))}</a>` : escape(sayIn(lens, i)));
 /** ... and a name of stick.json (a person, "p", or a body). */
 const stuckKind = (s, i) => (s.kinds[i] === "p" ? "person" : "name");
 const number = (x, digits = 1) => x.toLocaleString(language, { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -829,23 +831,23 @@ function pathFigure(lens, path, e) {
   });
   // The islands' names, the nearest company first.
   for (const m of marks) {
-    const word = lens.words[m.id], width = measure(word, `400 13px ${type}`) + 4, side = m.x >= mid.x ? 1 : -1, beside_ = (sd) => (sd > 0 ? m.x + 10 : m.x - 10 - width);
+    const word = sayIn(lens, m.id), width = measure(word, `400 13px ${type}`) + 4, side = m.x >= mid.x ? 1 : -1, beside_ = (sd) => (sd > 0 ? m.x + 10 : m.x - 10 - width);
     const middle = Math.max(2, Math.min(W - 2 - width, m.x - width / 2));
     const spots = [...[side, -side].flatMap((sd) => [0, -16, 16, -32, 32, -48, 48].map((dy) => [beside_(sd), m.y + dy])), ...[-18, 22, -34, 38, -50, 54].map((dy) => [middle, m.y + dy])];
     const box = B.place(spots.map(([lx, ly]) => [lx, ly - 11, lx + width, ly + 4]), word);
     if (box) Object.assign(m, { lx: box[0], ly: box[1] + 11, tie: Math.max(box[0], Math.min(box[2], m.x)) });
   }
-  const near = (late) => marks.filter((m) => m.late === late).map((m) => lens.isEntry(m.id) ? link(lens.words[m.id]) : lens.words[m.id]);
-  const company = (p) => (e?.like[p] || []).map((i) => (lens.isEntry(i) ? link(lens.words[i]) : lens.words[i])).join(", ");
+  const near = (late) => marks.filter((m) => m.late === late).map((m) => linkIn(lens, m.id));
+  const company = (p) => (e?.like[p] || []).map((i) => linkIn(lens, i)).join(", ");
   const node = el(`<div class="path-plate"><div class="legend"><span><i class="early"></i>${t("near_early", lens.periods[steps[0].p])}</span>
     <span><i class="late"></i>${t("near_late", lens.periods[steps.at(-1).p])}</span><span><i class="route-key"></i>${t("path_key")}</span></div>
     <div class="path-body"><svg viewBox="0 0 ${W} ${H}" width="${W}" role="img" aria-label="${t("path")}">
     <defs><marker id="head" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--route)"/></marker><marker id="far" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-3)"/></marker></defs>
-    ${marks.map((m) => `${m.lx === undefined ? "" : `<line class="leader" x1="${m.x}" y1="${m.y}" x2="${m.tie}" y2="${m.ly - 3}"/>`}<circle class="island ${m.late ? "late" : ""}" cx="${m.x}" cy="${m.y}" r="5"><title>${escape(lens.words[m.id])}</title></circle>${m.out[0] || m.out[1] ? `<path class="leader" d="M${m.x + 7 * m.out[0]},${m.y + 7 * m.out[1]}l${8 * m.out[0]},${8 * m.out[1]}" marker-end="url(#far)"/>` : ""}`).join("")}
+    ${marks.map((m) => `${m.lx === undefined ? "" : `<line class="leader" x1="${m.x}" y1="${m.y}" x2="${m.tie}" y2="${m.ly - 3}"/>`}<circle class="island ${m.late ? "late" : ""}" cx="${m.x}" cy="${m.y}" r="5"><title>${escape(sayIn(lens, m.id))}</title></circle>${m.out[0] || m.out[1] ? `<path class="leader" d="M${m.x + 7 * m.out[0]},${m.y + 7 * m.out[1]}l${8 * m.out[0]},${8 * m.out[1]}" marker-end="url(#far)"/>` : ""}`).join("")}
     ${spur}<path class="casing" d="${d}"/><path class="route-line draw" pathLength="1" marker-end="url(#head)" d="${d}"/>
     ${steps.map((s, k) => `<circle class="route-step" data-k="${k}" cx="${s.x}" cy="${s.y}" r="4.5"><title>${lens.periods[s.p]}</title></circle>`).join("")}
     ${years.map((v) => `<text class="route-year" x="${v.tx.toFixed(1)}" y="${v.ty.toFixed(1)}" text-anchor="middle">${v.text}</text>`).join("")}
-    ${marks.filter((m) => m.lx !== undefined).map((m) => `<text class="island-label" data-word="${escape(lens.words[m.id])}" x="${m.lx + 2}" y="${m.ly}">${lens.words[m.id]}</text>`).join("")}
+    ${marks.filter((m) => m.lx !== undefined).map((m) => `<text class="island-label" data-word="${escape(lens.words[m.id])}" x="${m.lx + 2}" y="${m.ly}">${escape(sayIn(lens, m.id))}</text>`).join("")}
     <circle class="ship" r="9" cx="${steps[0].x}" cy="${steps[0].y}"/><text class="when-label" text-anchor="middle"></text>
   </svg>${`<aside class="path-near"><p class="path-year" aria-hidden="true"></p><h3 class="path-now"></h3><p class="path-company"></p>
     <h3><i class="early"></i>${lens.periods[steps[0].p]}</h3><p>${near(false).join(", ")}</p><h3><i class="late"></i>${lens.periods[steps.at(-1).p]}</h3><p>${near(true).join(", ")}</p></aside>`}</div></div>`);
@@ -963,7 +965,7 @@ async function traitBars(lens, word, lexicon) {
   const node = el(`<div class="bars"></div>`);
   const show = (k) => {
     const list = lists[periods[k]], top = list[0][1];
-    node.innerHTML = list.map(([id, s]) => `<span>${lens.isEntry(id) ? link(lens.words[id]) : lens.words[id]}</span><span class="bar" style="width:${(100 * s) / top}%"></span>`).join("");
+    node.innerHTML = list.map(([id, s]) => `<span>${linkIn(lens, id)}</span><span class="bar" style="width:${(100 * s) / top}%"></span>`).join("");
   };
   return { node, labels: periods.map((p) => lens.periods[p]), show };
 }
@@ -982,8 +984,8 @@ async function duel(lens, first, second, lexicon) {
     const rows = [...score].filter(([, s]) => s).sort((x, y) => y[1] - x[1]);
     const most = Math.max(...rows.map(([, s]) => Math.abs(s)));
     const bar = (s, cls) => `<span class="bar ${cls}" style="width:${(110 * Math.abs(s)) / most}px"></span>`;
-    node.innerHTML = `<span class="head left">${first}</span><span></span><span class="head">${second}</span>` + rows
-      .map(([id, s]) => `<span class="left side">${s > 0 ? bar(s, "") : ""}</span><span>${lens.words[id]}</span><span class="side">${s < 0 ? bar(s, "k1") : ""}</span>`).join("");
+    node.innerHTML = `<span class="head left">${escape(sayIn(lens, lens.index.get(first)))}</span><span></span><span class="head">${escape(sayIn(lens, lens.index.get(second)))}</span>` + rows
+      .map(([id, s]) => `<span class="left side">${s > 0 ? bar(s, "") : ""}</span><span>${escape(sayIn(lens, id))}</span><span class="side">${s < 0 ? bar(s, "k1") : ""}</span>`).join("");
   };
   return { node, labels: periods.map((p) => lens.periods[p]), show };
 }
@@ -994,7 +996,7 @@ function split(lens, a, b) {
   const show = (p) => {
     const both = a.with[p].filter((i) => b.with[p].includes(i));
     const column = (title, ids, cls) => `<div><h3>${title}</h3>${words(lens, ids.filter((i) => !both.includes(i) || cls === "both"), null, "")}</div>`;
-    node.innerHTML = column(t("only", lens.words[a.word]), a.with[p]) + column(t("both"), both, "both") + column(t("only", lens.words[b.word]), b.with[p]);
+    node.innerHTML = column(t("only", escape(sayIn(lens, a.word))), a.with[p]) + column(t("both"), both, "both") + column(t("only", escape(sayIn(lens, b.word))), b.with[p]);
   };
   return { node, labels: lens.periods, show };
 }
@@ -1029,13 +1031,13 @@ function words(lens, ids, other, mark) {
   if (!ids.length) return `<p class="sub">–</p>`;
   const there = new Set(other);
   return `<ul class="words">${ids
-    .map((i) => `<li class="${other && !there.has(i) ? mark : ""}">${lens.isEntry(i) ? link(lens.words[i]) : lens.words[i]}</li>`)
+    .map((i) => `<li class="${other && !there.has(i) ? mark : ""}">${linkIn(lens, i)}</li>`)
     .join("")}</ul>`;
 }
 
 /** The company a word gained and lost between two periods, on one line each. */
 function turnover(lens, e, a, b) {
-  const only = (p, q) => e.with[p].filter((i) => !e.with[q].includes(i)).map((i) => lens.words[i]);
+  const only = (p, q) => e.with[p].filter((i) => !e.with[q].includes(i)).map((i) => escape(sayIn(lens, i)));
   const row = (sign, list) => (list.length ? `<span class="${sign}">${list.join(", ")}</span>` : "");
   return row("new", only(b, a)) + row("gone", only(a, b));
 }
@@ -2575,7 +2577,7 @@ async function portraitPage(word) {
   const said = async (lexicon) => ((await saidOf(lens, word, lexicon))?.findLast((list) => list.length) || []).slice(0, 8).map(([id]) => id);
   const [verbs, adjectives] = await Promise.all([said("verbs"), said("adjectives")]);
   view.replaceChildren(
-    pageHead(escape(word), { kicker: t("portrait"), cls: "word-title", lede: t("peak_year", lens.periods[peak], percent(e.share[peak])), sea: wordSea(lens, word) }),
+    pageHead(escape(shown(word, "name")), { kicker: t("portrait"), cls: "word-title", lede: t("peak_year", lens.periods[peak], percent(e.share[peak])), sea: wordSea(lens, word) }),
     frequencyChart(lens, [e], [peak]),
     el(`<div class="pair"><div><h3>${t("verbs")}</h3>${words(lens, verbs)}</div><div><h3>${t("adjectives")}</h3>${words(lens, adjectives)}</div></div>`),
     el(`<h3>${t("most_alike")} (${lens.periods[last]})</h3>`),
