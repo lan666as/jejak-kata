@@ -1,20 +1,30 @@
 // node tests/site/fit.mjs [all] [slug ...]   Every page holds at any size, not at two. Every step of every story, and
 // a page of every other kind, at a spread of screens (small, short and landscape phones, a fold, tablets both ways,
 // laptops, a large screen, and text set larger: the root font at 130% and 200%), with reduced motion so that each
-// look is of the layout settled. Fails on:
+// look is of the layout settled. Each story is walked twice: by scrolling to each step, and by the next button; and
+// once more with every caption 30% longer (injected here into story.js as it is served: story.js is not changed).
+// Fails on:
 // - anything wider than the screen (the page scrolls sideways), or text that stands past either edge of the screen
 //   where nothing scrolls to it (a row of chips that scrolls sideways may run on under its fade);
-// - on a story's stage: a caption cut (its text past its band, or past the screen), a caption under the figure, the
-//   sea's key or the controls; a figure not wholly in its room (title, rows, note: a strip that slides is held to its
-//   window); the stage's step and back buttons under 44px, a tick under 44px tall or 24px wide; and a step that moves
-//   the figure or the caption's band (layout that jumps as one steps);
-// - a chart's title or legend not wholly in view (a strip that pans in its window: its pinned title and legend), a row
-//   cut at the top or foot of a panned strip at rest, a row the step brings forward out of view, a legend that names
-//   hollow rings at the moment where none are drawn; a stacked figure under 240px; a flowing card that goes on under
-//   the controls without its fade and mark.
+// - on a story's stage, at rest, read line by line (the text's own line boxes): a line of the caption cut (part of it
+//   clipped by its band, the header or the screen's edge), a caption faded (a mask or an opacity under 1 on it), a
+//   line under the controls, the sea's key, the figure or the step's meta, or below the controls' top; text of
+//   anything else (the step before, a card) lying on a line of it; and a caption whose text goes on out of sight
+//   without the one way to read the rest, its "Baca selengkapnya" control, wholly on screen, 44px tall and clear of
+//   the text (app.js, stage: clamp). Where the button walk finds that control it presses it: the sheet that opens
+//   must be opaque, clear of the controls, and hold every line of the caption, whole (scrolled to its end where it is
+//   longer than the stage); pressed again, it closes. The controls must be opaque;
+// - a figure not wholly in its room (title, rows, note: a strip that slides is held to its window); the stage's step
+//   and back buttons under 44px, a tick under 44px tall or 24px wide; a step that moves the figure or the caption's
+//   band (layout that jumps as one steps);
+// - a chart's title or legend not wholly in view (a strip that pans: its pinned title and legend), a row cut at the
+//   top or foot of a panned strip at rest, any row the step names (its focus; "*" the row of all pages) out of view
+//   (in the window, or in the rows shown past the gap where the window elides it), any text on a figure under 11px on
+//   screen, a legend that names hollow rings at the moment where none are drawn; a stacked figure under 240px.
 // A look is of the screen as it stands: what it cannot see is a text drawn on a canvas (the seas' names: labels.mjs),
-// a colour, or an overlap between two pieces of text inside one SVG (labels.mjs holds the figures to that).
-// `all` walks every size; by default a representative set that keeps it under about four minutes on two pages.
+// a colour's contrast, or an overlap between two pieces of text inside one SVG (labels.mjs holds the figures to that).
+// `all` walks every size, and the phones at 100%, 130% and 200% with captions as they are and 30% longer; by default
+// a representative set that keeps it under about five minutes on two pages.
 import { base, browser, done } from "./serve.mjs";
 import { STORIES } from "../../site/story.js";
 const args = process.argv.slice(2), every = args[0] === "all" && args.shift(), slugs = args.length ? args : STORIES.map((s) => s.slug);
@@ -22,10 +32,17 @@ const started = Date.now();
 // [width, height, root font %]
 const ALL = [[320, 568], [344, 882], [360, 640], [360, 740], [375, 667], [390, 844], [412, 915], [430, 932], [480, 854], [540, 720], [600, 960], [768, 1024], [820, 1180], [912, 1368],
   [1024, 768], [1180, 820], [1280, 800], [1366, 768], [1440, 900], [1920, 1080], [2560, 1440], [667, 375], [844, 390], [932, 430], [390, 844, 130], [390, 844, 200], [1280, 800, 200]];
-// (the stories, the long part, at five of them: the smallest phone, a phone with larger text, a phone held sideways, a
-// tablet upright and a laptop; the other pages at eight)
-const STORY_SIZES = every ? ALL : [[320, 568], [360, 740], [390, 844, 130], [844, 390], [1366, 768]];
-const PAGE_SIZES = every ? ALL : [...STORY_SIZES, [768, 1024], [1024, 768], [1920, 1080]];
+// The phones (and a tablet) a story's captions are held at, at three text sizes, as they are and 30% longer.
+const PHONES = [[320, 568], [360, 640], [360, 740], [375, 667], [390, 844], [412, 915], [430, 932], [844, 390], [932, 430], [768, 1024]].flatMap(([w, h]) => [100, 130, 200].map((f) => [w, h, f]));
+const key = ([w, h, f = 100]) => `${w}x${h}@${f}`;
+// (by default the stories, the long part, at five of them: the smallest phone, a phone with larger text, a phone held
+// sideways, a tablet upright and a laptop; with the captions 30% longer at three; the other pages at eight)
+const STORY_SIZES = every ? [...new Map([...ALL, ...PHONES].map((s) => [key(s), s])).values()] : [[320, 568], [360, 740], [390, 844, 130], [844, 390], [1366, 768]];
+const LONG_SIZES = every ? [...PHONES] : [[320, 568], [390, 844, 130], [844, 390]];
+const PAGE_SIZES = every ? ALL : [[320, 568], [360, 740], [390, 844, 130], [844, 390], [1366, 768], [768, 1024], [1024, 768], [1920, 1080]];
+// FIT_SIZES=320x568,390x844@130 walks the stories at those sizes only (both ways), and no other page: a quick look.
+const ONLY = process.env.FIT_SIZES?.split(",").map((x) => x.match(/\d+/g).map(Number));
+if (ONLY) STORY_SIZES.splice(0, Infinity, ...ONLY), LONG_SIZES.splice(0, Infinity, ...ONLY), PAGE_SIZES.splice(0, Infinity);
 const OTHERS = ["#/", "#/peta", "#/kata/korupsi", "#/tahun", "#/temuan", "#/metode", "#/main", "#/tebak", "#/kuis", "#/menempel", "#/redaksi", "#/balap", "#/entitas", "#/potret/jokowi", "#/cerita", "#/tidak-ada"];
 
 /** In the page: text and boxes standing past the screen's sides where nothing scrolls to them. */
@@ -43,41 +60,114 @@ const sideways = () => {
   return wrong;
 };
 
+/** In the page: the helpers a look needs, put on window once. */
+const helpers = () => {
+  if (window.__fit) return;
+  const r = (n) => n.getBoundingClientRect();
+  const hit = (a, b) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
+  const seen = (n) => !!n && n.getClientRects().length > 0 && n.checkVisibility({ opacityProperty: true, visibilityProperty: true }) && !n.closest(".hidden");
+  /** The lines of text under `node` as the reader sees them: a box per line (a line's pieces joined). */
+  const lines = (node) => {
+    const boxes = [], walk = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    for (let t = walk.nextNode(); t; t = walk.nextNode()) {
+      if (!t.textContent.trim() || !seen(t.parentElement)) continue;
+      const range = document.createRange();
+      range.selectNodeContents(t);
+      for (const b of range.getClientRects()) if (b.width > 1 && b.height > 1) boxes.push({ top: b.top, bottom: b.bottom, left: b.left, right: b.right, text: t.textContent.trim() });
+    }
+    const rows = [];
+    for (const b of boxes.sort((a, b) => a.top - b.top)) {
+      const row = rows.find((x) => Math.abs((x.top + x.bottom) / 2 - (b.top + b.bottom) / 2) < Math.min(x.bottom - x.top, b.bottom - b.top) / 2);
+      if (row) Object.assign(row, { top: Math.min(row.top, b.top), bottom: Math.max(row.bottom, b.bottom), left: Math.min(row.left, b.left), right: Math.max(row.right, b.right) });
+      else rows.push({ ...b });
+    }
+    return rows;
+  };
+  /** What of the screen a node's text can show in: the screen under the header, cut by every box around it that clips. */
+  const clip = (node) => {
+    const box = { top: document.querySelector(".masthead").getBoundingClientRect().bottom, bottom: innerHeight, left: 0, right: innerWidth };
+    for (let p = node.nodeType === 1 ? node : node.parentElement; p && p !== document.body; p = p.parentElement) {
+      const cs = getComputedStyle(p);
+      if (cs.overflowY === "visible" && cs.overflowX === "visible" && cs.clipPath === "none") continue;
+      const b = r(p);
+      Object.assign(box, { top: Math.max(box.top, b.top), bottom: Math.min(box.bottom, b.bottom), left: Math.max(box.left, b.left), right: Math.min(box.right, b.right) });
+    }
+    return box;
+  };
+  /** A caption's text as it stands: its lines whole in view, cut, or out of sight; what lies on them; whether faded. */
+  const read = (text, stop, others) => {
+    const wrong = [], box = clip(text), all = lines(text), shownLines = [], gone = [];
+    for (const l of all) {
+      const inside = l.top >= box.top - 1 && l.bottom <= box.bottom + 1 && l.left >= box.left - 1 && l.right <= box.right + 1, out = l.bottom <= box.top + 1 || l.top >= box.bottom - 1;
+      if (inside) shownLines.push(l);
+      else if (out) gone.push(l);
+      else wrong.push(`a line of the caption is cut at rest (“${l.text.slice(0, 24)}”, ${Math.round(l.top)}–${Math.round(l.bottom)} in ${Math.round(box.top)}–${Math.round(box.bottom)})`);
+    }
+    for (let p = text; p && p !== stop; p = p.parentElement) {
+      const cs = getComputedStyle(p);
+      if ((cs.maskImage && cs.maskImage !== "none") || (cs.webkitMaskImage && cs.webkitMaskImage !== "none")) { wrong.push("the caption is faded (a mask over it)"); break; }
+      if (+cs.opacity < 1) { wrong.push(`the caption is faded (opacity ${cs.opacity})`); break; }
+    }
+    // Nothing lies on a line: the controls, the sea's key, the figure, the meta, another text.
+    for (const [name, n] of others) if (n && (!n.getClientRects || (seen(n) && n.textContent.trim() !== ""))) {
+      const b = n.getClientRects ? r(n) : n;  // (an element, or the figure's box as it shows)
+      const on = shownLines.find((l) => hit(l, b));
+      if (on) wrong.push(`${name} lies on the caption's text (“${on.text.slice(0, 24)}”)`);
+    }
+    return { wrong, shown: shownLines, gone, box };
+  };
+  /** Text of anything else in the scene that is seen on a line of the caption (the step before, a card, a ghost). */
+  const ghosts = (scene, text, shownLines) => {
+    const out = [];
+    for (const n of scene.querySelectorAll("*")) {
+      if (text.contains(n) || n.contains(text) || ![...n.childNodes].some((c) => c.nodeType === 3 && c.textContent.trim()) || !seen(n)) continue;
+      const box = clip(n), on = lines(n).map((a) => ({ ...a, top: Math.max(a.top, box.top), bottom: Math.min(a.bottom, box.bottom), left: Math.max(a.left, box.left), right: Math.min(a.right, box.right) }))
+        .find((a) => a.bottom - a.top > 2 && a.right - a.left > 2 && shownLines.some((l) => hit(a, l)));
+      if (on) out.push(`text shows through the caption (“${on.text.slice(0, 24)}”)`);
+      if (out.length) break;
+    }
+    return out;
+  };
+  const opaque = (n) => { const c = getComputedStyle(n).backgroundColor.match(/[\d.]+/g); return !!c && (c.length < 4 || +c[3] === 1); };
+  window.__fit = { r, hit, seen, lines, clip, read, ghosts, opaque };
+};
+
 /** In the page: what is wrong on the stage of scene k as it stands at step j. */
 const look = ([k, j]) => {
+  const { r, hit, seen, read, ghosts, opaque } = window.__fit;
   const head = document.querySelector(".masthead").getBoundingClientRect().bottom, H = innerHeight, wrong = [];
-  const stage = document.querySelector(`#scene-${k} .stage`), r = (n) => n.getBoundingClientRect(), hit = (a, b) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
+  const scene = document.getElementById(`scene-${k}`), stage = scene.querySelector(".stage");
   if (+stage.dataset.step !== j) wrong.push(`the stage is at step ${stage.dataset.step}`);
-  const cap = stage.querySelector(".caption"), turn = cap.querySelector(".turn:not(.out)"), c = r(cap), t = turn && r(turn);
+  const cap = stage.querySelector(".caption"), c = r(cap);
   const room = stage.querySelector(".stage-figure"), win = r(room), svg = stage.querySelector(".plate:not(.off) svg"), f = svg && r(svg), tall = stage.classList.contains("tall");
-  const key = stage.querySelector(".sea-key"), nav = stage.querySelector(".stage-nav"), meta = stage.querySelector(".stage-meta");
-  // Captions that flow as cards (app.js, stage: flow): the step's card stands where the band begins, clear of the
-  // figure; the rest of a long one is read by scrolling the page (`more`: how far, checked below).
-  const flow = stage.parentNode.classList.contains("flow"), card = flow && stage.parentNode.querySelectorAll(".beat")[j]?.querySelector(".said");
-  const side = matchMedia("(width >= 900px) or ((orientation: landscape) and (width >= 560px))").matches;  // (app.js, SIDE)
-  const end = r(nav).top - 1, more = card ? Math.max(0, Math.ceil(r(card).bottom - end)) : 0;
-  if (card) {
-    const d = r(card), shown = f && (tall ? win : f);
-    if (Math.abs(d.top - c.top) > 4) wrong.push(`the step's card stands at ${Math.round(d.top)}px, its band at ${Math.round(c.top)}px`);
-    if (shown && hit(d, shown)) wrong.push("the card lies on the figure");
-    if (d.left < -1 || d.right > innerWidth + 1) wrong.push("the card runs past the screen's side");
+  const key = stage.querySelector(".sea-key"), nav = stage.querySelector(".stage-nav"), meta = stage.querySelector(".stage-meta"), more = stage.querySelector(".more-button");
+  // The step's text: its caption on the stage, or where a caption is set apart as a card in its beat, that card.
+  const card = scene.querySelectorAll(".beat")[j]?.querySelector(".said"), text = seen(card) ? card : cap.querySelector(".turn:not(.out)");
+  const shownFig = f && (tall ? win : f);
+  const reading = read(text, stage, [["the controls", nav], ["the sea's key", key], ["the step's meta", meta], ["the figure", shownFig], ["its own control", more]]);
+  wrong.push(...reading.wrong, ...ghosts(scene, text, reading.shown));
+  const navTop = r(nav).top, under = reading.shown.find((l) => l.bottom > navTop + 1);
+  if (under) wrong.push(`a line of the caption stands at or below the controls (“${under.text.slice(0, 24)}”)`);
+  // What is out of sight is reached by the one way: the "read on" control, on screen, a target, clear of the text.
+  const hidden = reading.gone.length ? Math.round(reading.gone.at(-1).bottom - reading.box.bottom) : 0;
+  if (hidden) {
+    const b = more && r(more);
+    if (!seen(more) || !more.textContent.trim()) wrong.push(`the caption goes on out of sight (${hidden}px) with no control to read the rest`);
+    else if (b.top < head - 1 || b.bottom > H + 1 || b.height < 43.5) wrong.push(`the control to read on is not wholly on screen or under 44px (${Math.round(b.top)}–${Math.round(b.bottom)})`);
   }
-  if (t && !flow) {
-    const risen = j === 0 && stage.classList.contains("risen") || j === 0 && getComputedStyle(turn).transform !== "none";
-    if (t.bottom > H + 1 || t.top < head - 1) wrong.push(`the caption runs past the screen (${Math.round(t.top)}–${Math.round(t.bottom)}, screen ${Math.round(head)}–${H})`);
-    if (t.bottom > c.bottom + 9 && !risen && cap.scrollHeight > cap.clientHeight + 1 && !cap.classList.contains("more")) wrong.push("the caption is cut in its band with nothing to say it goes on");
-    if (cap.scrollHeight > cap.clientHeight + 1 && !risen) wrong.push(`the caption scrolls in its band (${cap.scrollHeight - cap.clientHeight}px more)`);
-    for (const [name, n] of [["the sea's key", key], ["the controls", nav]]) if (n && n.getClientRects().length && getComputedStyle(n).visibility !== "hidden" && hit(t, r(n))) wrong.push(`the caption lies under ${name}`);
-    // (an opening may rise over the figure's foot, its note and the site's name, never over its marks)
-    const shown = f && (tall ? win : f), foot = f ? 52 * (f.height / svg.viewBox.baseVal.height) : 0;
-    if (shown && hit(t, shown) && !(risen && t.top >= shown.bottom - foot)) wrong.push("the caption lies on the figure");
-  }
+  for (const b of stage.querySelectorAll(".stage-nav .step")) if (!opaque(b)) wrong.push("a control is not opaque");
+  // A step's text set apart (old: cards in the page's scroll) never stands off its band.
+  if (card && seen(card) && Math.abs(r(card).top - c.top) > 4) wrong.push(`the step's card stands at ${Math.round(r(card).top)}px, its band at ${Math.round(c.top)}px`);
   if (f) {
     const box = tall ? win : f;
     if (box.top < head - 1 || box.bottom > H + 1 || box.left < -1 || box.right > innerWidth + 1) wrong.push(`the figure is not wholly on screen (${[box.top, box.bottom, box.left, box.right].map(Math.round).join(", ")})`);
     if (!tall && (f.top < win.top - 1 || f.bottom > win.bottom + 1)) wrong.push(`the figure is ${Math.round(f.height)}px tall in a room of ${Math.round(win.height)}px`);
     // (the opening's meta rises with it over the figure's foot)
     for (const n of [meta, key, nav]) if (n && n.getClientRects().length && hit(box, r(n)) && getComputedStyle(n).visibility !== "hidden" && !(j === 0 && n === meta && r(n).top >= box.bottom - 52 * (f.height / svg.viewBox.baseVal.height))) wrong.push(`the figure lies under ${n.className}`);
+    // No text on a figure under 11px on screen.
+    // (a plate held to a height keeps its shape inside its box: drawn at the smaller of the two scales)
+    const scale = Math.min(f.width / svg.viewBox.baseVal.width, f.height / svg.viewBox.baseVal.height), small = Math.min(...[...svg.querySelectorAll("text")].filter((t) => t.textContent.trim()).map((t) => parseFloat(getComputedStyle(t).fontSize) * scale));
+    if (small < 10.95) wrong.push(`a label on the figure is ${small.toFixed(1)}px on screen`);
   }
   // The chart's head: a strip that pans shows its title and legend pinned over its window; any other, its own.
   const pin = stage.querySelector(".pinned"), pinned = tall && pin && getComputedStyle(pin).display !== "none";
@@ -85,72 +175,122 @@ const look = ([k, j]) => {
     const top = pinned ? r(pin) : svg.querySelector(".title").getBoundingClientRect(), legendBox = svg.querySelector("circle")?.getBoundingClientRect();
     if (tall && !pinned && svg.dataset.pitch) wrong.push("a strip that pans has no pinned title and legend");
     if (top.top < Math.max(head, win.top) - 1 || top.bottom > win.bottom + 1 || (!pinned && legendBox && (legendBox.top < Math.max(head, win.top) - 1 || legendBox.bottom > win.bottom + 1))) wrong.push(`the chart's title or legend is not wholly in view (${Math.round(top.top)}–${Math.round(top.bottom)}, window ${Math.round(win.top)}–${Math.round(win.bottom)})`);
-    // A strip that pans, at rest: no row cut at the head or the foot of what shows, and the rows the step names in view.
+    // A strip that pans, at rest: no row cut at the head or the foot of what shows, and every row the step names in
+    // view: in the window, or among the rows shown past its gap (`.elided`, app.js stage: the window elides the rows
+    // between two the step names that lie far apart).
     if (pinned && svg.dataset.pitch) {
-      const cut = getComputedStyle(room).getPropertyValue("--cut").trim(), from = r(pin).bottom, to = cut.endsWith("px") ? win.top + parseFloat(cut) : win.bottom;
+      const cut = getComputedStyle(room).getPropertyValue("--cut").trim(), from = r(pin).bottom, gap = stage.querySelector(".elided"), shut = seen(gap) ? r(gap).top : null;
+      const to = shut ?? (cut.endsWith("px") ? win.top + parseFloat(cut) : win.bottom);
       const scale = f.height / svg.viewBox.baseVal.height, half = (+svg.dataset.pitch * scale) / 2;
-      const bands = [...svg.querySelectorAll(".row")].map((g) => { const y = r(g.querySelector("line")).top; return { a: y - half, b: y + half, named: g.style.opacity === "1" }; });
+      const bands = [...svg.querySelectorAll(".row")].map((g, i) => { const y = r(g.querySelector("line")).top; return { i, a: y - half, b: y + half, named: g.style.opacity === "1", label: g.querySelector("text").textContent }; });
       if (bands.some((x) => x.a < from - 1.5 && x.b > from + 1.5 || x.a < to - 1.5 && x.b > to + 1.5)) wrong.push("a row of the panned chart is cut at rest");
-      const named = bands.filter((x) => x.named);
-      if (named.length < bands.length && named.length && named.at(-1).b - named[0].a <= to - from && named.some((x) => x.a < from - 1.5 || x.b > to + 1.5)) wrong.push("a row the step names is out of view");
+      const named = bands.filter((x) => x.named), past = shut === null ? [] : gap.dataset.rows.split("-").map(Number);
+      if (named.length < bands.length) {
+        const out = named.filter((x) => (x.a < from - 1.5 || x.b > to + 1.5) && !(past.length && x.i >= past[0] && x.i <= past[1]));
+        if (out.length) wrong.push(`a row the step names is out of view (${out.map((x) => x.label).join(", ")})`);
+        if (shut !== null && (r(gap).bottom > win.bottom + 1 || r(gap).top < from - 1)) wrong.push("the rows past the gap are not wholly in the window");
+      }
     }
     // Hollow rings are named in the legend only where they are drawn: not at the strip's first moment.
     const rings = svg.querySelector(".rings-key"), first = rings?.textContent.split(": ").at(-1), now = svg.querySelector(".state")?.textContent;
     if (rings && (rings.getAttribute("opacity") !== "0") !== (now !== first)) wrong.push(`the legend's hollow rings ${now === first ? "are named where none are drawn" : "are not named"}`);
+    const side = matchMedia("(width >= 900px) or ((orientation: landscape) and (width >= 560px))").matches;  // (app.js, SIDE)
     if (!side && win.height < 239.5) wrong.push(`the figure's window is ${Math.round(win.height)}px tall`);
   }
-  if (card && r(card).bottom > end + 8 && !stage.classList.contains("more-below")) wrong.push("the card goes on under the controls with no fade or mark");
   for (const b of stage.querySelectorAll(".stage-nav .step")) { const s = r(b); if (s.width < 43.5 || s.height < 43.5) wrong.push(`a step button is ${Math.round(s.width)}x${Math.round(s.height)}px`); }
   const ticks = [...stage.querySelectorAll(".ticks:not(.glance) button")].map(r);  // (a row of ticks too narrow to be targets is a picture: app.js, glance)
   if (ticks.some((s) => s.height < 43.5 || s.width < 23.5)) wrong.push(`a tick is ${Math.round(Math.min(...ticks.map((s) => s.width)))}x${Math.round(Math.min(...ticks.map((s) => s.height)))}px`);
-  return { wrong, more, at: [Math.round(win.top), Math.round(win.height), Math.round(c.top), Math.round(c.height)].join(",") };
+  return { wrong, hidden, at: [Math.round(win.top), Math.round(win.height), Math.round(c.top), Math.round(c.height)].join(",") };
+};
+
+/** In the page, the "read on" control pressed: the sheet holds the whole caption, opaque, clear of the controls. */
+const sheet = async (k) => {
+  const { r, hit, read, opaque } = window.__fit, wrong = [];
+  const stage = document.querySelector(`#scene-${k} .stage`), cap = stage.querySelector(".caption"), nav = stage.querySelector(".stage-nav"), more = stage.querySelector(".more-button");
+  const text = cap.querySelector(".turn:not(.out)");
+  if (more.getAttribute("aria-expanded") !== "true") wrong.push("the control to read on does not open the caption");
+  if (!opaque(cap)) wrong.push("the open caption is not opaque");
+  if (hit(r(cap), r(nav))) wrong.push("the open caption lies under the controls");
+  const all = window.__fit.lines(text).length;
+  let seenLines = new Set();
+  for (let tries = 0; tries < 40; tries++) {
+    const at = read(text, stage, [["the controls", nav]]);
+    wrong.push(...at.wrong);
+    at.shown.forEach((l) => seenLines.add(Math.round(l.top + cap.scrollTop)));
+    if (cap.scrollTop + cap.clientHeight >= cap.scrollHeight - 1) break;
+    cap.scrollTop += Math.max(20, cap.clientHeight - 40);
+    await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+  }
+  if (seenLines.size < all) wrong.push(`the open caption shows ${seenLines.size} of its ${all} lines`);
+  return [...new Set(wrong)];
 };
 
 let failures = 0, looks = 0;
 const report = (where, wrong) => { if (!wrong.length) return; failures++; console.log(`FAIL ${where}: ${[...new Set(wrong)].slice(0, 4).join("; ")}`); };
-const fresh = async ([width, height, font = 100]) => {
+// Every caption 30% longer: its own words again at its end, as many as make up 30% of its length (the steps, each
+// scene's opening text and the story's intro).
+const LONGER = `
+const grow = (h) => { if (typeof h !== "string" || !h) return h; const plain = h.replace(/<[^>]+>/g, ""), words = plain.split(/\\s+/); let add = "", i = 0; while (add.length < plain.length * 0.3) add += (add ? " " : "") + words[i++ % words.length]; return h + " " + add; };
+for (const s of STORIES) { for (const l of ["id", "en"]) s[l].intro = grow(s[l].intro); for (const p of s.scenes) { for (const l of ["id", "en"]) if (typeof p[l].text === "string") p[l].text = grow(p[l].text); p.steps.forEach((st) => { st.id = grow(st.id); st.en = grow(st.en); }); } }`;
+const fresh = async ([width, height, font = 100], longer = false) => {
   const page = await browser.newPage({ viewport: { width, height }, reducedMotion: "reduce", hasTouch: width < 900, isMobile: false });
   page.errors = [];
   page.on("pageerror", (e) => page.errors.push(e.message));
   if (font !== 100) await page.addInitScript((font) => document.addEventListener("DOMContentLoaded", () => (document.documentElement.style.fontSize = font + "%")), font);
+  if (longer) await page.route(/\/story\.js$/, async (route) => { const res = await route.fetch(); await route.fulfill({ response: res, body: (await res.text()) + LONGER, headers: { ...res.headers(), "content-encoding": "identity" } }); });
   return page;
 };
-const name = ([w, h, font]) => `${w}x${h}${font ? ` @${font}%` : ""}`;
+const name = ([w, h, font], longer) => `${w}x${h}${font && font !== 100 ? ` @${font}%` : ""}${longer ? " (captions +30%)" : ""}`;
 
-/** Every step of every story at one size. */
-async function stories(size) {
-  const page = await fresh(size);
+/** Every step of every story at one size: reached by scrolling, then by the next button (which also opens the caption
+ *  where it goes on). */
+async function stories(size, longer = false, button = !longer) {
+  const page = await fresh(size, longer);
   for (const slug of slugs) {
     const story = STORIES.find((s) => s.slug === slug);
     await page.goto(`${base}#/cerita/${slug}`);
     await page.waitForSelector(".stage .plate svg", { state: "attached", timeout: 20000 }).catch(() => {});
     await page.waitForTimeout(600);
-    report(`${slug} cover ${name(size)}`, await page.evaluate(sideways));
+    await page.evaluate(helpers);
+    report(`${slug} cover ${name(size, longer)}`, await page.evaluate(sideways));
     for (const [k, part] of story.scenes.entries()) {
       const at = new Set();
       for (let j = 0; j <= part.steps.length; j++) {
         await page.evaluate(([k, j]) => { const s = document.getElementById(`scene-${k}`); scrollTo(0, scrollY + s.getBoundingClientRect().top - document.querySelector(".masthead").offsetHeight + j * s.querySelector(".beat").offsetHeight + 2); }, [k, j]);
         await page.waitForFunction(([k, j]) => +document.querySelector(`#scene-${k} .stage`).dataset.step === j, [k, j], { timeout: 1500 }).catch(() => {});
-        await page.waitForTimeout(40);
+        await page.waitForTimeout(70);
         const s = await page.evaluate(look, [k, j]);
         looks++;
-        // A card longer than its band: scrolled on by what is left of it, the step is the same and its foot above the controls.
-        if (s.more) {
-          const rest = await page.evaluate(([k, j, more]) => { scrollBy(0, more + 4); return new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => {
-            const sc = document.getElementById(`scene-${k}`), stage = sc.querySelector(".stage"), card = sc.querySelectorAll(".beat")[j].querySelector(".said");
-            const wrong = [];
-            if (+stage.dataset.step !== j) wrong.push(`read on, the card hands the stage to step ${stage.dataset.step} before its end`);
-            if (card.getBoundingClientRect().bottom > stage.querySelector(".stage-nav").getBoundingClientRect().top + 1) wrong.push("read on, the card's end stays under the controls");
-            ok(wrong);
-          }))); }, [k, j, s.more]);
-          s.wrong.push(...rest);
-        }
         if (j) at.add(s.at);
-        report(`${slug} scene ${k + 1} step ${j} ${name(size)}`, [...s.wrong, ...(j === part.steps.length ? await page.evaluate(sideways) : [])]);
+        report(`${slug} scene ${k + 1} step ${j} ${name(size, longer)} (scrolled)`, [...s.wrong, ...(j === part.steps.length ? await page.evaluate(sideways) : [])]);
       }
-      if (at.size > 1 && Math.max(...[...at].map((x) => x.split(",")).flatMap((a, _, all) => a.map((v, i) => Math.abs(v - all[0][i])))) > 1.5) report(`${slug} scene ${k + 1} ${name(size)}`, [`stepping moves the figure or the caption's band (${[...at].join(" | ")})`]);
+      if (at.size > 1 && Math.max(...[...at].map((x) => x.split(",")).flatMap((a, _, all) => a.map((v, i) => Math.abs(v - all[0][i])))) > 1.5) report(`${slug} scene ${k + 1} ${name(size, longer)}`, [`stepping moves the figure or the caption's band (${[...at].join(" | ")})`]);
     }
-    if (page.errors.length) report(`${slug} ${name(size)}`, page.errors.slice(0, 1));
+    if (button) {
+      // From the first stage's opening, the next button, step by step to the last.
+      await page.evaluate(() => { const s = document.getElementById("scene-0"); scrollTo(0, scrollY + s.getBoundingClientRect().top - document.querySelector(".masthead").offsetHeight + 2); });
+      await page.waitForTimeout(120);
+      for (const [k, part] of story.scenes.entries()) for (let j = 0; j <= part.steps.length; j++) {
+        if (k || j) {
+          await page.click(`#scene-${j ? k : k - 1} .stage-nav .step.on`);
+          await page.waitForFunction(([k, j]) => { const s = document.querySelector(`#scene-${k} .stage`), r = s.getBoundingClientRect(); return +s.dataset.step === j && Math.abs(r.top - document.querySelector(".masthead").getBoundingClientRect().bottom) < 2; }, [k, j], { timeout: 2500 }).catch(() => {});
+          await page.waitForTimeout(70);
+        }
+        const s = await page.evaluate(look, [k, j]);
+        looks++;
+        const wrong = [...s.wrong];
+        if (s.hidden && !s.wrong.some((w) => /control/.test(w))) {
+          await page.click(`#scene-${k} .more-button`);
+          await page.waitForTimeout(80);
+          wrong.push(...(await page.evaluate(sheet, k)));
+          await page.click(`#scene-${k} .more-button`);
+          await page.waitForTimeout(60);
+          if (await page.evaluate((k) => document.querySelector(`#scene-${k} .stage`).classList.contains("reading"), k)) wrong.push("pressed again, the open caption does not close");
+        }
+        report(`${slug} scene ${k + 1} step ${j} ${name(size, longer)} (next button)`, wrong);
+      }
+    }
+    if (page.errors.length) report(`${slug} ${name(size, longer)}`, page.errors.slice(0, 1));
   }
   await page.close();
 }
@@ -171,7 +311,7 @@ async function others(size) {
 }
 
 // Two pages at a time, no more (a shared machine).
-const jobs = [...STORY_SIZES.map((size) => () => stories(size)), ...PAGE_SIZES.map((size) => () => others(size))];
+const jobs = [...STORY_SIZES.map((size) => () => stories(size)), ...LONG_SIZES.map((size) => () => stories(size, true)), ...PAGE_SIZES.map((size) => () => others(size))];
 await Promise.all([0, 1].map(async () => { while (jobs.length) await jobs.shift()(); }));
-console.log(`${failures ? `${failures} PROBLEMS` : "every page holds"}: ${looks} looks at ${PAGE_SIZES.length} sizes (${((Date.now() - started) / 1000).toFixed(0)} s)`);
+console.log(`${failures ? `${failures} PROBLEMS` : "every page holds"}: ${looks} looks at ${STORY_SIZES.length + LONG_SIZES.length} story sizes and ${PAGE_SIZES.length} page sizes (${((Date.now() - started) / 1000).toFixed(0)} s)`);
 await done(failures);
