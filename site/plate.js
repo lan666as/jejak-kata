@@ -198,12 +198,12 @@ export function plate(spec, width, height) {
 /** A row's name, ending at `L - 9`, at height y: a name too long for its column on two lines where the rows are `gap`
  *  apart or more, else a little smaller, never under 12px. */
 function rowName(label, y, L, size, gap, ink) {
-  if (label.length <= Math.floor((L - 14) / (size * 0.53))) return `<text x="${L - 9}" y="${y + size * 0.35}" text-anchor="end" style="font-size:${size}px;font-weight:600;fill:${ink}">${label}</text>`;
+  if (label.length <= Math.floor((L - 14) / (size * 0.53))) return `<text class="row-name" x="${L - 9}" y="${y + size * 0.35}" text-anchor="end" style="font-size:${size}px;font-weight:600;fill:${ink}">${label}</text>`;
   // Two lines broken at the space that leaves the longer line shortest, then as large as that line allows.
   const cut = [...label].map((c, i) => (c === " " ? i : -1)).filter((i) => i > 0).sort((a, b) => Math.max(a, label.length - a) - Math.max(b, label.length - b))[0];
   const parts = cut && gap >= size * 1.9 ? [label.slice(0, cut), label.slice(cut + 1)] : [label];
   const small = Math.max(12, Math.min(size, (L - 14) / Math.max(...parts.map((p) => p.length)) / 0.53));
-  return `<text x="${L - 9}" y="${y + small * 0.35 - (parts.length - 1) * small * 0.55}" text-anchor="end" style="font-size:${small}px;font-weight:600;fill:${ink}">${parts.map((part, i) => `<tspan x="${L - 9}" dy="${i ? small * 1.1 : 0}">${part}</tspan>`).join("")}</text>`;
+  return `<text class="row-name" x="${L - 9}" y="${y + small * 0.35 - (parts.length - 1) * small * 0.55}" text-anchor="end" style="font-size:${small}px;font-weight:600;fill:${ink}">${parts.map((part, i) => `<tspan x="${L - 9}" dy="${i ? small * 1.1 : 0}">${part}</tspan>`).join("")}</text>`;
 }
 
 /** Where a strip's title follows its moment (`title(moment)`), of its titles the one that takes the most room at
@@ -235,10 +235,10 @@ export function strip(spec, width, height) {
     [head, pitch] = [T, gap];
     x = (v) => L + ((W - L - R) * v) / most;
     y = (k) => T + gap * (k + 0.5);
-    // (a row's name, where `spec.link(label)` gives its page, a link to it: app.js toWord, with its chevron where there
-    // is no hover)
-    const size = Math.max(12, Math.min(narrow ? 13 : 14, gap * 0.9)), to = (label) => spec.link?.(label);
-    const name = (label, k) => (to(label) ? `<a class="to-word" href="${to(label)}">${rowName(label, y(k), L, size, gap, ink)}<text class="chev" aria-hidden="true" x="${L - 6}" y="${y(k) + size * 0.35}" style="font-size:${size}px;font-weight:700;fill:${soft}">›</text></a>` : rowName(label, y(k), L, size, gap, ink));
+    // (a row's name as `spec.say(label)` writes it; where `spec.link(label)` gives its page, the whole row is a link to
+    // it, one target across the plate as tall as the row (app.js toWord), with its chevron where there is no hover)
+    const size = Math.max(12, Math.min(narrow ? 13 : 14, gap * 0.9)), to = (label) => spec.link?.(label), say = (label) => escape(spec.say?.(label) ?? label);
+    const name = (label, k) => (to(label) ? `<a class="to-word row-link" href="${to(label)}" aria-label="${say(label).replace(/"/g, "&quot;")}"><rect class="hit" x="0" y="${(y(k) - gap / 2).toFixed(1)}" width="${W}" height="${gap.toFixed(1)}" fill="transparent"/>${rowName(say(label), y(k), L, size, gap, ink)}<text class="chev" aria-hidden="true" x="${L - 6}" y="${y(k) + size * 0.35}" style="font-size:${size}px;font-weight:700;fill:${soft}">›</text>` : rowName(say(label), y(k), L, size, gap, ink));
     const pill = Math.min(20, Math.max(15, Math.floor(gap) - 1));  // (the beacon within its row, never past it: no half pill at a window's edge)
     return `${legend.marks.map((m, k) => `<g${k < spec.series.length ? "" : ` class="rings-key"`}><circle cx="${m.x + 5}" cy="${top + 10 + m.line * 16}" ${k < spec.series.length ? `r="4.5" fill="${css(COLOURS[k])}"` : `r="4" fill="none" stroke="${soft}" stroke-width="1.2"`}/>${legendName(m, top, soft)}</g>`).join("")}
     <text class="state" x="${below ? 12 : W - 12}" y="${top + (below ? 32 + extra : 15)}" text-anchor="${below ? "start" : "end"}" style="font-size:14px;font-weight:800;fill:${ink}"></text>
@@ -249,7 +249,7 @@ export function strip(spec, width, height) {
       ${spec.series.map((_, j) => `<circle class="dot" r="${Math.min(narrow ? 7 : 9, gap * 0.42)}" fill="${css(COLOURS[j])}" stroke="${paper}" stroke-width="1.5" style="${MOVE}"/>`).join("")}
       ${spec.empty ? `<g class="empty" opacity="0"><rect x="${L + 6}" y="${y(k) - 3}" width="18" height="6" rx="3" fill="none" stroke="${soft}" stroke-width="1.2"/><text x="${L + 32}" y="${y(k) + 4}" style="font-size:12px;fill:${soft}"></text></g>` : ""}
       <rect class="beacon" x="${W - R + 3}" y="${y(k) - pill / 2}" height="${pill}" rx="4" fill="${beacon}" opacity="0"/>
-      <text class="value" x="${W - R + 8}" y="${y(k) + size * 0.35}" style="font-size:12px;font-weight:700;fill:${ink}"></text></g>`).join("")}`;
+      <text class="value" x="${W - R + 8}" y="${y(k) + size * 0.35}" style="font-size:12px;font-weight:700;fill:${ink}"></text>${to(row.label) ? "</a>" : ""}</g>`).join("")}`;
   }, stripLeast(spec.title, rows, width, [...spec.series, ...(spec.rings ? [spec.rings] : [])], spec.floor || PITCH.floor));
   const groups = [...made.svg.querySelectorAll(".row")], state = made.svg.querySelector(".state"), inked = css("--ink"), ringsKey = made.svg.querySelector(".rings-key");
   if (spec.link) made.svg.setAttribute("role", "group");  // (its rows' names are links: an image's parts are not read)

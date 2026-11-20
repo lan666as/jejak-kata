@@ -341,7 +341,9 @@ phone has none: there they are left out, `sky` in app.js, never on the headline)
   route on the first page's lens (Kompas, year by year) when it has one there; what the word is in one line (`GLOSS`),
   then what we know about it (that it is a name and what it names, our note) stands under it in the head. The head
   runs on into the deep under the source chips and the figure tabs and on into the route's band, so the first screen
-  is one stage (where the figure chosen is on paper, the tide line comes under the tabs). The voyage among its
+  is one stage (where the figure chosen is on paper, the tide line comes under the tabs). Under the source chips one
+  plain sentence says what their numbers are ("Angka di tiap sumber: seberapa jauh teman kata ini bergeser di sumber
+  itu."), and how to read them is folded under "Cara membaca angkanya". The voyage among its
   neighbours takes the whole band, in the night's inks: the route with its years along it (each port clear of the last
   one named), fitted to the route and the islands near it, to the band's width and the screen's height; an island far out hangs on a dotted spur from the route's last port, its arrow pointing to where
   it lies; a legend in plain words ("its closest company in 2011", ringed; "in 2024", filled), and a column beside it from
@@ -388,8 +390,18 @@ phone has none: there they are left out, `sky` in app.js, never on the headline)
   stands for a word or a name (a strip's rows, a table's names, the race's names, the circle's names, the posters'
   words, the lists) is a link to that word's page, a person's portrait where there is one (`toWord` in app.js; in a
   plate's SVG `strip`'s `link`): its text in the row's ink, the site's link underline on hover and focus, a chevron
-  where there is no hover, reached by Tab, its name the word itself (a value beside it is not part of its name).
-  `games.mjs` fails on an explorer without such links or with one that is not as the rest. The tide table's colours
+  where there is no hover, reached by Tab, its name the word itself (a value beside it is not part of its name). Where
+  it stands for a row (a list, a strip's row, the race, a table of names, a poster's list, the tide table's name line)
+  the link is the whole row: one target across the row's width, its value and marks inside it (a table's row covered by
+  its name's link, a plate's row by a rect as wide as the plate), 44px tall on a touch screen (a strip linked so has
+  its rows 44px apart there), every row of one list as tall; a row holds no second link ("tiga redaksi" is one line
+  under the table of "Menempel", for its first name: the portrait of each name links on to three newsrooms). A name
+  in the circle is a pill with a 44px target. Every name is shown as a name, everywhere an explorer, a game, a card or a
+  tip shows it, through the one function (`shown` in deal.js, kind "name" where the page knows it shows a name; the
+  word page's title too): "Fauzi Bowo", "Tripoli", "WNI"; a roman numeral ("III") is not a name and is left out of a
+  list of names. `games.mjs` fails on an explorer without such links, with one that is not as the rest, a row whose link
+  is narrower than the row or under 44px on a touch screen, one-line rows of one list of different heights, a second
+  link in a row, or a name in lower case. The tide table's colours
   are named at their ends in words ("hampir tidak ada", "tahun terbaiknya"). The first page shows the first three. A card the viewer has opened says so
   in a meta line under its text, a game's with the best score (localStorage; nothing where storage is refused). A
   toy's head is shorter on a phone (less sea above the kicker, the lede at the body's size), and on a 390x844 phone its
@@ -399,10 +411,19 @@ phone has none: there they are left out, `sky` in app.js, never on the headline)
   "Options" control (`options` in app.js), open with no control of its own from 900px; what a toy says about its
   numbers stands under its first result, except what a list's numbers and marks are, which stands in a line above it
   ("Bergeser": the number is the shift measured against words of the same frequency, the source's flag and up stands
-  out, each ● another source that flags it). A list leads with words a reader recognises, in every source: a bare
+  out, each ● another source that flags it; its lede says first, in a sentence a newspaper reader knows, what shifting
+  is: a word's company on the page changing, "transparan" beside "lukisan" in books of 1980–1984 and beside
+  "korupsi" in 2010–2014). Its list stands in groups under headings, by how many other sources flag it too between
+  the same periods (agreement is what holds up), "Juga ditandai 2 sumber lain" first, then "Hanya di sumber ini", each
+  group by its shift; what a reader may not recognise last, under its own heading ("Nama depan, potongan nama, dan
+  sejenisnya" / "Potongan kata dan kata asing"); the count under it in the site's figures ("1.456 dari 26.836 kata dan
+  nama"). The switch between words and names lists the other in place: the source, the pair of periods and the scroll
+  stay, the address follows (`games.mjs`). A list leads with words a reader recognises, in every source: a bare
   first name or a fragment ("budi", "iii": a word of one part some source links to a person or to nothing more than
   itself, or of three letters or fewer, and no name or abbreviation the games know: deal.js `fragment`), a name of one
-  part whose article does not name it ("christian" linked to "Kekristenan"), and in an Indonesian source a word the
+  part whose article does not name it by itself ("christian" linked to "Kekristenan", "yulius" to "Paus Yulius";
+  a place or a body may be one word of its article's title, "pemalang" of "Kabupaten Pemalang"; never a page of many of
+  that name, "Ahmad (disambiguasi)"), and in an Indonesian source a word the
   first page's source does not count or that ends as English does ("peny", "constant", "product", "gross", "trade")
   come after the rest. A table fits its width or says
   where it goes on: the tide table on a phone sets each name on a line of its own over its row, the years sharing the

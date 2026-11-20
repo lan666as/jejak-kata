@@ -412,11 +412,12 @@ th:last-child, td:last-child { padding-right: 0; }
 
 /* lists of words with a score */
 .list-key { max-width: var(--measure); margin: var(--s4) 0 0; font-size: var(--t-small); color: var(--ink-2); }  /* what a list's numbers and marks are, above it */
-.movers { columns: 15rem; column-gap: var(--s6); margin: var(--s4) 0; padding: 0; list-style: none; }
-.movers li { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); min-height: var(--chip); break-inside: avoid; border-bottom: var(--hair) solid var(--line); font-size: var(--t-small); }
-/* A list of names (the names page): the spellings of one article run on as text, not pushed to the row's two ends. */
-.movers.names li { display: block; padding-block: var(--s2); min-height: 0; overflow-wrap: anywhere; }
+.movers { columns: 15rem; column-gap: var(--s6); margin: var(--s2) 0 var(--s4); padding: 0; list-style: none; }
+.movers li { break-inside: avoid; border-bottom: var(--hair) solid var(--line); font-size: var(--t-small); }
+.movers .row-link { padding-block: var(--s1); }
+.movers.names .row-name { overflow-wrap: anywhere; }  /* (the names of one article run on as text) */
 .movers .score { color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.movers-group { margin: var(--s5) 0 0; font: 700 var(--t-small)/var(--l-small) var(--type); color: var(--ink-2); } .movers-group:first-child { margin-top: var(--s3); }  /* a group of the list: how many other sources flag it too (app.js, moversPage) */
 
 /* legends */
 .legend { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); align-items: center; margin: var(--s2) 0; font-size: var(--t-meta); line-height: var(--l-meta); color: var(--ink-2); max-width: none; }
@@ -542,10 +543,11 @@ svg text { fill: var(--ink-2); font: 12px var(--type); }
 .orbit::before, .orbit::after { content: ""; position: absolute; inset: 20%; border: var(--hair) dashed var(--line-2); border-radius: 50%; }
 .orbit::after { inset: 4%; }
 .orbit .core { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font: 800 clamp(1.25rem, 4.4vw, 2rem)/1.05 var(--type); font-stretch: 75%; text-align: center; max-width: 34%; z-index: 2; }
-.orbit a { position: absolute; left: 50%; top: 50%; z-index: 1; max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px var(--s2); border-radius: var(--pill);
+.orbit a { position: absolute; left: 50%; top: 50%; z-index: 1; width: max-content; max-width: 12em; text-align: center; padding: 1px var(--s2); border-radius: var(--pill);
   font-size: clamp(.75rem, 2.1vw, .9375rem); background: var(--chart-2); border: var(--hair) solid var(--line-2); color: var(--ink); text-decoration: none; cursor: pointer;
   transform: translate(-50%, -50%) translate(var(--x), var(--y)); transition: transform var(--d-leg) var(--sail), opacity var(--d-turn) var(--sail); }
 .orbit a:hover { border-color: var(--ink); z-index: 3; }
+@media (pointer: coarse) { .orbit a::before { content: ""; position: absolute; inset: -11px -2px; } }  /* (a name in the circle: a target 44px tall for a thumb, the pill as drawn) */
 .orbit a.like { border-style: dashed; color: var(--ink-2); }
 .orbit a.new { background: var(--route-soft); border-color: var(--route); font-weight: 600; }
 .orbit a.out { opacity: 0; transform: translate(-50%, -50%) translate(calc(var(--x) * 1.5), calc(var(--y) * 1.5)); }
@@ -554,13 +556,13 @@ svg text { fill: var(--ink-2); font: 12px var(--type); }
 
 /* race: bars that overtake each other */
 .race { position: relative; margin: var(--s2) 0; }
-.race .row { position: absolute; left: 0; right: 0; height: 30px; display: flex; align-items: center; gap: var(--s2); transition: transform var(--d-leg) var(--sail), opacity var(--d-turn) var(--sail); }
-.race .name { flex: 0 0 9.5em; text-align: right; font-size: var(--t-small); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.race .name a { color: var(--ink); text-decoration: none; }
+.race .row { position: absolute; left: 0; right: 0; height: var(--race-row, 30px); transition: transform var(--d-leg) var(--sail), opacity var(--d-turn) var(--sail); }
+.race .row-link { height: 100%; min-height: 0; justify-content: flex-start; gap: var(--s2); }
+.race .row-name { flex: 0 0 9.5em; text-align: right; font-size: var(--t-small); line-height: 1.1; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }  /* (a long name on two lines, broken between its words) */
 .race .track { flex: 1; display: flex; align-items: center; gap: var(--s2); min-width: 0; }
 .race .bar { height: 20px; background: var(--ink); border-radius: 0 2px 2px 0; transition: width var(--d-leg) var(--sail); min-width: 2px; }
 .race .row.focus .bar, .race .row:hover .bar { background: var(--route); }
-.race .row.focus .name a { font-weight: 700; }
+.race .row.focus .row-name { font-weight: 700; }
 .race .value { font-size: var(--t-meta); color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .race .year { position: absolute; right: var(--s1); bottom: 0; font: 800 var(--t-display)/1 var(--type); font-stretch: 75%; color: var(--ink); opacity: .12; pointer-events: none; }
 
@@ -611,7 +613,8 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .word > div > :is(.chips, .chips-note), .word .lens-section > div > .tabs, .word .ashore { background: var(--deep); box-shadow: 0 0 0 100vmax var(--deep); clip-path: inset(0 -100vmax);
   --chart: var(--deep); --chart-2: var(--deep); --ink: var(--on-deep); --ink-2: var(--on-deep-2); --ink-3: var(--on-deep-2); --line: var(--line-deep); --line-2: var(--line-deep-2); --route: var(--route-on-deep); --focus: var(--route-on-deep); }
 .word > div > .chips { margin-block: 0; padding-block: var(--s2) var(--s4); }
-.word > div > .chips-note { margin-block: 0; padding-bottom: var(--s4); }
+.word > div > .chips-note { margin-block: 0; padding-bottom: var(--s2); }
+.chips-note > .sub { margin: 0; } .chips-note .about { margin: 0; } .word .chips-note .about summary { color: var(--on-deep); }
 .word .lens-section > div > .tabs { margin-block: 0; padding-block: var(--s2) 0; }
 .word .lens-section .deep-band { margin-top: 0; padding-top: var(--s5); }
 .word .lens-section .deep-band > .tide-line:first-child { display: none; }
@@ -681,6 +684,9 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .poster .top { font: 800 clamp(2rem, 9vw, 2.875rem)/.92 var(--type); font-stretch: 75%; margin: auto 0 var(--s3); overflow-wrap: anywhere; }
 .poster a { color: inherit; text-decoration: none; } .poster a:hover { text-decoration: underline; }
 .poster ol { margin: 0; padding: 0; list-style: none; font-size: var(--t-small); line-height: 1.35; }
+.poster a.row-link, .poster a.row-link:is(:hover, :focus-visible) .row-name { color: inherit; }
+.poster a.row-link { min-height: 0; }
+@media (pointer: coarse) { .poster { aspect-ratio: auto; min-height: 420px; } .poster a.row-link { min-height: var(--tap); } }  /* (each word a row a thumb finds: the poster as tall as they need) */
 
 /* plates (plate.js): a figure on paper that can stand alone as an image */
 .plate svg { display: block; max-width: 100%; height: auto; overflow: hidden; border: var(--hair) solid var(--line); border-radius: var(--r2); }
@@ -689,12 +695,13 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 /* tide table */
 .tide { overflow-x: auto; margin: var(--s4) 0; } .tide table { border-collapse: separate; border-spacing: 2px; width: auto; }
 .tide th { font-weight: 400; font-size: var(--t-meta); color: var(--ink-2); padding: 0 var(--s1) 0 0; text-align: right; white-space: nowrap; border: 0; vertical-align: middle; }
-.tide tr:first-child th { text-align: center; padding: 0; } .tide th a { color: var(--ink); text-decoration: none; } .tide th a:hover { text-decoration: underline; }
+.tide tr:first-child th { text-align: center; padding: 0; } .tide th .row-link { min-height: 0; justify-content: flex-end; }
 .tide td { width: 26px; min-width: 18px; height: 18px; padding: 0; border: 0; border-radius: 2px; }
 @media (max-width: 639.98px) {  /* on a phone the table fits its width: each name on a line of its own over its row, the years sharing the whole width */
   .tide { overflow-x: visible; } .tide :is(table, tbody) { display: block; width: 100%; }
   .tide tr { display: grid; grid-template-columns: repeat(var(--cols, 14), minmax(0, 1fr)); gap: 2px; margin-bottom: 2px; }
   .tide tr > th:first-child { grid-column: 1 / -1; padding: var(--s1) 0 0; text-align: left; }
+  .tide th .row-link { justify-content: flex-start; }  /* (the name's line, across the width: on a touch screen 44px tall) */
   .tide tr:first-child > th:first-child { display: none; }
   .tide tr:first-child th { font-size: 12px; } .tide td { width: auto; min-width: 0; height: 18px; }
 }
@@ -1299,10 +1306,22 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 a.to-word { color: inherit; text-decoration: none; text-underline-offset: 3px; }
 a.to-word:hover, a.to-word:focus-visible { color: var(--link); text-decoration: underline; text-decoration-thickness: 2px; }
 .poster a.to-word:hover, .poster a.to-word:focus-visible { color: inherit; }
-a.to-word:hover text, a.to-word:focus-visible text { text-decoration: underline; fill: var(--link); }
+a.to-word:hover .row-name, a.to-word:focus-visible .row-name { text-decoration: underline; fill: var(--link); }
 .to-word .chev { display: none; }
+/* ... and where it stands for a whole row (a list, a race, a table of names), the link is the row: one target across its
+   width, its value inside it; 44px tall on a touch screen, every row of a list as tall */
+a.row-link { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); width: 100%; min-height: var(--chip); color: var(--ink); }
+a.row-link:hover, a.row-link:focus-visible { color: var(--ink); text-decoration: none; }
+a.row-link:hover .row-name, a.row-link:focus-visible .row-name { color: var(--link); text-decoration: underline; text-decoration-thickness: 2px; }
+a.row-link .row-name { min-width: 0; }
+@media (pointer: coarse) { a.row-link { min-height: var(--tap); } }
+/* (in a table, the row's name a link whose target covers the row: its numbers too) */
+tr.row-tr { position: relative; }
+tr.row-tr a.to-word::before { content: ""; position: absolute; inset: 0; }
+tr.row-tr:is(:hover, :focus-within) a.to-word { color: var(--link); text-decoration: underline; text-decoration-thickness: 2px; }
+@media (pointer: coarse) { tr.row-tr > td { height: var(--tap); padding-block: 0; } .tide th .row-link { min-height: var(--tap); } }
 @media (hover: none) {
-  a.to-word:not(svg a)::after { content: "\203A" / ""; margin-left: .3em; font-weight: 700; color: var(--ink-3); }
+  a.to-word:not(svg a, .row-link)::after, a.row-link .row-name::after { content: "\203A" / ""; margin-left: .3em; font-weight: 700; color: var(--ink-3); }
   .poster a.to-word::after { color: inherit; opacity: .7; }
   .to-word .chev { display: inline; }
 }

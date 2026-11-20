@@ -10,7 +10,7 @@ import { seaChart } from "./chart.js";
 import { TEXT, LENS_TEXT, NOTES, GLOSS, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
 import { address, routeOf, named, canonical, EMBED, PAGES, PLAY, CARDS, QUIZ_NAMES, GUESS_WORDS } from "./address.js";
 import { board, measure } from "./labels.js";
-import { MARGIN, bareSet, fragment, pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, guessRank, shown, isAbbr, isName as nameLike, keep, kept as keptDecks, version, BODIES, PEOPLE, STOPS, along, stopAt, CAVEAT } from "./deal.js";
+import { MARGIN, bareSet, fragment, pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, guessRank, shown, isAbbr, marker, ROMAN, isName as nameLike, keep, kept as keptDecks, version, BODIES, PEOPLE, STOPS, along, stopAt, CAVEAT } from "./deal.js";
 import { GAME_GLOSS, NAME_GLOSS } from "./glossary.js";
 import { figureOf, focused, lensFrom, sceneWords, seaWords, stepAt, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
 
@@ -153,8 +153,22 @@ const visit = (to) => (whole(to) !== location.href && history.pushState(null, ""
 const link = (word) => `<a href="${href("kata", word)}">${word}</a>`;
 /** A row or a label of an explorer that stands for a word or a name: a link to its page (a person's portrait, else the
  *  word's page), the same everywhere: the word itself its text and its name, the site's link on hover and focus, a
- *  chevron where there is no hover (style.css, .to-word). */
-const toWord = (word, person = false, text = escape(word)) => `<a class="to-word" href="${href(person ? "potret" : "kata", word)}">${text}</a>`;
+ *  chevron where there is no hover (style.css, .to-word). `kind`: "person", "name" (any other name), or none for a
+ *  word; a name is shown as one (deal.js `shown`: "Fauzi Bowo", "DKI", "WNI"), a word as counted. With `more` (what
+ *  the row says of it: a value, its marks, a bar) the link is the whole row, one target across its width (44px tall on
+ *  a touch screen), the value inside it and not in its name. */
+const toWord = (word, kind = "", more = null, text = escape(kind ? shown(word, "name") : word)) => {
+  const to = href(kind === "person" ? "potret" : "kata", word);
+  return more === null ? `<a class="to-word" href="${to}">${text}</a>` : `<a class="to-word row-link" href="${to}" aria-label="${text}"><span class="row-name">${text}</span>${more}</a>`;
+};
+/** On a touch screen a row that is a link is 44px tall (a plate's strip: its rows that far apart). */
+const TOUCH = () => (matchMedia("(pointer: coarse)").matches ? 44 : undefined);
+/** What a lens's entry is, as toWord takes it: a person, another name (it has an article), or a word. */
+const kindIn = (lens, i) => (!lens.articles?.has(i) ? "" : lens.kind(i) === "person" ? "person" : "name");
+/** How an entry of a lens is written wherever it is shown: a name as a name, a word as counted (one rule: toWord's). */
+const sayIn = (lens, i) => (kindIn(lens, i) ? shown(lens.words[i], "name") : lens.words[i]);
+/** ... and a name of stick.json (a person, "p", or a body). */
+const stuckKind = (s, i) => (s.kinds[i] === "p" ? "person" : "name");
 const number = (x, digits = 1) => x.toLocaleString(language, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 const percent = (share) => (share * 100).toLocaleString(language, { maximumSignificantDigits: 2 }) + "%";
 const step = (shift) => STEPS.filter((s) => shift >= s).length;
@@ -677,12 +691,12 @@ function frequencyChart(lens, series, chosen = []) {
     cross.setAttribute("x1", x(i));
     cross.setAttribute("x2", x(i));
     cross.setAttribute("visibility", "visible");
-    const values = series.map((e) => (series.length > 1 ? `${lens.words[e.word]} ${percent(e.share[i])}` : percent(e.share[i])));
+    const values = series.map((e) => (series.length > 1 ? `${sayIn(lens, e.word)} ${percent(e.share[i])}` : percent(e.share[i])));
     return `${lens.periods[i]}: ${values.join(", ")} ${t("of_units", lens)}`;
   });
   plot.addEventListener("pointerleave", () => cross.setAttribute("visibility", "hidden"));
   if (series.length === 1) return svg;
-  const figure = el(`<div><div class="legend">${series.map((e, i) => `<span><i class="k${k(i)}"></i>${lens.words[e.word]}</span>`).join("")}</div></div>`);
+  const figure = el(`<div><div class="legend">${series.map((e, i) => `<span><i class="k${k(i)}"></i>${escape(sayIn(lens, e.word))}</span>`).join("")}</div></div>`);
   figure.append(svg);
   return figure;
 }
@@ -897,7 +911,7 @@ async function chartFigure(name, list, pick = (word) => visit(href("kata", word)
 
 /** Who shares a page with a name, period by period: the nearer the middle, the larger the share of its pages. */
 function circle(stick, i) {
-  const node = el(`<div class="orbit circle"><div class="core">${stick.names[i]}</div></div>`);
+  const node = el(`<div class="orbit circle"><div class="core">${escape(shown(stick.names[i], "name"))}</div></div>`);
   new ResizeObserver(() => node.style.setProperty("--r", node.clientWidth / 2 + "px")).observe(node);
   const beside = stick.beside[i].map((list) => list.filter(([j]) => stick.kinds[j] === "p").slice(0, 6));
   const all = [...new Set(beside.flat().map(([j]) => j))];
@@ -914,7 +928,7 @@ function circle(stick, i) {
       chip.style.setProperty("--x", `calc(var(--r) * ${(0.8 * radius * Math.cos(angle(k))).toFixed(3)})`);
       chip.style.setProperty("--y", `calc(var(--r) * ${(1.25 * radius * Math.sin(angle(k))).toFixed(3)})`);
       chip.classList.toggle("out", !found);
-      chip.innerHTML = `${escape(stick.names[all[k]])}${found ? ` <b aria-hidden="true">${Math.round(found[1] / 10)}%</b>` : ""}`;
+      chip.innerHTML = `${escape(shown(stick.names[all[k]], "name"))}${found ? ` <b aria-hidden="true">${Math.round(found[1] / 10)}%</b>` : ""}`;
     });
   };
   return { node, labels: ERAS_SHOWN, show };
@@ -922,11 +936,10 @@ function circle(stick, i) {
 
 /** Who is mentioned most, period by period: bars that overtake each other. `focus` is drawn in the route colour. */
 function race(lens, entries, focus, rows = 10) {
-  const ROW = 34;
+  const ROW = TOUCH() ? TOUCH() + 4 : 34;  // (a row a link: 44px tall on a touch screen)
   const top = Math.max(...entries.flatMap((e) => e.share));
-  const node = el(`<div class="race" style="height:${ROW * Math.min(rows, entries.length) + 8}px"><div class="year"></div>
-    ${entries.map((e) => `<div class="row ${lens.words[e.word] === focus ? "focus" : ""}"><span class="name">${toWord(lens.words[e.word], lens.kind?.(e.word) === "person")}</span>
-      <span class="track"><span class="bar"></span><span class="value"></span></span></div>`).join("")}</div>`);
+  const node = el(`<div class="race" style="height:${ROW * Math.min(rows, entries.length) + 8}px;--race-row:${ROW - 4}px"><div class="year"></div>
+    ${entries.map((e) => `<div class="row ${lens.words[e.word] === focus ? "focus" : ""}">${toWord(lens.words[e.word], kindIn(lens, e.word), `<span class="track"><span class="bar"></span><span class="value"></span></span>`)}</div>`).join("")}</div>`);
   const nodes = [...node.querySelectorAll(".row")];
   const show = (p) => {
     node.querySelector(".year").textContent = lens.periods[p];
@@ -1004,8 +1017,8 @@ function sparks(lens, entries, rivals = []) {
 async function wall(lens) {
   const { peaks } = await highlights(lens);
   return el(`<div class="wall">${lens.periods.map((p, i) => {
-    const [first, ...rest] = peaks[i].map((w) => toWord(lens.words[w], lens.kind?.(w) === "person"));
-    return first ? `<div class="poster"><span class="year">${p}</span><span class="top">${first}</span><ol>${rest.slice(0, 7).map((w) => `<li>${w}</li>`).join("")}</ol></div>` : "";
+    const [first, ...rest] = peaks[i];
+    return first !== undefined ? `<div class="poster"><span class="year">${p}</span><span class="top">${toWord(lens.words[first], kindIn(lens, first))}</span><ol>${rest.slice(0, 7).map((w) => `<li>${toWord(lens.words[w], kindIn(lens, w), "")}</li>`).join("")}</ol></div>` : "";
   }).join("")}</div>`);
 }
 
@@ -1163,7 +1176,7 @@ function suggest(lens, placeholder, button, chosen) {
 function picker(lens, list, changed, most = 12) {
   const box = el(`<div><ul class="picked"></ul></div>`);
   const draw = () => {
-    box.firstElementChild.innerHTML = list.map((w, k) => `<li class="k${Math.min(k, 7)}">${w}<button type="button" data-k="${k}" aria-label="${t("remove")} ${w}">×</button></li>`).join("");
+    box.firstElementChild.innerHTML = list.map((w, k) => `<li class="k${Math.min(k, 7)}">${escape(sayIn(lens, lens.index.get(w)))}<button type="button" data-k="${k}" aria-label="${t("remove")} ${escape(sayIn(lens, lens.index.get(w)))}">×</button></li>`).join("");
     box.querySelectorAll("li button").forEach((b) => b.addEventListener("click", () => (list.splice(+b.dataset.k, 1), draw(), changed())));
   };
   box.append(suggest(lens, t("add_word"), t("add"), (word) => {
@@ -1199,13 +1212,13 @@ async function wordPage(word, opened) {
     const same = new Set(found.flatMap((lens) => [...lens.articles].filter(([j, a]) => a === article && lens.isEntry(j)).map(([j]) => lens.words[j])));
     same.delete(word);
     notes += `<p class="note">${t("entity", `<a href="${WIKIPEDIA}${encodeURIComponent(article.replaceAll(" ", "_"))}">${escape(article)}</a>`)}
-      ${same.size ? t("also_written", [...same].map(link).join(", ")) : ""}</p>`;
+      ${same.size ? t("also_written", [...same].map((w) => `<a href="${href("kata", w)}">${escape(shown(w, "name"))}</a>`).join(", ")) : ""}</p>`;
   }
   if (NOTES[word]) notes += `<p class="note">${NOTES[word][language]}</p>`;
   // What the word is, in one line, where a reader may not know (text.js, GLOSS).
   if (gloss(word)) notes = `<p class="gloss">${escape(gloss(word))}</p>` + notes;
   view.classList.add("word");
-  view.replaceChildren(pageHead(escape(word), { kicker: named ? `<span class="dot ${kind}"></span>${t("name")}${kind === "other" ? "" : ` · ${t("kind_one_" + kind)}`}` : t("word"), cls: "word-title",
+  view.replaceChildren(pageHead(escape(named ? shown(word, "name") : word), { kicker: named ? `<span class="dot ${kind}"></span>${t("name")}${kind === "other" ? "" : ` · ${t("kind_one_" + kind)}`}` : t("word"), cls: "word-title",
     more: notes && `<div class="head-notes">${notes}</div>`, sea: wordSea(all.find((lens) => lens.lens === MAIN), word) }));
   if (!found.length) {
     const h1 = view.querySelector(".page-head h1");
@@ -1226,7 +1239,8 @@ async function wordPage(word, opened) {
   );
   const lens = found[most];
   // What the number on each source's chip is (largest(), of the entry's shifts), said once, under the chips.
-  view.lastElementChild.firstElementChild.after(el(`<p class="sub chips-note">${t("source_number", lens.flag)}</p>`));
+  // (one plain sentence; how to read it, folded)
+  view.lastElementChild.firstElementChild.after(el(`<div class="chips-note"><p class="sub">${t("source_number")}</p><details class="about"><summary>${t("source_number_how")}</summary><p class="sub">${t("source_number_more", lens.flag)}</p></details></div>`));
   // What to do next with the word, as cards: its portrait (for a name), the chart with other words, a race.
   const action = (to, what) => `<li><a class="card action" href="${to}"><b class="card-title">${t(what + "_ask")}</b><span class="card-text">${t(what + "_do")}</span></a></li>`;
   view.append(el(`<ul class="cards actions">${named ? action(href("potret", word), "portrait") : ""}${action(href("peta", lens.lens, word), "rival")}${action(href("balap", lens.lens, word), "race")}</ul>`), tools(href("kata", word, lens.lens), {}));
@@ -1419,29 +1433,50 @@ async function findingsPage() {
 const FOREIGN = /(ct|ss|ck|oo|th|sh|ph|ght|tion|ic|[^aeiou]y|[a-z]{3}[^aeiou]e)$/;
 /** What moved: one ranking, by how far each changed its company between two periods, of the words ("Kata") or of the
  *  names ("Nama": what has an article on Indonesian Wikipedia, the names of one article on one line), switched at the
- *  top; "bergeser" opens it on the words, "entitas" on the names. Every source's list leads with what a reader
- *  recognises: not a bare first name or a fragment (deal.js, `fragment`: "susilo", "peny"), and in an Indonesian
- *  source a word the first page's source counts too that does not end as English does ("constant", "product"); the
- *  rest after. */
+ *  top in place (the source, the pair of periods and the scroll stay; the address follows: "bergeser" the words,
+ *  "entitas" the names). Every source's list leads with what a reader recognises: not a bare first name or a fragment
+ *  (deal.js, `fragment`: "susilo", "peny"), nor a name of one part that its article does not name by itself ("yulius"
+ *  linked to "Paus Yulius", "ahmad" to a page of many Ahmads), and in an Indonesian source a word the first page's
+ *  source counts too that does not end as English does ("constant", "product"); those come last, under their own
+ *  heading. The rest stand in groups by how many other sources flag them too, between the same periods (agreement is
+ *  what holds up: README), the most first, each group by its shift. */
 async function moversPage(mode = "kata") {
-  const names = mode === "nama";
+  let names = mode === "nama";
   const all = await Promise.all((await allLenses()).map(async (lens) => ({ lens, movers: await json(`${lens.lens}/movers.json`) })));
   const key = (lens, m) => `${lens.periods[m.a]}>${lens.periods[m.b]}`;
   const elsewhere = (lens, m, word) =>
     all.filter((o) => o.lens !== lens && o.movers.some((x) => key(o.lens, x) === key(lens, m) && x.words.some(([w]) => o.lens.words[w] === word)));
   const BARE = bareSet(all.map(({ lens }) => [...lens.articles].map(([i, article]) => [lens.words[i], lens.kind(i), article]))), main = all.find((o) => o.lens.lens === MAIN)?.lens;
-  // (and a name of one part only where its article names it: "christian" linked to "Kekristenan", "kingdom" to
-  // "Kerajaan", are a word taken for a name)
-  const named = (lens, i) => { const w = lens.words[i], a = lens.articles.get(i); return !a || w.includes(" ") || isAbbr(w) || PEOPLE.includes(w) || BODIES.includes(w) || a.toLowerCase().includes(w); };
+  // (a name of one part leads only where its article names it by itself, or, for a place or a body, as one of its
+  // words ("pemalang", "Kabupaten Pemalang"); never through a page of many of that name, "(disambiguasi)")
+  const named = (lens, i) => {
+    const w = lens.words[i], a = lens.articles.get(i);
+    if (!a || w.includes(" ") || isAbbr(w) || PEOPLE.includes(w) || BODIES.includes(w)) return true;
+    if (/\(disambiguasi\)/i.test(a)) return false;
+    const title = a.toLowerCase().replace(/\s*\(.*\)$/, "");
+    return title === w || (["place", "organisation"].includes(lens.kind(i)) && title.split(/[\s-]+/).includes(w));
+  };
   const known = (lens, i) => { const w = lens.words[i]; return !fragment(w, BARE) && named(lens, i) && (!lens.lens.startsWith("id-") || !main || w.split(" ").every((p) => main.index.has(p) && !FOREIGN.test(p))); };
   view.replaceChildren(pageHead(t("nav_movers"), { ...fromPlay(), lede: t("movers_lede"), sea: { words: MOVED } }));
   // (the switch, words or names: two halves of one control, beside "Atur", so that the list still begins on a phone's
-  // first screen)
+  // first screen; pressed, it lists the other in place)
   const flip = el(`<ul class="switch" aria-label="${t("movers_show")}">${[t("movers_words"), t("movers_names")].map((label, i) => `<li><a role="button" aria-pressed="${i === +names}" href="${href(["bergeser", "entitas"][i])}">${label}</a></li>`).join("")}</ul>`);
+  const drawn = new Set(), pairs = new Map();  // (each source's list as drawn, to draw again on a switch; the pair chosen in each)
+  flip.addEventListener("click", (e) => {
+    const a = e.target.closest("a");
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault();
+    const now = [...flip.querySelectorAll("a")].indexOf(a) === 1;
+    if (now === names) return;
+    names = now;
+    flip.querySelectorAll("a").forEach((b, i) => b.setAttribute("aria-pressed", i === +names));
+    rewrite(names ? "entitas" : "bergeser");
+    drawn.forEach((draw) => draw.isConnected?.() !== false && draw());
+  });
   await perLens(all.map((o) => o.lens), (lens) => lensText(lens).short || lensText(lens).title, (lens, more) => {
     const { movers } = all.find((o) => o.lens === lens);
     // (above the list, one line on what its number and its dots are: matrix_about's measure, the source's flag)
-    const section = el(`<section><p class="list-key">${t("movers_key", lens.flag, names)}</p><ul class="movers${names ? " names" : ""}"></ul><p class="sub"></p>${names ? `<p class="sub">${t("movers_names_note")}</p>` : ""}<p class="sub">${lensText(lens).about}</p></section>`);
+    const section = el(`<section><p class="list-key"></p><div class="movers-list"></div><p class="sub flagged"></p><p class="sub names-note">${t("movers_names_note")}</p><p class="sub">${lensText(lens).about}</p></section>`);
     const controls = el(`<div class="controls"><label>${t("between")} <select name="pair">${movers
         .map((m, i) => `<option value="${i}">${lens.periods[m.a]} → ${lens.periods[m.b]}</option>`)
         .join("")}</select></label></div>`);
@@ -1450,26 +1485,33 @@ async function moversPage(mode = "kata") {
     const pair = controls.querySelector("select");
     const draw = () => {
       const m = movers[pair.value];
-      // (a row a word, or the names of one article together, at the largest shift among them)
+      // (a row a word, or the names of one article together, at the largest shift among them, its whole names first)
       const rows = new Map();
       for (const [w, s] of m.words) {
-        if (names !== lens.articles.has(w)) continue;
+        if (names !== lens.articles.has(w) || (names && ROMAN.test(lens.words[w]))) continue;  // (a roman numeral, "iii", is not a name)
         const at = names ? lens.articles.get(w) : w, row = rows.get(at);
         if (row) (row.words.push(w), (row.s = Math.max(row.s, s)));
         else rows.set(at, { words: [w], s, also: elsewhere(lens, m, lens.words[w]) });
       }
-      const list = [...rows.values()].map((r) => ({ ...r, known: r.words.some((w) => known(lens, w)) ? 0 : 1 }));
-      // (what a reader recognises leads; then the shift other sources flag too, then the shift)
-      list.sort((x, y) => x.known - y.known || y.also.length - x.also.length || y.s - x.s);
-      section.querySelector("p.sub").textContent = t("flagged", m.flagged, m.scored, lens.flag) + (list.some((r) => r.also.length) ? " " + t("replicated") : "");
-      section.querySelector("ul").innerHTML = list
-        .slice(0, 120)
-        .map((r) => `<li title="${r.also.map((o) => lensText(o.lens).title).join("; ")}"><span>${r.words.map((w) => toWord(lens.words[w], lens.kind(w) === "person", names ? escape(shown(lens.words[w], "place")) : undefined)).join(", ")}</span> <span class="score"><i class="s${step(r.s)}"></i>${number(r.s)}${"●".repeat(r.also.length)}</span></li>`)
-        .join("");
+      const list = [...rows.values()].map((r) => ({ ...r, words: [...r.words].sort((a, b) => known(lens, b) - known(lens, a) || lens.words[b].split(" ").length - lens.words[a].split(" ").length), known: r.words.some((w) => known(lens, w)) }));
+      const groups = [...new Set(list.filter((r) => r.known).map((r) => r.also.length))].sort((a, b) => b - a).map((n) => [t("movers_group", n), list.filter((r) => r.known && r.also.length === n)]);
+      groups.push([t("movers_rest", names), list.filter((r) => !r.known)]);
+      let left = 120;
+      section.querySelector(".list-key").textContent = t("movers_key", lens.flag, names);
+      section.querySelector(".flagged").textContent = t("flagged", thousands(m.flagged), thousands(m.scored), lens.flag, names);
+      section.querySelector(".names-note").hidden = !names;
+      section.querySelector(".movers-list").innerHTML = groups.filter(([, rows]) => rows.length).map(([head, rows]) => {
+        const shown_ = rows.sort((x, y) => y.s - x.s).slice(0, Math.max(0, left));
+        left -= shown_.length;
+        return shown_.length ? `<h3 class="movers-group">${head}</h3><ul class="movers${names ? " names" : ""}">${shown_.map((r) => `<li${r.also.length ? ` title="${r.also.map((o) => lensText(o.lens).title).join("; ")}"` : ""}>${toWord(lens.words[r.words[0]], kindIn(lens, r.words[0]),
+          `<span class="score"><i class="s${step(r.s)}"></i>${number(r.s)}${r.also.length ? `<span aria-hidden="true">${"●".repeat(r.also.length)}</span>` : ""}</span>`, r.words.map((w) => escape(names ? shown(lens.words[w], "name") : lens.words[w])).join(", "))}</li>`).join("")}</ul>` : "";
+      }).join("");
     };
-    pair.value = movers.length - 1;
-    pair.addEventListener("change", draw);
+    draw.isConnected = () => section.isConnected;
+    pair.value = pairs.get(lens.lens) ?? movers.length - 1;
+    pair.addEventListener("change", () => (pairs.set(lens.lens, pair.value), draw()));
     draw();
+    drawn.add(draw);
     return section;
   });
   const fold = view.querySelector(".options"), row = el(`<div class="toy-row"></div>`);
@@ -2941,7 +2983,8 @@ async function guessPage() {
 /** A row of buttons of which one is pressed; pressing another goes to `to(i)`. */
 const choice = (labels, on, to) => `<ul class="chips">${labels.map((label, i) => `<li><a role="button" aria-pressed="${i === +on}" href="${to(i)}">${label}</a></li>`).join("")}</ul>`;
 /** A row of real choices to try at once ("Coba: …"), beside a field or a list: a toy never waits on an empty box. */
-const tryRow = (list, to) => `<p class="try"><span>${t("try_label")}</span>${list.map((x) => `<a class="chip" href="${to(x)}">${escape(x)}</a>`).join("")}</p>`;
+const tryRow = (list, to, say = (x) => x) => `<p class="try"><span>${t("try_label")}</span>${list.map((x) => `<a class="chip" href="${to(x)}">${escape(say(x))}</a>`).join("")}</p>`;
+const asName = (x) => shown(x, "name");
 const stickOf = (k) => json(`${OUTLETS[+k] || OUTLETS[0]}/stick.json`);
 const STUCK_PAGES = 300; // a name is ranked in a period only with this many pages naming it
 
@@ -2951,7 +2994,7 @@ async function stuckPage(word = "tersangka", k = "0", era = "2", kind = "p") {
   const s = await stickOf(k), share = s.share[word] || s.share[(word = s.words[0])], p = +era;
   const ranked = s.names.map((_, i) => i).filter((i) => s.kinds[i] === kind && s.pages[i][p] >= STUCK_PAGES && share[i][p] !== null).sort((a, b) => share[b][p] - share[a][p]);
   const to = (w, a, b, c) => href("menempel", w, String(a), String(b), c);
-  const figure = strip({ title: t("stuck_plate", word, OUTLET[+k], ERAS_SHOWN[p]), note: t("stuck_note", STUCK_PAGES), states: ERAS_SHOWN, series: [OUTLET[+k]], link: (name) => href(kind === "p" ? "potret" : "kata", name),
+  const figure = strip({ title: t("stuck_plate", word, OUTLET[+k], ERAS_SHOWN[p]), note: t("stuck_note", STUCK_PAGES), states: ERAS_SHOWN, series: [OUTLET[+k]], link: (name) => href(kind === "p" ? "potret" : "kata", name), say: (name) => shown(name, "name"), floor: TOUCH(),
     rows: ranked.slice(0, innerWidth > 760 ? 16 : 12).map((i) => ({ label: s.names[i], values: ERAS_SHOWN.map((_, q) => [share[i][q] === null ? null : share[i][q] / 1000]) })) }, Math.min(room(), 720), innerWidth > 760 ? 520 : 440);
   figure.show(p);
   const box = el(`<section></section>`);
@@ -2963,8 +3006,11 @@ async function stuckPage(word = "tersangka", k = "0", era = "2", kind = "p") {
   view.replaceChildren(pageHead(t("play_menempel"), { ...fromPlay(), lede: t("stuck_lede"), sea: { words: [word, ...ranked.map((i) => s.names[i])] } }), pick,
     el(tryRow(["tersangka", "viral", "kritik", "maaf", "janji", "survei"].filter((w) => w !== word && s.share[w]), (w) => to(w, k, era, kind))),
     box, el(`<p class="note">${t("stuck_warning")}</p>`),
-    el(`<div class="table" tabindex="0"><table><tr><th>${t("name")}</th><th class="n">${t("stuck_share", word)}</th><th class="n">${t("pages")}</th><th></th></tr>${ranked.slice(0, 40).map((i) =>
-      `<tr><td>${toWord(s.names[i], kind === "p")}</td><td class="n">${number(share[i][p] / 10)}%</td><td class="n">${thousands(s.pages[i][p])}</td><td><a href="${href("redaksi", s.names[i])}">${t("three_rooms")}</a></td></tr>`).join("")}</table></div>`));
+    // (a row a link to the name's page, the whole row its target; one way on to three newsrooms, under the table, not a
+    // second link in every row)
+    el(`<div class="table" tabindex="0"><table><tr><th>${t("name")}</th><th class="n">${t("stuck_share", word)}</th><th class="n">${t("pages")}</th></tr>${ranked.slice(0, 40).map((i) =>
+      `<tr class="row-tr"><td>${toWord(s.names[i], stuckKind(s, i))}</td><td class="n">${number(share[i][p] / 10)}%</td><td class="n">${thousands(s.pages[i][p])}</td></tr>`).join("")}</table></div>`),
+    ...(ranked.length ? [el(`<p class="note"><a href="${href("redaksi", s.names[ranked[0]])}">${t("stuck_rooms", escape(shown(s.names[ranked[0]], "name")))}</a></p>`)] : []));
 }
 
 /** Tide table: a row per name, a column per year; each row is shaded against its own best year, rows in order of that year. */
@@ -2973,7 +3019,7 @@ async function tidePage(k = "0", kind = "person") {
   const rows = y.tide[lens][kind].map((r) => ({ ...r, peak: Math.max(...r.share.map((v) => v || 0)) })).map((r) => ({ ...r, when: r.share.indexOf(r.peak) })).sort((a, b) => a.when - b.when || b.peak - a.peak);
   const kinds = ["person", "organisation", "place"], level = (v, peak) => [0.08, 0.25, 0.45, 0.65, 0.85].filter((s) => v / peak >= s).length;
   const table = el(`<div class="tide" tabindex="0"><table style="--cols:${y.years.length}"><tr><th></th>${y.years.map((year) => `<th>${String(year).slice(2)}</th>`).join("")}</tr>${rows.map((r) =>
-    `<tr><th>${toWord(r.word, kind === "person", escape(shown(r.word, "place")))}</th>${r.share.map((v, i) => `<td style="--i:${i}" class="t${v === null ? "x" : level(v, r.peak)}" data-tip="${escape(shown(r.word, "place"))} ${y.years[i]}: ${v === null ? "–" : number(v * 1000) + "‰"} ${t("of_pages", thousands(y.pages[lens][i]))}"></td>`).join("")}</tr>`).join("")}</table></div>`);
+    `<tr><th>${toWord(r.word, kind === "person" ? "person" : "name", "")}</th>${r.share.map((v, i) => `<td style="--i:${i}" class="t${v === null ? "x" : level(v, r.peak)}" data-tip="${escape(shown(r.word, "name"))} ${y.years[i]}: ${v === null ? "–" : number(v * 1000) + "‰"} ${t("of_pages", thousands(y.pages[lens][i]))}"></td>`).join("")}</tr>`).join("")}</table></div>`);
   table.dataset.tipTap = "";  // a tap on a cell says what a hover does
   for (const on of ["pointermove", "pointerdown"]) table.addEventListener(on, (e) => tip(e.target.dataset?.tip || null, e));
   table.addEventListener("pointerleave", () => tip(null));
@@ -2999,9 +3045,9 @@ async function roomsPage(name = "pdip") {
   const form = el(`<form class="controls"><input type="search" list="names" value="${escape(name)}" placeholder="${t("rooms_ask")}" aria-label="${t("rooms_ask")}"><datalist id="names">${names.map((n) => `<option>${n}</option>`).join("")}</datalist><button class="primary">${t("show")}</button></form>`);
   form.addEventListener("submit", (e) => (e.preventDefault(), names.includes(form.firstElementChild.value.trim().toLowerCase()) && visit(href("redaksi", form.firstElementChild.value.trim().toLowerCase()))));
   view.replaceChildren(pageHead(t("play_redaksi"), { ...fromPlay(), lede: t("rooms_lede"), sea: { words: [name, ...rows] } }), form,
-    el(tryRow(["golkar", "gerindra", "jokowi", "prabowo", "polri", "pdip"].filter((n) => n !== name && names.includes(n)), (n) => href("redaksi", n))));
+    el(tryRow(["golkar", "gerindra", "jokowi", "prabowo", "polri", "pdip"].filter((n) => n !== name && names.includes(n)), (n) => href("redaksi", n), asName)));
   if (!rows.length) return view.append(el(`<p>${t("rooms_none", escape(name))}</p>`));
-  const figure = strip({ title: t("rooms_plate", name), states: ERAS_SHOWN, series: OUTLET, link: (w) => href("kata", w), rows: rows.map((w) => ({ label: w, values: ERAS_SHOWN.map((_, p) => OUTLETS.map((_, k) => value(w, k, p))) })),
+  const figure = strip({ title: t("rooms_plate", shown(name, "name")), states: ERAS_SHOWN, series: OUTLET, link: (w) => href("kata", w), floor: TOUCH(), rows: rows.map((w) => ({ label: w, values: ERAS_SHOWN.map((_, p) => OUTLETS.map((_, k) => value(w, k, p))) })),
     pages: (p) => t("pages_stuck", name, ERAS_SHOWN[p], OUTLET.map((o, k) => `${o} ${at[k] < 0 ? "–" : thousands(all[k].pages[at[k]][p])}`).join(", ")) }, Math.min(room(), 720), 440);
   const box = el(`<section></section>`);
   box.append(played(figure), tools(href("redaksi", name), { image: box, table: figure.table, check: [name], data: `${OUTLETS[0]}/stick.json` }));
@@ -3014,10 +3060,10 @@ async function circlePage(name = "prabowo", k = "0") {
   const form = el(`<form class="controls"><input type="search" list="names" value="${escape(name)}" placeholder="${t("circle_ask")}" aria-label="${t("circle_ask")}"><datalist id="names">${names.map((n) => `<option>${n}</option>`).join("")}</datalist><button class="primary">${t("show")}</button></form>`);
   form.addEventListener("submit", (e) => (e.preventDefault(), s.names.includes(form.firstElementChild.value.trim().toLowerCase()) && visit(href("lingkaran", form.firstElementChild.value.trim().toLowerCase(), k))));
   view.replaceChildren(pageHead(t("play_lingkaran"), { ...fromPlay(), lede: t("circle_lede"), sea: { words: [name, ...(i < 0 ? [] : s.beside[i].flat().map(([j]) => s.names[j]))] } }), form,
-    el(tryRow(["prabowo", "jokowi", "megawati", "anies baswedan", "ganjar pranowo", "sri mulyani"].filter((n) => n !== name && names.includes(n)), (n) => href("lingkaran", n, k))), options(el(choice(OUTLET, k, (j) => href("lingkaran", name, String(j))))));
+    el(tryRow(["prabowo", "jokowi", "megawati", "anies baswedan", "ganjar pranowo", "sri mulyani"].filter((n) => n !== name && names.includes(n)), (n) => href("lingkaran", n, k), asName)), options(el(choice(OUTLET, k, (j) => href("lingkaran", name, String(j))))));
   if (i < 0) return view.append(el(`<p>${t("rooms_none", escape(name))}</p>`));
   const figure = circle(s, i);
-  view.append(played(figure), el(`<p class="note">${t("circle_note", name, ERAS_SHOWN.map((era, p) => `${era}: ${thousands(s.pages[i][p])}`).join("; "))}</p>`),
+  view.append(played(figure), el(`<p class="note">${t("circle_note", escape(asName(name)), ERAS_SHOWN.map((era, p) => `${era}: ${thousands(s.pages[i][p])}`).join("; "))}</p>`),
     tools(href("lingkaran", name, k), { check: [name], data: `${OUTLETS[+k]}/stick.json` }));
 }
 

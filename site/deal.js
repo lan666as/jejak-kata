@@ -110,16 +110,19 @@ export const OUTLET_NAMES = ["Kompas", "Tempo", "Tribunnews"];
  *  lower case: this is how it is shown, not what is counted. */
 export const ABBR = new Set(["kpk", "dpr", "sby", "pdip", "tni", "kpu", "pks", "pkb", "mui", "fpi", "pbb", "ojk", "bmkg", "pln", "asean", "fifa", "isis", "nato", "mpr", "dpd", "unesco", "bpjs",
   "pt", "kai", "md", "ham", "pp", "ri", "dki", "ppp", "psi", "kpai", "bnn", "bnpb", "bpk", "lps", "ui", "itb", "ugm", "ikn", "ott", "bbm", "blt", "ktp", "uu", "ite", "apbn", "apbd",
-  "umkm", "bumn", "ihsg", "tki", "opm", "esg", "jis", "rkuhp", "kuhp", "asn", "pns", "ppkm", "psbb", "kkb", "blsm"]);
+  "umkm", "bumn", "ihsg", "tki", "opm", "esg", "jis", "rkuhp", "kuhp", "asn", "pns", "ppkm", "psbb", "kkb", "blsm", "wni", "wna", "pmi", "nik"]);
 const CONSONANTS = /^[bcdfghjklmnpqrstvwxz]{2,}$/;
 export const isAbbr = (part) => ABBR.has(part) || CONSONANTS.test(part);
+/** A roman numeral of two letters or more ("ii", "iii", "xiv"), shown in upper case: a part of a name, not a name. */
+export const ROMAN = /^(?=[ivx]{2})x{0,3}(ix|iv|v?i{0,3})$/;
 const SPELT = { tiktok: "TikTok", youtube: "YouTube", whatsapp: "WhatsApp", nasdem: "NasDem", polri: "Polri" };
-export const isName = (word, kind) => PEOPLE.includes(word) || BODIES.includes(word) || ["person", "organisation", "place"].includes(kind) || word in AS_NAME;
+/** (`kind` as the data gives it, or "name" where the page knows it shows a name: a list of names, a table of people) */
+export const isName = (word, kind) => PEOPLE.includes(word) || BODIES.includes(word) || ["person", "organisation", "place", "name"].includes(kind) || word in AS_NAME;
 export const shown = (word, kind) => {
   word = String(word);
   if (AS_NAME[word]) return AS_NAME[word];
   const name = isName(word, kind);
-  return word.split(" ").map((p) => p.split("-").map((q) => SPELT[q] || (isAbbr(q) ? q.toUpperCase() : name ? q.charAt(0).toUpperCase() + q.slice(1) : q)).join("-")).join(" ");
+  return word.split(" ").map((p) => p.split("-").map((q) => SPELT[q] || (isAbbr(q) || (name && ROMAN.test(q)) ? q.toUpperCase() : name ? q.charAt(0).toUpperCase() + q.slice(1) : q)).join("-")).join(" ");
 };
 
 /** The quiz: ten rounds, three easy, four middling, three hard; the kinds in a rhythm, never the same twice running,

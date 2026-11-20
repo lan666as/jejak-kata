@@ -19,7 +19,7 @@ const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport:
   await p.evaluate(() => [...document.querySelectorAll(".picked button")].at(-1).click()); await p.waitForTimeout(600);
   await p.click("#menu-button"); await p.click("#language"); await p.waitForTimeout(2500);
   const words = await p.evaluate(() => [...document.querySelectorAll(".picked li")].map((li) => li.firstChild.textContent).join(", "));
-  log("language switch keeps the words picked", words === "jokowi", `after removing prabowo and switching: ${words}`); await p.close(); }
+  log("language switch keeps the words picked (a name shown as one)", words === "Jokowi", `after removing prabowo and switching: ${words}`); await p.close(); }
 { // the method's sensitivity table is said in one line above it, from the numbers the table shows; and the demo's words sail from its list to their ports
   const p = await fresh(); await p.goto(base + "#/metode"); await p.waitForTimeout(3000);
   const m = await p.evaluate(() => {

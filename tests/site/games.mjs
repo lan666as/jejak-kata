@@ -484,20 +484,42 @@ for (const [w, h, touch] of SIZES) {
   const toys = [];
   for (const toy of ["menempel", "lingkaran", "redaksi", "pasang", "balap", "tahun", "bergeser", "entitas"]) {
     await p.goto(base + "#/" + toy); await p.waitForTimeout(1500);
-    const look = await p.evaluate(() => {
+    const look = await p.evaluate(({ touch, names }) => {
       const view = document.getElementById("view"), head = view.querySelector(".page-head");
       const controls = [...view.querySelectorAll("button, input, select, a[role=button], .chips a")].filter((n) => n.getClientRects().length && !head?.contains(n));
       const r = controls[0]?.getBoundingClientRect();
       // Hover-only: anything with a tip that answers neither a tap (click) nor a key.
       const hoverOnly = [...view.querySelectorAll("[data-tip]")].length && !view.querySelector("[data-tip-tap]") ? 1 : 0;
       // Where the toy's result (its figure, list or table) begins.
-      const result = [...view.querySelectorAll(".plate, ul.movers, .tide, .race, .wall, .orbit")].find((n) => n.getClientRects().length && !head?.contains(n));
+      const result = [...view.querySelectorAll(".plate, .movers-list, .tide, .race, .wall, .orbit")].find((n) => n.getClientRects().length && !head?.contains(n));
       // One behaviour for every row or label that stands for a word or a name: a link to its page (a portrait, else the
       // word's), reachable by keyboard, its name the word itself (app.js toWord).
       const links = [...view.querySelectorAll("a.to-word")].filter((n) => n.getClientRects().length);
       const odd = links.filter((n) => !/\/(kata|potret)\/|#\/(kata|potret)\//.test(n.getAttribute("href") || "") || n.tabIndex < 0 || !n.textContent.trim()).length;
-      return { first: r ? Math.round(r.bottom) : 9999, hoverOnly, result: result ? Math.round(result.getBoundingClientRect().top) : 9999, links: links.length, odd };
-    });
+      // A row that stands for a word or a name is one link across the whole row, its value inside it or covered by it
+      // (app.js toWord; a table's row covered by its name's link; a plate's row by a rect as wide as the plate); on a
+      // touch screen 44px tall, and every row of one list whose name takes one line as tall as the others. No link of a
+      // row is only a part of it, and no second link stands in a row.
+      const rows = links.filter((n) => n.matches(".row-link") || n.closest("tr.row-tr")), bad = [], heights = new Map();
+      for (const n of rows) {
+        const svg = n.closest("svg"), target = svg ? n.querySelector(".hit") : n.closest("tr.row-tr") || n, row = svg || n.closest("tr, li, .row, th") || n;
+        // (the row's own width: inside its padding and border)
+        const a = target.getBoundingClientRect(), cs = getComputedStyle(row), name = n.getAttribute("aria-label") || n.textContent.trim();
+        const inner = svg ? svg.clientWidth : row.getBoundingClientRect().width - ["paddingLeft", "paddingRight", "borderLeftWidth", "borderRightWidth"].reduce((sum, k) => sum + parseFloat(cs[k]), 0);
+        if (touch && a.height < 43.5) bad.push(`“${name}” ${Math.round(a.height)}px tall`);
+        if (a.width < inner - 1) bad.push(`“${name}” ${Math.round(a.width)} of its row's ${Math.round(inner)}px`);
+        const line = n.querySelector(".row-name") || n, one = svg || line.getBoundingClientRect().height < 1.5 * parseFloat(getComputedStyle(line).lineHeight);
+        const list = n.closest("ul, ol, table, svg, .race");
+        if (one && list) heights.set(list, [...(heights.get(list) || []), Math.round(a.height)]);
+        if ((n.closest("li, tr, .row")?.querySelectorAll("a").length || 1) > 1) bad.push(`“${name}” shares its row with another link`);
+      }
+      for (const [, list] of heights) if (Math.max(...list) - Math.min(...list) > 1) bad.push(`rows of one list ${Math.min(...list)} to ${Math.max(...list)}px tall`);
+      bad.push(...links.filter((n) => !rows.includes(n) && n.closest("li, tr, .race .row")).map((n) => `“${n.textContent.trim()}” is a part of its row`));
+      // (a name shown as a name: deal.js shown, never in lower case)
+      if (names) bad.push(...links.map((n) => (n.getAttribute("aria-label") || n.textContent).trim()).filter((x) => /^\p{Ll}/u.test(x)).slice(0, 3).map((x) => `name “${x}” in lower case`));
+      return { first: r ? Math.round(r.bottom) : 9999, hoverOnly, result: result ? Math.round(result.getBoundingClientRect().top) : 9999, links: links.length, odd, bad: [...new Set(bad)] };
+    }, { touch, names: ["menempel", "lingkaran", "pasang", "entitas"].includes(toy) });
+    if (look.bad.length) failures++, console.log(`FAIL ${toy} at ${w}: ${look.bad.slice(0, 4).join("; ")}`);
     toys.push(`${toy} ${look.first}/${look.result} ${look.links} links${look.hoverOnly ? " hover-only" : ""}`);
     if (!look.links || look.odd) failures++, console.log(`FAIL ${toy} at ${w}: ${look.links} rows or labels link to their page${look.odd ? `, ${look.odd} not as the rest` : ""}`);
     // (on a 390x844 phone the result begins in the first 560px: the toy is seen working before any scroll)
@@ -505,6 +527,20 @@ for (const [w, h, touch] of SIZES) {
     if (look.first > h || look.hoverOnly || late) failures++, console.log(`FAIL ${toy} at ${w}: first control ends at ${look.first}px, the result begins at ${look.result}px${look.hoverOnly ? "; a tip only a hover shows" : ""}`);
   }
   console.log(`     toys at ${w}, where the first control ends / the result begins (under 560px at 390): ${toys.join(", ")}`);
+  // What moved: the switch between words and names lists the other in place, the source, the pair of periods and the
+  // scroll kept, the address following; the names come first whole (no bare first name or roman numeral leads), and the
+  // count under the list in the site's figures (15.999, not 15999).
+  { await p.goto(base + "#/bergeser"); await p.waitForSelector("ul.movers");
+    await p.locator(".chips button, .chips [role=tab]").filter({ visible: true }).nth(1).click(); await p.waitForSelector("ul.movers"); await p.waitForTimeout(300);
+    await p.evaluate(() => { const s = document.querySelector("select[name=pair]"); s.value = "0"; s.dispatchEvent(new Event("change")); window.__kept = document.querySelector(".movers-list"); scrollTo(0, 500); });
+    await p.waitForTimeout(200);
+    const was = await p.evaluate(() => ({ y: scrollY, source: [...document.querySelectorAll(".chips [aria-selected=true], .chips [aria-pressed=true]")].map((n) => n.textContent).join(), pair: document.querySelector("select[name=pair]").value }));
+    await p.evaluate(() => document.querySelectorAll(".switch a")[1].click()); await p.waitForTimeout(300);  // (a press where the list is read: a click would first scroll the switch into view)
+    const now = await p.evaluate(() => ({ y: scrollY, source: [...document.querySelectorAll(".chips [aria-selected=true], .chips [aria-pressed=true]")].map((n) => n.textContent).join(), pair: document.querySelector("select[name=pair]").value, same: window.__kept === document.querySelector(".movers-list"), at: location.href,
+      first: document.querySelector(".movers .row-name")?.textContent, head: document.querySelector(".movers-group")?.textContent, flagged: document.querySelector(".flagged")?.textContent, most: document.documentElement.scrollHeight - innerHeight }));
+    log(`what moved at ${w}: “Nama” lists the names in place (address, source, pair of periods and scroll kept), led by a whole name, its counts with the site's separators`,
+      now.same && /entitas/.test(now.at) && Math.abs(now.y - Math.min(was.y, now.most)) <= 2 && now.source === was.source && now.pair === was.pair && /^[\p{Lu}\d]/u.test(now.first || "") && !/\d{5}/.test(now.flagged || "x0000000"),
+      `scroll ${was.y} → ${now.y}; source ${was.source} → ${now.source}; pair ${was.pair} → ${now.pair}; ${now.same ? "in place" : "drawn anew"}; ${now.at.split("#")[1] || now.at}; first “${now.first}” under “${now.head}”; “${now.flagged}”`); }
   await ctx.close();
 }
 console.log(`     ${((Date.now() - started) / 1000).toFixed(1)} s`);
