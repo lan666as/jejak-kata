@@ -10,7 +10,8 @@ import { seaChart } from "./chart.js";
 import { TEXT, LENS_TEXT, NOTES, GLOSS, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
 import { address, routeOf, named, canonical, EMBED, PAGES, PLAY, QUIZ_NAMES, GUESS_WORDS } from "./address.js";
 import { board, measure } from "./labels.js";
-import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, shown, BODIES, PEOPLE, STOPS, along, stopAt } from "./deal.js";
+import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, guessRank, shown, isName as nameLike, keep, kept as keptDecks, version, BODIES, PEOPLE, STOPS, along, stopAt, CAVEAT } from "./deal.js";
+import { GAME_GLOSS, NAME_GLOSS } from "./glossary.js";
 import { figureOf, focused, lensFrom, sceneWords, seaWords, stepAt, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
 
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
@@ -2461,15 +2462,14 @@ function voyageMark(results, rounds, { inline = false, width = 300 } = {}) {
   const path = [...Array(rounds)].map((_, k) => `${k ? "L" : "M"}${x(k).toFixed(1)},${y(k).toFixed(1)}`).join("");
   const done = results.length, sailed = [...Array(Math.max(1, done))].map((_, k) => `${k ? "L" : "M"}${x(k).toFixed(1)},${y(k).toFixed(1)}`).join("");
   const run = (k) => { let a = k, b = k; while (results[a - 1]?.ok) a--; while (results[b + 1]?.ok) b++; return results[k]?.ok ? b - a + 1 : 0; };
-  // Labels of the answers only where they have room: each as long as fits between the labels beside it (shortened with
-  // an ellipsis, at least three letters), else left out; the last answered always, first.
+  // Labels of the answers only where they have room: each whole where it fits between the labels beside it, else left
+  // out (never a cut word); the last answered first.
   const font = `700 12px ${css("--type")}`, room = [], says = {};
   for (const k of [results.length - 1, ...results.map((_, i) => i).slice(0, -1)]) {
     if (k < 0) continue;
     const full = String(results[k].label), fits = (text) => { const w = measure(text, font), a = x(k) - w / 2, b = x(k) + w / 2; return a >= 0 && b <= W && room.every(([c, d]) => b + 6 <= c || a >= d + 6) ? [a, b] : null; };
-    let text = full, at = fits(text);
-    for (let n = full.length - 1; !at && n >= 3; n--) at = fits((text = full.slice(0, n).trimEnd() + "…"));
-    if (at) (room.push(at), (says[k] = text));
+    const at = full && fits(full);
+    if (at) (room.push(at), (says[k] = full));
   }
   return `<svg class="voyage-mark" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">
     <path class="sea-line" d="${path}" fill="none" stroke-dasharray="2 4"${c("--line-2", "stroke")}/>${done > 1 ? `<path class="sailed" d="${sailed}" fill="none" stroke-width="3" stroke-linecap="round"${c("--route", "stroke")}/>` : ""}
@@ -2495,8 +2495,21 @@ function scorePlate(title, results, rounds, width = 640) {
     <text x="16" y="${H - 14}" style="font-size:12px;font-weight:700;fill:${css("--ink")}">Jejak Kata · zidan.dev/jejak-kata</text></svg></div>`);
 }
 
-/** What this visit has dealt: a deck per kind, so that a game played again asks first what has not been asked. */
-const VISIT = {};
+/** What has been dealt: a deck per kind (per bin, for "guess the number"), so that a game played again asks first what
+ *  has not been asked, kept from page load to page load in localStorage (deal.js, `keep` and `kept`: capped in size;
+ *  under the version of the questions it was dealt from, so that new data starts afresh; nothing where storage is
+ *  refused, and the game plays the same without it). */
+const VISIT = {}, VERSIONS = {}, DEALT = "dealt";
+const dealtLog = () => { try { const all = JSON.parse(kept("localStorage", DEALT) || "{}"); return all && typeof all === "object" ? all : {}; } catch { return {}; } };
+function visitDecks(game, made, lists) {
+  if (VISIT[game]) return VISIT[game];
+  const d = made(), v = (VERSIONS[game] = version(lists)), was = dealtLog()[game];
+  try { if (was?.v === v) keptDecks(d, was.st); } catch {}
+  return (VISIT[game] = d);
+}
+function keepDealt(game) {
+  try { kept("localStorage", DEALT, JSON.stringify({ ...dealtLog(), [game]: { v: VERSIONS[game], st: keep(VISIT[game]) } })); } catch {}
+}
 /** What this viewer has played, and their best (localStorage; nothing where storage is refused): the hub shows it. */
 const playedLog = () => { try { return JSON.parse(kept("localStorage", "played") || "{}") || {}; } catch { return {}; } };
 function record(page, score) {
@@ -2504,13 +2517,14 @@ function record(page, score) {
   if (score && (!was.best || score[0] / score[1] > was.best[0] / was.best[1])) was.best = score;
   kept("localStorage", "played", JSON.stringify({ ...all, [page]: { ...was, at: Date.now() } }));
 }
-/** One of a list of lines, never the one said last time (the reactions after an answer). */
+/** One of a list of lines, never the one said last time (the reactions after an answer): `key` names the list, which may
+ *  be made of several of text.js's (the lines for any kind, and those for some). */
 const lastSaid = {};
-const sayOne = (key, ...args) => {
-  const list = t(key);
+const sayOne = (key, ...args) => sayFrom(key, t(key), ...args);
+const sayFrom = (key, list, ...args) => {
   let i;
-  do i = Math.floor(Math.random() * list.length); while (list.length > 1 && i === lastSaid[key]);
-  lastSaid[key] = i;
+  do i = Math.floor(Math.random() * list.length); while (list.length > 1 && list[i] === lastSaid[key]);
+  lastSaid[key] = list[i];
   return typeof list[i] === "function" ? list[i](...args) : list[i];
 };
 /** After a game, the toy that follows from it. */
@@ -2584,14 +2598,25 @@ function reveal(ev, W, answer, periods) {
       }).join("")}</svg>`;
   }
   const H = 124, L = 8, R = 8, T = 22, B = 24, P = ev.series[0].share.length, x = (p) => L + ((W - L - R) * p) / (P - 1);
-  const top = Math.max(...ev.series.flatMap((s) => s.share)) || 1, y = (v) => T + (H - T - B) * (1 - v / top);
+  // (two words' lines, "which peaked first": each on its own scale, to its own peak, so that both are seen to peak; each
+  // named beside its peak, to its left, its right or above it, wherever it is clear of the other name and in the frame)
+  const font = `700 12px ${getComputedStyle(document.documentElement).getPropertyValue("--type")}`;
+  let placed = [];
+  const peakLabel = (k, text, cx, cy) => {
+    const w = measure(text, font), spots = [[cx - 9 - w, cy + 4, "end", cx - 9], [cx + 9, cy + 4, "start", cx + 9], [cx - w / 2, Math.max(14, cy - 10), "middle", cx], [cx - w / 2, cy + 20, "middle", cx]];
+    const fit = spots.find(([a, b]) => a >= 0 && a + w <= W && placed.every(([c, d, e]) => a + w + 6 <= c || a >= c + e + 6 || Math.abs(b - d) >= 15)) || spots[2];
+    placed.push([fit[0], fit[1], w]);
+    return svgText(fit[3], fit[1], text, "strong halo", fit[2]);
+  };
+  // (two words' lines, "which peaked first": each on its own scale)
+  const own = ev.series.length > 1, top = Math.max(...ev.series.flatMap((s) => s.share)) || 1, Y = (k) => (v) => T + (H - T - B) * (1 - v / ((own ? Math.max(...ev.series[k].share) : top) || 1)), y = Y(0);
   const years = [0, P - 1, ...ev.marks].filter((p, i, all) => all.indexOf(p) === i && (ev.marks.includes(p) || ev.marks.every((m) => Math.abs(m - p) > 2)));
   return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true"><path class="line" d="M${L} ${H - B}H${W - R}"/>
     ${ev.marks.map((p) => `<path class="line dotted" d="M${px(x(p))} ${T - 6}V${H - B}"/>`).join("")}
-    ${ev.series.map((s, k) => `<path class="${k ? "alt-line" : "on-line"} draw" stroke-width="2.5" d="${s.share.map((v, p) => `${p ? "L" : "M"}${px(x(p))} ${px(y(v))}`).join("")}"/>`).join("")}
+    ${((placed = []), "")}${ev.series.map((s, k) => `<path class="${k ? "alt-line" : "on-line"} draw" stroke-width="2.5" d="${s.share.map((v, p) => `${p ? "L" : "M"}${px(x(p))} ${px(Y(k)(v))}`).join("")}"/>`).join("")}
     ${ev.series.map((s, k) => {
-      const at = ev.series.length > 1 ? ev.marks[k] : null, ps = at === null ? ev.marks : [at];
-      return ps.map((p) => `<circle class="${k ? "alt" : "on"} in" cx="${px(x(p))}" cy="${px(y(s.share[p]))}" r="5"/>`).join("") + (ev.series.length > 1 ? svgText(Math.min(Math.max(x(at), 40), W - 40), Math.max(14, y(s.share[at]) - 10), s.label, "strong halo", "middle") : "");
+      const at = own ? ev.marks[k] : null, ps = at === null ? ev.marks : [at];
+      return ps.map((p) => `<circle class="${k ? "alt" : "on"} in" cx="${px(x(p))}" cy="${px(Y(k)(s.share[p]))}" r="5"/>`).join("") + (own ? peakLabel(k, s.label, x(at), Y(k)(s.share[at])) : "");
     }).join("")}
     ${years.map((p) => svgText(x(p), H - 6, periods[p], ev.marks.includes(p) ? "strong" : "soft", p === 0 ? "start" : p === P - 1 ? "end" : "middle")).join("")}</svg>`;
 }
@@ -2600,21 +2625,24 @@ function reveal(ev, W, answer, periods) {
  *  each answer a line said, and the evidence drawn; at the end the score as a plate to save, and its rank. */
 async function quizPage() {
   const Q = await json("quiz.json"), periods = Q.periods;
-  VISIT.quiz ||= decks(pools(Q), Math.random);
+  visitDecks("quiz", () => decks(pools(Q), Math.random), Object.values(pools(Q)));
   view.replaceChildren(pageHead(t("nav_quiz"), { ...fromPlay(), lede: t("quiz_lede"), sea: { words: QUIZ_NAMES } }));
   const { board, box, go, log, tally } = gameBoard();
-  view.append(board, el(`<p class="note keys-note">${t("quiz_keys")}</p>`));
-  // A name shown as a name (deal.js, shown); in English an Indonesian word with what it means, where the site says
-  // (text.js GLOSS; an official word's loanword, story "kata-resmi"): "korupsi (corruption)".
+  view.append(board);
+  board.querySelector(".quiz-log").append(el(`<p class="keys-note">${t("quiz_keys")}</p>`));  // (in the panel beside the round: nothing under the board but the footer)
+  // A word as the games show it (deal.js, shown: "KPK", "PPKM", "Mahfud MD", a common word in lower case); in English
+  // an Indonesian word with what it means (text.js GLOSS, glossary.js; an official word's loanword, story
+  // "kata-resmi"): "didesak (urged)". A name has none, unless it names a programme or an event ("Kartu Prakerja").
   const nm = (w) => shown(String(w), Q.words[w]?.kind), loan = Object.fromEntries(Q.resmi.map(([l, coin]) => [coin, l]));
-  const isName = (w) => PEOPLE.includes(w) || BODIES.includes(w) || ["person", "organisation", "place"].includes(Q.words[w]?.kind);
-  const meant = (w, not = []) => { const m = language === "en" && Q.words[w] && !isName(w) ? GLOSS[w]?.en || loan[w] : ""; return m && !not.includes(m) ? m : ""; };
-  const word = (w, not) => (meant(w, not) ? `${w} (${meant(w, not)})` : nm(w));
+  const isName = (w) => nameLike(w, Q.words[w]?.kind);
+  const meant = (w, not = []) => { const m = language !== "en" ? "" : isName(w) ? NAME_GLOSS[w] : GLOSS[w]?.en || loan[w] || GAME_GLOSS[w]; return m && !not.includes(m) ? m : ""; };
+  const word = (w, not) => (meant(w, not) ? `${nm(w)} (${meant(w, not)})` : nm(w));
   const label = (q, c) => (q.kind === "trend" ? t(`trend_${c}`) : q.kind === "year" || q.kind === "room" ? String(c) : word(c, q.choices));
-  // The answer as it would start a sentence: a name as a name, a common word in quotation marks (in English with what
-  // it means, where the site says), "Naik", a year, a newsroom.
-  const upper = (x) => x.charAt(0).toUpperCase() + x.slice(1);
-  const told = (q, c) => (q.kind === "trend" ? upper(t(`trend_${c}`)) : q.kind === "year" || q.kind === "room" || isName(c) ? label(q, c) : meant(c, q.choices) ? label(q, c) : `“${c}”`);
+  // The answer inside a sentence, in its own form: a name as a name, "naik" in lower case, a year, a newsroom, a common
+  // word in quotation marks (in English with what it means: “korupsi” (corruption)).
+  const told = (q, c) => (q.kind === "trend" || q.kind === "year" || q.kind === "room" || isName(c) ? label(q, c) : `“${nm(c)}”${meant(c, q.choices) ? ` (${meant(c, q.choices)})` : ""}`);
+  // Under the voyage on the plate: a short whole label or none (a year, "naik", a person's first name, a word of one part).
+  const short = (q, c) => (q.kind === "trend" || q.kind === "year" || q.kind === "room" ? label(q, c) : PEOPLE.includes(c) || Q.words[c]?.kind === "person" ? nm(c).split(" ")[0] : nm(c).includes(" ") ? "" : nm(c));
   const named = (ev) => ({ ...ev, items: ev.items?.map((it) => ({ ...it, label: nm(it.label) })), series: ev.series?.map((x) => ({ ...x, label: nm(x.label) })) });
   let game = [], results = [], streak = 0, answer = null, now = 0;
   const sailed = () => {
@@ -2636,10 +2664,12 @@ async function quizPage() {
     answer = null;
     now = k;
     // (the round's state: its number, and how hard it is as three marks and a word: deal.js, DIFFICULTY)
-    box.innerHTML = `<p class="step">${t("quiz_status", k + 1, game.length)}<span class="tier" data-tier="${q.tier}"><i></i><i></i><i></i>${t("quiz_tier")[q.tier]}</span>${q.kind === "room" ? `<span>${t("room_era")}</span>` : ""}</p><p class="ask" tabindex="-1">${t(q.ask[0], ...q.ask.slice(1).map(nm))}</p>
+    Object.assign(box.dataset, { kind: q.kind, key: q.key });  // (what is asked, for the checks: games.mjs)
+    box.classList.remove("answered");
+    box.innerHTML = `<p class="step">${t("quiz_status", k + 1, game.length)}<span class="tier" data-tier="${q.tier}"><i></i><i></i><i></i>${t("quiz_tier")[q.tier]}</span>${q.kind === "room" ? `<span>${t("room_era")}</span>` : ""}</p><p class="ask" tabindex="-1">${t(q.ask[0], ...q.ask.slice(1).map((x) => (q.kind === "room" && x === q.w ? word(x) : nm(x))))}</p>
       ${q.clue ? `<ul class="words clue">${q.clue.map((w) => `<li>${escape(word(w))}</li>`).join("")}</ul>` : ""}
       <p class="choices">${q.choices.map((c, i) => `<button type="button" data-i="${i}"><span class="key" aria-hidden="true">${i + 1}</span>${escape(label(q, c))}</button>`).join("")}</p>
-      ${q.kind === "room" ? `<p class="note caveat">${t("caveat")}</p>` : ""}<p class="verdict" role="status"></p><div class="reveal" hidden></div>`;
+      ${q.kind === "room" && CAVEAT.includes(q.w) ? `<p class="note caveat">${t("caveat")}</p>` : ""}<div class="answer"><p class="verdict" role="status"></p><div class="reveal"></div></div>`;
     go.disabled = true;
     go.textContent = k + 1 === game.length ? t("guess_score") : t("quiz_next");
     go.onclick = () => (answer === null ? null : k + 1 === game.length ? end() : (round(k + 1), toCard(box), box.querySelector(".ask").focus({ preventScroll: true })));
@@ -2651,23 +2681,30 @@ async function quizPage() {
     const ok = answer === q.answer;
     streak = ok ? streak + 1 : 0;
     hear(ok ? "right" : "wrong");
-    results.push({ ok, label: label(q, q.answer).split(" ")[0] });
+    results.push({ ok, label: short(q, q.answer) });
     sailed();
     box.querySelectorAll(".choices button").forEach((x) => ((x.disabled = true), x.classList.toggle("right", q.choices[+x.dataset.i] === q.answer), x.classList.toggle("chosen", x === b && !ok)));
-    // (right in the last three rounds, the harder praise; a year missed by one, "nearly")
-    const said = ok ? (streak === 3 ? t("said_streak") : sayOne(now >= 7 ? "said_right_hard" : "said_right"))
-      : q.kind === "year" && Math.abs(+answer - +q.answer) === 1 ? t("said_close", told(q, q.answer)) : sayOne("said_wrong", told(q, q.answer));
+    // (the lines for any kind; for "which year" and "who", those of memory too; right on a hard round of four choices,
+    // the harder praise; a year missed by one, "nearly")
+    const memory = q.kind === "year" || q.kind === "who", hard = q.tier === 2 && q.choices.length === 4;
+    const said = ok ? (streak === 3 ? t("said_streak") : sayFrom("right", [...t("said_right"), ...(memory ? t("said_right_memory") : []), ...(hard ? t("said_right_hard") : [])]))
+      : q.kind === "year" && Math.abs(+answer - +q.answer) === 1 ? t("said_close", told(q, q.answer)) : sayFrom("wrong", [...t("said_wrong"), ...(memory ? t("said_wrong_memory") : [])], told(q, q.answer));
     box.querySelector(".verdict").innerHTML = `<span><b>${escape(said)}</b> ${escape(evidence(q))}</span>`;
-    const drawn = box.querySelector(".reveal"), W = Math.min(560, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft));
-    drawn.hidden = false;
+    // (the evidence revealed in place, in the room the card keeps for it: nothing moves; from 900px the page does not
+    // scroll, and on a phone only where the answer would lie under the bar held at its foot)
+    const drawn = box.querySelector(".reveal"), W = Math.min(560, drawn.clientWidth);
     drawn.innerHTML = reveal(named(q.ev), W, nm(q.answer), periods);
-    answered(box, drawn);  // (the round and its result in view, clear of the bar)
+    box.classList.add("answered");
+    if (innerWidth < 900) answered(box, drawn);
     go.disabled = false;
     go.focus({ preventScroll: true });
   };
   const end = () => {
     const right = results.filter((r) => r.ok).length, n = game.length, rank = t("said_rank")[rankOf(right, n)];
     sailed();
+    box.classList.remove("answered");
+    delete box.dataset.kind;
+    delete box.dataset.key;
     box.innerHTML = `<p class="score">${right} / ${n}</p><p class="rank" role="status">${rank}</p>`;
     gameEnd(box, go, { page: "kuis", score: [right, n], share: `${t("quiz_share", right, n)} ${whole(href("kuis"))}`, again: start,
       plate: scorePlate(t("quiz_plate_all", rank, right, n), results, n, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft)) });
@@ -2675,6 +2712,7 @@ async function quizPage() {
   };
   const start = (again = true) => {
     game = deal(VISIT.quiz, Math.random, periods);
+    keepDealt("quiz");
     results = [];
     streak = 0;
     round(0);
@@ -2691,12 +2729,13 @@ async function quizPage() {
 /** Guess the number: of 100 pages naming someone, how many also hold a word. Six rounds dealt from the visit's decks
  *  (site/deal.js: two each of a low, a middle and a high true value), then a score to share. */
 async function guessPage() {
-  const s = await stickOf(0);
-  VISIT.guess ||= guessDecks(guessPool(s), Math.random);
+  const s = await stickOf(0), pool = guessPool(s);
+  visitDecks("guess", () => guessDecks(pool, Math.random), [pool]);
   view.replaceChildren(pageHead(t("play_tebak"), { ...fromPlay(), lede: t("guess_lede"), sea: { words: GUESS_WORDS } }));
   const { board, box, go, log, tally } = gameBoard();
-  const rule = el(`<p class="game-rule">${t("guess_rule")}</p>`);
-  view.append(rule, board);
+  view.append(board);
+  // (a word in English with what it means: "tersangka (suspect)")
+  const word = (w) => (language === "en" && (GLOSS[w]?.en || GAME_GLOSS[w]) ? `${w} (${GLOSS[w]?.en || GAME_GLOSS[w]})` : w);
   let rounds = [], results = [], score = 0, k = 0;
   const sailed = () => ((log.innerHTML = voyageMark(results, rounds.length)), (tally.textContent = `${score} / ${rounds.length * 100}`));
   // The scale (deal.js, STOPS and along): 0-20 in steps of 1 over two thirds of the track, 25-100 in steps of 5 over the
@@ -2706,14 +2745,16 @@ async function guessPage() {
     sailed();
     if (k === rounds.length) return end();
     const q = rounds[k];
-    box.replaceChildren(el(`<p class="step">${t("quiz_status", k + 1, rounds.length)}</p>`), el(`<p class="ask" tabindex="-1">${t("guess_ask", escape(shown(q.name)), escape(q.w))}</p>`),
+    // (the rule under the question, until the first guess is locked)
+    box.replaceChildren(el(`<p class="step">${t("quiz_status", k + 1, rounds.length)}</p>`), el(`<p class="ask" tabindex="-1">${t("guess_ask", escape(shown(q.name)), escape(word(q.w)))}</p>`),
+      ...(k ? [] : [el(`<p class="game-rule">${t("guess_rule")}</p>`)]),
       el(`<div class="gauge unset"><div class="track" role="slider" tabindex="0" aria-label="${t("guess_yours")}" aria-valuemin="0" aria-valuemax="100" aria-valuetext="–">
-        <div class="scale"><span class="minor low"></span><span class="minor high"></span><i class="sail" hidden></i><i class="truth" hidden></i><i class="yours"></i></div>
+        <div class="scale"><span class="bar low"></span><span class="bar high"></span><span class="minor low"></span><span class="minor high"></span><i class="fill"></i><i class="sail" hidden></i><i class="truth" hidden></i><i class="yours"></i></div>
         <div class="ticks" aria-hidden="true">${TICKS.map((v) => `<span style="left:${pc(v)}">${v}</span>`).join("")}</div></div>
         <div class="set"><button type="button" class="less" aria-label="${t("guess_less")}">−</button><output aria-hidden="true">–</output><button type="button" class="more" aria-label="${t("guess_more_one")}">+</button></div>
         <p class="note unset-note">${t("guess_unset")}</p></div>`),
-      el(`<p class="note caveat">${t("caveat")}</p>`), el(`<p class="verdict" role="status"></p>`));
-    const gauge = box.querySelector(".gauge"), track = gauge.querySelector(".track"), scale = track.querySelector(".scale"), [sail, truth, yours] = scale.querySelectorAll("i");
+      ...(CAVEAT.includes(q.w) ? [el(`<p class="note caveat">${t("caveat")}</p>`)] : []), el(`<p class="verdict" role="status"></p>`));
+    const gauge = box.querySelector(".gauge"), track = gauge.querySelector(".track"), scale = track.querySelector(".scale"), [fill, sail, truth, yours] = scale.querySelectorAll("i");
     const output = gauge.querySelector("output"), [less, more] = gauge.querySelectorAll(".set button"), verdict = box.querySelector(".verdict");
     let guess = null, locked = false;
     const set = (v) => {
@@ -2724,6 +2765,7 @@ async function guessPage() {
       track.setAttribute("aria-valuenow", v);
       track.setAttribute("aria-valuetext", t("guess_of", v));
       yours.style.left = pc(v);
+      fill.style.width = pc(v);
       go.disabled = false;
     };
     const by = (n) => set(STOPS[Math.max(0, Math.min(STOPS.length - 1, (guess === null ? (n > 0 ? 0 : 1) : STOPS.indexOf(guess)) + n))]);
@@ -2744,6 +2786,7 @@ async function guessPage() {
       if (guess === null) return;
       locked = true;
       gauge.classList.add("locked");
+      box.querySelector(".game-rule")?.remove();
       less.disabled = more.disabled = true;
       track.setAttribute("aria-disabled", "true");
       const won = points(guess, q.v);
@@ -2761,9 +2804,10 @@ async function guessPage() {
       sail.style.clipPath = `inset(0 ${100 - 100 * along(hi)}% 0 ${100 * along(lo)}%)`;
       // The line said follows the points (never the last of its far lines twice running), then the numbers, the
       // context, and the way on: each a line of its own.
-      const c = q.context, tier = nearness(won), line = tier < 3 ? t("said_near")[tier] : sayOne("said_far");
+      // (a far miss is said by its direction: a guess above the truth, or below it)
+      const c = q.context, tier = nearness(won), line = tier < 3 ? t("said_near")[tier] : sayOne(guess > q.v ? "said_far_above" : "said_far_below");
       verdict.innerHTML = `<b>${escape(line)}</b><span class="numbers">${escape(t("guess_numbers", guess, q.v, won))}</span>
-        <span class="context">${escape(t("guess_counted", thousands(q.pages), shown(q.name)))} ${escape(t("guess_context", q.w, c.of, shown(c.hi[0]), c.hi[1], shown(c.lo[0]), c.lo[1]))}</span>
+        <span class="context">${escape(t("guess_counted", thousands(q.pages), shown(q.name)))} ${escape(t("guess_context", word(q.w), c.of, shown(c.hi[0]), c.hi[1], shown(c.lo[0]), c.lo[1]))}</span>
         <a href="${href("menempel", q.w, "0", "2", BODIES.includes(q.name) ? "o" : "p")}">${t("guess_more", escape(q.w))}</a>`;
       go.textContent = k + 1 === rounds.length ? t("guess_score") : t("next");
       answered(box, verdict);
@@ -2771,8 +2815,7 @@ async function guessPage() {
     };
   };
   const end = () => {
-    const right = results.filter((r) => r.ok).length, rank = t("said_rank")[rankOf(right, rounds.length)], most = rounds.length * 100;
-    rule.hidden = true;  // (the rule is for before the first round, not for the end)
+    const most = rounds.length * 100, rank = t("said_rank")[guessRank(score, most)];
     box.innerHTML = `<p class="score">${score} / ${most}</p><p class="rank" role="status">${rank}</p><p>${t("guess_done")}</p>`;
     gameEnd(box, go, { page: "tebak", score: [score, most], share: t("guess_share", score, most, whole(href("tebak"))), again: start,
       plate: scorePlate(`${t("play_tebak")}: ${score} / ${most} · ${rank}`, results, rounds.length, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft)) });
@@ -2780,7 +2823,7 @@ async function guessPage() {
   };
   const start = (again = true) => {
     rounds = guessDeal(VISIT.guess, Math.random);
-    rule.hidden = false;
+    keepDealt("guess");
     results = [];
     score = 0;
     k = 0;
@@ -2878,7 +2921,7 @@ async function circlePage(name = "prabowo", k = "0") {
  *  the next two beside it; the rest under "more", two of them wide. */
 async function playPage() {
   // Two groups: the games ("Main"), the quiz leading; the explorers of the data ("Jelajah").
-  view.replaceChildren(pageHead(t("nav_play"), { kicker: t("play_kicker", PLAY.length), lede: t("play_lede"), sea: { words: QUIZ_NAMES, count: 4 } }),
+  view.replaceChildren(pageHead(t("nav_play"), { kicker: t("play_kicker", 2, PLAY.length - 2), lede: t("play_lede"), sea: { words: QUIZ_NAMES, count: 4 } }),
     el(`<h2 class="cards-head play-head">${t("play_games")}</h2>`), pictured(el(`<ul class="cards doors play-cards play-top play-games">${PLAY.slice(0, 2).map((page, k) => playCard(page, !k)).join("")}</ul>`)),
     el(`<h2 class="cards-head play-head">${t("play_explore")}</h2>`), pictured(el(`<ul class="cards doors play-cards play-more">${PLAY.slice(2).map((page) => playCard(page)).join("")}</ul>`)));
 }

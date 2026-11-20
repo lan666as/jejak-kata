@@ -365,60 +365,95 @@ its line); once the first route has
   filter, the sources past the main three: the first page's, the books, the web's news) is folded under one "Atur" /
   "Options" control (`options` in app.js), open with no control of its own from 900px; what a toy says about its
   numbers stands under its first result. Where a figure tells something on hover, a tap tells it too.
-  A game shows a name as a name (`shown` in deal.js: "Sandiaga Uno", "KPK", "Mahfud MD"), a common word in lower case;
-  the data keeps all in lower case. The quiz's card (the lead) pictures its own question as a picture, with
+  A game shows every word through one function (`shown` in deal.js), in its rounds, its evidence, its plates and the
+  hub's pictures: an abbreviation in upper case whether or not it is a name (a part that is all consonants, or of a
+  short hand list: "KPK", "PPKM", "IKN", "Mahfud MD"), a name with capitals ("Sandiaga Uno"; a name the data counts as
+  a word, as `AS_NAME` in glossary.js writes it), a common word in lower case; the data keeps all in lower case. In
+  English every Indonesian word a game shows as a clue, a choice or an answer carries what it means in brackets
+  ("didesak (urged)": text.js `GLOSS`, else glossary.js), a name only where it names a programme or an event;
+  `games.mjs` fails on a word without. The quiz's card (the lead) pictures its own question as a picture, with
   nothing that looks pressable: a year's words as a line of words, "Tahun berapa?", and four years as a line of
   figures, the right one ticked and underlined in the route.
   A game is a board: the round on paper, and beside it the game's voyage so far (a port per round: filled where right,
   a ring where wrong, the ship on the round now; a run of three or more right ringed in `--beacon`, the streak), the
   tally and the one control that goes on (lock, next, play again), always in the same place: in the panel held beside
   the round from 900px, in a bar held at the screen's foot on a phone (the voyage without its labels, the tally, the
-  control), where the thumb is. Keys: 1-4 choose, Enter goes on; after an answer focus is on that control, after
-  "next" on the new question. A wrong answer is marked by a dashed edge and a cross, the right one filled with a tick,
+  control), where the thumb is. From 900px the board fills the first screen under a short head: the question and its
+  choices at the left with the answer's room under them (kept from the start, so that the line said and the evidence
+  come into it in place: the card does not grow and the page does not scroll), the voyage, the tally, the control and
+  the keys at the right; nothing under the board but the footer. Keys: 1-4 choose, Enter goes on; after an answer
+  focus is on that control, after "next" on the new question. A wrong answer is marked by a dashed edge and a cross, the right one filled with a tick,
   never by colour alone. At the end the score as a plate to save as an image, its rank in a line, one press to play
-  again, and the toy that follows from it.
+  again, and the toy that follows from it. Under the plate's voyage each port's answer is a short whole label (a
+  year, "naik", a person's first name, a word of one part) where it has room, else none: never a cut word.
   **The quiz** ("Kuis") is one game of ten rounds dealt by `site/deal.js` from `site/data/quiz.json` (gathered from the
   data by `node tests/site/games.mjs write`): seven kinds of question (which year, from its ten most characteristic
   words, less any that names the year by itself, a number or a pairing of two names, `marker`; who, from the words that
   kept a name company in a year; which was more frequent in a year; which peaked first; official word or loanword in
   2024; which newsroom most often writes a word of public life, `ROOM_WORDS`, in stories about a name, with a count in
-  each; up, down or about the same between two years), in a rhythm (every kind once, never one twice running, none
-  more than twice and the loanword question once at most, `CAP`) and harder as they go: rounds 1-3 easy, 4-7
-  middling, 8-10 hard, each question's difficulty read from the data in one place (`DIFFICULTY`: a comparison by its
-  ratio, hard at the margin and easy from twelve times; who by the pages naming the name that year; which year by how
-  far its words stand above the years near it; which peaked first by the years between the peaks) and shown in the
-  round's line as three marks and a word ("mudah", "sedang", "sulit"). A question is dealt only where its answer
-  clears its margin (`MARGIN` in deal.js, one place); the years offered beside the answer lie within three of it
-  where the data allows and never all on one side; the names offered beside a "who" are of its own sort (a person
-  among people of their own time and country, a party among parties: `PERSON_KIND`, `BODY_KIND`) and in the news that
-  year. Within a game no word, name, pair or year is shown twice; a deck per kind, kept for the visit, deals every
-  question once before any comes again, and every name and word a game showed (as answer, choice or clue) goes to the
-  back for the visit's next games. After each answer a line is said (never the same one twice running; the owner's
-  wording, in text.js: the praise of the last three rounds is its own, and a year missed by one is "Nyaris"), the
-  answer written as it would start a sentence (a name as a name, a word in quotation marks, in English with what it
-  means where the site says: "korupsi (corruption)"), and the evidence of exactly what was asked is drawn small in the
-  plates' inks: the shares as marks on one scale (a row each; the three newsrooms in their colours; its labels at two
-  significant digits, as few as keep them apart), for "who" how many of the words shown kept each name offered
-  company, or a line over the years (a word's, or a year's words together) with the years asked about marked, drawn
-  in along its length (a cut with reduced motion). On a phone a round and its answer, evidence included, fit one
-  screen above the bar; the answers under the voyage on the score plate are shortened or left out where they would
-  touch. A question that sets a name beside a word carries the caution "sharing a page is
-  not being accused" in sight, and never asks it of a word that reads as an accusation (deal.js, `SENSITIVE`): those are
-  asked only as "guess the number" asks them. In "guess the number" (six rounds: one high true value, three middle, two low, so that no one guess always pays, in
-  an order shuffled on its own; only names a reader knows and words with a point, `POINTED`, on which names differ: the
-  name with the most of it has at least 8 in 100 and three times the least, `MARGIN.spreadTop` and `spreadRatio`) the
-  guess is set on a stepped scale (deal.js, `STOPS`, one mapping for the track, its ticks, the keys and the answer's
-  marks): 0 to 20 by ones over two thirds of the track, 25 to 100 by fives over the rest, its tick labels where they
-  fall (0, 5, 10, 15, 20, 50, 100), its small ticks a stop each. No guess is set for the reader: the lock waits until
-  one is, by a press or a drag on the track (the nearest stop), the arrow keys (a stop; Page keys five), or − and +
-  (44px). Points fall fast (`points`: the distance as a part of half the truth, or of 3 for a truth of 6 or less, so
-  3 off a small number scores nothing), as the rule above the board says before the first round (not at the end).
-  The answer is not simply shown: its mark sails (`--d-leg`) from the reader's guess to the truth along the scale,
-  drawing its wake in the route, so how far off the guess was is a distance one sees travelled (a cut with reduced
-  motion); then, each on its own line, a line that follows the points (90 or more, 60 or more, 25 or more, less; the
-  last of three far lines in turn, never the same twice running), the numbers (the guess, the truth, the points), the
-  context (pages counted, who has the most and the least of that word) and the link on. A round of 60 points or
-  more is a filled port.
+  each; up, down or about the same between two years). Every kind once where it can, none more than twice, the loanword
+  question and the newsroom question once at most (`CAP`). Each question's difficulty is read from the data in one
+  place (`DIFFICULTY` in deal.js) and shown in the round's line as three marks and a word ("mudah", "sedang", "sulit"):
+  a comparison by the ratio of the larger share to the next, hard from the margin to 2, middling to 4, easy from 4 (so
+  no question marked "sulit" compares shares more than twice apart); "about the same" middling to hard; who by the pages
+  naming the name that year (hard at 150, easy from 6,000); which year by how far its words stand above the years near
+  it; which peaked first by the years between the peaks (hard at two or three, middling at four or five), easy only
+  from six years apart and where both words are widely known (`FAME.wide`, 1,000 Kompas pages a year), else at least
+  middling; and fame for every kind that names a person or a body (as answer, choice or clue): where the least known
+  is on fewer than `FAME.known` (400) Kompas pages a year, 2011-2024 on average, the question is at least middling
+  (`games.mjs` holds every dealt question to both). A game is dealt three easy, four middling and three hard rounds
+  where the decks allow, and is then asked in the order of the questions' own marks (never a lower after a higher,
+  within a mark by difficulty, never one kind twice running: `ordered`), so the marks rise because the questions do.
+  A question is dealt only where its answer clears its margin (`MARGIN` in deal.js, one place). "Which peaked first" is
+  asked only between two of the same sort (two people, two bodies, two common words: never a place), and only of words
+  with a real peak: the highest year at least 2.5 times the word's own level on each side of its peak (the median of
+  the years before the run of years at least half as high, at most three, and of those after it), with two years or
+  more on each side; its evidence draws both lines, each to its own peak, with the peaks marked and named. The years
+  offered beside the answer lie within three of it where the data allows and never all on one side; the names offered
+  beside a "who" are of its own sort (a person among people of their own time and country, a party among parties:
+  `PERSON_KIND`, `BODY_KIND`) and in the news that year. Within a game no word, name, pair or year is shown twice; a deck
+  per kind deals every question once before any comes again, and every name and word a game showed (as answer, choice
+  or clue) goes to the back for the next games. What was dealt is kept from page load to page load (each deck's dealt
+  keys, the games played, the names and words shown with the game that last showed them: deal.js `keep` and `kept`,
+  written by the page to localStorage under a version of the questions, so that new data starts afresh; under 60 kB;
+  nothing where storage is refused, and the game plays the same without it). A kind whose deck is spent sits out the
+  next game rather than start over at once, where the other kinds can fill it. After each answer a line is said, never
+  the same one twice running, from pools that fit the question (text.js, the owner's wording): right, "Tepat." /
+  "Betul." / "Kena." for any kind, "Ingatanmu bagus." too for "which year" and "who", the editor's praise too on a hard
+  round of four choices; wrong, "Bukan. Jawabannya ..." / "Meleset. Yang benar: ...", "Ingatan memang suka menipu ..."
+  too for "which year" and "who"; a year missed by one, "Nyaris". The answer in the line keeps its own form (a name as
+  a name, "naik" in lower case, a common word in quotation marks, in English with what it means: “korupsi”
+  (corruption)), and the evidence of exactly what was asked is drawn small in the plates' inks: the shares as marks on
+  one scale (a row each; the three newsrooms in their colours; its labels at two significant digits, as few as keep
+  them apart), for "who" how many of the words shown kept each name offered company, or a line over the years (a
+  word's, or a year's words together) with the years asked about marked, drawn in along its length (a cut with reduced
+  motion). On a phone a round and its answer, evidence included, fit one screen above the bar (the page is brought to
+  the round only where its answer would lie under the bar). The caution "sharing a page is not being accused" is shown
+  only beside a word of the law or of accusation (`CAVEAT` in deal.js: tersangka, korupsi, suap, terdakwa, ditangkap,
+  diperiksa, divonis, dilaporkan, saksi, sidang, etik), where without it the pairing could read as one; beside any
+  other word ("viral", "survei") it would read as an accusation nobody made, and nothing is shown there. A question
+  that sets a name beside a word never asks it of a word that reads as an accusation (deal.js, `SENSITIVE`): those are
+  asked only as "guess the number" asks them. In "guess the number" (six rounds: one high true value, three middle,
+  two low, so that no one guess always pays, in an order shuffled on its own; only names a reader knows and words with
+  a point, `POINTED`, on which names differ: the name with the most of it has at least 8 in 100 and three times the
+  least, `MARGIN.spreadTop` and `spreadRatio`) the deal is kept as the quiz's, and within a bin a name comes back only
+  once the bin has dealt its other names (at the very end of a round of names, where the few left are all in the game
+  already, one may come back early); the same word and name not within four games. The guess is set on a stepped scale
+  (deal.js, `STOPS`, one mapping for the track, its ticks, the keys and the answer's marks): 0 to 20 by ones over two
+  thirds of the track, 25 to 100 by fives over the rest, its tick labels where they fall (0, 5, 10, 15, 20, 50, 100),
+  its small ticks a stop each. The track has a body a thumb finds: a 12px bar, the part up to the guess filled in the
+  route, a 28px thumb, and the 20-100 stretch hatched so that the change of scale reads. No guess is set for the
+  reader: the lock waits until one is, by a press or a drag on the track (the nearest stop), the arrow keys (a stop;
+  Page keys five), or − and + (44px). Points: round(100 x max(0, 1 - |guess - truth| / max(6, truth))): 100 for the
+  truth, fewer the further off, none once off by as much as the number itself (a guess within 2 always scores at
+  least 60; no one fixed guess averages 60%), as the rule says inside the card under the question until the first
+  guess is locked. The answer is not simply shown: its mark sails (`--d-leg`) from the reader's guess to the truth
+  along the scale, drawing its wake in the route, so how far off the guess was is a distance one sees travelled (a cut
+  with reduced motion); then, each on its own line, a line that follows the points (90 or more, 60 or more, 25 or
+  more, less; a far miss said by its direction, a guess above the truth or below it, its two lines in turn), the
+  numbers (the guess, the truth, the points), the context (pages counted, who has the most and the least of that word)
+  and the link on. A round of 60 points or more is a filled port; the rank at the end by the share of the points (80%
+  and more, 55%, 30%, less).
 - **Method, stories index, other play pages**: the page head pattern, the same cards, fields, chips and tables;
   figures on plates. The method opens with the method on one word the first page sails (`jokowi`, 2013 then 2014), in
   four steps stepped or played: the year's pages and the share that hold the word, the words it appears with most, its

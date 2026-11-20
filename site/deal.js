@@ -1,3 +1,5 @@
+import { AS_NAME } from "./glossary.js";
+
 // The games' questions: which may be asked, how they are dealt, and when an answer is clear enough to ask. No DOM
 // here: the quiz page (app.js) and tests/site/games.mjs deal from the same code and the same data, site/data/quiz.json
 // (what the counting found, gathered by `node tests/site/games.mjs write`) and, for "guess the number", the Kompas
@@ -12,7 +14,12 @@ export const MARGIN = {
   least: 10,       // ... and the smaller of two on at least this many, so that "more often" is not "once against never"
   peakNear: 0.85,  // a word's peak is every year within 85% of its highest share ...
   peakGap: 2,      // ... and "which peaked first" is asked only where all of one's peak years are this many years before all of the other's
-  peakStand: 2.5,  // ... and each peak stands at least this many times the word's median year (a word with no peak has no "first")
+  peakStand: 2.5,  // ... and a word has a peak only where its highest year stands at least this many times its own level on each side of
+                   // the peak (the median of the years before the peak's run, and of those after: a run of years at least half the
+                   // highest, at most peakRun long), with at least peakSides years on each side (a word always in the news, high
+                   // at an end or on a long plateau, has no "first")
+  peakRun: 3,
+  peakSides: 2,
   roomPages: 300,  // which newsroom: each of the three names the name on at least this many pages (stick.json's own rule, app.js STUCK_PAGES)
   whoPages: 150,   // who: the name is on at least this many pages of the year whose verbs are shown
   whoShared: 3,    // who: no other choice shares more than this many of the eleven words shown in that year (else two answers fit)
@@ -53,44 +60,69 @@ export const POINTED = ["tersangka", "korupsi", "suap", "ditangkap", "diperiksa"
   "hoaks", "janji", "utang", "etik", "oknum", "survei", "elektabilitas", "tegas", "marah", "gagal", "sukses", "rakyat", "sidang", "dilaporkan", "membantah", "klarifikasi"];
 export const OUTLET_NAMES = ["Kompas", "Tempo", "Tribunnews"];
 
-/** A name as a name, wherever a game shows one: a person, a body or a place (PEOPLE, BODIES, or a kind the data gives)
- *  with capitals, an abbreviation in upper case ("KPK", "Mahfud MD"), a brand as it writes itself; every other word as
- *  counted, in lower case. The data keeps every word in lower case: this is how it is shown, not what is counted. */
-const UPPER = new Set(["kpk", "dpr", "sby", "pdip", "tni", "kpu", "pks", "pkb", "mui", "fpi", "pbb", "ojk", "bmkg", "pln", "asean", "fifa", "isis", "nato", "mpr", "dpd", "unesco", "bpjs", "pt", "kai", "md", "ham", "pp", "ri", "dki", "ppp", "psi", "kpai", "bnn", "bnpb", "bpk", "lps", "ui", "itb", "ugm"]);
-const SPELT = { tiktok: "TikTok", youtube: "YouTube", whatsapp: "WhatsApp", nasdem: "NasDem" };
-export const shown = (word, kind) => (PEOPLE.includes(word) || BODIES.includes(word) || ["person", "organisation", "place"].includes(kind)
-  ? word.split(" ").map((p) => SPELT[p] || (UPPER.has(p) ? p.toUpperCase() : p.charAt(0).toUpperCase() + p.slice(1))).join(" ") : word);
+/** How a word is shown, in the games and on their plates (one function): an abbreviation in upper case, a name or not
+ *  ("KPK", "PPKM", "IKN", "Mahfud MD"): every part of a word that is all consonants, and the hand list ABBR; a name
+ *  (PEOPLE, BODIES, a person, body or place as the data gives it, or AS_NAME for a name the data counts as a word)
+ *  with capitals, a brand as it writes itself; every other word as counted, in lower case. The data keeps every word in
+ *  lower case: this is how it is shown, not what is counted. */
+export const ABBR = new Set(["kpk", "dpr", "sby", "pdip", "tni", "kpu", "pks", "pkb", "mui", "fpi", "pbb", "ojk", "bmkg", "pln", "asean", "fifa", "isis", "nato", "mpr", "dpd", "unesco", "bpjs",
+  "pt", "kai", "md", "ham", "pp", "ri", "dki", "ppp", "psi", "kpai", "bnn", "bnpb", "bpk", "lps", "ui", "itb", "ugm", "ikn", "ott", "bbm", "blt", "ktp", "uu", "ite", "apbn", "apbd",
+  "umkm", "bumn", "ihsg", "tki", "opm", "esg", "jis", "rkuhp", "kuhp", "asn", "pns", "ppkm", "psbb", "kkb", "blsm"]);
+const CONSONANTS = /^[bcdfghjklmnpqrstvwxz]{2,}$/;
+export const isAbbr = (part) => ABBR.has(part) || CONSONANTS.test(part);
+const SPELT = { tiktok: "TikTok", youtube: "YouTube", whatsapp: "WhatsApp", nasdem: "NasDem", polri: "Polri" };
+export const isName = (word, kind) => PEOPLE.includes(word) || BODIES.includes(word) || ["person", "organisation", "place"].includes(kind) || word in AS_NAME;
+export const shown = (word, kind) => {
+  word = String(word);
+  if (AS_NAME[word]) return AS_NAME[word];
+  const name = isName(word, kind);
+  return word.split(" ").map((p) => p.split("-").map((q) => SPELT[q] || (isAbbr(q) ? q.toUpperCase() : name ? q.charAt(0).toUpperCase() + q.slice(1) : q)).join("-")).join(" ");
+};
 
 /** The quiz: ten rounds, three easy, four middling, three hard; the kinds in a rhythm, never the same twice running,
- *  none more than twice in a game and "official word or loanword" once at most (CAP). */
+ *  none more than twice in a game, "official word or loanword" and "which newsroom" once at most (CAP). */
 export const ROUNDS = 10;
 export const TIERS = [0, 0, 0, 1, 1, 1, 1, 2, 2, 2];
 export const KINDS = ["year", "who", "freq", "peak", "resmi", "room", "trend"];
-export const CAP = { resmi: 1 };
+export const CAP = { resmi: 1, room: 1 };
 export const capOf = (kind) => CAP[kind] ?? 2;
 /** Guess the number: six rounds over low, middle and high true values, so that no one guess always pays. */
 export const GUESS_ROUNDS = 6;
 export const GUESS_BINS = [[1, 4], [5, 14], [15, 100]];  // most true values are small (half are 1 or 2 in 100): the bins are cut where the data has enough of each
 
 /**
- * How hard a question is, in one place: 0 (a giveaway) to 1 (as hard as the margins allow), from the data alone.
+ * How hard a question is, in one place: 0 (a giveaway) to 1 (as hard as the margins allow), from the data alone, and
+ * its mark: under a third "mudah", under two thirds "sedang", the rest "sulit". The mark shown is the question's own,
+ * and a game asks its questions in the order of it (`deal`), so the marks rise because the questions do.
  * - two or three shares compared (which is more frequent, official word or loanword, which newsroom, up or down): by
- *   their ratio, hard at the margin (1.5) and easy from twelve times (1.5 x 8);
+ *   the ratio of the larger to the next: hard from the margin (1.5) to 2, middling to 4, easy from 4 (none harder
+ *   than a giveaway from 8). So no question marked hard compares two shares more than twice apart;
  * - "about the same": middling to hard, harder the nearer the two are to the 15% the margin allows;
- * - which peaked first: by the years between the two peaks, hard at two and easy from eight;
- * - who: by how many pages name the name in that year, hard at 150 (the margin) and easy from 6,000 (x 40);
+ * - which peaked first: by the years between the two peaks, hard at two or three, middling at four or five, easy only
+ *   from six years and only where both words are widely known (FAME.wide): else at least middling;
+ * - who: by how many pages name the name in that year, hard at 150 (the margin) and easy from 6,000;
  * - which year: by how distinctive its words are, their share in that year over their highest share in any year
- *   within three of it, hard at the margin (1.5) and easy from 30 times (x 20).
- * Its tier: under a third easy, under two thirds middling, the rest hard.
+ *   within three of it, hard at the margin (1.5) and easy from 30 times;
+ * - and fame, for every kind that names a person or a body (as answer, choice or clue): where the least known of them
+ *   is named on fewer than FAME.known Kompas pages a year (2011-2024 on average), the question is at least middling.
  */
-export const HARD = { ratio: 8, peak: 4, who: 40, year: 20 };
-const ease = (x, span) => Math.max(0, Math.min(1, Math.log(Math.max(1, x)) / Math.log(span)));
+export const FAME = { known: 400, wide: 1000 };
+// (a measure read through its knots, [value, difficulty], in log steps for a ratio or a count, straight for years)
+const through = (x, knots, log = true) => {
+  const f = (v) => (log ? Math.log(v) : v), k = knots.findIndex(([v]) => x <= v);
+  if (k === 0) return knots[0][1];
+  if (k < 0) return knots.at(-1)[1];
+  const [[a, da], [b, db]] = [knots[k - 1], knots[k]];
+  return da + ((db - da) * (f(x) - f(a))) / (f(b) - f(a));
+};
 export const DIFFICULTY = {
-  ratio: (r) => 1 - ease(r / MARGIN.ratio, HARD.ratio),
-  same: (r) => 0.5 + 0.5 * ease(r, MARGIN.same),
-  peak: (gap) => 1 - ease(gap / MARGIN.peakGap, HARD.peak),
-  who: (pages) => 1 - ease(pages / MARGIN.whoPages, HARD.who),
-  year: (distinct) => 1 - ease(distinct / MARGIN.yearRatio, HARD.year),
+  ratio: (r) => through(r, [[MARGIN.ratio, 1], [2, 2 / 3], [4, 1 / 3 - 1e-9], [8, 0]]),
+  same: (r) => through(r, [[1, 0.5], [MARGIN.same, 1]]),
+  peak: (gap, both) => Math.max(through(gap, [[MARGIN.peakGap, 1], [3, 2 / 3 + 1e-9], [4, 2 / 3 - 1e-9], [6, 1 / 3 - 1e-9], [8, 0]], false), both >= FAME.wide ? 0 : 0.5),
+  who: (pages) => through(pages, [[MARGIN.whoPages, 1], [6000, 0]]),
+  year: (distinct) => through(distinct, [[MARGIN.yearRatio, 1], [30, 0]]),
+  /** ... and the fame floor: `fames`, the pages a year of each person or body the question names. */
+  rated: (d, fames = []) => (fames.length && Math.min(...fames) < FAME.known ? Math.max(d, 0.5) : d),
 };
 export const tierOf = (d) => (d < 1 / 3 ? 0 : d < 2 / 3 ? 1 : 2);
 
@@ -140,7 +172,12 @@ const median = (v) => { const s = [...v].sort((a, b) => a - b); return s[Math.fl
  */
 export function pools(Q) {
   const P = Q.periods, units = Q.units, W = Q.words, pages = (w, p) => W[w].share[p] * units[p];
-  const group = (w) => (W[w].clueOnly ? null : PEOPLE.includes(w) ? "person" : BODIES.includes(w) ? "body" : W[w].kind === "person" || W[w].kind === "organisation" ? null : "word");
+  // (a common word is a word the data counts as a word: not a place, nor a name it counts as a word, AS_NAME)
+  const group = (w) => (W[w].clueOnly ? null : PEOPLE.includes(w) ? "person" : BODIES.includes(w) ? "body" : W[w].kind === "word" && !(w in AS_NAME) ? "word" : null);
+  // Fame: the Kompas pages a year that name a person or body, 2011-2024 on average (DIFFICULTY.rated); a word's, the
+  // same count for the word.
+  const fame = (w) => (W[w] ? P.reduce((s, _, p) => s + pages(w, p), 0) / P.length : 0), named = (w) => PEOPLE.includes(w) || BODIES.includes(w) || ["person", "organisation"].includes(W[w]?.kind);
+  const fames = (list) => list.filter(named).map(fame);
   const words = Object.keys(W).filter((w) => group(w));
   const out = Object.fromEntries(KINDS.map((k) => [k, []]));
   const ratio = (a, b) => Math.max(a, b) / Math.min(a, b);
@@ -159,7 +196,7 @@ export function pools(Q) {
     if (others.length < 3) continue;
     const near = [...others].sort((a, b) => Math.abs(a - p) - Math.abs(b - p)), within = near.filter((q) => Math.abs(q - p) <= MARGIN.yearNear);
     const rivals = within.length >= 3 ? within : near.slice(0, 3), distinct = own / Math.max(...rivals.map(sum));
-    out.year.push({ key: `year:${P[p]}`, topics: [`year:${P[p]}`, ...clue], variants: [at(DIFFICULTY.year(distinct), { p, clue, others, answer: P[p],
+    out.year.push({ key: `year:${P[p]}`, topics: [`year:${P[p]}`, ...clue], variants: [at(DIFFICULTY.rated(DIFFICULTY.year(distinct), fames(clue)), { p, clue, others, answer: P[p],
       ev: { type: "line", series: [{ label: "", share: line }], marks: [p] } })] });
   }
 
@@ -173,7 +210,8 @@ export function pools(Q) {
         const shared = (m) => (Q.who[m].said[p] || []).filter((x) => said.includes(x)).length;
         const news = who.filter((m) => m !== n && Q.who[m].said[p] && W[m] && pages(m, p) >= MARGIN.whoPages && shared(m) <= MARGIN.whoShared);
         const same = news.filter((m) => sortOf(m) === sortOf(n)), others = same.length >= 3 || PEOPLE.includes(n) ? same : news.filter((m) => BODIES.includes(m));
-        return at(DIFFICULTY.who(pages(n, p)), { p, said, others, near: others.filter((m) => shared(m) >= 2), answer: n,
+        // (its difficulty is rated again when its choices are drawn, by the least known of them: finish)
+        return at(DIFFICULTY.rated(DIFFICULTY.who(pages(n, p)), fames([n])), { p, said, others, near: others.filter((m) => shared(m) >= 2), answer: n, m: DIFFICULTY.who(pages(n, p)), fame: Object.fromEntries([n, ...others].map((m) => [m, fame(m)])),
           counts: Object.fromEntries([n, ...others].map((m) => [m, m === n ? said.length : shared(m)])) });
       }).filter((v) => v.others.length >= 3);
     if (variants.length) out.who.push({ key: `who:${n}`, topics: [n], variants });
@@ -187,23 +225,31 @@ export function pools(Q) {
     if (group(a) !== group(b) || (group(a) !== "word" && sortOf(a) !== sortOf(b)) || resmi.has([a, b].sort().join("|"))) continue;
     const variants = P.map((_, p) => p).filter((p) => Math.max(pages(a, p), pages(b, p)) >= MARGIN.pages && Math.min(pages(a, p), pages(b, p)) >= MARGIN.least && ratio(W[a].share[p], W[b].share[p]) >= MARGIN.ratio)
       .map((p) => { const r = ratio(W[a].share[p], W[b].share[p]), win = W[a].share[p] > W[b].share[p] ? a : b;
-        return at(DIFFICULTY.ratio(r), { p, choices: [a, b], answer: win, ev: { type: "marks", period: P[p], items: [a, b].map((w) => ({ label: w, v: W[w].share[p] })) } }); });
+        return at(DIFFICULTY.rated(DIFFICULTY.ratio(r), fames([a, b])), { p, choices: [a, b], answer: win, ev: { type: "marks", period: P[p], items: [a, b].map((w) => ({ label: w, v: W[w].share[p] })) } }); });
     if (variants.some((v) => v.answer === a) && variants.some((v) => v.answer === b)) out.freq.push({ key: `freq:${a}|${b}`, topics: [a, b], variants });
   }
 
-  // Which peaked first: every year of A's peak before every year of B's, by at least two years; both peaks clear.
+  // Which peaked first: only between two of the same sort (two people, two bodies, two common words), and only for
+  // words with a real peak (MARGIN.peakStand: the highest year stands clearly above the word's own level on both sides
+  // of its run); every year of A's peak before every year of B's, by at least two years.
   const peak = (w) => {
-    const v = W[w].share, top = Math.max(...v), at = v.map((x, p) => (x >= MARGIN.peakNear * top ? p : -1)).filter((p) => p >= 0);
-    return top >= MARGIN.peakStand * median(v) && pages(w, v.indexOf(top)) >= MARGIN.pages ? { at, top: v.indexOf(top) } : null;
+    const v = W[w].share, top = Math.max(...v), p = v.indexOf(top), at = v.map((x, q) => (x >= MARGIN.peakNear * top ? q : -1)).filter((q) => q >= 0);
+    let a = p, b = p;
+    while (a > 0 && v[a - 1] >= top / 2) a--;
+    while (b < v.length - 1 && v[b + 1] >= top / 2) b++;
+    const [before, after] = [v.slice(0, a), v.slice(b + 1)];
+    if (b - a + 1 > MARGIN.peakRun || before.length < MARGIN.peakSides || after.length < MARGIN.peakSides || at.some((q) => q < a || q > b)) return null;
+    return top >= MARGIN.peakStand * Math.max(median(before), median(after)) && pages(w, p) >= MARGIN.pages ? { at, top: p } : null;
   };
   const peaked = Object.fromEntries(words.map((w) => [w, peak(w)]).filter(([, x]) => x));
   const peakers = Object.keys(peaked);
   for (let i = 0; i < peakers.length; i++) for (let j = i + 1; j < peakers.length; j++) {
     const [a, b] = [peakers[i], peakers[j]], [A, B] = [peaked[a], peaked[b]];
+    if (group(a) !== group(b)) continue;
     const after = Math.min(...B.at) - Math.max(...A.at), before = Math.min(...A.at) - Math.max(...B.at), gap = Math.max(after, before);
     if (gap < MARGIN.peakGap) continue;
     const first = after > before ? a : b;
-    out.peak.push({ key: `peak:${a}|${b}`, topics: [a, b], variants: [at(DIFFICULTY.peak(gap), { choices: [a, b], answer: first,
+    out.peak.push({ key: `peak:${a}|${b}`, topics: [a, b], variants: [at(DIFFICULTY.rated(DIFFICULTY.peak(gap, Math.min(fame(a), fame(b))), fames([a, b])), { choices: [a, b], answer: first,
       ev: { type: "line", series: [a, b].map((w) => ({ label: w, share: W[w].share })), marks: [A.top, B.top] } })] });
   }
 
@@ -223,7 +269,7 @@ export function pools(Q) {
     if (!ROOM_WORDS.includes(w) || SENSITIVE.includes(w) || !(PEOPLE.includes(n) || BODIES.includes(n)) || pg.some((x) => x < MARGIN.roomPages)) continue;
     const order = v.map((x, k) => k).sort((x, y) => v[y] - v[x]), [top, second] = order, hits = v.map((x, k) => (x * pg[k]) / 1000);
     if (hits[top] < MARGIN.pages || hits.some((h) => h < MARGIN.roomHits) || v[top] < MARGIN.ratio * v[second]) continue;
-    out.room.push({ key: `room:${w}|${n}`, topics: [w, n], answer: OUTLET_NAMES[top], variants: [at(DIFFICULTY.ratio(v[top] / v[second]), { choices: OUTLET_NAMES, answer: OUTLET_NAMES[top], w, n,
+    out.room.push({ key: `room:${w}|${n}`, topics: [w, n], answer: OUTLET_NAMES[top], variants: [at(DIFFICULTY.rated(DIFFICULTY.ratio(v[top] / v[second]), [W[n] ? fame(n) : pg[0] / 5]), { choices: OUTLET_NAMES, answer: OUTLET_NAMES[top], w, n,
       ev: { type: "marks", period: Q.rooms.era, outlets: true, items: OUTLET_NAMES.map((o, k) => ({ label: o, v: v[k] / 1000, pages: pg[k] })) } })] });
   }
 
@@ -234,7 +280,7 @@ export function pools(Q) {
       const [a, b] = [W[w].share[p], W[w].share[q]];
       if (Math.min(pages(w, p), pages(w, q)) < MARGIN.pages) continue;
       const r = b / a, answer = r >= MARGIN.ratio ? "up" : r <= 1 / MARGIN.ratio ? "down" : Math.max(r, 1 / r) <= MARGIN.same ? "same" : null;
-      if (answer) variants.push(at(answer === "same" ? DIFFICULTY.same(Math.max(r, 1 / r)) : DIFFICULTY.ratio(Math.max(r, 1 / r)), { p, q, answer, choices: ["up", "down", "same"], ev: { type: "line", series: [{ label: w, share: W[w].share }], marks: [p, q] } }));
+      if (answer) variants.push(at(DIFFICULTY.rated(answer === "same" ? DIFFICULTY.same(Math.max(r, 1 / r)) : DIFFICULTY.ratio(Math.max(r, 1 / r)), fames([w])), { p, q, answer, choices: ["up", "down", "same"], ev: { type: "line", series: [{ label: w, share: W[w].share }], marks: [p, q] } }));
     }
     if (variants.length) out.trend.push({ key: `trend:${w}`, topics: [w], variants });
   }
@@ -264,10 +310,12 @@ export function finish(kind, g, tier, rng, P, fresh = () => 1) {
   }
   if (kind === "who") {
     // Hard: the names whose words that year are nearest, where three of them are welcome; else any of its sort.
-    const near = tier === 2 ? pick(v.near, 3) : [], picked = near.length >= 3 ? near : pick(v.others, 3);
+    // (for an easy round, names a reader knows where three are there: a name little known makes it middling)
+    const known = v.others.filter((m) => v.fame[m] >= FAME.known), near = tier === 2 ? pick(v.near, 3) : [];
+    const picked = near.length >= 3 ? near : (tier === 0 && pick(known, 3).length >= 3 ? pick(known, 3) : pick(v.others, 3));
     if (picked.length < 3) return null;
-    const choices = shuffle([v.answer, ...picked], rng);
-    return { ...base, ask: ["quiz_who_ask", P[v.p]], clue: v.said, choices,
+    const choices = shuffle([v.answer, ...picked], rng), d = DIFFICULTY.rated(v.m, choices.map((m) => v.fame[m]));
+    return { ...base, d: +d.toFixed(3), tier: tierOf(d), ask: ["quiz_who_ask", P[v.p]], clue: v.said, choices,
       ev: { type: "marks", unit: "count", of: v.said.length, period: P[v.p], items: choices.map((m) => ({ label: m, v: v.counts[m] })) } };
   }
   if (kind === "freq") return { ...base, ask: ["ask_freq", P[v.p]], choices: shuffle(v.choices, rng) };
@@ -280,14 +328,16 @@ export function finish(kind, g, tier, rng, P, fresh = () => 1) {
 export const shownIn = (q) => [...q.topics, ...(q.kind === "who" ? q.choices : [])].filter((t) => !t.startsWith("year:"));
 
 /**
- * A deck per kind, kept for a visit: its groups are dealt in a shuffled order and none comes again until all have been
- * dealt (then the deck is shuffled anew). `take(ok, tier, strict)` gives the first undealt group that `ok` accepts,
- * of the tier asked (with `strict`, only of that tier), else of the nearest; null where none is left that `ok` accepts.
+ * A deck per kind, kept for a visit and, where the browser keeps it, from visit to visit (`kept`, `keep`): its groups
+ * are dealt in a shuffled order and none comes again until all have been dealt. `take(ok, tier, strict)` gives the
+ * first undealt group that `ok` accepts, of the tier asked (with `strict`, only of that tier), else of the nearest;
+ * null where none is left that `ok` accepts. A spent deck is not shuffled anew at once: `refill` does it (`deal`: a
+ * spent kind sits out a game first, where the other kinds can fill it).
  */
 export class Deck {
-  constructor(groups, rng) { this.rng = rng; this.size = groups.length; this.fresh = shuffle(groups, rng); this.dealt = []; this.cycle = 0; this.given = {}; }
+  constructor(groups, rng) { this.rng = rng; this.size = groups.length; this.fresh = shuffle(groups, rng); this.dealt = []; this.cycle = 0; this.given = {}; this.rest = null; }
+  refill() { this.fresh = shuffle([...this.fresh, ...this.dealt], this.rng); this.dealt = []; this.cycle++; this.rest = null; }
   take(ok, tier, strict = false) {
-    if (!this.fresh.length) { this.fresh = shuffle(this.dealt, this.rng); this.dealt = []; this.cycle++; }
     // Nearest tier first; then, where a kind has an answer of its own (which newsroom), the answer given least so far
     // this visit, so that always pressing the most common answer does not win.
     let best = -1, far = Infinity;
@@ -303,14 +353,54 @@ export class Deck {
     if (g.answer) this.given[g.answer] = (this.given[g.answer] || 0) + 1;
     return g;
   }
+  /** Where nothing undealt fits: the dealt group longest ago that `ok` accepts, dealt again (one early, not the deck). */
+  early(ok) {
+    const i = this.dealt.findIndex(ok);
+    if (i < 0) return null;
+    const [g] = this.dealt.splice(i, 1);
+    this.dealt.push(g);
+    return g;
+  }
   /** A group taken but not asked (its choices could not be drawn) goes back where it was. */
   undo(g) { this.dealt.splice(this.dealt.indexOf(g), 1); this.fresh.unshift(g); if (g.answer) this.given[g.answer]--; }
+  /** What is kept of it: the keys dealt this round of the deck (the latest `most`), the answers given, its rest. */
+  state(most = 1500) { return { dealt: this.dealt.slice(-most).map((g) => g.key), given: this.given, cycle: this.cycle, rest: this.rest }; }
+  restore(st) {
+    const by = new Map(this.fresh.map((g) => [g.key, g])), dealt = (st?.dealt || []).map((k) => by.get(k)).filter(Boolean), out = new Set(dealt);
+    this.dealt = dealt;
+    this.fresh = this.fresh.filter((g) => !out.has(g));
+    this.given = st?.given && typeof st.given === "object" ? st.given : {};
+    this.cycle = +st?.cycle || 0;
+    this.rest = Number.isFinite(st?.rest) ? st.rest : null;
+  }
 }
-/** The visit's decks, a deck per kind; and, kept with them (not a kind), which game of the visit last showed each name
- *  and word (`seen`) and how many games were dealt. */
+/** The visit's decks, a deck per kind; and, kept with them (not a kind), which game last showed each name and word
+ *  (`seen`) and how many games were dealt. */
 export const decks = (pool, rng) => {
   const d = Object.fromEntries(KINDS.filter((k) => pool[k].length).map((k) => [k, new Deck(pool[k], rng)]));
   return Object.defineProperties(d, { seen: { value: new Map() }, games: { value: 0, writable: true } });
+};
+/** A version of the questions (a hash of every key): what was kept under another version is let go. */
+export const version = (lists) => {
+  let h = 5381;
+  for (const key of lists.flat().map((g) => g.key).join("\n")) h = ((h << 5) + h + key.charCodeAt(0)) | 0;
+  return (h >>> 0).toString(36);
+};
+/** What is kept of a visit's decks between page loads (the page writes it to localStorage, where it may): every
+ *  deck's dealt keys, how many games, and the names and words shown with the game that last showed them (the latest
+ *  `most`). Under a size cap: the oldest let go first. */
+export const keep = (d, most = 600) => {
+  const seen = [...d.seen].sort((a, b) => b[1] - a[1]).slice(0, most);
+  const st = { games: d.games, seen, decks: Object.fromEntries(Object.entries(d).map(([k, deck]) => [k, deck.state()])), named: d.named?.map((s) => [...s]) };
+  return JSON.stringify(st).length < 60000 ? st : { ...st, seen: seen.slice(0, 200), decks: Object.fromEntries(Object.entries(d).map(([k, deck]) => [k, deck.state(200)])) };
+};
+export const kept = (d, st) => {
+  if (!st || typeof st !== "object") return d;
+  d.games = +st.games || 0;
+  for (const [w, n] of Array.isArray(st.seen) ? st.seen : []) if (typeof w === "string" && Number.isFinite(n)) d.seen.set(w, n);
+  for (const [k, deck] of Object.entries(d)) deck.restore(st.decks?.[k]);
+  if (d.named && Array.isArray(st.named)) st.named.forEach((list, b) => Array.isArray(list) && list.forEach((n) => d.named[b]?.add(n)));
+  return d;
 };
 
 /** The kinds of a game in their rhythm: every kind once in a shuffled order, then the rest of the rounds from a second
@@ -327,27 +417,42 @@ export function rhythm(kinds, rng, rounds = ROUNDS) {
 }
 
 /**
- * One quiz game from the visit's decks: ten questions, harder as they go (TIERS), no name, word or pair twice, no kind
- * more than twice (CAP). The names and words of the visit's earlier games go to the back: a round first looks among
- * questions none of whose names and words any game of this visit has shown (as an answer, a choice or in a clue), then
- * among those not shown in the last three games, then not in the last one; only then does it give up its tier, and
- * the same again.
+ * One quiz game from the visit's decks: ten questions, no name, word or pair twice, no kind more than twice (CAP). The
+ * names and words of the visit's earlier games go to the back: a round first looks among questions none of whose names
+ * and words any game of this visit has shown (as an answer, a choice or in a clue), then among those not shown in the
+ * last three games, then not in the last one; only then does it give up its tier, and the same again. A kind whose
+ * deck is spent sits out the next game (rather than start over at once) where the other kinds can fill it. Dealt by
+ * TIERS (three easy, four middling, three hard where the decks allow), the game is then asked in the order of each
+ * question's own difficulty (`ordered`).
  */
 export function deal(d, rng, P) {
-  const kinds = Object.keys(d), order = rhythm(kinds, rng), used = new Set(), game = [], count = {}, n = ++d.games;
+  const n = ++d.games, all = Object.keys(d);
+  for (const k of all) if (!d[k].fresh.length) { if (d[k].rest === null) d[k].rest = n; else if (n > d[k].rest) d[k].refill(); }
+  const open = all.filter((k) => d[k].fresh.length), room = (list) => list.reduce((s, k) => s + Math.min(capOf(k), d[k].fresh.length), 0);
+  // (where the kinds left cannot fill a game, the kind resting longest comes back)
+  for (const k of all.filter((x) => !open.includes(x)).sort((a, b) => d[a].rest - d[b].rest)) if (room(open) < ROUNDS) (d[k].refill(), open.push(k));
+  const kinds = open, order = rhythm(kinds, rng), used = new Set(), game = [], count = {};
   const age = (w) => (d.seen.has(w) ? n - d.seen.get(w) : Infinity);  // games since a name or word was last shown
   const LEVELS = [Infinity, 4, 2, 1];
-  for (let k = 0; k < ROUNDS; k++) {
-    const tier = TIERS[k], prev = game.at(-1)?.kind;
-    const which = [order[k], ...shuffle(kinds.filter((x) => x !== order[k]), rng)].filter((x) => x && x !== prev && (count[x] || 0) < capOf(x));
+  // (the hard rounds dealt first: few kinds have hard questions, and they need names still free; the easy ones last)
+  for (const k of [...TIERS.keys()].sort((a, b) => TIERS[b] - TIERS[a] || a - b)) {
+    const tier = TIERS[k];
     let q = null;
-    for (const strict of [true, false]) for (const level of LEVELS) for (const kind of which) {
-      if (q) break;
-      const welcome = (w) => !used.has(w) && age(w) >= level;
-      const g = d[kind].take((g) => g.topics.every(welcome), tier, strict);
-      if (!g) continue;
-      q = finish(kind, g, tier, rng, P, (w) => (welcome(w) ? Math.min(age(w), 99) : 0));
-      if (!q) d[kind].undo(g);
+    for (const spent of [false, true]) {
+      // (a round no kind left can fill: a spent deck comes round again, rather than a game a round short)
+      if (spent) { if (q) break; for (const x of all) if (!d[x].fresh.length) d[x].refill(); }
+      const which = [order[k], ...shuffle((spent ? all : kinds).filter((x) => x !== order[k]), rng)].filter((x) => x && (count[x] || 0) < capOf(x));
+      // (its own tier first, then the next; only a tier that leaves the game an order of rising marks with no kind
+      // twice running)
+      for (const off of [0, 1, 2]) for (const level of LEVELS) for (const kind of which) for (const at of [tier - off, tier + off].filter((x, i, l) => x >= 0 && x <= 2 && l.indexOf(x) === i)) {
+        if (q || !ordered([...game, { kind, tier: at, d: 0 }])) continue;
+        const welcome = (w) => !used.has(w) && age(w) >= level;
+        const g = d[kind].take((g) => g.topics.every(welcome), at, true);
+        if (!g) continue;
+        q = finish(kind, g, at, rng, P, (w) => (welcome(w) ? Math.min(age(w), 99) : 0));
+        if (q && !ordered([...game, q])) q = null;
+        if (!q) d[kind].undo(g);
+      }
     }
     if (!q) continue;
     shownIn(q).forEach((w) => used.add(w));
@@ -356,7 +461,25 @@ export function deal(d, rng, P) {
     game.push(q);
   }
   for (const q of game) for (const w of shownIn(q)) d.seen.set(w, n);
-  return game;
+  return ordered(game) || [...game].sort((a, b) => a.tier - b.tier || a.d - b.d);
+}
+/** A game in the order of its questions' difficulty: by mark (easy, middling, hard: never a lower mark after a higher),
+ *  within a mark by difficulty, and never one kind twice running (the nearest order that keeps both); null where there
+ *  is none. */
+export function ordered(game) {
+  const sorted = [...game].sort((a, b) => a.tier - b.tier || a.d - b.d), out = [];
+  const place = (left) => {
+    if (!left.length) return true;
+    const low = Math.min(...left.map((q) => q.tier));
+    for (const q of left.filter((x) => x.tier === low)) {
+      if (out.length && out.at(-1).kind === q.kind) continue;
+      out.push(q);
+      if (place(left.filter((x) => x !== q))) return true;
+      out.pop();
+    }
+    return false;
+  };
+  return place(sorted) ? out : null;
 }
 
 // ---- guess the number ----------------------------------------------------------------------------------------------
@@ -380,22 +503,50 @@ export function guessPool(s, era = 2) {
   }
   return out;
 }
-/** A deck per bin of the true value, kept for a visit. */
-export const guessDecks = (pool, rng) => GUESS_BINS.map((_, b) => new Deck(pool.filter((q) => q.bin === b), rng));
+/** A deck per bin of the true value, kept for a visit (and from visit to visit, as the quiz's: `keep`, `kept`); with
+ *  them which game last showed each name and word (`seen`), and per bin the names dealt since the bin last went round
+ *  them all (`named`). */
+export const guessDecks = (pool, rng) => {
+  const d = GUESS_BINS.map((_, b) => new Deck(pool.filter((q) => q.bin === b), rng));
+  return Object.defineProperties(d, { seen: { value: new Map() }, games: { value: 0, writable: true }, named: { value: GUESS_BINS.map(() => new Set()) },
+    names: { value: GUESS_BINS.map((_, b) => new Set(pool.filter((q) => q.bin === b).map((q) => q.name))) } });
+};
 /** One game of six: one high value, three middle and two low (few values in the data are high), no word and no name
- *  twice. The order of the rounds is a shuffle of its own, so that where a word comes in a game says nothing. */
+ *  twice. Within a visit a name comes back in its bin only after every other name of the bin has been dealt, and the
+ *  names and words of the visit's earlier games go to the back (as in the quiz). The order of the rounds is a shuffle of
+ *  its own, so that where a word comes in a game says nothing. */
 export function guessDeal(d, rng) {
-  const used = new Set(), game = [];
+  const used = new Set(), game = [], n = ++d.games, age = (w) => (d.seen.has(w) ? n - d.seen.get(w) : Infinity);
+  // A bin's card: of those whose word and name are free in this game, one whose name the bin has not dealt this time
+  // round (from the cards left, else a dealt card again); among them one whose word and name were shown longest ago,
+  // then one whose word has the most cards left (so that the deck's last cards are not all of one word). A spent deck
+  // goes round again.
+  const draw = (x) => {
+    const deck = d[x];
+    if (!deck.fresh.length) deck.refill();
+    const left = {};
+    for (const q of deck.fresh) left[q.w] = (left[q.w] || 0) + 1;
+    const free = (q) => q.topics.every((t) => !used.has(t)), level = (q) => Math.min(4, ...q.topics.map(age)), due = (q) => free(q) && !d.named[x].has(q.name);
+    const key = (q) => [-level(q), -left[q.w]], first = (list) => list.sort((a, b) => { const [p, r] = [key(a), key(b)]; return p[0] - r[0] || p[1] - r[1]; })[0];
+    // (a name not yet dealt this time round: from the cards left, else one dealt card again; only then another name)
+    const best = first(deck.fresh.filter(due)) || deck.early(due) || first(deck.fresh.filter(free));
+    if (!best) return deck.early(free);
+    if (!deck.fresh.includes(best)) return best;
+    deck.fresh.splice(deck.fresh.indexOf(best), 1);
+    deck.dealt.push(best);
+    return best;
+  };
   // The scarcest bin (the high values) is dealt first, while every word and name is still free.
   for (const b of [2, 1, 1, 1, 0, 0]) {
-    const ok = (q) => q.topics.every((t) => !used.has(t));
-    // (where what is left of its bin this pass does not fit, the bin's dealt cards come back early; only then the nearest bin)
-    const again = (x) => d[x].take(ok, 0) || ((d[x].fresh.push(...d[x].dealt.splice(0))), d[x].take(ok, 0));
-    const q = [b, ...[0, 1, 2].filter((x) => x !== b).sort((x, y) => Math.abs(x - b) - Math.abs(y - b))].reduce((got, x) => got || again(x), null);
+    const x = [b, ...[0, 1, 2].filter((y) => y !== b).sort((y, z) => Math.abs(y - b) - Math.abs(z - b))].find((y) => d[y].size), q = x === undefined ? null : draw(x);
     if (!q) continue;
     q.topics.forEach((t) => used.add(t));
+    d.named[q.bin].add(q.name);
+    if ([...d.names[q.bin]].every((m) => d.named[q.bin].has(m))) d.named[q.bin].clear();
+    q.turn = game.length;  // (the order it was dealt in, before the shuffle: the checks follow the names in it)
     game.push(q);
   }
+  for (const q of game) q.topics.forEach((t) => d.seen.set(t, n));
   return shuffle(game, rng);
 }
 /** The scale a guess is set on: 0 to 20 in steps of 1 over two thirds of the track (most true values are small), 20
@@ -404,13 +555,18 @@ export const STOPS = [...Array(21).keys(), ...Array.from({ length: 16 }, (_, k) 
 export const SPLIT = 2 / 3;
 export const along = (v) => (v <= 20 ? (v / 20) * SPLIT : SPLIT + ((v - 20) / 80) * (1 - SPLIT));
 export const stopAt = (f) => { const v = f <= SPLIT ? (f / SPLIT) * 20 : 20 + ((f - SPLIT) / (1 - SPLIT)) * 80; return STOPS.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a)); };
-/** Points for a guess: 100 for the truth, falling fast: by the distance as a part of half the truth, or of 3 where the
- *  truth is 6 or less, so that 3 off a small number scores nothing, and 6 against a true 2 costs as much as 25
- *  against a true 50 (points by the plain distance would let one small guess, always, score well). */
-export const points = (guess, truth) => Math.max(0, Math.round(100 * (1 - Math.abs(truth - guess) / Math.max(3, truth / 2))));
+/** Points for a guess: 100 for the truth, fewer the further off, none once it is off by as much as the number itself
+ *  (or by 6, for a number under 6): round(100 x max(0, 1 - |guess - truth| / max(6, truth))). A guess within 2 always
+ *  scores at least 60. */
+export const points = (guess, truth) => Math.round(100 * Math.max(0, 1 - Math.abs(guess - truth) / Math.max(6, truth)));
 /** The line said after a guess follows its points: 90 or more, 60 or more, 25 or more, less. "Right" (a filled port):
  *  60 or more. */
 export const nearness = (won) => (won >= 90 ? 0 : won >= 60 ? 1 : won >= 25 ? 2 : 3);
 export const close = (won) => won >= 60;
-/** The rank at the end, by the share of rounds right: all, three quarters, half, less. */
+/** The rank at the end of the quiz, by the share of rounds right: all, three quarters, half, less. */
 export const rank = (right, total) => (right === total ? 0 : right >= 0.75 * total ? 1 : right >= 0.5 * total ? 2 : 3);
+/** ... and of "guess the number", by its share of the points: 80% and more, 55%, 30%, less. */
+export const guessRank = (score, most) => (score >= 0.8 * most ? 0 : score >= 0.55 * most ? 1 : score >= 0.3 * most ? 2 : 3);
+/** The words beside which a game says that sharing a page is not being accused: the words of the law and of accusation.
+ *  Beside any other word ("viral", "survei") it would read as an accusation nobody made. */
+export const CAVEAT = ["tersangka", "korupsi", "suap", "terdakwa", "ditangkap", "diperiksa", "divonis", "dilaporkan", "saksi", "sidang", "etik"];

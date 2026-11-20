@@ -285,6 +285,10 @@ a.kicker:hover::before { transform: translateX(calc(-1 * var(--s1))); }
 h2:first-child { margin-top: var(--s6); }
 @media (min-width: 900px) { .page-head { padding: var(--s8) 0 calc(var(--s7) + var(--tide-h)); } .page-head:has(.word-title) { padding-top: var(--s6); } }
 @media (max-width: 899.98px) { .page-head:has(> .shore-sea):not(.joined, .lost) { padding-top: calc(var(--s9) + var(--s4)); } }  /* on a phone the sea is above the text: room for it */
+@media (min-width: 900px) {  /* a toy's head from 900px: short, so that the game and its panel fill the first screen */
+  .page-head.game:has(> .shore-sea):not(.joined, .lost) { padding: var(--s6) 0 calc(var(--s5) + var(--tide-h)); margin-bottom: var(--s5); }
+  .page-head.game > .lede { margin-top: var(--s2); }
+}
 @media (max-width: 899.98px) {  /* a toy's head on a phone: less sea above, a smaller lede, so that the toy itself begins on the first screen */
   .page-head.game:has(> .shore-sea):not(.joined, .lost) { padding-top: calc(var(--s7) + var(--s2)); padding-bottom: calc(var(--s5) + var(--tide-h)); margin-bottom: var(--s4); }
   .page-head.game > .lede { margin-top: var(--s2); font-size: var(--t-body); line-height: var(--l-body); }
@@ -733,6 +737,12 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .quiz .verdict b { font-size: var(--t-lede); }
 .quiz .verdict .context { color: var(--ink-2); }
 .reveal { display: block; height: auto; margin: var(--s3) 0 0; scroll-margin: calc(var(--head-h) + var(--s4)) 0 170px; }  /* (170px: the bar held at a phone's foot) */
+/* the answer's room is kept from the start (the line said and the evidence come into it in place: the card does not
+   grow, nothing under it moves, and the page does not scroll) */
+.quiz .answer { min-height: 14.5rem; }
+.quiz .answer .verdict { margin: 0; }
+@media (max-width: 899.98px) { .quiz .answer { min-height: 15.5rem; } }
+.quiz-log .keys-note { margin: var(--s3) 0 0; font-size: var(--t-meta); color: var(--ink-3); }
 .quiz .verdict { scroll-margin: calc(var(--head-h) + var(--s4)) 0 170px; }
 .reveal svg { display: block; max-width: 100%; height: auto; overflow: visible; font-family: var(--type); }
 .reveal .alt { fill: var(--route-2); } .reveal .alt-line { stroke: var(--route-2); fill: none; } .reveal .on-line { stroke-linejoin: round; stroke-linecap: round; }
@@ -764,15 +774,23 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .gauge { position: relative; max-width: 560px; padding: var(--s2) 0 0; }
 .gauge .track { position: relative; padding: var(--s3) 0 0; cursor: pointer; touch-action: none; border-radius: var(--r1); }
 .gauge.locked .track { cursor: default; }
-.gauge .scale { position: relative; height: var(--s6); border-bottom: var(--rule) solid var(--ink); }
-.gauge .minor { position: absolute; bottom: 0; height: var(--s3); }
-.gauge .minor.low { left: 0; width: 66.667%; background: repeating-linear-gradient(90deg, var(--line) 0 var(--hair), transparent var(--hair) 5%); }
-.gauge .minor.high { left: 66.667%; right: 0; background: repeating-linear-gradient(90deg, var(--line) 0 var(--hair), transparent var(--hair) 6.25%); }
-.gauge .scale i { position: absolute; bottom: 0; }
-.gauge .yours { width: var(--s6); height: var(--s6); margin-left: calc(-1 * var(--s6) / 2); bottom: calc(-1 * var(--s6) / 2) !important; border-radius: 50%; background: var(--route); box-shadow: 0 0 0 var(--rule) var(--chart-2); transition: left var(--d-press) var(--sail); }
+/* the track has a body a thumb finds: a 12px bar, the part up to the guess filled in the route, a 28px thumb; its 20-100
+   stretch (by fives) hatched, so that the change of scale reads */
+.gauge .scale { position: relative; height: 28px; }
+.gauge .bar { position: absolute; top: 8px; height: 12px; background: var(--line); }
+.gauge .bar.low { left: 0; width: 66.667%; border-radius: 6px 0 0 6px; }
+.gauge .bar.high { left: 66.667%; right: 0; border-radius: 0 6px 6px 0; border-left: 2px solid var(--chart-2);
+  background: repeating-linear-gradient(135deg, var(--line) 0 3px, color-mix(in srgb, var(--line) 35%, transparent) 3px 6px); }
+.gauge .minor { position: absolute; top: calc(100% + 2px); height: var(--s2); }
+.gauge .minor.low { left: 0; width: 66.667%; background: repeating-linear-gradient(90deg, var(--ink-3) 0 var(--hair), transparent var(--hair) 5%); }
+.gauge .minor.high { left: 66.667%; right: 0; background: repeating-linear-gradient(90deg, var(--ink-3) 0 var(--hair), transparent var(--hair) 6.25%); }
+.gauge .scale i { position: absolute; }
+.gauge .fill { left: 0; top: 8px; height: 12px; width: 0; border-radius: 6px 0 0 6px; background: var(--route); transition: width var(--d-press) var(--sail); }
+.gauge.unset .fill, .gauge.locked .fill { display: none; }
+.gauge .yours { top: 0; width: 28px; height: 28px; margin-left: -14px; border-radius: 50%; background: var(--route); box-shadow: 0 0 0 3px var(--chart-2), 0 0 0 4px var(--route); transition: left var(--d-press) var(--sail); }
 .gauge.unset .yours { display: none; }
-.gauge .truth { width: var(--mark); height: calc(var(--s6) + var(--s3)); margin-left: calc(-1 * var(--mark) / 2); background: var(--ink); transition: left var(--d-leg) var(--sail); }
-.gauge .sail { left: 0; bottom: calc(-1 * var(--rule)) !important; width: 100%; height: var(--mark); background: var(--route); transition: clip-path var(--d-leg) var(--sail); }
+.gauge .truth { top: -6px; width: var(--mark); height: 40px; margin-left: calc(-1 * var(--mark) / 2); background: var(--ink); transition: left var(--d-leg) var(--sail); }
+.gauge .sail { left: 0; top: 8px; width: 100%; height: 12px; background: var(--route); transition: clip-path var(--d-leg) var(--sail); }
 .gauge .ticks { position: relative; height: calc(var(--t-meta) * 1.4 + var(--s4)); }
 .gauge .ticks span { position: absolute; top: var(--s4); transform: translateX(-50%); font-size: var(--t-meta); line-height: 1.4; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .gauge .set { display: flex; align-items: center; gap: var(--s4); margin-top: var(--s2); }
