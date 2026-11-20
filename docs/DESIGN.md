@@ -341,7 +341,9 @@ its line); once the first route has
   beside it, text and picture side by side; the rest under "more" in three columns, the tide table and the year posters
   two columns wide. The first page shows the same first three. A game is a board: the round on paper, and beside it the game's voyage so far (a port
   per round: filled where right, a ring where wrong, the ship on the round now); at the end the score as a plate
-  to save as an image.
+  to save as an image. In "guess the number" the answer is not simply shown: its mark sails (`--d-leg`) from the
+  reader's guess to the truth along the scale, drawing its wake in the route, so how far off the guess was is a
+  distance one sees travelled (a cut with reduced motion).
 - **Method, stories index, other play pages**: the page head pattern, the same cards, fields, chips and tables;
   figures on plates. The method opens with the method on one word the first page sails (`jokowi`, 2013 then 2014), in
   four steps stepped or played: the year's pages and the share that hold the word, the words it appears with most, its

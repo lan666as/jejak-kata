@@ -131,6 +131,13 @@ for (const [width, height] of [[360, 740], [768, 1000], [1440, 900]]) { // the m
     const wide = await p.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
     log(`${hash} at 390px`, (await p.locator(test).count()) > 0 && !wide && !p.errors.length, `${await p.locator(test).count()} marks; sideways scroll: ${wide}; errors ${p.errors.length}`); }
   await p.goto(base + "#/tebak"); await p.waitForTimeout(2000); let n = 0;
+  { // the answer sails from the guess to the truth, its wake drawn between the two
+    await p.locator(".gauge input").fill("90"); await p.locator(".controls button").click(); await p.waitForTimeout(1200);
+    const g = await p.evaluate(() => ({ truth: +document.querySelector(".verdict").textContent.match(/\d+/)[0], clip: getComputedStyle(document.querySelector(".gauge .sail")).clipPath,
+      moved: Math.round(document.querySelector(".gauge .truth").getBoundingClientRect().left - document.querySelector(".gauge .scale").getBoundingClientRect().left) }));
+    const [right, left] = (g.clip.match(/inset\(0px ([\d.]+)% 0px ([\d.]+)%\)/) || []).slice(1).map(Number), [lo, hi] = [Math.min(g.truth, 90), Math.max(g.truth, 90)];
+    log("guess: the answer sails to the truth over its wake", left === lo && 100 - right === hi, `truth ${g.truth}, guess 90; wake ${g.clip}; truth's mark ${g.moved}px along`);
+    await p.goto(base + "#/tebak"); await p.waitForTimeout(2000); }
   for (let i = 0; i < 6; i++) { await p.locator(".gauge input").fill(String(20 + 10 * i)); await p.locator(".controls button").click(); await p.waitForTimeout(200); n += await p.locator(".verdict:not([hidden])").count(); await p.locator(".controls button").click(); await p.waitForTimeout(250); }
   log("guess the number plays six rounds to a score", (await p.locator(".score").count()) === 1, `${n} verdicts; score: ${await p.locator(".score").innerText().catch(() => "-")}; errors ${p.errors.length}`);
   await p.close(); }

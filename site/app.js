@@ -2503,9 +2503,9 @@ async function guessPage() {
     }
     const q = rounds[k];
     box.replaceChildren(el(`<p class="step">${k + 1} / ${rounds.length}</p>`), el(`<p class="ask">${t("guess_ask", q.name, q.w)}</p>`),
-      el(`<div class="gauge"><input type="range" min="0" max="100" value="50" aria-label="${t("guess_yours")}"><div class="scale"><i class="yours"></i><i class="truth" hidden></i></div><output>50</output></div>`),
+      el(`<div class="gauge"><input type="range" min="0" max="100" value="50" aria-label="${t("guess_yours")}"><div class="scale"><i class="sail" hidden></i><i class="yours"></i><i class="truth" hidden></i></div><output>50</output></div>`),
       el(`<p class="controls"><button type="button" class="primary">${t("guess_lock")}</button></p>`), el(`<p class="verdict" hidden></p>`));
-    const [slider, scale, output] = box.querySelector(".gauge").children, [yours, truth] = scale.children, verdict = box.querySelector(".verdict"), button = box.querySelector(".controls button");
+    const [slider, scale, output] = box.querySelector(".gauge").children, [sail, yours, truth] = scale.children, verdict = box.querySelector(".verdict"), button = box.querySelector(".controls button");
     const move = () => ((output.textContent = slider.value), (yours.style.transform = `translateX(${slider.value * (scale.clientWidth / 100)}px)`));
     slider.addEventListener("input", move);
     requestAnimationFrame(move);
@@ -2516,8 +2516,14 @@ async function guessPage() {
       score += won;
       results.push({ ok: Math.abs(q.v - slider.value) <= 10, label: `+${won}` });
       sailed();
-      truth.hidden = false;
-      truth.style.transform = `translateX(${q.v * (scale.clientWidth / 100)}px)`;
+      // The answer sails from the guess to the truth along the scale, its wake in the route: how far off is drawn.
+      const at = (v) => `translateX(${v * (scale.clientWidth / 100)}px)`, [lo, hi] = [Math.min(q.v, +slider.value), Math.max(q.v, +slider.value)];
+      truth.hidden = sail.hidden = false;
+      truth.style.transform = at(slider.value);
+      sail.style.clipPath = `inset(0 ${100 - slider.value}% 0 ${slider.value}%)`;
+      truth.getBoundingClientRect();  // (from the guess)
+      truth.style.transform = at(q.v);
+      sail.style.clipPath = `inset(0 ${100 - hi}% 0 ${lo}%)`;
       verdict.hidden = false;
       verdict.innerHTML = t("guess_truth", q.v, thousands(q.pages), q.name, q.w, won) + ` <a href="${href("menempel", q.w, "0", "2", "p")}">${t("guess_more", q.w)}</a>`;
       button.textContent = k + 1 === rounds.length ? t("guess_score") : t("next");
