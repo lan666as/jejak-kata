@@ -29,6 +29,16 @@ const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport:
   await p.click('.demo-steps button[data-step="3"]'); await p.waitForTimeout(1200);
   const sailed = await p.evaluate(() => [...document.querySelectorAll(".demo-goes")].map((x) => x.classList.contains("moved") && getComputedStyle(x).transform !== "none").every(Boolean) && document.querySelectorAll(".demo-goes").length);
   log("method: the sensitivity said in a line from its table; the demo's words sail to their ports", m.want.every((x) => m.said.includes(x)) && sailed > 0, `“${m.said.slice(0, 90)}…” wants ${m.want.join(", ")}; ${sailed} words sailed`); await p.close(); }
+for (const [width, height] of [[360, 740], [768, 1000], [1440, 900]]) { // the map from above: the chart framed in the water its controls leave open, the example's route named
+  const p = await fresh({ viewport: { width, height } }); await p.goto(base + "#/peta"); await p.waitForTimeout(3500);
+  await p.click('[data-k="above"]'); await p.waitForTimeout(2500);
+  const m = await p.evaluate(() => {
+    const sea = document.querySelector(".chart.explore"), { names } = sea.sea.labels(), c = sea.querySelector("canvas").getBoundingClientRect();
+    const blocks = [...document.querySelectorAll(".chart.explore .zoom button, .map-steer, .chart.explore .when > *")].map((n) => n.getBoundingClientRect()).filter((r) => r.width);
+    const over = names.filter(({ box: [l, t, r, b] }) => l < c.left - 1 || r > c.right + 1 || t < c.top - 1 || b > c.bottom + 1 || blocks.some((k) => l < k.right && r > k.left && t < k.bottom && b > k.top));
+    return { n: names.length, over: over.map((x) => x.text), ship: names.some((x) => x.text === "jokowi"), pressed: getComputedStyle(sea.querySelector('[data-k="above"]')).backgroundColor };
+  });
+  log(`map from above at ${width}px`, m.n >= 8 && !m.over.length && m.ship, `${m.n} names, ${m.over.length} under a control or off the sea (${m.over.slice(0, 3).join(", ")}); ship named ${m.ship}; pressed ${m.pressed}`); await p.close(); }
 { // the header at 390px: opaque, and stuck at the top after a scroll
   const p = await fresh(); await p.goto(base + "#/kata/kpk"); await p.waitForTimeout(2500); await p.mouse.wheel(0, 1500); await p.waitForTimeout(600);
   const h = await p.evaluate(() => { const node = document.querySelector(".masthead"), r = node.getBoundingClientRect(), bg = getComputedStyle(node).backgroundColor;

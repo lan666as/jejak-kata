@@ -416,7 +416,8 @@ text has been painted. What is on screen is the data and nothing else:
 - **Explore** (the map): the reader moves the camera: drag to move over the water, the right button or Shift to turn
   and tilt, Ctrl (or a trackpad's pinch) with the wheel to come nearer to the pointer, buttons for nearer, further,
   everything, a quarter turn, and **from above**: the hero's dive as a choice, the sea glides up into the chart on
-  paper and back; from above it frames the words (their middle 98%, north up) with larger dots, the faint ones
+  paper and back; from above it frames the words (their middle 98%, north up) in the water its controls, the year and the hint leave
+  open (each cut off at the side that loses least), as far out as that needs, the pressed control in the route, with larger dots, the faint ones
   stronger and the names in a reader's ink, and coming down it returns to the reader's place. The keys do the same (arrows move, Shift and arrows turn and tilt, plus and minus, zero), and the
   word nearest the middle is ringed and named: Enter chooses it. Up to four routes, each ribbon in its route's colour
   by night and by day, each ship named in a pill with a dot of its colour; the player sails all of them through the

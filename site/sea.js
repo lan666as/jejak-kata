@@ -464,7 +464,7 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
    *  pixels with 8px round them: no name there, and no light framed under it. */
   const kept = () => {
     const box = canvas.getBoundingClientRect();
-    return [...node.querySelectorAll(".zoom, .when > *, .sea-hint"), ...(node.closest(".map-deep")?.querySelectorAll(".map-steer") || []), ...over()]
+    return [...node.querySelectorAll(".zoom, .when > *, .sea-hint:not(.gone)"), ...(node.closest(".map-deep")?.querySelectorAll(".map-steer") || []), ...over()]
       .map((n) => n.getBoundingClientRect()).filter((r) => r.width && r.height).map((r) => [r.left - box.left - 8, r.top - box.top - 8, r.right - box.left + 8, r.bottom - box.top + 8]);
   };
   function label(sailing) {
@@ -805,11 +805,11 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
 
   // ---- exploring (the map): drag to move over the sea, with the right button or Shift to turn and tilt, Ctrl and
   // the wheel (or a pinch on a trackpad) or the buttons to come nearer; the keys do the same; and fingers (below) --------
-  let drag = null, dragged = false;
+  let drag = null, dragged = false, farthest = 3.2;  // (from above, as far as the whole chart needs)
   /** Glide the camera to `to` (a part of aim), or cut there with reduced motion. */
   const move = (to, ms = LEG * 0.6) => {
     moved = true;
-    to = { ...aim, ...to, dist: clamp(to.dist ?? aim.dist, 0.08, 3.2), pitch: clamp(to.pitch ?? aim.pitch, 0.1, 1.45), x: clamp(to.x ?? aim.x, -1.4, 1.4), z: clamp(to.z ?? aim.z, -1.4, 1.4) };
+    to = { ...aim, ...to, dist: clamp(to.dist ?? aim.dist, 0.08, farthest), pitch: clamp(to.pitch ?? aim.pitch, 0.1, 1.45), x: clamp(to.x ?? aim.x, -1.4, 1.4), z: clamp(to.z ?? aim.z, -1.4, 1.4) };
     labelsAt = "";
     if (!ms || held) return Object.assign(aim, to), place(), redraw();  // placed at once: the next move of a gesture starts from here
     Object.assign(glide, { from: { ...aim }, to, start: performance.now(), ms });
@@ -839,12 +839,22 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
     const xs = [], zs = [];
     for (let k = 0; k < n; k++) (xs.push(chart.x[k] / 1000), zs.push(chart.y[k] / 1000));
     const q = (list, f) => list.sort((a, b) => a - b)[Math.floor(f * (list.length - 1))], [x0, x1, z0, z1] = [q(xs, 0.01), q(xs, 0.99), q(zs, 0.01), q(zs, 0.99)];
-    const t = Math.tan(fovOf() / 2) * 0.9;
-    return { x: (x0 + x1) / 2, z: (z0 + z1) / 2, yaw: 0, dist: Math.max((z1 - z0) / 2 / t, (x1 - x0) / 2 / (t * (W / H))) };  // (north up, as a chart is)
+    // Framed in the open water: each control, the year and the hint are cut off at the side that loses least.
+    const open = [0, W, 0, H];  // left, right, top, bottom
+    for (const [l, t, r, b] of kept()) {
+      const cut = [[H * r, 0, r], [H * (W - l), 1, l], [W * b, 2, b], [W * (H - t), 3, t]].sort((x, y) => x[0] - y[0])[0];
+      open[cut[1]] = cut[1] % 2 ? Math.min(open[cut[1]], cut[2]) : Math.max(open[cut[1]], cut[2]);
+    }
+    const t = Math.tan(fovOf() / 2) * 0.9, w = Math.max(W / 3, open[1] - open[0]), h = Math.max(H / 3, open[3] - open[2]);
+    const dist = Math.max((z1 - z0) / 2 / (t * (h / H)), (x1 - x0) / 2 / (t * (W / H) * (w / W))), per = (2 * dist * Math.tan(fovOf() / 2)) / H;
+    // (north up, as a chart is: the screen's right is +x and its foot +z; the camera looks at the middle of the screen)
+    return { x: (x0 + x1) / 2 - ((open[0] + open[1]) / 2 - W / 2) * per, z: (z0 + z1) / 2 - ((open[2] + open[3]) / 2 - H / 2) * per, yaw: 0, dist };
   };
   const above = (on) => {
     if (on === depth > 0.5) return;
-    if (on) (place0 = { x: aim.x, z: aim.z, dist: aim.dist, yaw: aim.yaw }), move(extent());
+    const whole = on && extent();
+    farthest = on ? Math.max(3.2, whole.dist) : 3.2;
+    if (on) (place0 = { x: aim.x, z: aim.z, dist: aim.dist, yaw: aim.yaw }), move(whole);
     else if (place0) move(place0);
     const b = node.querySelector('[data-k="above"]');
     b.setAttribute("aria-pressed", on);
