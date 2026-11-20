@@ -449,26 +449,33 @@ its line); once the first route has
   diperiksa, divonis, dilaporkan, saksi, sidang, etik), where without it the pairing could read as one; beside any
   other word ("viral", "survei") it would read as an accusation nobody made, and nothing is shown there. A question
   that sets a name beside a word never asks it of a word that reads as an accusation (deal.js, `SENSITIVE`): those are
-  asked only as "guess the number" asks them. In "guess the number" (six rounds: one high true value, three middle,
-  two low, so that no one guess always pays, in an order shuffled on its own; only names a reader knows and words with
-  a point, `POINTED`, on which names differ: the name with the most of it has at least 8 in 100 and three times the
-  least, `MARGIN.spreadTop` and `spreadRatio`) the deal is kept as the quiz's, and within a bin a name comes back only
-  once the bin has dealt its other names (at the very end of a round of names, where the few left are all in the game
-  already, one may come back early); the same word and name not within four games. The guess is set on a stepped scale
+  asked only as "guess the number" asks them. In "guess the number" (six rounds: three high true values, 13 or more,
+  one middle, two low, `GUESS_BINS` and `GUESS_DEAL`, so that no one guess always pays: each step off costs 10 points
+  for a small number, so a game of mostly small values would pay a fixed 5; in an order shuffled on its own; only names
+  a reader knows and words with a point, `POINTED`, on which names differ: the name with the most of it has at least 8
+  in 100 and three times the least, `MARGIN.spreadTop` and `spreadRatio`) the deal is kept from page load to page load
+  as the quiz's (`games.mjs` plays a game, loads the page again and plays on). No word of the last game comes in the
+  next (17 words, six a game: there is always another); within a low or middle bin a name comes back only once the bin
+  has dealt its other names, and the same word and name not within four games; the high bin is small (43 cards, three
+  a game), and there these two give way now and then rather than a word of the last game come again. The guess is set on a stepped scale
   (deal.js, `STOPS`, one mapping for the track, its ticks, the keys and the answer's marks): 0 to 20 by ones over two
   thirds of the track, 25 to 100 by fives over the rest, its tick labels where they fall (0, 5, 10, 15, 20, 50, 100),
   its small ticks a stop each. The track has a body a thumb finds: a 12px bar, the part up to the guess filled in the
-  route, a 28px thumb, and the 20-100 stretch hatched so that the change of scale reads. No guess is set for the
-  reader: the lock waits until one is, by a press or a drag on the track (the nearest stop), the arrow keys (a stop;
-  Page keys five), or − and + (44px). Points: round(100 x max(0, 1 - |guess - truth| / max(6, truth))): 100 for the
-  truth, fewer the further off, none once off by as much as the number itself (a guess within 2 always scores at
-  least 60; no one fixed guess averages 60%), as the rule says inside the card under the question until the first
-  guess is locked. The answer is not simply shown: its mark sails (`--d-leg`) from the reader's guess to the truth
+  route, a 28px thumb; the change of scale at 20 is marked on the track itself: a gap with a notch across it, the
+  20-100 stretch hatched darker, and over it, where it fits, what it steps by ("tiap 5" / "in fives"). No guess is set
+  for the reader: until one is, the readout's place between − and + holds the invitation ("Geser, ketuk, ..."), never a
+  dash, and the lock waits, set by a press or a drag on the track (the nearest stop), the arrow keys (a stop; Page keys
+  five), or − and + (44px). Points: round(100 x max(0, 1 - |guess - truth| / max(10, 1.5 x truth))): 100 for the
+  truth, and each step off costs 10 for a small number, less for a large one (a guess within 2 always scores at least
+  80; no one fixed guess averages 65%), as the rule says inside the card under the question until the first guess is
+  locked. The answer is not simply shown: its mark sails (`--d-leg`) from the reader's guess to the truth
   along the scale, drawing its wake in the route, so how far off the guess was is a distance one sees travelled (a cut
   with reduced motion); then, each on its own line, a line that follows the points (90 or more, 60 or more, 25 or
-  more, less; a far miss said by its direction, a guess above the truth or below it, its two lines in turn), the
-  numbers (the guess, the truth, the points), the context (pages counted, who has the most and the least of that word)
-  and the link on. A round of 60 points or more is a filled port; the rank at the end by the share of the points (80%
+  more, less; a far miss said by its direction, "Jauh di atas. ..." or "Jauh di bawah. ...", saying what the number is,
+  never what the reader remembered), the numbers (the guess, the truth, the points), the context (pages counted; who has
+  the most of that word, or, where that is the name asked, so said plainly with the next after it; the least only where
+  it adds something: not the name asked, not named already this game, and nearer the truth than the most) and the link
+  on. A round of 60 points or more is a filled port; the rank at the end by the share of the points (80%
   and more, 55%, 30%, less).
 - **Method, stories index, other play pages**: the page head pattern, the same cards, fields, chips and tables;
   figures on plates. The method opens with the method on one word the first page sails (`jokowi`, 2013 then 2014), in

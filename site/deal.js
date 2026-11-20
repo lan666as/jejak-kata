@@ -88,7 +88,11 @@ export const CAP = { resmi: 1, room: 1 };
 export const capOf = (kind) => CAP[kind] ?? 2;
 /** Guess the number: six rounds over low, middle and high true values, so that no one guess always pays. */
 export const GUESS_ROUNDS = 6;
-export const GUESS_BINS = [[1, 4], [5, 14], [15, 100]];  // most true values are small (half are 1 or 2 in 100): the bins are cut where the data has enough of each
+export const GUESS_BINS = [[1, 4], [5, 12], [13, 100]];  // most true values are small (half are 1 or 2 in 100): the bins are cut where the data has enough of each
+/** ... and how many of each a game deals: two low, one middle, three high. Each step off costs 10 points for a small
+ *  number, so a game of mostly small values would pay one fixed small guess (5 would average 73%): with three high
+ *  values no fixed guess averages 65% (games.mjs). */
+export const GUESS_DEAL = [2, 2, 2, 1, 0, 0];
 
 /**
  * How hard a question is, in one place: 0 (a giveaway) to 1 (as hard as the margins allow), from the data alone, and
@@ -485,7 +489,7 @@ export function ordered(game) {
 // ---- guess the number ----------------------------------------------------------------------------------------------
 /** The questions of "guess the number", from Kompas's stick.json in 2020-2024: every word with a spread across names
  *  (MARGIN.spreadTop, spreadRatio) with every known name that is on enough pages, its true value (of 100 pages) and a
- *  line of context: who has the most and the least of it. */
+ *  line of context: who has the most, the next after it, and the least of it. */
 export function guessPool(s, era = 2) {
   const names = s.names.map((n, i) => i).filter((i) => (PEOPLE.includes(s.names[i]) || BODIES.includes(s.names[i])) && s.pages[i][era] >= MARGIN.guessPages);
   const out = [];
@@ -498,7 +502,7 @@ export function guessPool(s, era = 2) {
       const v = Math.round(s.share[w][i][era] / 10);
       if (v < 1) continue;
       out.push({ key: `${w}|${s.names[i]}`, topics: [w, s.names[i]], w, name: s.names[i], v, pages: s.pages[i][era], tiers: [null],
-        bin: GUESS_BINS.findIndex(([a, b]) => v >= a && v <= b), context: { of: known.length, hi: [s.names[hi], Math.round(s.share[w][hi][era] / 10)], lo: [s.names[lo], Math.round(s.share[w][lo][era] / 10)] } });
+        bin: GUESS_BINS.findIndex(([a, b]) => v >= a && v <= b), context: { of: known.length, hi: [s.names[hi], Math.round(s.share[w][hi][era] / 10)], next: [s.names[by[1]], Math.round(s.share[w][by[1]][era] / 10)], lo: [s.names[lo], Math.round(s.share[w][lo][era] / 10)] } });
     }
   }
   return out;
@@ -511,25 +515,30 @@ export const guessDecks = (pool, rng) => {
   return Object.defineProperties(d, { seen: { value: new Map() }, games: { value: 0, writable: true }, named: { value: GUESS_BINS.map(() => new Set()) },
     names: { value: GUESS_BINS.map((_, b) => new Set(pool.filter((q) => q.bin === b).map((q) => q.name))) } });
 };
-/** One game of six: one high value, three middle and two low (few values in the data are high), no word and no name
- *  twice. Within a visit a name comes back in its bin only after every other name of the bin has been dealt, and the
- *  names and words of the visit's earlier games go to the back (as in the quiz). The order of the rounds is a shuffle of
+/** One game of six: three high values, one middle and two low (GUESS_DEAL), no word and no name
+ *  twice. No word of the last game; within a visit a name comes back in its bin only after every other name of the bin
+ *  has been dealt (in the high bin, now and then sooner), and the names and words of the visit's earlier games go to
+ *  the back (as in the quiz). The order of the rounds is a shuffle of
  *  its own, so that where a word comes in a game says nothing. */
 export function guessDeal(d, rng) {
   const used = new Set(), game = [], n = ++d.games, age = (w) => (d.seen.has(w) ? n - d.seen.get(w) : Infinity);
-  // A bin's card: of those whose word and name are free in this game, one whose name the bin has not dealt this time
-  // round (from the cards left, else a dealt card again); among them one whose word and name were shown longest ago,
-  // then one whose word has the most cards left (so that the deck's last cards are not all of one word). A spent deck
-  // goes round again.
+  // A bin's card, of those whose word and name are free in this game, by three rules in the order they give way: no
+  // word the last game showed (17 words, six a game: there is always another); not the same word and name within four
+  // games (`old`); a name the bin has not dealt this time round (`due`). Each from the cards left, else a dealt card
+  // again. Among those a rule lets through, one whose word and name were shown longest ago, then one whose word has the
+  // most cards left (so that the deck's last cards are not all of one word). A spent deck goes round again. (The high
+  // bin is small, 43 cards of 25 names, and three a game: there the last two rules give way now and then.)
   const draw = (x) => {
     const deck = d[x];
     if (!deck.fresh.length) deck.refill();
     const left = {};
     for (const q of deck.fresh) left[q.w] = (left[q.w] || 0) + 1;
     const free = (q) => q.topics.every((t) => !used.has(t)), level = (q) => Math.min(4, ...q.topics.map(age)), due = (q) => free(q) && !d.named[x].has(q.name);
-    const key = (q) => [-level(q), -left[q.w]], first = (list) => list.sort((a, b) => { const [p, r] = [key(a), key(b)]; return p[0] - r[0] || p[1] - r[1]; })[0];
-    // (a name not yet dealt this time round: from the cards left, else one dealt card again; only then another name)
-    const best = first(deck.fresh.filter(due)) || deck.early(due) || first(deck.fresh.filter(free));
+    const rested = (q) => age(q.w) > 1, due2 = (q) => due(q) && rested(q), free2 = (q) => free(q) && rested(q);
+    const key = (q) => [-Math.min(3, age(q.w)), -level(q), -left[q.w]], first = (list) => list.sort((a, b) => { const [p, r] = [key(a), key(b)]; return p[0] - r[0] || p[1] - r[1] || p[2] - r[2]; })[0];
+    const old = (q) => Math.max(age(q.w), age(q.name)) > 4, both = (ok) => (q) => ok(q) && old(q);
+    let best = null;
+    for (const ok of [both(due2), both(free2), due2, free2, both(due), both(free), due, free]) if ((best = first(deck.fresh.filter(ok)) || deck.early(ok))) break;
     if (!best) return deck.early(free);
     if (!deck.fresh.includes(best)) return best;
     deck.fresh.splice(deck.fresh.indexOf(best), 1);
@@ -537,7 +546,7 @@ export function guessDeal(d, rng) {
     return best;
   };
   // The scarcest bin (the high values) is dealt first, while every word and name is still free.
-  for (const b of [2, 1, 1, 1, 0, 0]) {
+  for (const b of GUESS_DEAL) {
     const x = [b, ...[0, 1, 2].filter((y) => y !== b).sort((y, z) => Math.abs(y - b) - Math.abs(z - b))].find((y) => d[y].size), q = x === undefined ? null : draw(x);
     if (!q) continue;
     q.topics.forEach((t) => used.add(t));
@@ -555,10 +564,9 @@ export const STOPS = [...Array(21).keys(), ...Array.from({ length: 16 }, (_, k) 
 export const SPLIT = 2 / 3;
 export const along = (v) => (v <= 20 ? (v / 20) * SPLIT : SPLIT + ((v - 20) / 80) * (1 - SPLIT));
 export const stopAt = (f) => { const v = f <= SPLIT ? (f / SPLIT) * 20 : 20 + ((f - SPLIT) / (1 - SPLIT)) * 80; return STOPS.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a)); };
-/** Points for a guess: 100 for the truth, fewer the further off, none once it is off by as much as the number itself
- *  (or by 6, for a number under 6): round(100 x max(0, 1 - |guess - truth| / max(6, truth))). A guess within 2 always
- *  scores at least 60. */
-export const points = (guess, truth) => Math.round(100 * Math.max(0, 1 - Math.abs(guess - truth) / Math.max(6, truth)));
+/** Points for a guess: 100 for the truth, and each step off costs 10 for a small number, less for a large one:
+ *  round(100 x max(0, 1 - |guess - truth| / max(10, 1.5 x truth))). A guess within 2 always scores at least 80. */
+export const points = (guess, truth) => Math.round(100 * Math.max(0, 1 - Math.abs(guess - truth) / Math.max(10, 1.5 * truth)));
 /** The line said after a guess follows its points: 90 or more, 60 or more, 25 or more, less. "Right" (a filled port):
  *  60 or more. */
 export const nearness = (won) => (won >= 90 ? 0 : won >= 60 ? 1 : won >= 25 ? 2 : 3);

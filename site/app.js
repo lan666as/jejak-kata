@@ -2771,7 +2771,7 @@ async function guessPage() {
   view.append(board);
   // (a word in English with what it means: "tersangka (suspect)")
   const word = (w) => (language === "en" && (GLOSS[w]?.en || GAME_GLOSS[w]) ? `${w} (${GLOSS[w]?.en || GAME_GLOSS[w]})` : w);
-  let rounds = [], results = [], score = 0, k = 0;
+  let rounds = [], results = [], score = 0, k = 0, lows = new Set();
   const sailed = () => ((log.innerHTML = voyageMark(results, rounds.length)), (tally.textContent = `${score} / ${rounds.length * 100}`));
   // The scale (deal.js, STOPS and along): 0-20 in steps of 1 over two thirds of the track, 25-100 in steps of 5 over the
   // rest, its ticks where they fall; no guess until the reader sets one (a press or drag on the track, the keys, − and +).
@@ -2783,13 +2783,18 @@ async function guessPage() {
     // (the rule under the question, until the first guess is locked)
     box.replaceChildren(el(`<p class="step">${t("quiz_status", k + 1, rounds.length)}</p>`), el(`<p class="ask" tabindex="-1">${t("guess_ask", escape(shown(q.name)), escape(word(q.w)))}</p>`),
       ...(k ? [] : [el(`<p class="game-rule">${t("guess_rule")}</p>`)]),
-      el(`<div class="gauge unset"><div class="track" role="slider" tabindex="0" aria-label="${t("guess_yours")}" aria-valuemin="0" aria-valuemax="100" aria-valuetext="–">
-        <div class="scale"><span class="bar low"></span><span class="bar high"></span><span class="minor low"></span><span class="minor high"></span><i class="fill"></i><i class="sail" hidden></i><i class="truth" hidden></i><i class="yours"></i></div>
+      // (the change of scale at 20 marked on the track itself: a notch between the two stretches, and beside it, where it
+      // fits, what the second stretch steps by; before the first touch the readout's place holds the invitation)
+      el(`<div class="gauge unset"><div class="track" role="slider" tabindex="0" aria-label="${t("guess_yours")}" aria-valuemin="0" aria-valuemax="100" aria-valuetext="${t("guess_unset")}">
+        <div class="scale"><span class="bar low"></span><span class="bar high"></span><span class="notch"></span><b class="break" aria-hidden="true">${t("guess_break")}</b><span class="minor low"></span><span class="minor high"></span><i class="fill"></i><i class="sail" hidden></i><i class="truth" hidden></i><i class="yours"></i></div>
         <div class="ticks" aria-hidden="true">${TICKS.map((v) => `<span style="left:${pc(v)}">${v}</span>`).join("")}</div></div>
-        <div class="set"><button type="button" class="less" aria-label="${t("guess_less")}">−</button><output aria-hidden="true">–</output><button type="button" class="more" aria-label="${t("guess_more_one")}">+</button></div>
-        <p class="note unset-note">${t("guess_unset")}</p></div>`),
+        <div class="set"><button type="button" class="less" aria-label="${t("guess_less")}">−</button><output aria-hidden="true"></output><p class="unset-note">${t("guess_unset")}</p><button type="button" class="more" aria-label="${t("guess_more_one")}">+</button></div></div>`),
       ...(CAVEAT.includes(q.w) ? [el(`<p class="note caveat">${t("caveat")}</p>`)] : []), el(`<p class="verdict" role="status"></p>`));
+    box.dataset.key = q.key;  // (what is asked, for the checks: games.mjs)
     const gauge = box.querySelector(".gauge"), track = gauge.querySelector(".track"), scale = track.querySelector(".scale"), [fill, sail, truth, yours] = scale.querySelectorAll("i");
+    // (what the second stretch steps by, over it from the notch, only where it fits in it)
+    const brk = gauge.querySelector(".break");
+    requestAnimationFrame(() => (brk.hidden = brk.getBoundingClientRect().right > scale.getBoundingClientRect().right));
     const output = gauge.querySelector("output"), [less, more] = gauge.querySelectorAll(".set button"), verdict = box.querySelector(".verdict");
     let guess = null, locked = false;
     const set = (v) => {
@@ -2841,8 +2846,15 @@ async function guessPage() {
       // context, and the way on: each a line of its own.
       // (a far miss is said by its direction: a guess above the truth, or below it)
       const c = q.context, tier = nearness(won), line = tier < 3 ? t("said_near")[tier] : sayOne(guess > q.v ? "said_far_above" : "said_far_below");
+      // The context: who has the most of the word (where that is the name asked, said plainly, with the next after it);
+      // the least only where it adds something: not the name asked, not named already this game, and nearer the truth
+      // than the most is.
+      const least = c.lo[0] !== q.name && !lows.has(c.lo[0]) && q.v - c.lo[1] < c.hi[1] - q.v;
+      if (least) lows.add(c.lo[0]);
+      const context = [t("guess_counted", thousands(q.pages), shown(q.name)), ...(c.hi[0] === q.name ? [t("guess_top", word(q.w)), t("guess_next", c.of, shown(c.next[0]), c.next[1])] : [t("guess_context", word(q.w), c.of, shown(c.hi[0]), c.hi[1])]),
+        ...(least ? [t("guess_least", shown(c.lo[0]), c.lo[1])] : [])].join(" ");
       verdict.innerHTML = `<b>${escape(line)}</b><span class="numbers">${escape(t("guess_numbers", guess, q.v, won))}</span>
-        <span class="context">${escape(t("guess_counted", thousands(q.pages), shown(q.name)))} ${escape(t("guess_context", word(q.w), c.of, shown(c.hi[0]), c.hi[1], shown(c.lo[0]), c.lo[1]))}</span>
+        <span class="context">${escape(context)}</span>
         <a href="${href("menempel", q.w, "0", "2", BODIES.includes(q.name) ? "o" : "p")}">${t("guess_more", escape(q.w))}</a>`;
       go.textContent = k + 1 === rounds.length ? t("guess_score") : t("next");
       answered(box, verdict);
@@ -2860,6 +2872,7 @@ async function guessPage() {
     rounds = guessDeal(VISIT.guess, Math.random);
     keepDealt("guess");
     results = [];
+    lows = new Set();
     score = 0;
     k = 0;
     ask();

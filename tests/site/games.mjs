@@ -211,20 +211,25 @@ const stick = JSON.parse(readFileSync(new URL("../../site/data/id-web-eras-kompa
 const gpool = guessPool(stick), gbad = [];
 let constant = Array(101).fill(0), played = 0;
 const bins = [0, 0, 0], places = {}, sameAgain = [0, 0];
-let earlyNames = 0;
+let earlyNames = 0, deals = 0, wordAgain = 0, wordCould = 0, highAgain = 0, highDeals = 0, keyAgain = [0, 0];
 { const rng = seeded(4), d = guessDecks(gpool, rng), seen = [[], [], []], cycle = [new Set(), new Set(), new Set()], names = [0, 1, 2].map((b) => new Set(gpool.filter((q) => q.bin === b).map((q) => q.name)));
-  let before = [];
+  let before = [], lastNames = new Set();
   for (let g = 0; g < 300; g++) {
     const game = guessDeal(d, rng), topics = new Set();
+    // (a word of the last game again in this one, where the 17 words left others free: six a game, so always)
+    { const last = new Set(before), all = new Set(gpool.map((q) => q.w)); if (all.size - last.size >= GUESS_ROUNDS) { wordCould++; wordAgain += game.filter((q) => last.has(q.w)).length; } }
     game.forEach((q, i) => ((places[q.w] ||= Array(GUESS_ROUNDS).fill(0))[i]++, before[i] && (sameAgain[0] += before[i] === q.w, sameAgain[1]++)));
     before = game.map((q) => q.w);
+    const theseNames = new Set(game.map((q) => q.name));
     if (game.length !== GUESS_ROUNDS) gbad.push(`game ${g}: ${game.length} rounds`);
     for (const q of [...game].sort((a, b) => a.turn - b.turn)) {
       seen[q.bin].push([q.key, g]);
       // (a name comes back in its bin only after every other name of the bin has been dealt)
       // (allowed only at the end of a round of names, once 85% of them have been dealt: the few left may all be in the
       // game already, or have no card whose word is free)
-      if (cycle[q.bin].has(q.name) && cycle[q.bin].size < 0.85 * names[q.bin].size) earlyNames++;
+      // (the high bin is small, three a game: there a name of the last game counts instead)
+      if (q.bin < 2) { if (cycle[q.bin].has(q.name) && cycle[q.bin].size < 0.85 * names[q.bin].size) earlyNames++; deals++; }
+      else { highDeals++; if (lastNames.has(q.name)) highAgain++; }
       cycle[q.bin].add(q.name);
       if ([...names[q.bin]].every((n) => cycle[q.bin].has(n))) cycle[q.bin].clear();
       for (const t of q.topics) { if (topics.has(t)) gbad.push(`game ${g}: “${t}” twice`); topics.add(t); }
@@ -241,19 +246,22 @@ let earlyNames = 0;
       if (Math.max(...among) < 10 * MARGIN.spreadTop || Math.max(...among) < MARGIN.spreadRatio * Math.min(...among)) gbad.push(`game ${g}: “${q.w}” has no spread across names (${(Math.min(...among) / 10).toFixed(1)}–${(Math.max(...among) / 10).toFixed(1)} in 100)`);
       bins[q.bin]++;
     }
+    lastNames = theseNames;
     if (new Set(game.map((q) => q.bin)).size < 3) gbad.push(`game ${g}: its values are not low, middle and high (${game.map((q) => q.v).join(", ")})`);
     for (const c of STOPS) constant[c] += game.reduce((s, q) => s + points(c, q.v), 0) / (game.length * 100);
     played++;
   }
   // (the same question, a word and a name, not again within four games: the rule on names, above, comes first, and a bin's
   // deck, where a name holds several of its cards, cannot also be dealt whole before any card comes again)
+  // (in the high bin, at most 1 deal in 50: it gives way before a word of the last game would come again)
   const last = {};
-  seen.forEach((list) => list.forEach(([key, g]) => { if (last[key] !== undefined && g - last[key] < 5) gbad.push(`${key} again after ${g - last[key]} games`); last[key] = g; }));
+  seen.forEach((list, b) => list.forEach(([key, g]) => { if (last[key] !== undefined && g - last[key] < 5) { if (b < 2) gbad.push(`${key} again after ${g - last[key]} games`); else keyAgain[0]++; } if (b === 2) keyAgain[1]++; last[key] = g; }));
 }
 const best = Math.max(...constant) / played, at = constant.indexOf(Math.max(...constant));
 console.log(`     guess the number: ${gpool.length} distinct questions (${["low", "middle", "high"].map((name, b) => `${gpool.filter((q) => q.bin === b).length} ${name}`).join(", ")}), ${new Set(gpool.map((q) => q.w)).size} words, ${new Set(gpool.map((q) => q.name)).size} names`);
-log(`300 guess games: six rounds, no word or name twice, every value as counted, only words with a spread across names, low, middle and high in every game (${bins.join(", ")} dealt), a name back in its bin only once 85% of the bin's names have been dealt`, !gbad.length && bins.every((n) => n >= 280) && !earlyNames, gbad.slice(0, 5).join("; ") || `${earlyNames} names back early`);
-log("no one fixed guess wins: the best (always guessing " + at + ") scores under 60% on average, and a guess within 2 of the truth always scores at least 60", best < 0.6 && STOPS.every((v) => v > 0 ? [-2, -1, 0, 1, 2].every((e) => points(Math.max(0, v + e), v) >= 60) : true), `${Math.round(best * 100)}%`);
+log(`300 guess games: six rounds, no word or name twice, every value as counted, only words with a spread across names, low, middle and high in every game (${bins.join(", ")} dealt), no word of the last game again; a name back in a low or middle bin only once 85% of the bin's names have been dealt (at most 1 deal in 100 sooner, to keep a word of the last game out), and in the high bin a name of the last game in at most 1 deal in 10, the same word and name within four games at most 1 in 50`,
+  !gbad.length && bins.every((n) => n >= 280) && !wordAgain && wordCould >= 290 && earlyNames <= deals / 100 && highAgain <= highDeals / 10 && keyAgain[0] <= keyAgain[1] / 50, gbad.slice(0, 5).join("; ") || `${wordAgain} words of the last game again in ${wordCould} games; ${earlyNames} names back early in the low and middle bins; high bin: ${highAgain} of ${highDeals} a name of the last game, ${keyAgain[0]} the same question within four games`);
+log("no one fixed guess wins: the best (always guessing " + at + ") scores under 65% on average, and a guess within 2 of the truth always scores at least 80", best < 0.65 && STOPS.every((v) => v > 0 ? [-2, -1, 0, 1, 2].every((e) => points(Math.max(0, v + e), v) >= 80) : true), `${Math.round(best * 100)}%`);
 // The order of a game is its own shuffle: a word met often stands at every place of a game, at none in more than a
 // third of its games, and the next game puts a word at the same place no more often than chance would.
 { const often = Object.entries(places).filter(([, c]) => c.reduce((a, b) => a + b, 0) >= 60), lop = often.filter(([, c]) => c.some((x) => !x) || Math.max(...c) > c.reduce((a, b) => a + b, 0) / 3);
@@ -262,13 +270,13 @@ log("no one fixed guess wins: the best (always guessing " + at + ") scores under
 // follows the points (no "close" for a guess that scored nothing).
 log("the scale gives 0-20 two thirds of the track, and every stop maps back to itself", Math.abs(along(20) - 2 / 3) < 1e-9 && along(100) === 1 && STOPS.every((v) => stopAt(along(v)) === v) && STOPS.length === 37,
   `along(20) ${along(20).toFixed(3)}, ${STOPS.length} stops`);
-log("points as given (round(100 x max(0, 1 - |guess - truth| / max(6, truth)))), the line after a guess follows them, the rank by the share of points",
+log("points as given (round(100 x max(0, 1 - |guess - truth| / max(10, 1.5 x truth)))), the line after a guess follows them, the rank by the share of points",
   [[8, 3], [8, 5], [3, 3], [20, 23], [60, 30]].every(([g, v]) => { const won = points(g, v), n = nearness(won); return (won >= 90) === (n === 0) && (won < 25) === (n === 3) && close(won) === (won >= 60); })
-  && points(3, 3) === 100 && points(8, 5) === 50 && points(2, 6) === 33 && points(12, 6) === 0 && points(40, 50) === 80 && guessRank(0, 600) === 3 && guessRank(167, 600) === 3 && guessRank(180, 600) === 2 && guessRank(330, 600) === 1 && guessRank(480, 600) === 0,
+  && points(3, 3) === 100 && points(8, 5) === 70 && points(2, 6) === 60 && points(12, 6) === 40 && points(13, 2) === 0 && points(12, 2) === 0 && points(40, 50) === 87 && points(1, 2) === 90 && guessRank(0, 600) === 3 && guessRank(167, 600) === 3 && guessRank(180, 600) === 2 && guessRank(330, 600) === 1 && guessRank(480, 600) === 0,
   [[8, 5], [2, 6], [5, 1], [6, 2]].map(([g, v]) => `guess ${g}, truth ${v}: ${points(g, v)} points`).join("; "));
 
 // Every string the games use, in both languages.
-const KEYS = ["said_right", "said_right_memory", "said_right_hard", "said_close", "said_wrong", "said_wrong_memory", "said_streak", "said_near", "said_far_above", "said_far_below", "said_rank", "quiz_tier", "ask_room", "quiz_who_ask", "guess_numbers", "guess_counted", "guess_unset", "guess_less", "guess_more_one", "guess_of", "ask_freq", "ask_peak", "ask_resmi", "ask_room", "ask_trend", "trend_up", "trend_down", "trend_same",
+const KEYS = ["said_right", "said_right_memory", "said_right_hard", "said_close", "said_wrong", "said_wrong_memory", "said_streak", "said_near", "said_far_above", "said_far_below", "said_rank", "quiz_tier", "ask_room", "quiz_who_ask", "guess_numbers", "guess_counted", "guess_least", "guess_top", "guess_next", "guess_break", "guess_unset", "guess_less", "guess_more_one", "guess_of", "ask_freq", "ask_peak", "ask_resmi", "ask_room", "ask_trend", "trend_up", "trend_down", "trend_same",
   "room_era", "ev_freq", "ev_peak", "ev_room", "ev_trend", "ev_year", "ev_who", "caveat", "quiz_status", "quiz_streak", "quiz_keys", "quiz_plate_all", "guess_context", "next_toy",
   "played_best", "played_once", "quiz_year_ask", "quiz_who_ask", "quiz_tally", "quiz_save", "quiz_log", "quiz_next", "quiz_share", "guess_ask", "guess_lock", "guess_score",
   "guess_more", "guess_done", "guess_rule", "try_label", "guess_share", "copy_score", "copied", "again", "next", "nav_quiz", "play_tebak", "play_kuis", "quiz_lede", "guess_lede", "guess_yours"];
@@ -282,17 +290,19 @@ const OWN = {
     said_streak: ["Tiga beruntun. Jangan-jangan kamu wartawan."], quiz_who_ask: ["Kata-kata ini paling sering menemani satu nama di berita Kompas X. Nama yang mana?"],
     ask_room: ["Kompas, Tempo, atau Tribunnews: siapa paling sering menulis “X” di berita tentang X?"],
     said_near: ["Nyaris sempurna.", "Dekat.", "Lumayan, tapi meleset."],
-    said_far_above: ["Jauh. Kesan memang sering lebih keras daripada angka.", "Jauh. Berita ternyata lebih kalem daripada ingatan."],
-    said_far_below: ["Jauh. Angkanya lebih ramai daripada dugaanmu.", "Jauh. Berita ternyata lebih ribut daripada kesannya."],
-    guess_rule: ["Tepat: 100 poin. Makin jauh, makin sedikit; meleset sejauh angkanya sendiri, habis."] },
+    said_far_above: ["Jauh di atas. Angkanya lebih kecil daripada kesannya."],
+    said_far_below: ["Jauh di bawah. Angkanya lebih besar daripada dugaanmu."],
+    guess_rule: ["Tepat: 100 poin. Tiap meleset satu angka, hilang 10 poin; untuk angka besar, lebih longgar."],
+    guess_top: ["Tak ada nama lain yang lebih sering sehalaman dengan “X”."] },
   en: { said_right: ["Spot on.", "Right.", "Got it."], said_right_memory: ["Good memory."], said_right_hard: ["Right, and no peeking.", "Correct. Not every editor would get that."],
     said_wrong: ["No. It was X.", "Missed. The answer: X."], said_wrong_memory: ["Memory plays tricks. It was X."], said_close: ["So close. X."],
     said_streak: ["Three in a row. Are you a reporter?"], quiz_who_ask: ["These words kept one name company in Kompas news in X. Which name?"],
     ask_room: ["Kompas, Tempo or Tribunnews: which writes “X” most often in stories about X?"],
     said_near: ["Almost exact.", "Close.", "Not bad, but off."],
-    said_far_above: ["Way off. Impressions are louder than counts.", "Way off. The news turns out calmer than memory."],
-    said_far_below: ["Way off. The number is louder than you guessed.", "Way off. The news is noisier than it seemed."],
-    guess_rule: ["Exact: 100 points. The further off, the fewer; miss by as much as the number itself and they are gone."] },
+    said_far_above: ["Far above. The number is smaller than it seems."],
+    said_far_below: ["Far below. The number is bigger than you guessed."],
+    guess_rule: ["Exact: 100 points. Each step off costs 10; for large numbers it is more lenient."],
+    guess_top: ["No other name shares a page with “X” more often."] },
 };
 const said = (v) => [].concat(v).map((x) => (typeof x === "function" ? x("X", "X") : x));
 const off = Object.entries(OWN).flatMap(([l, keys]) => Object.entries(keys).filter(([k, list]) => JSON.stringify(said(TEXT[l][k])) !== JSON.stringify(list)).map(([k]) => `${l}.${k}`));
@@ -376,6 +386,7 @@ for (const [w, h, touch] of SIZES) {
   const unset = await p.evaluate(() => document.querySelector(".gauge").classList.contains("unset") && document.querySelector(".quiz-go").disabled);
   const guess = { rounds: 0, focus: 0, places: new Set(), verdicts: 0, lines: 0 };
   for (let k = 0; k < 8 && (await p.locator(".gauge:not(.locked) .track").count()); k++) {
+    (guess.keys ||= []).push(await p.evaluate(() => document.querySelector(".quiz-card").dataset.key));
     if (touch) { const box = await p.locator(".gauge .scale").boundingBox(); await p.touchscreen.tap(box.x + box.width * 0.1, box.y + box.height / 2); await p.locator(".gauge .more").tap(); await p.locator(".quiz-go").tap(); }
     else { await p.locator(".gauge .track").focus(); for (let i = 0; i < 4; i++) await p.keyboard.press("ArrowRight"); await p.keyboard.press("Enter"); }
     await p.waitForTimeout(60);
@@ -393,6 +404,19 @@ for (const [w, h, touch] of SIZES) {
   log(`guess at ${w}: the lock on screen and waiting for a guess, six rounds ${touch ? "by taps on the scale" : "by keyboard alone"}, a verdict with its context, focus on “next”, “next” in one place, a plate saved`,
     gfirst > 0 && unset && guess.rounds === GUESS_ROUNDS && guess.verdicts === GUESS_ROUNDS && guess.lines === GUESS_ROUNDS && guess.focus === GUESS_ROUNDS && guess.places.size === 1 && gend.plate && !gend.rule && /\.png$/.test(gsaved || "") && !errors.length,
     `lock ${gfirst > 0 ? `ends at ${gfirst}px` : `below the screen (${-gfirst}px)`}${unset ? "" : ", a guess set before the reader set one"}; ${guess.rounds} rounds; ${guess.verdicts} verdicts, ${guess.lines} laid out a line each;${gend.rule ? " the rule shown at the end;" : ""} focus ${guess.focus}×; next at ${[...guess.places].join(" | ")}; ${gend.score} “${gend.rank}”; saved ${gsaved}; errors ${errors.slice(0, 2).join(" / ") || 0}`);
+
+  // Guess the number loaded again deals on from what was kept, as the quiz does: no word of the last game, no question
+  // of it again, and the games counted on.
+  { const games = () => p.evaluate(() => { try { return JSON.parse(localStorage.getItem("dealt")).guess.st.games; } catch { return null; } });
+    const was = await games();
+    await p.goto(base + "#/tebak"); await p.waitForSelector(".gauge .track");
+    const again = [];
+    for (let k = 0; k < GUESS_ROUNDS && (await p.locator(".gauge:not(.locked) .track").count()); k++) {
+      again.push(await p.evaluate(() => document.querySelector(".quiz-card").dataset.key));
+      await p.locator(".gauge .more").click(); await p.locator(".quiz-go").click(); await p.waitForTimeout(30); await p.locator(".quiz-go").click(); await p.waitForTimeout(30);
+    }
+    const words = new Set((guess.keys || []).map((k) => k.split("|")[0])), back = again.filter((k) => words.has(k.split("|")[0]) || guess.keys.includes(k)), now = await games();
+    log(`guess at ${w}: a page loaded again deals on from what was kept (no word or question of the last game again)`, again.length === GUESS_ROUNDS && !back.length && was >= 1 && now === was + 1, `${again.length} rounds; again: ${back.join(", ") || "none"}; games kept ${was} → ${now}`); }
 
   // The hub remembers what was played, and every toy shows its first control on the first screen; nothing only a hover shows.
   await p.goto(base + "#/main"); await p.waitForSelector(".play-card");

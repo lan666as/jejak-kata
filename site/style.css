@@ -794,9 +794,13 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
    stretch (by fives) hatched, so that the change of scale reads */
 .gauge .scale { position: relative; height: 28px; }
 .gauge .bar { position: absolute; top: 8px; height: 12px; background: var(--line); }
-.gauge .bar.low { left: 0; width: 66.667%; border-radius: 6px 0 0 6px; }
-.gauge .bar.high { left: 66.667%; right: 0; border-radius: 0 6px 6px 0; border-left: 2px solid var(--chart-2);
-  background: repeating-linear-gradient(135deg, var(--line) 0 3px, color-mix(in srgb, var(--line) 35%, transparent) 3px 6px); }
+.gauge .bar.low { left: 0; width: calc(66.667% - 3px); border-radius: 6px 2px 2px 6px; }
+.gauge .bar.high { left: calc(66.667% + 3px); right: 0; border-radius: 2px 6px 6px 2px;
+  background: repeating-linear-gradient(135deg, var(--ink-3) 0 2px, color-mix(in srgb, var(--line) 50%, transparent) 2px 6px); }
+/* the change of scale at 20: a gap with a notch across it, and over the second stretch what it steps by (where it fits) */
+.gauge .notch { position: absolute; left: 66.667%; top: 2px; width: 2px; height: 24px; margin-left: -1px; border-radius: 1px; background: var(--ink-3); }
+.gauge .break { position: absolute; left: calc(66.667% + var(--s2)); top: calc(-1 * var(--s3) - 2px); font-size: var(--t-meta); line-height: 1; font-weight: 600; color: var(--ink-2); white-space: nowrap; pointer-events: none; }
+.gauge .break[hidden] { display: none; }
 .gauge .minor { position: absolute; top: calc(100% + 2px); height: var(--s2); }
 .gauge .minor.low { left: 0; width: 66.667%; background: repeating-linear-gradient(90deg, var(--ink-3) 0 var(--hair), transparent var(--hair) 5%); }
 .gauge .minor.high { left: 66.667%; right: 0; background: repeating-linear-gradient(90deg, var(--ink-3) 0 var(--hair), transparent var(--hair) 6.25%); }
@@ -814,8 +818,9 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .gauge output { display: block; min-width: 5ch; text-align: center; font: 800 var(--t-h1)/1.1 var(--type); font-stretch: 75%; font-variant-numeric: tabular-nums; }
 .gauge:not(.unset) output::after { content: " dari 100"; font-size: var(--t-body); font-weight: 400; color: var(--ink-2); }
 :lang(en) .gauge:not(.unset) output::after { content: " of 100"; }
-.gauge .unset-note { margin: var(--s2) 0 0; padding: 0; background: none; border: 0; font-size: var(--t-small); color: var(--ink-2); }
-.gauge:not(.unset) .unset-note { display: none; }
+/* before the first touch the readout's place holds the invitation; once a guess is set, the number */
+.gauge .unset-note { flex: 0 1 18rem; min-height: calc(var(--t-h1) * 1.1); display: flex; align-items: center; margin: 0; font-size: var(--t-small); line-height: 1.35; color: var(--ink-2); text-align: center; justify-content: center; }
+.gauge:not(.unset) .unset-note, .gauge.unset output { display: none; }
 
 /* "Coba: …": real choices to try at once, beside a field or a list */
 .try { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin: var(--s3) 0 var(--s4); }
