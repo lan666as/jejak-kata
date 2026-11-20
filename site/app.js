@@ -1404,7 +1404,7 @@ async function moversPage(mode = "kata") {
   await perLens(all.map((o) => o.lens), (lens) => lensText(lens).short || lensText(lens).title, (lens, more) => {
     const { movers } = all.find((o) => o.lens === lens);
     // (above the list, one line on what its number and its dots are: matrix_about's measure, the source's flag)
-    const section = el(`<section><p class="list-key">${t("movers_key", lens.flag)}</p><ul class="movers${names ? " names" : ""}"></ul><p class="sub"></p>${names ? `<p class="sub">${t("movers_names_note")}</p>` : ""}<p class="sub">${lensText(lens).about}</p></section>`);
+    const section = el(`<section><p class="list-key">${t("movers_key", lens.flag, names)}</p><ul class="movers${names ? " names" : ""}"></ul><p class="sub"></p>${names ? `<p class="sub">${t("movers_names_note")}</p>` : ""}<p class="sub">${lensText(lens).about}</p></section>`);
     const controls = el(`<div class="controls"><label>${t("between")} <select name="pair">${movers
         .map((m, i) => `<option value="${i}">${lens.periods[m.a]} → ${lens.periods[m.b]}</option>`)
         .join("")}</select></label></div>`);
@@ -1427,7 +1427,7 @@ async function moversPage(mode = "kata") {
       section.querySelector("p.sub").textContent = t("flagged", m.flagged, m.scored, lens.flag) + (list.some((r) => r.also.length) ? " " + t("replicated") : "");
       section.querySelector("ul").innerHTML = list
         .slice(0, 120)
-        .map((r) => `<li title="${r.also.map((o) => lensText(o.lens).title).join("; ")}"><span>${r.words.map((w) => toWord(lens.words[w], lens.kind(w) === "person")).join(", ")}</span> <span class="score"><i class="s${step(r.s)}"></i>${number(r.s)}${"●".repeat(r.also.length)}</span></li>`)
+        .map((r) => `<li title="${r.also.map((o) => lensText(o.lens).title).join("; ")}"><span>${r.words.map((w) => toWord(lens.words[w], lens.kind(w) === "person", names ? escape(shown(lens.words[w], "place")) : undefined)).join(", ")}</span> <span class="score"><i class="s${step(r.s)}"></i>${number(r.s)}${"●".repeat(r.also.length)}</span></li>`)
         .join("");
     };
     pair.value = movers.length - 1;
