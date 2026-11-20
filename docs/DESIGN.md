@@ -365,15 +365,30 @@ its line); once the first route has
   again, and the toy that follows from it.
   **The quiz** ("Kuis") is one game of ten rounds dealt by `site/deal.js` from `site/data/quiz.json` (gathered from the
   data by `node tests/site/games.mjs write`): seven kinds of question (which year, from its ten most characteristic
-  words; who, from their verbs and adjectives in a year; which was more frequent in a year; which peaked first; official
-  word or loanword in 2024; which newsroom most often puts a word beside a name; up, down or about the same between two
-  years), in a rhythm (every kind once, never one twice running) and harder as they go (three easy, four middling, three
-  hard). A question is dealt only where its answer clears its margin (`MARGIN` in deal.js, one place); within a game no
-  word, name or year is asked about twice, and a deck per kind, kept for the visit, deals every question once before
-  any comes again. After each answer a line is said (never the same one twice running; the owner's wording, in
-  text.js) and the evidence is drawn small in the plates' inks: the shares as marks on one scale (a row each; the three
-  newsrooms in their colours), or a word's line over the years with the years asked about marked, drawn in along its
-  length (a cut with reduced motion). A question that sets a name beside a word carries the caution "sharing a page is
+  words, less any that names the year by itself, a number or a pairing of two names, `marker`; who, from the words that
+  kept a name company in a year; which was more frequent in a year; which peaked first; official word or loanword in
+  2024; which newsroom most often writes a word of public life, `ROOM_WORDS`, in stories about a name, with a count in
+  each; up, down or about the same between two years), in a rhythm (every kind once, never one twice running, none
+  more than twice and the loanword question once at most, `CAP`) and harder as they go: rounds 1-3 easy, 4-7
+  middling, 8-10 hard, each question's difficulty read from the data in one place (`DIFFICULTY`: a comparison by its
+  ratio, hard at the margin and easy from twelve times; who by the pages naming the name that year; which year by how
+  far its words stand above the years near it; which peaked first by the years between the peaks) and shown in the
+  round's line as three marks and a word ("mudah", "sedang", "sulit"). A question is dealt only where its answer
+  clears its margin (`MARGIN` in deal.js, one place); the years offered beside the answer lie within three of it
+  where the data allows and never all on one side; the names offered beside a "who" are of its own sort (a person
+  among people of their own time and country, a party among parties: `PERSON_KIND`, `BODY_KIND`) and in the news that
+  year. Within a game no word, name, pair or year is shown twice; a deck per kind, kept for the visit, deals every
+  question once before any comes again, and every name and word a game showed (as answer, choice or clue) goes to the
+  back for the visit's next games. After each answer a line is said (never the same one twice running; the owner's
+  wording, in text.js: the praise of the last three rounds is its own, and a year missed by one is "Nyaris"), the
+  answer written as it would start a sentence (a name as a name, a word in quotation marks, in English with what it
+  means where the site says: "korupsi (corruption)"), and the evidence of exactly what was asked is drawn small in the
+  plates' inks: the shares as marks on one scale (a row each; the three newsrooms in their colours; its labels at two
+  significant digits, as few as keep them apart), for "who" how many of the words shown kept each name offered
+  company, or a line over the years (a word's, or a year's words together) with the years asked about marked, drawn
+  in along its length (a cut with reduced motion). On a phone a round and its answer, evidence included, fit one
+  screen above the bar; the answers under the voyage on the score plate are shortened or left out where they would
+  touch. A question that sets a name beside a word carries the caution "sharing a page is
   not being accused" in sight, and never asks it of a word that reads as an accusation (deal.js, `SENSITIVE`): those are
   asked only as "guess the number" asks them. In "guess the number" (six rounds, two each of a low, a middle and a high
   true value, so that no one guess always pays; only names a reader knows and words with a point, `POINTED`, on which
