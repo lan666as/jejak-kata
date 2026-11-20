@@ -14,8 +14,8 @@
 // control on the first screen, its result (figure, list, table) beginning in the first 560px of a 390x844 phone, and no
 // information only a hover shows.
 import { readFileSync, writeFileSync } from "node:fs";
-import { quizData } from "./quiz-data.mjs";
-import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, nearness, close, seeded, STOPS, along, stopAt, shownIn, capOf, sortOf, marker, keep, kept, guessRank, shown, isName, MARGIN, FAME, KINDS, ROUNDS, GUESS_ROUNDS, SENSITIVE, OUTLET_NAMES, POINTED, PEOPLE, BODIES, ROOM_WORDS } from "../../site/deal.js";
+import { quizData, clueRules } from "./quiz-data.mjs";
+import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, nearness, close, seeded, STOPS, along, stopAt, shownIn, capOf, sortOf, marker, keep, kept, guessRank, shown, isName, MARGIN, FAME, KINDS, ROUNDS, GUESS_ROUNDS, SENSITIVE, ACCUSING, LAW_ACTS, OUTLET_NAMES, POINTED, PEOPLE, BODIES, ROOM_WORDS, oneThing, fragment } from "../../site/deal.js";
 import { TEXT, GLOSS } from "../../site/text.js";
 import { GAME_GLOSS, NAME_GLOSS, IN_ENGLISH, AS_NAME } from "../../site/glossary.js";
 
@@ -29,6 +29,21 @@ log("site/data/quiz.json is what the data says", readFileSync(FILE, "utf8") === 
 const Q = JSON.parse(fresh), P = Q.periods, W = Q.words, pages = (w, p) => W[w].share[p] * Q.units[p], pool = pools(Q);
 console.log(`     distinct questions: ${KINDS.map((k) => `${k} ${pool[k].length}`).join(", ")}`);
 log("every kind can be dealt", KINDS.every((k) => pool[k].length >= 10), KINDS.filter((k) => pool[k].length < 10).join(", "));
+// A clue list names each thing once and only by a whole name: no word twice, no two entries for one thing (one a part
+// of the other, one Wikipedia article, initials, one the other in English, two forms of one word: deal.js oneThing), no
+// bare first name or fragment (fragment); a "who" list never a word of accusation or of a case (SENSITIVE, ACCUSING) and,
+// beside a person, nothing the law does to someone (LAW_ACTS): Anas Urbaningrum's never "terlibat" or "menerima".
+{ const { bare, article, gloss } = clueRules(), bad = [];
+  for (const y of Q.years) {
+    y.clue.forEach((a, i) => { if (fragment(a, bare)) bad.push(`${P[y.p]}: “${a}” is a fragment`); y.clue.slice(i + 1).forEach((b) => oneThing(a, b, article, gloss) && bad.push(`${P[y.p]}: “${a}” and “${b}” are one thing`)); });
+  }
+  for (const [n, { said }] of Object.entries(Q.who)) for (const [p, list] of Object.entries(said)) {
+    if (new Set(list).size !== list.length) bad.push(`${n} ${P[p]}: a word twice`);
+    const odd = list.filter((w) => SENSITIVE.includes(w) || ACCUSING.includes(w) || (PEOPLE.includes(n) && LAW_ACTS.includes(w)));
+    if (odd.length) bad.push(`${n} ${P[p]}: ${odd.join(", ")}`);
+  }
+  const anas = Object.values(Q.who["anas urbaningrum"]?.said || {}).flat();
+  log("every clue list names each thing once, by a whole name, and no “who” list accuses", !bad.length && anas.length && !anas.some((w) => ["terlibat", "menerima", "diduga"].includes(w)), bad.slice(0, 6).join("; ") || `Anas Urbaningrum: ${[...new Set(anas)].join(", ")}`); }
 
 /** A question's margin, from the raw numbers: what is wrong with it, or "". */
 function margin(q) {
@@ -53,7 +68,7 @@ function margin(q) {
     const [p, r] = e.marks, w = e.series[0].label, x = W[w].share[r] / W[w].share[p];
     const want = x >= MARGIN.ratio ? "up" : x <= 1 / MARGIN.ratio ? "down" : Math.max(x, 1 / x) <= MARGIN.same ? "same" : null;
     if (want !== q.answer) return `${w} ${P[p]}→${P[r]} x${x.toFixed(2)} said ${q.answer}`;
-    if (Math.min(pages(w, p), pages(w, r)) < MARGIN.pages) return "too few pages";
+    if (Math.min(pages(w, p), pages(w, r)) < (q.answer === "same" ? MARGIN.samePages : MARGIN.trendPages)) return `too few pages for “${q.answer}” (${Math.round(Math.min(pages(w, p), pages(w, r)))})`;
   }
   if (q.kind === "peak") {
     const at = (w) => { const v = W[w].share, top = Math.max(...v); return v.map((x, p) => (x >= MARGIN.peakNear * top ? p : -1)).filter((p) => p >= 0); };
@@ -92,6 +107,11 @@ function margin(q) {
     if (out) return `${out} is on too few pages in ${q.ask[1]} to be offered`;
     const odd = q.choices.find((c) => PEOPLE.includes(c) !== PEOPLE.includes(q.answer) || (PEOPLE.includes(c) && sortOf(c) !== sortOf(q.answer)));
     if (odd) return `${odd} offered beside ${q.answer}`;
+    // (every name offered shares at least one of the words: the evidence shows a real number for each; and where none
+    // shares more than one, only the answer fits, and the question is marked easy unless a little-known name is offered)
+    const none = q.choices.find((c) => c !== q.answer && !(Q.who[c]?.said[p] || []).some((x) => q.clue.includes(x)));
+    if (none) return `${none} shares none of the words`;
+    if (q.choices.every((c) => c === q.answer || (Q.who[c]?.said[p] || []).filter((x) => q.clue.includes(x)).length <= 1) && q.tier > 0 && q.choices.every((c) => fameOf(c) >= FAME.known)) return "only the answer fits the words, yet not marked easy";
     const shown = q.ev.items.map((i) => i.label).join() === q.choices.join() && q.ev.items.every((i) => i.v === (i.label === q.answer ? q.clue.length : (Q.who[i.label]?.said[p] || []).filter((x) => q.clue.includes(x)).length));
     if (!shown) return "the evidence does not count the words shown beside each name offered";
   }
@@ -118,10 +138,10 @@ for (const seed of [1, 2, 3]) {
   for (let g = 0; g < 100; g++) {
     const game = deal(d, rng, P), topics = new Set(), keys = new Set();
     if (game.length !== ROUNDS) games.short++;
+    [...game].sort((a, b) => a.turn - b.turn).forEach((q) => seen[q.kind].push(q.key));  // (in the order the decks dealt them)
     game.forEach((q, i) => {
       const where = `seed ${seed} game ${g} round ${i} ${q.key}`;
       games.dealt[q.kind]++;
-      seen[q.kind].push(q.key);
       if (i && game[i - 1].kind === q.kind) games.bad.push(`${where}: the same kind twice running`);
       if (game.filter((x) => x.kind === q.kind).length > capOf(q.kind)) games.bad.push(`${where}: ${game.filter((x) => x.kind === q.kind).length} questions of the kind ${q.kind} (at most ${capOf(q.kind)})`);
       band[i < 3 ? 0 : i < 7 ? 1 : 2].push(q.d);
@@ -159,7 +179,8 @@ log("each kind dealt at least 150 times", KINDS.every((k) => games.dealt[k] >= 1
 { let again = 0, all = 0;
   for (let v = 0; v < 50; v++) { const rng = seeded(500 + v), d = decks(pool, rng), before = new Set();
     for (let g = 0; g < 5; g++) { const shown = new Set(deal(d, rng, P).flatMap(shownIn)); all += shown.size; shown.forEach((w) => (again += before.has(w), before.add(w))); } }
-  log("the names and words of a visit's earlier games come back in at most 1 in 100 of those its next four games show", again <= all / 100, `${again} of ${all}`); }
+  // (1.5 in 100: a "who" offers only names that share its words, which leaves fewer names to choose from)
+  log("the names and words of a visit's earlier games come back in at most 1.5 in 100 of those its next four games show", again <= (1.5 * all) / 100, `${again} of ${all}`); }
 // Within a visit, a question of a kind smaller than the games played (the years, the official words) comes back only
 // after the whole deck: checked above. Across a visit's first game and its second, no question at all repeats:
 { const rng = seeded(9), d = decks(pool, rng), a = deal(d, rng, P).map((q) => q.key), b = deal(d, rng, P).map((q) => q.key);
@@ -180,7 +201,7 @@ const reload = (st, seed) => kept(decks(pool, seeded(seed)), st && JSON.parse(JS
     if (spent.length && room >= ROUNDS) (spentAt++, game.some((q) => spent.includes(q.kind)) || rested++);
     st = keep(d);
     size = Math.max(size, JSON.stringify(st).length);
-    game.forEach((q) => asked[q.kind].push(q.key));
+    [...game].sort((a, b) => a.turn - b.turn).forEach((q) => asked[q.kind].push(q.key));
   }
   for (const k of KINDS) { const n = pool[k].length; for (let a = 0; a < asked[k].length; a += n) { const part = asked[k].slice(a, a + n); if (new Set(part).size !== part.length) repeats.push(`${k} within ${n}`); } }
   let again = 0, all = 0;

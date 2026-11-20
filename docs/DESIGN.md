@@ -399,20 +399,30 @@ its line); once the first route has
   come into it in place: the card does not grow and the page does not scroll), the voyage, the tally, the control and
   the keys at the right; nothing under the board but the footer. Keys: 1-4 choose, Enter goes on; after an answer
   focus is on that control, after "next" on the new question. A wrong answer is marked by a dashed edge and a cross, the right one filled with a tick,
-  never by colour alone. At the end the score as a plate to save as an image, its rank in a line, one press to play
+  never by colour alone. At the end the score as a plate to save as an image, its rank in a line, how it stands against this viewer's best so
+  far ("Skor terbaikmu 7 / 10. Kali ini 6 / 10.", or "Skor terbaik baru: 8 / 10."; nothing on a first game), one press to play
   again, and the toy that follows from it. Under the plate's voyage each port's answer is a short whole label (a
   year, "naik", a person's first name, a word of one part) where it has room, else none: never a cut word.
   **The quiz** ("Kuis") is one game of ten rounds dealt by `site/deal.js` from `site/data/quiz.json` (gathered from the
   data by `node tests/site/games.mjs write`): seven kinds of question (which year, from its ten most characteristic
   words, less any that names the year by itself, a number or a pairing of two names, `marker`; who, from the words that
-  kept a name company in a year; which was more frequent in a year; which peaked first; official word or loanword in
+  kept a name company in a year, never a word of accusation or of a case, `SENSITIVE` and `ACCUSING`, nor beside a
+  person what the law does to someone, `LAW_ACTS`; which was more frequent in a year; which peaked first; official word or loanword in
   2024; which newsroom most often writes a word of public life, `ROOM_WORDS`, in stories about a name, with a count in
-  each; up, down or about the same between two years). Every kind once where it can, none more than twice, the loanword
+  each; up, down or about the same between two years). A clue list names each thing once and by a whole name
+  (`oneThing` and `fragment` in deal.js, the list gathered in `tests/site/quiz-data.mjs`): no word twice; of a word and
+  a part of it ("ebola", "virus ebola") the whole; of two names of one Wikipedia article ("foke", "fauzi bowo"), of an
+  abbreviation and the words it is made of ("psbb", "prokes"), of a term and its meaning in English ("pengampunan
+  pajak", "tax amnesty"), of two forms of a word ("vaksin", "divaksin") the first; no bare first name or fragment (the
+  filter the lists use: "uno", "mario", "salihin", or a part of a term the data does not count whole, `PARTS`: "gugus").
+  A word of one part that mostly comes inside one longer name that year is given whole ("akil" as "akil mochtar"); a
+  word taken from past the first ten only where the games can say it in English and no other year has it. Every kind once where it can, none more than twice, the loanword
   question and the newsroom question once at most (`CAP`). Each question's difficulty is read from the data in one
   place (`DIFFICULTY` in deal.js) and shown in the round's line as three marks and a word ("mudah", "sedang", "sulit"):
   a comparison by the ratio of the larger share to the next, hard from the margin to 2, middling to 4, easy from 4 (so
   no question marked "sulit" compares shares more than twice apart); "about the same" middling to hard; who by the pages
-  naming the name that year (hard at 150, easy from 6,000); which year by how far its words stand above the years near
+  naming the name that year (hard at 150, easy from 6,000), and easy wherever no name offered shares more than one of
+  the words (an institution's own work, "memprediksi" for BMKG: only one choice can fit); which year by how far its words stand above the years near
   it; which peaked first by the years between the peaks (hard at two or three, middling at four or five), easy only
   from six years apart and where both words are widely known (`FAME.wide`, 1,000 Kompas pages a year), else at least
   middling; and fame for every kind that names a person or a body (as answer, choice or clue): where the least known
@@ -427,7 +437,12 @@ its line); once the first route has
   more on each side; its evidence draws both lines, each to its own peak, with the peaks marked and named. The years
   offered beside the answer lie within three of it where the data allows and never all on one side; the names offered
   beside a "who" are of its own sort (a person among people of their own time and country, a party among parties:
-  `PERSON_KIND`, `BODY_KIND`) and in the news that year. Within a game no word, name, pair or year is shown twice; a deck
+  `PERSON_KIND`, `BODY_KIND`), in the news that year, and each kept company by at least one of the words shown
+  (`MARGIN.whoLeast`: a choice none of them fit gives the answer away; where there are not three such names, it is not
+  asked), so the evidence shows a real count for each. "Up, down or about the same" is asked only of a word on 150
+  pages or more in both years (`MARGIN.trendPages`; with fewer the change is noise), "about the same" on 600
+  (`samePages`), and its evidence says the rule: "“nyaris sama” berarti berubah kurang dari 15%" (the number from
+  `MARGIN.same`). Within a game no word, name, pair or year is shown twice; a deck
   per kind deals every question once before any comes again, and every name and word a game showed (as answer, choice
   or clue) goes to the back for the next games. What was dealt is kept from page load to page load (each deck's dealt
   keys, the games played, the names and words shown with the game that last showed them: deal.js `keep` and `kept`,
@@ -437,7 +452,7 @@ its line); once the first route has
   the same one twice running, from pools that fit the question (text.js, the owner's wording): right, "Tepat." /
   "Betul." / "Kena." for any kind, "Ingatanmu bagus." too for "which year" and "who", the editor's praise too on a hard
   round of four choices; wrong, "Bukan. Jawabannya ..." / "Meleset. Yang benar: ...", "Ingatan memang suka menipu ..."
-  too for "which year" and "who"; a year missed by one, "Nyaris". The answer in the line keeps its own form (a name as
+  too for "which year" only (a wrong "who" is not memory's doing); a year missed by one, "Nyaris". The answer in the line keeps its own form (a name as
   a name, "naik" in lower case, a common word in quotation marks, in English with what it means: “korupsi”
   (corruption)), and the evidence of exactly what was asked is drawn small in the plates' inks: the shares as marks on
   one scale (a row each; the three newsrooms in their colours; its labels at two significant digits, as few as keep

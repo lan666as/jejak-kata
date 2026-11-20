@@ -747,6 +747,8 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .quiz .clue li { padding: 0; border: 0; background: none; min-height: 0; font: 600 var(--t-lede)/1.4 var(--type); color: var(--ink); }
 .quiz .clue li + li::before { content: "·"; margin-right: var(--s3); color: var(--ink-3); }
 .quiz .rank { font: 700 var(--t-h3)/var(--l-h3, 1.15) var(--type); font-stretch: 80%; margin: 0 0 var(--s4); color: var(--route); }
+/* how this game stands against the best so far (app.js, gameEnd) */
+.quiz .best { margin: calc(-1 * var(--s2)) 0 var(--s4); font-size: var(--t-body); font-weight: 600; color: var(--ink-2); }
 .quiz .caveat { margin: var(--s2) 0; padding: 0 0 0 var(--s3); font-size: var(--t-small); background: none; border: 0; border-left: var(--rule) solid var(--line); border-radius: 0; }  /* (in sight, quietly: a rule, not a box) */
 .quiz-card > :last-child { margin-bottom: 0; }
 .quiz .verdict { flex-direction: column; align-items: flex-start; gap: var(--s2); font-size: var(--t-body); line-height: var(--l-body); }

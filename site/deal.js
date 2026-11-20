@@ -11,6 +11,8 @@ export const MARGIN = {
   ratio: 1.5,      // two shares compared (which is more frequent, official word or loanword, which newsroom, up or down): the larger at least 1.5 times the smaller
   same: 1.15,      // "about the same": the two within 15% of each other (between 1.15 and 1.5 nothing is asked: neither answer is clear)
   pages: 40,       // a share compared stands on at least this many pages (of the year, or of the pages naming the name)
+  trendPages: 150, // up or down: the word on at least this many pages in both years (with fewer the change is noise) ...
+  samePages: 600,  // ... and "about the same" on at least this many (a 15% band asks for more pages than a 50% change)
   least: 10,       // ... and the smaller of two on at least this many, so that "more often" is not "once against never"
   peakNear: 0.85,  // a word's peak is every year within 85% of its highest share ...
   peakGap: 2,      // ... and "which peaked first" is asked only where all of one's peak years are this many years before all of the other's
@@ -22,7 +24,8 @@ export const MARGIN = {
   peakSides: 2,
   roomPages: 300,  // which newsroom: each of the three names the name on at least this many pages (stick.json's own rule, app.js STUCK_PAGES)
   whoPages: 150,   // who: the name is on at least this many pages of the year whose verbs are shown
-  whoShared: 3,    // who: no other choice shares more than this many of the eleven words shown in that year (else two answers fit)
+  whoShared: 3,    // who: no other choice shares more than this many of the eleven words shown in that year (else two answers fit) ...
+  whoLeast: 1,     // ... and every other choice shares at least one (a choice none of the words fit gives the answer away)
   yearRatio: 1.5,  // which year: in every other year offered, the ten words together stand at most 1/1.5 of their year's share
   yearNear: 3,     // ... and the years offered lie within three of it where the data allows (never all on one side of it where both sides have one)
   roomHits: 10,    // which newsroom: in each of the three, at least this many pages hold the word beside the name (no newsroom at nothing)
@@ -53,6 +56,42 @@ export const SENSITIVE = ["tersangka", "korupsi", "suap", "ditangkap", "ditahan"
   "tambang", "kekerasan", "ham", "etik", "oknum", "marah", "gagal", "polisi", "pengadilan", "sidang", "dilaporkan", "membantah", "klarifikasi",
   // (and, never among the words that tell "who" who it is: the verbs of a case at law)
   "bersalah", "dijerat", "menjerat", "ditetapkan", "dipenjara", "dituntut", "didakwa", "tertangkap", "diadili", "terjerat", "dicopot", "dipecat"];
+/** Words that accuse or speak of a case against someone: never among the words that tell "who" who it is (with a name
+ *  beside them they read as a charge, whoever the answer is), as SENSITIVE's are not. (What a body that enforces the law
+ *  does, "memeriksa", "menangkap", is its work, and stays: such a question is marked easy, `finish`.) */
+export const ACCUSING = ["terlibat", "menerima", "diduga", "dituduh", "terbukti", "melanggar", "ilegal", "bermasalah", "dimintai", "dipanggil", "diamankan", "disita",
+  "dihukum", "dikaitkan", "terancam", "menampik", "mengakui", "mencuri", "merugikan", "dicari", "kabur", "melarikan"];
+/** ... and what the law does to someone, left out beside a person (beside a body that enforces the law it is that body's
+ *  work, and stays). */
+export const LAW_ACTS = ["memeriksa", "menetapkan", "menangkap", "menahan", "mengusut", "menyelidiki", "mendalami", "menyita", "menggeledah", "menuntut", "melaporkan", "diperiksa"];
+/** A bare first name or a fragment, which a list leads without and a clue never is: a word of one part that some
+ *  source links to an article of a person, or to one of nothing more than itself ("susilo", "uno", "mario": `bare`, from
+ *  every source's names), or of three letters or fewer ("ruf", "iii"); never a name or abbreviation the games know. */
+export const bareSet = (sources) => new Set(sources.flatMap((list) => list.filter(([w, kind, article]) => !w.includes(" ") && (kind === "person" || ((kind || "other") === "other" && String(article).toLowerCase() === w))).map(([w]) => w)));
+export const fragment = (w, bare) => !PEOPLE.includes(w) && !BODIES.includes(w) && !isAbbr(w) && !w.includes(" ") && (w.length <= 3 || bare.has(w) || PARTS.includes(w));
+/** Two entries of a list that name one thing (a list gives each thing once): the same word; one a part of the other
+ *  ("ebola", "virus ebola"); both leading to one Wikipedia article ("foke", "fauzi bowo"), or one's article the other
+ *  ("blsm", "bantuan langsung sementara masyarakat"); one made of the first letters of the other's parts ("psbb", "prokes"); one the other's meaning in
+ *  English ("pengampunan pajak", "tax amnesty"). `article(w)` and `gloss(w)` say what the data says of a word. */
+export function oneThing(a, b, article = () => "", gloss = () => "") {
+  if (a === b) return true;
+  const pa = a.split(" "), pb = b.split(" "), inside = (x, y) => y.length > x.length && y.some((_, i) => x.every((p, j) => y[i + j] === p));
+  if (inside(pa, pb) || inside(pb, pa)) return true;
+  const [aa, ab] = [article(a), article(b)];
+  if ((aa && aa === ab) || (aa && aa.toLowerCase() === b) || (ab && ab.toLowerCase() === a)) return true;
+  // (one made of the first letters of the other's parts, in order: "psbb", "prokes" of "protokol kesehatan")
+  const short = (x, parts) => !parts.length ? !x : parts[0].split("").some((_, k) => x.startsWith(parts[0].slice(0, k + 1)) && short(x.slice(k + 1), parts.slice(1)));
+  if ((pa.length === 1 && pb.length > 1 && short(a, pb)) || (pb.length === 1 && pa.length > 1 && short(b, pa))) return true;
+  const said = (x, y) => { const g = String(gloss(x) || "").toLowerCase(); return g && (g === y || g.startsWith(y + " ") || g.endsWith(" " + y)); };
+  if (said(a, b) || said(b, a)) return true;
+  // (one word in two of its forms: "vaksin", "vaksinasi", "divaksin", "divaksinasi")
+  const forms = (x) => { const out = new Set([x]); for (const y of [x, ...["di", "ter", "ber"].filter((p) => x.startsWith(p)).map((p) => x.slice(p.length))]) { out.add(y); for (const e of ["isasi", "asi", "kan", "an", "i"]) if (y.endsWith(e)) out.add(y.slice(0, -e.length)); } return [...out].filter((y) => y.length >= 4); };
+  const fa = new Set(pa.length === 1 ? forms(a) : []);
+  return pb.length === 1 && forms(b).some((y) => fa.has(y));
+}
+/** Words that, alone, are a part of a term the data does not count whole ("gugus" of "gugus tugas", "pemberlakuan" of
+ *  PPKM's full name): never a clue. */
+export const PARTS = ["gugus", "pemberlakuan"];
 /** The words "guess the number" asks about: words that say something about how the news writes about someone (a case,
  *  a stir, a reproach, a promise, a poll), never an everyday word ("anak", "video", "keluarga" are on a page for any
  *  reason, and a share of them says nothing). */
@@ -212,7 +251,7 @@ export function pools(Q) {
     const variants = Object.entries(Q.who[n].said).map(([p, said]) => ({ p: +p, said })).filter(({ p, said }) => said.length >= 5 && W[n] && pages(n, p) >= MARGIN.whoPages)
       .map(({ p, said }) => {
         const shared = (m) => (Q.who[m].said[p] || []).filter((x) => said.includes(x)).length;
-        const news = who.filter((m) => m !== n && Q.who[m].said[p] && W[m] && pages(m, p) >= MARGIN.whoPages && shared(m) <= MARGIN.whoShared);
+        const news = who.filter((m) => m !== n && Q.who[m].said[p] && W[m] && pages(m, p) >= MARGIN.whoPages && shared(m) <= MARGIN.whoShared && shared(m) >= MARGIN.whoLeast);
         const same = news.filter((m) => sortOf(m) === sortOf(n)), others = same.length >= 3 || PEOPLE.includes(n) ? same : news.filter((m) => BODIES.includes(m));
         // (its difficulty is rated again when its choices are drawn, by the least known of them: finish)
         return at(DIFFICULTY.rated(DIFFICULTY.who(pages(n, p)), fames([n])), { p, said, others, near: others.filter((m) => shared(m) >= 2), answer: n, m: DIFFICULTY.who(pages(n, p)), fame: Object.fromEntries([n, ...others].map((m) => [m, fame(m)])),
@@ -282,8 +321,9 @@ export function pools(Q) {
     const variants = [];
     for (let p = 0; p < P.length; p++) for (let q = p + 3; q < P.length; q++) {
       const [a, b] = [W[w].share[p], W[w].share[q]];
-      if (Math.min(pages(w, p), pages(w, q)) < MARGIN.pages) continue;
-      const r = b / a, answer = r >= MARGIN.ratio ? "up" : r <= 1 / MARGIN.ratio ? "down" : Math.max(r, 1 / r) <= MARGIN.same ? "same" : null;
+      const least = Math.min(pages(w, p), pages(w, q));
+      if (least < MARGIN.trendPages) continue;
+      const r = b / a, answer = r >= MARGIN.ratio ? "up" : r <= 1 / MARGIN.ratio ? "down" : Math.max(r, 1 / r) <= MARGIN.same && least >= MARGIN.samePages ? "same" : null;
       if (answer) variants.push(at(DIFFICULTY.rated(answer === "same" ? DIFFICULTY.same(Math.max(r, 1 / r)) : DIFFICULTY.ratio(Math.max(r, 1 / r)), fames([w])), { p, q, answer, choices: ["up", "down", "same"], ev: { type: "line", series: [{ label: w, share: W[w].share }], marks: [p, q] } }));
     }
     if (variants.length) out.trend.push({ key: `trend:${w}`, topics: [w], variants });
@@ -318,7 +358,8 @@ export function finish(kind, g, tier, rng, P, fresh = () => 1) {
     const known = v.others.filter((m) => v.fame[m] >= FAME.known), near = tier === 2 ? pick(v.near, 3) : [];
     const picked = near.length >= 3 ? near : (tier === 0 && pick(known, 3).length >= 3 ? pick(known, 3) : pick(v.others, 3));
     if (picked.length < 3) return null;
-    const choices = shuffle([v.answer, ...picked], rng), d = DIFFICULTY.rated(v.m, choices.map((m) => v.fame[m]));
+    // (where no name offered shares more than one of the words, only the answer fits them: easy, whatever its pages)
+    const choices = shuffle([v.answer, ...picked], rng), d = DIFFICULTY.rated(Math.max(...picked.map((m) => v.counts[m])) <= 1 ? Math.min(v.m, 0.2) : v.m, choices.map((m) => v.fame[m]));
     return { ...base, d: +d.toFixed(3), tier: tierOf(d), ask: ["quiz_who_ask", P[v.p]], clue: v.said, choices,
       ev: { type: "marks", unit: "count", of: v.said.length, period: P[v.p], items: choices.map((m) => ({ label: m, v: v.counts[m] })) } };
   }
@@ -459,6 +500,7 @@ export function deal(d, rng, P) {
       }
     }
     if (!q) continue;
+    q.turn = game.length;  // (the order it was dealt in, before `ordered`: the checks follow the decks in it)
     shownIn(q).forEach((w) => used.add(w));
     q.topics.forEach((t) => used.add(t));
     count[q.kind] = (count[q.kind] || 0) + 1;

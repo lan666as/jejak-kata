@@ -10,7 +10,7 @@ import { seaChart } from "./chart.js";
 import { TEXT, LENS_TEXT, NOTES, GLOSS, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
 import { address, routeOf, named, canonical, EMBED, PAGES, PLAY, QUIZ_NAMES, GUESS_WORDS } from "./address.js";
 import { board, measure } from "./labels.js";
-import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, guessRank, shown, isAbbr, isName as nameLike, keep, kept as keptDecks, version, BODIES, PEOPLE, STOPS, along, stopAt, CAVEAT } from "./deal.js";
+import { MARGIN, pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, guessRank, shown, isAbbr, isName as nameLike, keep, kept as keptDecks, version, BODIES, PEOPLE, STOPS, along, stopAt, CAVEAT } from "./deal.js";
 import { GAME_GLOSS, NAME_GLOSS } from "./glossary.js";
 import { figureOf, focused, lensFrom, sceneWords, seaWords, stepAt, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
 
@@ -2584,6 +2584,10 @@ function gameKeys(board, on) {
 /** Where a game's end leads: one tap to play again (the control that went on), the plate saved, the link copied, and
  *  the next toy. */
 function gameEnd(box, go, { page, plate, score, share, again }) {
+  // (how this game stands against the best so far, from what this viewer has played: nothing on a first game or where
+  // storage is refused)
+  const best = playedLog()[page]?.best, said = (x) => `${x[0]} / ${x[1]}`;
+  if (Array.isArray(best)) box.querySelector(".rank")?.after(el(`<p class="best">${score[0] / score[1] > best[0] / best[1] ? t("best_new", said(score)) : t("best_was", said(best), said(score))}</p>`));
   const save = el(`<button type="button">${t("quiz_save")}</button>`), copy = el(`<button type="button">${t("copy_score")}</button>`);
   save.addEventListener("click", async () => (await plating(), savePlate(box, `jejak-kata-${page}`)));
   copy.addEventListener("click", async () => { try { await navigator.clipboard?.writeText(share); } catch {} copy.textContent = t("copied"); });
@@ -2689,7 +2693,8 @@ async function quizPage() {
     if (q.kind === "freq" || q.kind === "resmi") return t("ev_freq", e.period, it[0].label, percent(it[0].v), it[1].label, percent(it[1].v));
     if (q.kind === "room") return t("ev_room", nm(q.n), q.w, it.map((o) => `${o.label} ${number(o.v * 100, 1)}`).join(", "));
     if (q.kind === "peak") return t("ev_peak", e.series[0].label, periods[e.marks[0]], e.series[1].label, periods[e.marks[1]]);
-    if (q.kind === "trend") return t("ev_trend", e.series[0].label, periods[e.marks[0]], percent(e.series[0].share[e.marks[0]]), periods[e.marks[1]], percent(e.series[0].share[e.marks[1]]));
+    // (with the rule for "about the same", whenever it is offered: the band MARGIN.same allows)
+    if (q.kind === "trend") return `${t("ev_trend", e.series[0].label, periods[e.marks[0]], percent(e.series[0].share[e.marks[0]]), periods[e.marks[1]], percent(e.series[0].share[e.marks[1]]))} ${t("ev_same_rule", Math.round((MARGIN.same - 1) * 100))}`;
     if (q.kind === "who") return t("ev_who", e.period, nm(q.answer), q.ev.of, q.ev.of, Math.max(...q.ev.items.filter((x) => x.label !== q.answer).map((x) => x.v)));
     return t("ev_year", periods[e.marks[0]]);
   };
@@ -2719,11 +2724,12 @@ async function quizPage() {
     results.push({ ok, label: short(q, q.answer) });
     sailed();
     box.querySelectorAll(".choices button").forEach((x) => ((x.disabled = true), x.classList.toggle("right", q.choices[+x.dataset.i] === q.answer), x.classList.toggle("chosen", x === b && !ok)));
-    // (the lines for any kind; for "which year" and "who", those of memory too; right on a hard round of four choices,
-    // the harder praise; a year missed by one, "nearly")
+    // (the lines for any kind; for "which year" and "who", "good memory" too when right, and for a year missed, memory
+    // that plays tricks (a wrong "who" is not memory's doing); right on a hard round of four choices, the harder praise;
+    // a year missed by one, "nearly")
     const memory = q.kind === "year" || q.kind === "who", hard = q.tier === 2 && q.choices.length === 4;
     const said = ok ? (streak === 3 ? t("said_streak") : sayFrom("right", [...t("said_right"), ...(memory ? t("said_right_memory") : []), ...(hard ? t("said_right_hard") : [])]))
-      : q.kind === "year" && Math.abs(+answer - +q.answer) === 1 ? t("said_close", told(q, q.answer)) : sayFrom("wrong", [...t("said_wrong"), ...(memory ? t("said_wrong_memory") : [])], told(q, q.answer));
+      : q.kind === "year" && Math.abs(+answer - +q.answer) === 1 ? t("said_close", told(q, q.answer)) : sayFrom("wrong", [...t("said_wrong"), ...(q.kind === "year" ? t("said_wrong_memory") : [])], told(q, q.answer));
     box.querySelector(".verdict").innerHTML = `<span><b>${escape(said)}</b> ${escape(evidence(q))}</span>`;
     // (the evidence revealed in place, in the room the card keeps for it: nothing moves; from 900px the page does not
     // scroll, and on a phone only where the answer would lie under the bar held at its foot)
