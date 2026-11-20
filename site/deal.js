@@ -382,12 +382,11 @@ export function guessPool(s, era = 2) {
 }
 /** A deck per bin of the true value, kept for a visit. */
 export const guessDecks = (pool, rng) => GUESS_BINS.map((_, b) => new Deck(pool.filter((q) => q.bin === b), rng));
-/** One game of six: one high value, three middle and two low (few values in the data are high), in a shuffled
- *  order, no word and no name twice. */
+/** One game of six: one high value, three middle and two low (few values in the data are high), no word and no name
+ *  twice. The order of the rounds is a shuffle of its own, so that where a word comes in a game says nothing. */
 export function guessDeal(d, rng) {
   const used = new Set(), game = [];
-  // The scarcest bin (the high values) is dealt first, while every word and name is still free; the game's order is
-  // shuffled after.
+  // The scarcest bin (the high values) is dealt first, while every word and name is still free.
   for (const b of [2, 1, 1, 1, 0, 0]) {
     const ok = (q) => q.topics.every((t) => !used.has(t));
     // (where what is left of its bin this pass does not fit, the bin's dealt cards come back early; only then the nearest bin)
@@ -399,13 +398,19 @@ export function guessDeal(d, rng) {
   }
   return shuffle(game, rng);
 }
-/** Points for a guess: 100 for the truth, less by how far off as a part of the truth (half the truth and three more off
- *  scores nothing), so that 6 against a true 2 costs as much as 30 against a true 50: most true values are small, and
- *  points by the plain distance would let one small guess, always, score well. "Right" (a filled port): within 3, or
- *  within a quarter of the truth where that is more. */
-export const points = (guess, truth) => Math.max(0, Math.round(100 - (100 * Math.abs(truth - guess)) / (truth / 2 + 3)));
-export const close = (guess, truth) => Math.abs(truth - guess) <= Math.max(3, truth / 4);
-/** The line said after a guess, by how far off: at most 3, 10, 25, more. */
-export const nearness = (guess, truth) => [3, 10, 25].filter((d) => Math.abs(truth - guess) > d).length;
+/** The scale a guess is set on: 0 to 20 in steps of 1 over two thirds of the track (most true values are small), 20
+ *  to 100 in steps of 5 over the rest. One mapping for the track, its ticks, the keys and the marks of the answer. */
+export const STOPS = [...Array(21).keys(), ...Array.from({ length: 16 }, (_, k) => 25 + 5 * k)];
+export const SPLIT = 2 / 3;
+export const along = (v) => (v <= 20 ? (v / 20) * SPLIT : SPLIT + ((v - 20) / 80) * (1 - SPLIT));
+export const stopAt = (f) => { const v = f <= SPLIT ? (f / SPLIT) * 20 : 20 + ((f - SPLIT) / (1 - SPLIT)) * 80; return STOPS.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a)); };
+/** Points for a guess: 100 for the truth, falling fast: by the distance as a part of half the truth, or of 3 where the
+ *  truth is 6 or less, so that 3 off a small number scores nothing, and 6 against a true 2 costs as much as 25
+ *  against a true 50 (points by the plain distance would let one small guess, always, score well). */
+export const points = (guess, truth) => Math.max(0, Math.round(100 * (1 - Math.abs(truth - guess) / Math.max(3, truth / 2))));
+/** The line said after a guess follows its points: 90 or more, 60 or more, 25 or more, less. "Right" (a filled port):
+ *  60 or more. */
+export const nearness = (won) => (won >= 90 ? 0 : won >= 60 ? 1 : won >= 25 ? 2 : 3);
+export const close = (won) => won >= 60;
 /** The rank at the end, by the share of rounds right: all, three quarters, half, less. */
 export const rank = (right, total) => (right === total ? 0 : right >= 0.75 * total ? 1 : right >= 0.5 * total ? 2 : 3);

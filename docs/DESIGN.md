@@ -390,15 +390,21 @@ its line); once the first route has
   screen above the bar; the answers under the voyage on the score plate are shortened or left out where they would
   touch. A question that sets a name beside a word carries the caution "sharing a page is
   not being accused" in sight, and never asks it of a word that reads as an accusation (deal.js, `SENSITIVE`): those are
-  asked only as "guess the number" asks them. In "guess the number" (six rounds, two each of a low, a middle and a high
-  true value, so that no one guess always pays; only names a reader knows and words with a point, `POINTED`, on which
-names differ: the name with the most of it has at least 15 in 100 and three times the least, `MARGIN.spreadTop` and
-`spreadRatio`; points by
-  how far off as a part of the truth, said in a line above the board before the first round) the answer is not simply
-  shown: its mark sails (`--d-leg`) from the reader's guess to the truth along the scale, drawing its wake in the
-  route, so how far off the guess was is a distance one sees travelled (a cut with reduced motion); then a line by how
-  far off, how far in plain numbers, and one of context (who has the most and the least of that word). A tap on the scale sets the guess there;
-  the arrows move it.
+  asked only as "guess the number" asks them. In "guess the number" (six rounds: one high true value, three middle, two low, so that no one guess always pays, in
+  an order shuffled on its own; only names a reader knows and words with a point, `POINTED`, on which names differ: the
+  name with the most of it has at least 8 in 100 and three times the least, `MARGIN.spreadTop` and `spreadRatio`) the
+  guess is set on a stepped scale (deal.js, `STOPS`, one mapping for the track, its ticks, the keys and the answer's
+  marks): 0 to 20 by ones over two thirds of the track, 25 to 100 by fives over the rest, its tick labels where they
+  fall (0, 5, 10, 15, 20, 50, 100), its small ticks a stop each. No guess is set for the reader: the lock waits until
+  one is, by a press or a drag on the track (the nearest stop), the arrow keys (a stop; Page keys five), or − and +
+  (44px). Points fall fast (`points`: the distance as a part of half the truth, or of 3 for a truth of 6 or less, so
+  3 off a small number scores nothing), as the rule above the board says before the first round (not at the end).
+  The answer is not simply shown: its mark sails (`--d-leg`) from the reader's guess to the truth along the scale,
+  drawing its wake in the route, so how far off the guess was is a distance one sees travelled (a cut with reduced
+  motion); then, each on its own line, a line that follows the points (90 or more, 60 or more, 25 or more, less; the
+  last of three far lines in turn, never the same twice running), the numbers (the guess, the truth, the points), the
+  context (pages counted, who has the most and the least of that word) and the link on. A round of 60 points or
+  more is a filled port.
 - **Method, stories index, other play pages**: the page head pattern, the same cards, fields, chips and tables;
   figures on plates. The method opens with the method on one word the first page sails (`jokowi`, 2013 then 2014), in
   four steps stepped or played: the year's pages and the share that hold the word, the words it appears with most, its

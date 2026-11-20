@@ -10,7 +10,7 @@ import { seaChart } from "./chart.js";
 import { TEXT, LENS_TEXT, NOTES, GLOSS, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
 import { address, routeOf, named, canonical, EMBED, PAGES, PLAY, QUIZ_NAMES, GUESS_WORDS } from "./address.js";
 import { board, measure } from "./labels.js";
-import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, shown, BODIES, PEOPLE } from "./deal.js";
+import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, shown, BODIES, PEOPLE, STOPS, along, stopAt } from "./deal.js";
 import { figureOf, focused, lensFrom, sceneWords, seaWords, stepAt, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
 
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
@@ -2638,43 +2638,76 @@ async function guessPage() {
   VISIT.guess ||= guessDecks(guessPool(s), Math.random);
   view.replaceChildren(pageHead(t("play_tebak"), { ...fromPlay(), lede: t("guess_lede"), sea: { words: GUESS_WORDS } }));
   const { board, box, go, log, tally } = gameBoard();
-  view.append(el(`<p class="game-rule">${t("guess_rule")}</p>`), board);
+  const rule = el(`<p class="game-rule">${t("guess_rule")}</p>`);
+  view.append(rule, board);
   let rounds = [], results = [], score = 0, k = 0;
   const sailed = () => ((log.innerHTML = voyageMark(results, rounds.length)), (tally.textContent = `${score} / ${rounds.length * 100}`));
+  // The scale (deal.js, STOPS and along): 0-20 in steps of 1 over two thirds of the track, 25-100 in steps of 5 over the
+  // rest, its ticks where they fall; no guess until the reader sets one (a press or drag on the track, the keys, − and +).
+  const TICKS = [0, 5, 10, 15, 20, 50, 100], pc = (v) => `${(100 * along(v)).toFixed(3)}%`;
   const ask = () => {
     sailed();
     if (k === rounds.length) return end();
     const q = rounds[k];
     box.replaceChildren(el(`<p class="step">${t("quiz_status", k + 1, rounds.length)}</p>`), el(`<p class="ask" tabindex="-1">${t("guess_ask", escape(shown(q.name)), escape(q.w))}</p>`),
-      el(`<div class="gauge"><input type="range" min="0" max="100" step="1" value="50" aria-label="${t("guess_yours")}"><div class="scale"><i class="sail" hidden></i><i class="yours"></i><i class="truth" hidden></i></div><output aria-hidden="true">50</output></div>`),
+      el(`<div class="gauge unset"><div class="track" role="slider" tabindex="0" aria-label="${t("guess_yours")}" aria-valuemin="0" aria-valuemax="100" aria-valuetext="–">
+        <div class="scale"><span class="minor low"></span><span class="minor high"></span><i class="sail" hidden></i><i class="truth" hidden></i><i class="yours"></i></div>
+        <div class="ticks" aria-hidden="true">${TICKS.map((v) => `<span style="left:${pc(v)}">${v}</span>`).join("")}</div></div>
+        <div class="set"><button type="button" class="less" aria-label="${t("guess_less")}">−</button><output aria-hidden="true">–</output><button type="button" class="more" aria-label="${t("guess_more_one")}">+</button></div>
+        <p class="note unset-note">${t("guess_unset")}</p></div>`),
       el(`<p class="note caveat">${t("caveat")}</p>`), el(`<p class="verdict" role="status"></p>`));
-    const [slider, scale, output] = box.querySelector(".gauge").children, [sail, yours, truth] = scale.children, verdict = box.querySelector(".verdict");
-    const move = () => ((output.textContent = slider.value), (yours.style.transform = `translateX(${slider.value * (scale.clientWidth / 100)}px)`));
-    slider.addEventListener("input", move);
-    // A tap on the scale under the slider sets the guess there, as a tap on the slider's own track does.
-    scale.addEventListener("pointerdown", (e) => { if (slider.disabled) return; slider.value = Math.round((100 * (e.clientX - scale.getBoundingClientRect().left)) / scale.clientWidth); move(); });
-    requestAnimationFrame(move);
-    go.disabled = false;
+    const gauge = box.querySelector(".gauge"), track = gauge.querySelector(".track"), scale = track.querySelector(".scale"), [sail, truth, yours] = scale.querySelectorAll("i");
+    const output = gauge.querySelector("output"), [less, more] = gauge.querySelectorAll(".set button"), verdict = box.querySelector(".verdict");
+    let guess = null, locked = false;
+    const set = (v) => {
+      if (locked) return;
+      guess = v;
+      gauge.classList.remove("unset");
+      output.textContent = v;
+      track.setAttribute("aria-valuenow", v);
+      track.setAttribute("aria-valuetext", t("guess_of", v));
+      yours.style.left = pc(v);
+      go.disabled = false;
+    };
+    const by = (n) => set(STOPS[Math.max(0, Math.min(STOPS.length - 1, (guess === null ? (n > 0 ? 0 : 1) : STOPS.indexOf(guess)) + n))]);
+    less.addEventListener("click", () => by(-1));
+    more.addEventListener("click", () => by(1));
+    track.addEventListener("keydown", (e) => {
+      const n = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1, PageDown: -5, PageUp: 5, Home: -99, End: 99 }[e.key];
+      if (n) (e.preventDefault(), by(n));
+    });
+    // A press on the track sets the guess where it falls, and a drag moves it (the nearest stop).
+    const at = (e) => set(stopAt(Math.max(0, Math.min(1, (e.clientX - scale.getBoundingClientRect().left) / scale.clientWidth))));
+    track.addEventListener("pointerdown", (e) => { if (locked) return; track.setPointerCapture?.(e.pointerId); at(e); });
+    track.addEventListener("pointermove", (e) => track.hasPointerCapture?.(e.pointerId) && at(e));
+    go.disabled = true;
     go.textContent = t("guess_lock");
     go.onclick = () => {
-      if (slider.disabled) return (k++, ask(), toCard(box), box.querySelector(".ask")?.focus({ preventScroll: true }));
-      slider.disabled = true;
-      const guess = +slider.value, won = points(guess, q.v);
+      if (locked) return (k++, ask(), toCard(box), box.querySelector(".ask")?.focus({ preventScroll: true }));
+      if (guess === null) return;
+      locked = true;
+      gauge.classList.add("locked");
+      less.disabled = more.disabled = true;
+      track.setAttribute("aria-disabled", "true");
+      const won = points(guess, q.v);
       score += won;
-      results.push({ ok: close(guess, q.v), label: `+${won}` });
-      hear(close(guess, q.v) ? "right" : "wrong");
+      results.push({ ok: close(won), label: `+${won}` });
+      hear(close(won) ? "right" : "wrong");
       sailed();
       // The answer sails from the guess to the truth along the scale, its wake in the route: how far off is drawn.
-      const at = (v) => `translateX(${v * (scale.clientWidth / 100)}px)`, [lo, hi] = [Math.min(q.v, guess), Math.max(q.v, guess)];
+      const [lo, hi] = [Math.min(q.v, guess), Math.max(q.v, guess)];
       truth.hidden = sail.hidden = false;
-      truth.style.transform = at(guess);
-      sail.style.clipPath = `inset(0 ${100 - guess}% 0 ${guess}%)`;
+      truth.style.left = pc(guess);
+      sail.style.clipPath = `inset(0 ${100 - 100 * along(guess)}% 0 ${100 * along(guess)}%)`;
       truth.getBoundingClientRect();  // (from the guess)
-      truth.style.transform = at(q.v);
-      sail.style.clipPath = `inset(0 ${100 - hi}% 0 ${lo}%)`;
-      const c = q.context;
-      verdict.innerHTML = `<span><b>${escape(t("said_near")[nearness(guess, q.v)])}</b> ${escape(t("guess_off", guess, q.v))} ${t("guess_truth", q.v, thousands(q.pages), escape(shown(q.name)), escape(q.w), won)}</span>
-        <span class="context">${escape(t("guess_context", q.w, c.of, shown(c.hi[0]), c.hi[1], shown(c.lo[0]), c.lo[1]))} <a href="${href("menempel", q.w, "0", "2", BODIES.includes(q.name) ? "o" : "p")}">${t("guess_more", escape(q.w))}</a></span>`;
+      truth.style.left = pc(q.v);
+      sail.style.clipPath = `inset(0 ${100 - 100 * along(hi)}% 0 ${100 * along(lo)}%)`;
+      // The line said follows the points (never the last of its far lines twice running), then the numbers, the
+      // context, and the way on: each a line of its own.
+      const c = q.context, tier = nearness(won), line = tier < 3 ? t("said_near")[tier] : sayOne("said_far");
+      verdict.innerHTML = `<b>${escape(line)}</b><span class="numbers">${escape(t("guess_numbers", guess, q.v, won))}</span>
+        <span class="context">${escape(t("guess_counted", thousands(q.pages), shown(q.name)))} ${escape(t("guess_context", q.w, c.of, shown(c.hi[0]), c.hi[1], shown(c.lo[0]), c.lo[1]))}</span>
+        <a href="${href("menempel", q.w, "0", "2", BODIES.includes(q.name) ? "o" : "p")}">${t("guess_more", escape(q.w))}</a>`;
       go.textContent = k + 1 === rounds.length ? t("guess_score") : t("next");
       verdict.scrollIntoView({ block: "nearest", behavior: still() ? "auto" : "smooth" });
       go.focus({ preventScroll: true });
@@ -2682,6 +2715,7 @@ async function guessPage() {
   };
   const end = () => {
     const right = results.filter((r) => r.ok).length, rank = t("said_rank")[rankOf(right, rounds.length)], most = rounds.length * 100;
+    rule.hidden = true;  // (the rule is for before the first round, not for the end)
     box.innerHTML = `<p class="score">${score} / ${most}</p><p class="rank" role="status">${rank}</p><p>${t("guess_done")}</p>`;
     gameEnd(box, go, { page: "tebak", score: [score, most], share: t("guess_share", score, most, whole(href("tebak"))), again: start,
       plate: scorePlate(`${t("play_tebak")}: ${score} / ${most} · ${rank}`, results, rounds.length, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft)) });
@@ -2689,6 +2723,7 @@ async function guessPage() {
   };
   const start = (again = true) => {
     rounds = guessDeal(VISIT.guess, Math.random);
+    rule.hidden = false;
     results = [];
     score = 0;
     k = 0;

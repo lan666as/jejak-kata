@@ -11,7 +11,7 @@
 // information only a hover shows.
 import { readFileSync, writeFileSync } from "node:fs";
 import { quizData } from "./quiz-data.mjs";
-import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, seeded, shownIn, capOf, sortOf, marker, MARGIN, KINDS, ROUNDS, GUESS_ROUNDS, SENSITIVE, OUTLET_NAMES, POINTED, PEOPLE, BODIES, ROOM_WORDS } from "../../site/deal.js";
+import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, nearness, close, seeded, STOPS, along, stopAt, shownIn, capOf, sortOf, marker, MARGIN, KINDS, ROUNDS, GUESS_ROUNDS, SENSITIVE, OUTLET_NAMES, POINTED, PEOPLE, BODIES, ROOM_WORDS } from "../../site/deal.js";
 import { TEXT } from "../../site/text.js";
 
 const FILE = new URL("../../site/data/quiz.json", import.meta.url).pathname, started = Date.now();
@@ -138,10 +138,13 @@ log("each kind dealt at least 150 times", KINDS.every((k) => games.dealt[k] >= 1
 const stick = JSON.parse(readFileSync(new URL("../../site/data/id-web-eras-kompas/stick.json", import.meta.url)));
 const gpool = guessPool(stick), gbad = [];
 let constant = Array(101).fill(0), played = 0;
-const bins = [0, 0, 0];
+const bins = [0, 0, 0], places = {}, sameAgain = [0, 0];
 { const rng = seeded(4), d = guessDecks(gpool, rng), seen = [[], [], []];
+  let before = [];
   for (let g = 0; g < 300; g++) {
     const game = guessDeal(d, rng), topics = new Set();
+    game.forEach((q, i) => ((places[q.w] ||= Array(GUESS_ROUNDS).fill(0))[i]++, before[i] && (sameAgain[0] += before[i] === q.w, sameAgain[1]++)));
+    before = game.map((q) => q.w);
     if (game.length !== GUESS_ROUNDS) gbad.push(`game ${g}: ${game.length} rounds`);
     for (const q of game) {
       seen[q.bin].push(q.key);
@@ -160,7 +163,7 @@ const bins = [0, 0, 0];
       bins[q.bin]++;
     }
     if (new Set(game.map((q) => q.bin)).size < 3) gbad.push(`game ${g}: its values are not low, middle and high (${game.map((q) => q.v).join(", ")})`);
-    for (let c = 0; c <= 100; c++) constant[c] += game.reduce((s, q) => s + points(c, q.v), 0) / (game.length * 100);
+    for (const c of STOPS) constant[c] += game.reduce((s, q) => s + points(c, q.v), 0) / (game.length * 100);
     played++;
   }
   // (a bin's deck comes round again when spent; where the few cards left of it do not fit a game, their word or name
@@ -171,12 +174,22 @@ const best = Math.max(...constant) / played, at = constant.indexOf(Math.max(...c
 console.log(`     guess the number: ${gpool.length} distinct questions (${["low", "middle", "high"].map((name, b) => `${gpool.filter((q) => q.bin === b).length} ${name}`).join(", ")}), ${new Set(gpool.map((q) => q.w)).size} words, ${new Set(gpool.map((q) => q.name)).size} names`);
 log(`300 guess games: six rounds, no word or name twice, every value as counted, only words with a spread across names, low, middle and high in every game (${bins.join(", ")} dealt)`, !gbad.length && bins.every((n) => n >= 280), gbad.slice(0, 5).join("; "));
 log("no one fixed guess wins: the best (always guessing " + at + ") scores under half on average", best < 0.5, `${Math.round(best * 100)}%`);
+// The order of a game is its own shuffle: a word met often stands at every place of a game, at none in more than a
+// third of its games, and the next game puts a word at the same place no more often than chance would.
+{ const often = Object.entries(places).filter(([, c]) => c.reduce((a, b) => a + b, 0) >= 60), lop = often.filter(([, c]) => c.some((x) => !x) || Math.max(...c) > c.reduce((a, b) => a + b, 0) / 3);
+  log("a word's round varies from game to game", often.length >= 3 && !lop.length && sameAgain[0] / sameAgain[1] < 0.2, `${often.length} words met 60 times or more; ${lop.map(([w, c]) => `${w} ${c}`).join("; ") || "each at every place"}; the same word at the same place in the next game ${(100 * sameAgain[0] / sameAgain[1]).toFixed(1)}% of rounds`); }
+// The scale: one mapping, 0-20 over two thirds of the track by ones, 20-100 over the rest by fives; and the line said
+// follows the points (no "close" for a guess that scored nothing).
+log("the scale gives 0-20 two thirds of the track, and every stop maps back to itself", Math.abs(along(20) - 2 / 3) < 1e-9 && along(100) === 1 && STOPS.every((v) => stopAt(along(v)) === v) && STOPS.length === 37,
+  `along(20) ${along(20).toFixed(3)}, ${STOPS.length} stops`);
+log("the line after a guess follows its points", [[8, 3], [8, 5], [3, 3], [20, 23], [60, 30]].every(([g, v]) => { const won = points(g, v), n = nearness(won); return (won >= 90) === (n === 0) && (won < 25) === (n === 3) && close(won) === (won >= 60); }) && points(6, 3) === 0 && points(3, 3) === 100,
+  [[8, 3], [8, 5], [6, 3]].map(([g, v]) => `guess ${g}, truth ${v}: ${points(g, v)} points`).join("; "));
 
 // Every string the games use, in both languages.
-const KEYS = ["said_right", "said_right_hard", "said_close", "said_wrong", "said_streak", "said_near", "said_far", "said_rank", "quiz_tier", "ask_room", "quiz_who_ask", "ask_freq", "ask_peak", "ask_resmi", "ask_room", "ask_trend", "trend_up", "trend_down", "trend_same",
+const KEYS = ["said_right", "said_right_hard", "said_close", "said_wrong", "said_streak", "said_near", "said_far", "said_rank", "quiz_tier", "ask_room", "quiz_who_ask", "guess_numbers", "guess_counted", "guess_unset", "guess_less", "guess_more_one", "guess_of", "ask_freq", "ask_peak", "ask_resmi", "ask_room", "ask_trend", "trend_up", "trend_down", "trend_same",
   "room_era", "ev_freq", "ev_peak", "ev_room", "ev_trend", "ev_year", "ev_who", "caveat", "quiz_status", "quiz_streak", "quiz_keys", "quiz_plate_all", "guess_context", "next_toy",
-  "played_best", "played_once", "quiz_year_ask", "quiz_who_ask", "quiz_tally", "quiz_save", "quiz_log", "quiz_next", "quiz_share", "guess_ask", "guess_truth", "guess_lock", "guess_score",
-  "guess_more", "guess_done", "guess_rule", "guess_off", "try_label", "guess_share", "copy_score", "copied", "again", "next", "nav_quiz", "play_tebak", "play_kuis", "quiz_lede", "guess_lede", "guess_yours"];
+  "played_best", "played_once", "quiz_year_ask", "quiz_who_ask", "quiz_tally", "quiz_save", "quiz_log", "quiz_next", "quiz_share", "guess_ask", "guess_lock", "guess_score",
+  "guess_more", "guess_done", "guess_rule", "try_label", "guess_share", "copy_score", "copied", "again", "next", "nav_quiz", "play_tebak", "play_kuis", "quiz_lede", "guess_lede", "guess_yours"];
 const missing = ["id", "en"].flatMap((l) => KEYS.filter((k) => TEXT[l][k] === undefined).map((k) => `${l}.${k}`));
 const lengths = ["said_right", "said_right_hard", "said_wrong", "said_near", "said_far", "said_rank", "quiz_tier"].filter((k) => TEXT.id[k]?.length !== TEXT.en[k]?.length);
 log("every string of the games in both languages", !missing.length && !lengths.length, [...missing, ...lengths].join(", "));
@@ -185,11 +198,15 @@ const OWN = {
   id: { said_right: ["Tepat.", "Betul.", "Kena.", "Ingatanmu bagus."], said_right_hard: ["Betul, dan tanpa menyontek.", "Benar. Redaktur pun belum tentu ingat."],
     said_wrong: ["Bukan. Jawabannya X.", "Meleset. Yang benar: X.", "Belum. Jawabannya X.", "Ingatan memang suka menipu. Jawabannya X."], said_close: ["Nyaris. X."],
     said_streak: ["Tiga beruntun. Jangan-jangan kamu wartawan."], quiz_who_ask: ["Kata-kata ini paling sering menemani satu nama di berita Kompas X. Nama yang mana?"],
-    ask_room: ["Kompas, Tempo, atau Tribunnews: siapa paling sering menulis “X” di berita tentang X?"] },
+    ask_room: ["Kompas, Tempo, atau Tribunnews: siapa paling sering menulis “X” di berita tentang X?"],
+    said_near: ["Nyaris sempurna.", "Dekat.", "Lumayan, tapi meleset."], said_far: ["Jauh. Kesan memang sering lebih keras daripada angka.", "Jauh. Berita ternyata lebih kalem daripada ingatan.", "Jauh. Angkanya tidak seramai kesannya."],
+    guess_rule: ["Tepat: 100 poin. Poin turun cepat: untuk angka kecil, selisih 3 saja sudah menghabiskannya."] },
   en: { said_right: ["Spot on.", "Right.", "Got it.", "Good memory."], said_right_hard: ["Right, and no peeking.", "Correct. Not every editor would get that."],
     said_wrong: ["No. It was X.", "Missed. The answer: X.", "Not yet. It was X.", "Memory plays tricks. It was X."], said_close: ["So close. X."],
     said_streak: ["Three in a row. Are you a reporter?"], quiz_who_ask: ["These words kept one name company in Kompas news in X. Which name?"],
-    ask_room: ["Kompas, Tempo or Tribunnews: which writes “X” most often in stories about X?"] },
+    ask_room: ["Kompas, Tempo or Tribunnews: which writes “X” most often in stories about X?"],
+    said_near: ["Almost exact.", "Close.", "Not bad, but off."], said_far: ["Way off. Impressions are louder than counts.", "Way off. The news turns out calmer than memory.", "Way off. The number is quieter than the impression."],
+    guess_rule: ["Exact: 100 points. They drop fast: for a small number, being 3 off already costs them all."] },
 };
 const said = (v) => [].concat(v).map((x) => (typeof x === "function" ? x("X", "X") : x));
 const off = Object.entries(OWN).flatMap(([l, keys]) => Object.entries(keys).filter(([k, list]) => JSON.stringify(said(TEXT[l][k])) !== JSON.stringify(list)).map(([k]) => `${l}.${k}`));
@@ -241,25 +258,29 @@ for (const [w, h, touch] of SIZES) {
 
   // Guess the number: by keyboard at 1440 (Tab to the slider, arrows, Enter), by taps at 390.
   errors.length = 0;
-  await p.goto(base + "#/tebak"); await p.waitForSelector(".gauge input");
+  await p.goto(base + "#/tebak"); await p.waitForSelector(".gauge .track");
   const gfirst = await firstAction(".quiz-go");
-  const guess = { rounds: 0, focus: 0, places: new Set(), verdicts: 0 };
-  for (let k = 0; k < 8 && (await p.locator(".gauge input:not([disabled])").count()); k++) {
-    if (touch) { const box = await p.locator(".gauge .scale").boundingBox(); await p.touchscreen.tap(box.x + box.width * 0.1, box.y + box.height / 2); await p.locator(".quiz-go").tap(); }
-    else { await p.locator(".gauge input").focus(); for (let i = 0; i < 4; i++) await p.keyboard.press("ArrowLeft"); await p.keyboard.press("Enter"); }
+  // No guess is set for the reader: the lock waits until one is.
+  const unset = await p.evaluate(() => document.querySelector(".gauge").classList.contains("unset") && document.querySelector(".quiz-go").disabled);
+  const guess = { rounds: 0, focus: 0, places: new Set(), verdicts: 0, lines: 0 };
+  for (let k = 0; k < 8 && (await p.locator(".gauge:not(.locked) .track").count()); k++) {
+    if (touch) { const box = await p.locator(".gauge .scale").boundingBox(); await p.touchscreen.tap(box.x + box.width * 0.1, box.y + box.height / 2); await p.locator(".gauge .more").tap(); await p.locator(".quiz-go").tap(); }
+    else { await p.locator(".gauge .track").focus(); for (let i = 0; i < 4; i++) await p.keyboard.press("ArrowRight"); await p.keyboard.press("Enter"); }
     await p.waitForTimeout(60);
     guess.verdicts += (await p.locator(".quiz .verdict .context").count());
+    // (the verdict, the numbers, the context and the link, each on a line of its own)
+    guess.lines += await p.evaluate(() => { const v = [...document.querySelector(".quiz .verdict").children].map((n) => n.getBoundingClientRect()); return v.length === 4 && v.every((r, i) => !i || r.top >= v[i - 1].bottom - 1) ? 1 : 0; });
     guess.focus += (await p.evaluate(() => document.activeElement?.classList.contains("quiz-go"))) ? 1 : 0;
     guess.places.add(await goAt());
     if (touch) await p.locator(".quiz-go").tap(); else await p.keyboard.press("Enter");
     await p.waitForTimeout(60);
     guess.rounds++;
   }
-  const gend = await p.evaluate(() => ({ score: document.querySelector(".quiz .score")?.textContent, plate: !!document.querySelector(".quiz .plate svg"), rank: document.querySelector(".quiz .rank")?.textContent }));
+  const gend = await p.evaluate(() => ({ score: document.querySelector(".quiz .score")?.textContent, plate: !!document.querySelector(".quiz .plate svg"), rank: document.querySelector(".quiz .rank")?.textContent, rule: !!document.querySelector(".game-rule")?.checkVisibility() }));
   const gsaved = await Promise.all([p.waitForEvent("download", { timeout: 5000 }).then((d) => d.suggestedFilename()).catch(() => null), p.locator(".quiz .controls button").first().click()]).then(([f]) => f);
-  log(`guess at ${w}: the lock on screen, six rounds ${touch ? "by taps on the scale" : "by keyboard alone"}, a verdict with its context, focus on “next”, “next” in one place, a plate saved`,
-    gfirst > 0 && guess.rounds === GUESS_ROUNDS && guess.verdicts === GUESS_ROUNDS && guess.focus === GUESS_ROUNDS && guess.places.size === 1 && gend.plate && /\.png$/.test(gsaved || "") && !errors.length,
-    `lock ${gfirst > 0 ? `ends at ${gfirst}px` : `below the screen (${-gfirst}px)`}; ${guess.rounds} rounds; ${guess.verdicts} verdicts; focus ${guess.focus}×; next at ${[...guess.places].join(" | ")}; ${gend.score} “${gend.rank}”; saved ${gsaved}; errors ${errors.slice(0, 2).join(" / ") || 0}`);
+  log(`guess at ${w}: the lock on screen and waiting for a guess, six rounds ${touch ? "by taps on the scale" : "by keyboard alone"}, a verdict with its context, focus on “next”, “next” in one place, a plate saved`,
+    gfirst > 0 && unset && guess.rounds === GUESS_ROUNDS && guess.verdicts === GUESS_ROUNDS && guess.lines === GUESS_ROUNDS && guess.focus === GUESS_ROUNDS && guess.places.size === 1 && gend.plate && !gend.rule && /\.png$/.test(gsaved || "") && !errors.length,
+    `lock ${gfirst > 0 ? `ends at ${gfirst}px` : `below the screen (${-gfirst}px)`}${unset ? "" : ", a guess set before the reader set one"}; ${guess.rounds} rounds; ${guess.verdicts} verdicts, ${guess.lines} laid out a line each;${gend.rule ? " the rule shown at the end;" : ""} focus ${guess.focus}×; next at ${[...guess.places].join(" | ")}; ${gend.score} “${gend.rank}”; saved ${gsaved}; errors ${errors.slice(0, 2).join(" / ") || 0}`);
 
   // The hub remembers what was played, and every toy shows its first control on the first screen; nothing only a hover shows.
   await p.goto(base + "#/main"); await p.waitForSelector(".play-card");
