@@ -48,7 +48,10 @@ const look = () => {
     squeezed: !flow && cap.clientHeight < Math.min(cap.scrollHeight, 6 * parseFloat(getComputedStyle(cap.querySelector(".turn:not(.out) p:last-child") || cap).lineHeight)) - 2,
     // (a turn comes in from a few pixels below: --s2)
     phone: vw < 900, cut: !flow && (() => { const t = cap.querySelector(".turn:not(.out)")?.getBoundingClientRect(); return !!t && (t.top < head - 1 || t.bottom > c.bottom + 9); })(),
-    outside: named.filter((r) => { const b = r.querySelector("line").getBoundingClientRect(); return b.top < win.top || b.bottom > win.bottom; }).length,
+    // (a strip that pans shows its title and legend pinned over the window's top: the rows show under them; where the
+    // rows a step names span more than that, as many as fit from the first, and fit.mjs holds the rest of it)
+    outside: (() => { const pin = stage.querySelector(".pinned"), from = pin && getComputedStyle(pin).display !== "none" ? pin.getBoundingClientRect().bottom : win.top, ys = named.map((r) => r.querySelector("line").getBoundingClientRect().top);
+      return ys.length && Math.max(...ys) - Math.min(...ys) + 26 > win.bottom - from ? 0 : ys.filter((y) => y < from || y > win.bottom).length; })(),
     smallest: Math.min(...[...(shown[0]?.querySelectorAll("text, tspan") || [])].filter((t) => t.textContent.trim()).map((t) => parseFloat(getComputedStyle(t).fontSize) * (shown[0].querySelector("svg").getBoundingClientRect().width / shown[0].querySelector("svg").viewBox.baseVal.width))),
     pitch: (() => { const ys = [...(shown[0]?.querySelectorAll(".row > line") || [])].map((t) => t.getBoundingClientRect().top); return ys.length > 1 ? Math.round(Math.min(...ys.slice(1).map((y, i) => y - ys[i]))) : null; })(),
     key: stage.querySelector(".sea-key").textContent, mute: stage.classList.contains("mute"), landed: stage.querySelector(".sea-key").dataset.at === `${k}/${stage.dataset.step}`, sea: !!document.querySelector(".story-sea .chart"),

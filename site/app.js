@@ -388,30 +388,51 @@ function stage(part, k, of, steer, intro = "") {
   const show = (j = at) => {
     if (!figure || j < 0) return;
     box.dataset.plate = figure.at(part.steps[Math.max(0, j - 1)], j);
+    pin();
   };
-  // A strip taller than its window (share, on a phone) slides through it as the page scrolls through the scene: at
-  // each step to the rows the step brings forward (at the opening to its top; where a step names none, as far down
-  // as the step is through the scene), and between two steps, between their two places. Its edges fade where it
-  // goes on. `places` are worked out once, from the rows each step leaves unfaded (attributes only: nothing is laid
-  // out between two steps, so no mark starts to travel), then the figure is shown at its own step again.
-  let places = null, most = 0;
+  // A strip taller than its window (share, on a phone) pans through it as the page scrolls through the scene, under its
+  // own title and legend, which stand pinned at the window's top (a second view of the same plate: `pinned`). At rest a
+  // whole number of rows shows under them, never a row cut, and the rows the step brings forward are among them (at the
+  // opening the first rows; where a step names none, as far down as the step is through the scene); between two steps it
+  // pans between their two places. The window ends at its last whole row (--cut), except where the strip's foot, its
+  // axis and note, has come into it. `places` are worked out once, from the rows each step leaves unfaded (attributes
+  // only: nothing is laid out between two steps, so no mark starts to travel), then the figure is shown at its step again.
+  let places = null;  // per step: where the strip stands (y), where its window ends (cut) and where its foot comes in (foot)
+  const pinned = el(`<svg class="pinned" aria-hidden="true"><use/></svg>`);
   const slide = (f) => {
     if (!places) return;
-    const j = Math.max(0, Math.min(n, f)), a = places[Math.floor(j)], b = places[Math.ceil(j)], y = a + (b - a) * (j - Math.floor(j));
+    const j = Math.max(0, Math.min(n, f)), a = places[Math.floor(j)], b = places[Math.ceil(j)], y = a.y + (b.y - a.y) * (j - Math.floor(j)), near = places[Math.round(j)];
     room.style.setProperty("--slide", `${y.toFixed(1)}px`);
-    room.style.setProperty("--above", y > 1 ? "var(--s6)" : "0px");
-    room.style.setProperty("--below", y < most - 1 ? "var(--s6)" : "0px");
+    room.style.setProperty("--cut", !near.cut || y >= near.foot - 1 ? "100%" : `${near.cut}px`);
+  };
+  /** The plate shown, if it is a strip that pans: its svg, scale, head (title and legend) and row pitch, in pixels. */
+  const panned = () => {
+    const svg = room.querySelector(".plate:not(.off) svg");
+    if (!svg?.dataset.pitch || !box.classList.contains("tall")) return null;
+    const scale = svg.getBoundingClientRect().height / svg.viewBox.baseVal.height;
+    return { svg, scale, head: +svg.dataset.head * scale, pitch: +svg.dataset.pitch * scale, rows: [...svg.querySelectorAll(".row")] };
+  };
+  const pin = () => {
+    const p = panned();
+    pinned.style.display = p ? "" : "none";
+    if (!p) return;
+    p.svg.id ||= `scene-${k}-plate-${[...room.querySelectorAll(".plate svg")].indexOf(p.svg)}`;
+    pinned.firstElementChild.setAttribute("href", "#" + p.svg.id);
+    pinned.setAttribute("viewBox", `0 0 ${p.svg.viewBox.baseVal.width} ${p.head / p.scale}`);
+    Object.assign(pinned.style, { width: p.svg.getBoundingClientRect().width + "px", height: p.head + "px" });
   };
   const reach = () => {
-    const svg = room.querySelector(".plate svg"), scale = svg.getBoundingClientRect().height / svg.viewBox.baseVal.height, open = room.clientHeight;
-    most = Math.max(0, svg.getBoundingClientRect().height - open);
+    room.append(pinned);
+    const open = room.clientHeight;
     places = [...Array(n + 1)].map((_, j) => {
       show(j);
-      const rows = [...room.querySelectorAll(".plate:not(.off) .row")], named = rows.filter((r) => r.style.opacity === "1");
-      if (!rows.length) return 0;  // (a plate of the stack with no rows, a hand count: seen from its top)
-      if (!j || named.length === rows.length) return (most * j) / n;
-      const ys = named.map((r) => +r.querySelector("line").getAttribute("y1") * scale), top = Math.min(...ys) - 32, bottom = Math.max(...ys) + 32;
-      return Math.max(0, Math.min(most, bottom - top <= open ? (top + bottom - open) / 2 : top));
+      const p = panned();
+      if (!p) return { y: 0, cut: 0, foot: 0 };  // (a plate of the stack with no rows, a hand count: seen from its top)
+      const m = Math.max(1, Math.floor((open - p.head) / p.pitch)), last = Math.max(0, p.rows.length - m), foot = Math.max(0, p.svg.getBoundingClientRect().height - open);
+      const named = p.rows.flatMap((r, i) => (r.style.opacity === "1" ? [i] : []));
+      const first = !j || !named.length || named.length === p.rows.length ? Math.round((last * j) / n)
+        : named.at(-1) - named[0] < m ? named[0] - Math.floor((m - 1 - (named.at(-1) - named[0])) / 2) : named[0];
+      return { y: Math.min(foot, Math.max(0, Math.min(last, first)) * p.pitch), cut: Math.floor(p.head + m * p.pitch), foot };
     });
     show();
   };
@@ -467,7 +488,12 @@ function stage(part, k, of, steer, intro = "") {
     node.style.setProperty("--beat-flow", Math.ceil(Math.max(box.clientHeight * 0.7, tallest + 32, 2 * (tallest - room) + 64)) + "px");
     node.style.setProperty("--said-more", Math.ceil(Math.max(0, tallest - room + 16)) + "px");  // (the last step's card is read on before the stage goes)
   };
-  return { node, stage: box, room, caption, said, sized, flow, steps: n + 1, on: () => at, go, slide, figure: () => figure, hold: (made) => ((figure = made), box.classList.contains("tall") ? reach() : show()) };
+  /** Flowing, whether the step's card goes on under the controls (style.css: its foot fades, a mark says so). */
+  const below = () => {
+    const card = node.classList.contains("flow") && beats[at]?.querySelector(".said");
+    box.classList.toggle("more-below", !!card && card.getBoundingClientRect().bottom > box.querySelector(".stage-nav").getBoundingClientRect().top - 8);
+  };
+  return { node, stage: box, room, caption, said, sized, flow, below, steps: n + 1, on: () => at, go, slide, figure: () => figure, hold: (made) => ((figure = made), box.classList.contains("tall") ? reach() : show()) };
 }
 
 // ---- figures --------------------------------------------------------------
@@ -1358,6 +1384,8 @@ async function sceneFigure(scene, w, h, on) {
 }
 /** The rows and series of a scene drawn as a strip (plate.js), known before its data comes: what its stage must make
  *  room for. */
+/** The keys of a strip's rows in their order, as a step's focus names them. */
+const KEYS = { stuck: (p) => [...p.rows, ...(p.all ? ["*"] : [])], asked: (p) => (p.rows === "shares" ? p.shares.map(([key]) => key) : p.publishers), left: (p) => p.names.map(([word]) => word), split: (p) => p.pairs.map((pair) => pair[1]) };
 const STRIPS = {
   stuck: (p) => [p.rows.length + (p.all ? 1 : 0), [...OUTLET, t("rings", "2010–2014")]],
   asked: (p) => [...(p.rows === "shares" ? [p.shares.length, p.publishers.map((x) => said(PUBLISHER[x]))] : [p.publishers.length, p.shares.map(([, label]) => said(label))])].map((x, k) => (k && p.periods ? [...x, t("rings", p.periods[0])] : x)),
@@ -1377,7 +1405,8 @@ const STRIPS = {
  * caption), the captions leave the stage and flow under the figure as cards (stage, `flow`), at the body's size.
  */
 const TURN = ["", "1rem", "var(--t-small)"];
-const BAND = 76;  // the sea's band under the longest caption: room for a ring and its name (a 30px pill) clear of the text and the controls
+const BAND = 76;
+const FIG = 240;  // the least a stacked figure is given: a chart needs some rows to be one; the caption gives way (flows) first  // the sea's band under the longest caption: room for a ring and its name (a 30px pill) clear of the text and the controls
 function share(s, part) {
   const box = s.stage, side = box.querySelector(".stage-side"), style = getComputedStyle(box);
   const whole = box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - parseFloat(style.rowGap), chrome = side.offsetHeight - s.caption.offsetHeight;
@@ -1398,11 +1427,15 @@ function share(s, part) {
   probe.remove();
   // A hand count (a scene's `read`, a mark per place) is seen whole only at three fifths of the stage or so: the captions flow
   // beside it where they would not leave it that.
-  const least = part.read ? Math.floor(whole * 0.62) : 0, flow = whole - chrome - text < Math.max(whole * 0.4, least);
+  // A strip that pans keeps its title and legend pinned (stage, pinned): its window also holds, under them, the most rows
+  // any step brings forward at once (KEYS: the rows in their order, known before the data), so they are all in view.
+  const keys = KEYS[part.type]?.(part) || [], span = Math.max(0, ...part.steps.map((step) => { const at = (step.focus || []).map((key) => keys.indexOf(key)).filter((i) => i >= 0); return at.length ? Math.max(...at) - Math.min(...at) + 1 : 0; }));
+  const named = need && span ? Math.min(need, whole - chrome - 100, Math.max(...titles.map((title) => stripLeast(title, 0, s.room.clientWidth, series))) - 76 + span * 26 + 8) : 0;
+  const least = Math.max(FIG, named, part.read ? Math.floor(whole * 0.62) : 0), flow = whole - chrome - text < Math.max(whole * 0.4, least);
   if (flow) s.node.style.setProperty("--turn", "var(--t-body)");
   if (flow || need > whole - chrome - text) band = 0;  // a strip that slides anyway keeps its window: no band under it
   // (flowing, the figure keeps all but a band of about seven lines for the cards: a strip shows as much as it can)
-  let fig = Math.floor(flow ? Math.max(least, need ? Math.min(need, whole - chrome - 160) : whole * 0.5) : Math.max(whole * 0.4, least, whole - chrome - text - band));
+  let fig = Math.floor(flow ? Math.max(least, whole * 0.55, need ? Math.min(need, whole - chrome - 160) : whole * 0.5) : Math.max(whole * 0.4, least, whole - chrome - text - band));
   if (!flow && need > fig && need <= fig + band) fig = need;  // a strip seen whole, title to foot, before the sea's band (a step then left without one drops it)
   box.style.setProperty("--fig", fig + "px");
   s.tall = need > fig ? need : 0;
@@ -1946,7 +1979,7 @@ async function storyPage(slug, scene, step, more) {
     // All that is measured is measured first; then the stages are told their step.
     const top = head(), rects = stages.map((s) => s.node.getBoundingClientRect()), beats = stages.map((s) => s.node.querySelector(".beat").offsetHeight);
     const middle = top + (innerHeight - top) / 2, height = innerHeight - top;
-    stages.forEach((s, k) => (s.go(Math.max(0, Math.min(s.steps - 1, Math.round((top - rects[k].top) / beats[k])))), s.slide((top - rects[k].top) / beats[k])));
+    stages.forEach((s, k) => (s.go(Math.max(0, Math.min(s.steps - 1, Math.round((top - rects[k].top) / beats[k])))), s.slide((top - rects[k].top) / beats[k]), s.below()));
     // The step steered to is reached (also where the browser has no scrollend, as Safari before 26).
     if (aim && Math.abs(rects[aim[0]].top - top + aim[1] * beats[aim[0]]) < 2) aim = null;
     const seen = rects.findIndex((r) => r.top <= middle && r.bottom >= middle), shore = landing.getBoundingClientRect().top;

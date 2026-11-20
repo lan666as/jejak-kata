@@ -7,7 +7,11 @@
 // - on a story's stage: a caption cut (its text past its band, or past the screen), a caption under the figure, the
 //   sea's key or the controls; a figure not wholly in its room (title, rows, note: a strip that slides is held to its
 //   window); the stage's step and back buttons under 44px, a tick under 44px tall or 24px wide; and a step that moves
-//   the figure or the caption's band (layout that jumps as one steps).
+//   the figure or the caption's band (layout that jumps as one steps);
+// - a chart's title or legend not wholly in view (a strip that pans in its window: its pinned title and legend), a row
+//   cut at the top or foot of a panned strip at rest, a row the step brings forward out of view, a legend that names
+//   hollow rings at the moment where none are drawn; a stacked figure under 240px; a flowing card that goes on under
+//   the controls without its fade and mark.
 // A look is of the screen as it stands: what it cannot see is a text drawn on a canvas (the seas' names: labels.mjs),
 // a colour, or an overlap between two pieces of text inside one SVG (labels.mjs holds the figures to that).
 // `all` walks every size; by default a representative set that keeps it under about four minutes on two pages.
@@ -16,12 +20,12 @@ import { STORIES } from "../../site/story.js";
 const args = process.argv.slice(2), every = args[0] === "all" && args.shift(), slugs = args.length ? args : STORIES.map((s) => s.slug);
 const started = Date.now();
 // [width, height, root font %]
-const ALL = [[320, 568], [344, 882], [360, 640], [375, 667], [390, 844], [412, 915], [430, 932], [480, 854], [540, 720], [600, 960], [768, 1024], [820, 1180], [912, 1368],
+const ALL = [[320, 568], [344, 882], [360, 640], [360, 740], [375, 667], [390, 844], [412, 915], [430, 932], [480, 854], [540, 720], [600, 960], [768, 1024], [820, 1180], [912, 1368],
   [1024, 768], [1180, 820], [1280, 800], [1366, 768], [1440, 900], [1920, 1080], [2560, 1440], [667, 375], [844, 390], [932, 430], [390, 844, 130], [390, 844, 200], [1280, 800, 200]];
 // (the stories, the long part, at five of them: the smallest phone, a phone with larger text, a phone held sideways, a
 // tablet upright and a laptop; the other pages at eight)
-const STORY_SIZES = every ? ALL : [[320, 568], [390, 844, 130], [844, 390], [768, 1024], [1366, 768]];
-const PAGE_SIZES = every ? ALL : [...STORY_SIZES, [375, 667], [1024, 768], [1920, 1080]];
+const STORY_SIZES = every ? ALL : [[320, 568], [360, 740], [390, 844, 130], [844, 390], [1366, 768]];
+const PAGE_SIZES = every ? ALL : [...STORY_SIZES, [768, 1024], [1024, 768], [1920, 1080]];
 const OTHERS = ["#/", "#/peta", "#/kata/korupsi", "#/tahun", "#/temuan", "#/metode", "#/main", "#/tebak", "#/balap", "#/entitas", "#/potret/jokowi", "#/cerita", "#/tidak-ada"];
 
 /** In the page: text and boxes standing past the screen's sides where nothing scrolls to them. */
@@ -50,6 +54,7 @@ const look = ([k, j]) => {
   // Captions that flow as cards (app.js, stage: flow): the step's card stands where the band begins, clear of the
   // figure; the rest of a long one is read by scrolling the page (`more`: how far, checked below).
   const flow = stage.parentNode.classList.contains("flow"), card = flow && stage.parentNode.querySelectorAll(".beat")[j]?.querySelector(".said");
+  const side = matchMedia("(width >= 900px) or ((orientation: landscape) and (width >= 560px))").matches;  // (app.js, SIDE)
   const end = r(nav).top - 1, more = card ? Math.max(0, Math.ceil(r(card).bottom - end)) : 0;
   if (card) {
     const d = r(card), shown = f && (tall ? win : f);
@@ -74,6 +79,27 @@ const look = ([k, j]) => {
     // (the opening's meta rises with it over the figure's foot)
     for (const n of [meta, key, nav]) if (n && n.getClientRects().length && hit(box, r(n)) && getComputedStyle(n).visibility !== "hidden" && !(j === 0 && n === meta && r(n).top >= box.bottom - 52 * (f.height / svg.viewBox.baseVal.height))) wrong.push(`the figure lies under ${n.className}`);
   }
+  // The chart's head: a strip that pans shows its title and legend pinned over its window; any other, its own.
+  const pin = stage.querySelector(".pinned"), pinned = tall && pin && getComputedStyle(pin).display !== "none";
+  if (f) {
+    const top = pinned ? r(pin) : svg.querySelector(".title").getBoundingClientRect(), legendBox = svg.querySelector("circle")?.getBoundingClientRect();
+    if (tall && !pinned && svg.dataset.pitch) wrong.push("a strip that pans has no pinned title and legend");
+    if (top.top < Math.max(head, win.top) - 1 || top.bottom > win.bottom + 1 || (!pinned && legendBox && (legendBox.top < Math.max(head, win.top) - 1 || legendBox.bottom > win.bottom + 1))) wrong.push(`the chart's title or legend is not wholly in view (${Math.round(top.top)}–${Math.round(top.bottom)}, window ${Math.round(win.top)}–${Math.round(win.bottom)})`);
+    // A strip that pans, at rest: no row cut at the head or the foot of what shows, and the rows the step names in view.
+    if (pinned && svg.dataset.pitch) {
+      const cut = getComputedStyle(room).getPropertyValue("--cut").trim(), from = r(pin).bottom, to = cut.endsWith("px") ? win.top + parseFloat(cut) : win.bottom;
+      const scale = f.height / svg.viewBox.baseVal.height, half = (+svg.dataset.pitch * scale) / 2;
+      const bands = [...svg.querySelectorAll(".row")].map((g) => { const y = r(g.querySelector("line")).top; return { a: y - half, b: y + half, named: g.style.opacity === "1" }; });
+      if (bands.some((x) => x.a < from - 1.5 && x.b > from + 1.5 || x.a < to - 1.5 && x.b > to + 1.5)) wrong.push("a row of the panned chart is cut at rest");
+      const named = bands.filter((x) => x.named);
+      if (named.length < bands.length && named.length && named.at(-1).b - named[0].a <= to - from && named.some((x) => x.a < from - 1.5 || x.b > to + 1.5)) wrong.push("a row the step names is out of view");
+    }
+    // Hollow rings are named in the legend only where they are drawn: not at the strip's first moment.
+    const rings = svg.querySelector(".rings-key"), first = rings?.textContent.split(": ").at(-1), now = svg.querySelector(".state")?.textContent;
+    if (rings && (rings.getAttribute("opacity") !== "0") !== (now !== first)) wrong.push(`the legend's hollow rings ${now === first ? "are named where none are drawn" : "are not named"}`);
+    if (!side && win.height < 239.5) wrong.push(`the figure's window is ${Math.round(win.height)}px tall`);
+  }
+  if (card && r(card).bottom > end + 8 && !stage.classList.contains("more-below")) wrong.push("the card goes on under the controls with no fade or mark");
   for (const b of stage.querySelectorAll(".stage-nav .step")) { const s = r(b); if (s.width < 43.5 || s.height < 43.5) wrong.push(`a step button is ${Math.round(s.width)}x${Math.round(s.height)}px`); }
   const ticks = [...stage.querySelectorAll(".ticks:not(.glance) button")].map(r);  // (a row of ticks too narrow to be targets is a picture: app.js, glance)
   if (ticks.some((s) => s.height < 43.5 || s.width < 23.5)) wrong.push(`a tick is ${Math.round(Math.min(...ticks.map((s) => s.width)))}x${Math.round(Math.min(...ticks.map((s) => s.height)))}px`);

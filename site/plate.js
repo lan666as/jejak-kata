@@ -221,17 +221,18 @@ export function strip(spec, width, height) {
   spec = { ...spec, title: longestTitle(spec.title, spec.states, width) };
   const format = spec.format || percent, rows = spec.rows.length;
   const tick = ticks(spec.most || Math.max(...spec.rows.flatMap((r) => r.values.flat().map((v) => v || 0))) || 1).filter((v) => !spec.most || v <= spec.most + 1e-9), most = spec.most || tick.at(-1);
-  let x, y;
+  let x, y, head = 0, pitch = 0;  // (where its rows begin, and how far apart they are: a window that pans it, app.js)
   const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line, beacon }) => {
     const longest = Math.max(...spec.rows.map((r) => r.label.length)), L = narrow ? Math.min(W * 0.45, 16 + 7 * longest) : 200, R = narrow ? 80 : 84;
     // The legend names the series, and where the first moment stays on the strip as rings, what they are (`rings`).
     const legend = key([...spec.series, ...(spec.rings ? [spec.rings] : [])], W, narrow), extra = (legend.lines - 1) * 16;
     legend.beside &&= legend.end + 9 * Math.max(...spec.states.map((s) => s.length)) < W - 12;
     const below = narrow && !legend.beside, T = top + (below ? 50 : 34) + extra, B = 76, gap = (H - T - B) / rows;  // the margins stripRoom counts
+    [head, pitch] = [T, gap];
     x = (v) => L + ((W - L - R) * v) / most;
     y = (k) => T + gap * (k + 0.5);
     const size = Math.max(12, Math.min(narrow ? 13 : 14, gap * 0.9)), name = (label, k) => rowName(label, y(k), L, size, gap, ink);
-    return `${legend.marks.map((m, k) => `<circle cx="${m.x + 5}" cy="${top + 10 + m.line * 16}" ${k < spec.series.length ? `r="4.5" fill="${css(COLOURS[k])}"` : `r="4" fill="none" stroke="${soft}" stroke-width="1.2"`}/>${legendName(m, top, soft)}`).join("")}
+    return `${legend.marks.map((m, k) => `<g${k < spec.series.length ? "" : ` class="rings-key"`}><circle cx="${m.x + 5}" cy="${top + 10 + m.line * 16}" ${k < spec.series.length ? `r="4.5" fill="${css(COLOURS[k])}"` : `r="4" fill="none" stroke="${soft}" stroke-width="1.2"`}/>${legendName(m, top, soft)}</g>`).join("")}
     <text class="state" x="${below ? 12 : W - 12}" y="${top + (below ? 32 + extra : 15)}" text-anchor="${below ? "start" : "end"}" style="font-size:14px;font-weight:800;fill:${ink}"></text>
     ${rules(tick, spec.base, line, soft, (v, stroke, width) => `<line x1="${x(v)}" x2="${x(v)}" y1="${T - 4}" y2="${H - B + 2}" stroke="${stroke}" stroke-width="${width}"/><text x="${x(v)}" y="${H - B + 14}" text-anchor="middle" style="font-size:12px;fill:${soft}">${format(v)}</text>`)}
     ${spec.rows.map((row, k) => `<g class="row" style="--k:${k};transition:opacity var(--d-turn) var(--sail)">${name(row.label, k)}
@@ -242,10 +243,12 @@ export function strip(spec, width, height) {
       <rect class="beacon" x="${W - R + 3}" y="${y(k) - 10}" height="20" rx="4" fill="${beacon}" opacity="0"/>
       <text class="value" x="${W - R + 8}" y="${y(k) + size * 0.35}" style="font-size:12px;font-weight:700;fill:${ink}"></text></g>`).join("")}`;
   }, stripLeast(spec.title, rows, width, [...spec.series, ...(spec.rings ? [spec.rings] : [])], PITCH.floor));
-  const groups = [...made.svg.querySelectorAll(".row")], state = made.svg.querySelector(".state"), inked = css("--ink");
+  const groups = [...made.svg.querySelectorAll(".row")], state = made.svg.querySelector(".state"), inked = css("--ink"), ringsKey = made.svg.querySelector(".rings-key");
+  Object.assign(made.svg.dataset, { head, pitch });
   const show = (i, focus) => {
     state.textContent = spec.states[i];
     made.title(titles[i]);
+    ringsKey?.setAttribute("opacity", +(i > 0));  // (at the first moment the dots stand on the rings: no rings to name)
     if (spec.pages) made.note(spec.pages(i));
     let told = false;
     groups.forEach((g, k) => {

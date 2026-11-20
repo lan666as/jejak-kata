@@ -772,6 +772,7 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
   mask-image: radial-gradient(ellipse 60% 70% at 38% 50%, #000 20%, transparent 75%); }
 .stage { isolation: isolate; }  /* --fig: the figure's share on a phone, by need (app.js, share) */
 .stage-figure > * { grid-area: 1 / 1; max-width: 100%; }
+.pinned { display: none; }
 /* the stage is the deep in both schemes: its figure is drawn on it, in the night's inks (the dark scheme's own values;
    plate.js reads them here, and saves the image on paper), on a panel of the deep that the sea under the stages
    (below) shows through only faintly: its text keeps 4.5:1 over the brightest frame of the sea */
@@ -807,8 +808,10 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 /* stacked, a strip of more rows than its room keeps apart is drawn at its own height in a window of that room and
    slides through it as the page scrolls (app.js, share and slide); its edges fade where it goes on */
 @media not ((width >= 900px) or ((orientation: landscape) and (width >= 560px))) {
-  .stage.tall .stage-figure { overflow: hidden; place-items: start center; mask-image: linear-gradient(transparent, #000 var(--above, 0px), #000 calc(100% - var(--below, 0px)), transparent); }
-  .stage.tall .stage-figure > * { transform: translateY(calc(-1 * var(--slide, 0px))); }
+  .stage.tall .stage-figure { overflow: hidden; place-items: start center; mask-image: linear-gradient(#000 var(--cut, 100%), transparent var(--cut, 100%)); }
+  .stage.tall .stage-figure > :not(.pinned) { transform: translateY(calc(-1 * var(--slide, 0px))); }
+  /* its title and legend stand pinned over it (app.js, stage: pinned), on the deep */
+  .stage.tall .pinned { display: block; overflow: hidden; z-index: 1; align-self: start; background: var(--deep); }
   .stage.tall .stage-figure .plate svg { max-height: none; }
   /* flowing, the deep stands behind the figure's whole room, its faded edges too: a card read on passes under it unseen */
   .scenes .scene.flow .stage { background: linear-gradient(var(--deep) calc(var(--fig) + 2 * var(--s3)), transparent 0); }
@@ -859,7 +862,14 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .scene.flow :is(.stage-figure, .stage-meta, .stage-nav) { background: var(--deep); box-shadow: 0 0 0 var(--s2) var(--deep); }  /* (a card read on passes under them, unseen) */
 .scene.flow .beat { height: var(--beat-flow); }
 .scene.flow .beat:last-child { height: calc(var(--stage-h) + var(--said-more) + var(--s1)); }
-.said { position: absolute; top: var(--said-top); left: var(--said-left); width: var(--said-width); pointer-events: auto; }
+.said { position: absolute; top: var(--said-top); left: var(--said-left); width: var(--said-width); padding-top: var(--s2); pointer-events: auto; }
+/* a card longer than its band: its foot fades out above the controls, a mark there says it goes on (app.js, stage:
+   below), and the controls cover all under them to the stage's edge, so no line ends half under a button */
+.scene.flow .stage-nav { position: relative; box-shadow: 0 0 0 var(--s2) var(--deep), 0 var(--s5) 0 var(--s4) var(--deep); }
+.scene.flow .stage-nav::before { content: ""; position: absolute; left: 0; right: 0; bottom: calc(100% + var(--s2)); height: var(--s7); background: linear-gradient(transparent, var(--deep)); }
+.scene.flow .stage-nav::after { content: ""; position: absolute; left: calc(50% - 5px); bottom: calc(100% + var(--s3)); width: 10px; height: 10px; border: solid var(--on-deep-2); border-width: 0 var(--rule) var(--rule) 0; transform: rotate(45deg); }
+.scene.flow .stage-nav::before, .scene.flow .stage-nav::after { opacity: 0; pointer-events: none; transition: opacity var(--d-turn) var(--sail); }
+.scene.flow .stage.more-below .stage-nav::before, .scene.flow .stage.more-below .stage-nav::after { opacity: 1; }
 @media ((width >= 900px) or ((orientation: landscape) and (width >= 560px))) {
   .stage { grid-template: "figure side" minmax(0, 1fr) / minmax(0, 1fr) var(--side); gap: var(--s7); padding: var(--s5) max(var(--gutter), (100% - var(--content)) / 2); }
   .stage-figure { height: auto; min-height: 0; }

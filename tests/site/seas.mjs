@@ -135,7 +135,7 @@ for (const [name, options, init] of [["WebGL", {}, null], ["reduced motion", { r
       const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
       const opacity = (n, top) => { let o = 1; for (; n && n !== top; n = n.parentNode) o *= +getComputedStyle(n).opacity; return o; };
       const svg = document.querySelector("#scene-0 .plate:not(.off) svg"), panel = over(getComputedStyle(svg.querySelector("rect")).fill, "#ffffff"), deep = getComputedStyle(document.documentElement).getPropertyValue("--deep").trim();
-      const texts = [...svg.querySelectorAll("text")].filter((t) => t.textContent.replace("●", "").trim() && getComputedStyle(t).fill !== over(deep, "#ffffff"));  // (not the numbers on the beacon)
+      const texts = [...svg.querySelectorAll("text")].filter((t) => t.textContent.replace("●", "").trim() && getComputedStyle(t).fill !== over(deep, "#ffffff") && opacity(t, svg.parentNode) > 0);  // (not the numbers on the beacon, nor a text not shown)
       const panelWorst = Math.min(...texts.map((t) => ratio(over(getComputedStyle(t).fill, panel, opacity(t, svg.parentNode)), panel)));
       const turn = document.querySelector("#scene-0 .turn:not(.out)"), shade = over(getComputedStyle(turn).backgroundColor, "#ffffff");
       const captionWorst = Math.min(...[...turn.querySelectorAll("p")].map((q) => ratio(over(getComputedStyle(q).color, shade), shade)));

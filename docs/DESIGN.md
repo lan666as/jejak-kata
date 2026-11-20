@@ -125,7 +125,8 @@ it.
   to the step at or past the largest value; where the values are a part of a base year, the 100% line is drawn stronger. Title is a sentence with the number in it. A
   title is read beside what the plate shows at every step: it names only that moment, or one the plate shows at every
   step (a line plate's periods; a strip's first moment, which stays on it as hollow rings, named in its legend:
-  "lingkaran kosong: 2010–2014" / "hollow rings: 2010–2014"); a strip whose finding spans its moments has a title for
+  "lingkaran kosong: 2010–2014" / "hollow rings: 2010–2014", shown only at the moments where rings are drawn apart from
+  the dots, not at the first); a strip whose finding spans its moments has a title for
   each moment it is stepped to (`plate` a function of the moment), all drawn in the room the longest needs, so nothing
   moves when it changes. The
   numbers a step's caption names (its `focus`) stand on the beacon: a pill of `--beacon` behind the value, the text in
@@ -200,13 +201,16 @@ A story is a voyage in three parts.
    caption's shade covers the band and the key is not shown (an empty band is worse than none); on a phone a step's own
    words come before the scene's route (the route is sailed only where the step brings no word of its own). Where the tallest
    step would not fit beside that, the stage's captions are set a size smaller (1rem, then `--t-small`). A hand count
-   is given three fifths of the stage. **Where even that leaves the figure too little** (under two fifths: a short screen,
+   is given three fifths of the stage, and any stacked figure at least 240px (and, flowing, 55% of the stage): the
+   caption gives way first. **Where even that leaves the figure too little** (under two fifths: a short screen,
    large text, a long caption), the captions leave the stage and **flow**: each step's caption is a card in its beat, in
    the page's own scroll, standing exactly where the caption's band begins when its step is reached, at the body's size;
    a card longer than the band is read on by scrolling the page (the beats are as tall as the longest card needs, so
    the step does not change before its card's end has passed above the controls; the last card is read before the
    stage leaves). The figure, the scene's name and count and the controls stay; a card passes under them as it goes,
-   never sits under them when read. No caption ever scrolls inside a box. **Stacked or side by side** is one rule
+   never sits under them when read: where a card goes on under the controls its foot fades out above them and a small
+   mark there says it goes on, and the controls cover all below them to the stage's edge, so no line ends half under a
+   button. No caption ever scrolls inside a box. **Stacked or side by side** is one rule
    (`SIDE` in app.js, the same media query in style.css): side by side from 900px wide, and on any screen held sideways
    from 560px (a phone in landscape gets the figure beside its captions, not over them); the controls take two rows only
    from 900px wide and 640px tall. A screen turned or resized lays the story out again at the step it is on (a
@@ -216,7 +220,10 @@ A story is a voyage in three parts.
    which the story's longest caption fits, measured in the language and at the width shown. No caption is cut, and
    none scrolls. On a phone a short caption leaves the rest of the band to the sea (its shade is only as tall as its text).
    A strip of more rows than that room keeps 26px apart (`stripLeast` in plate.js) is drawn at the height that does, in
-   a window of that room, and **slides** through the window as the page scrolls through the scene: at each step to the
+   a window of that room, under its own title and legend, which stand pinned at the window's top (a second view of the
+   same plate, so they always read whole), and **slides** through the window as the page scrolls through the scene; at
+   rest a whole number of rows shows under the pinned head and the window ends at its last whole row (unless the
+   strip's foot has come in), never a row cut: at each step to the
    rows the step brings forward (at the opening to its top; where a step names none, as far down as the step is
    through the scene), between two steps between their places; the window's edges fade where the strip goes on. No
    nested scrolling: a swipe always moves the story. No text on a plate is under 12px: a line's name and value too
