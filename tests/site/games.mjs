@@ -395,6 +395,10 @@ for (const [w, h, touch] of SIZES) {
   await p.goto(base + "#/main"); await p.waitForSelector(".play-card");
   const remembered = await p.evaluate(() => [...document.querySelectorAll(".play-card .played")].map((n) => n.textContent));
   log(`hub at ${w} remembers the games played and their best`, remembered.length >= 2, remembered.join(" | "));
+  // (on a phone the head is short enough that the first game's card and its button are whole on the first screen; the
+  // kicker says what there is)
+  const hub = await p.evaluate(() => ({ card: Math.round(document.querySelector(".play-games .play-card").getBoundingClientRect().bottom), kicker: document.querySelector(".page-head .kicker")?.textContent }));
+  log(`hub at ${w}: ${touch ? "the first game card whole on the first screen, " : ""}the kicker says what there is`, (!touch || hub.card <= h) && /^2 permainan, 8 penjelajah$/.test(hub.kicker), `card ends at ${hub.card}px of ${h}; “${hub.kicker}”`);
   const toys = [];
   for (const toy of ["menempel", "lingkaran", "redaksi", "pasang", "balap", "tahun", "bergeser", "entitas"]) {
     await p.goto(base + "#/" + toy); await p.waitForTimeout(1500);

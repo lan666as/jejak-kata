@@ -10,7 +10,7 @@ import { seaChart } from "./chart.js";
 import { TEXT, LENS_TEXT, NOTES, GLOSS, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
 import { address, routeOf, named, canonical, EMBED, PAGES, PLAY, QUIZ_NAMES, GUESS_WORDS } from "./address.js";
 import { board, measure } from "./labels.js";
-import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, guessRank, shown, isName as nameLike, keep, kept as keptDecks, version, BODIES, PEOPLE, STOPS, along, stopAt, CAVEAT } from "./deal.js";
+import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, guessRank, shown, isAbbr, isName as nameLike, keep, kept as keptDecks, version, BODIES, PEOPLE, STOPS, along, stopAt, CAVEAT } from "./deal.js";
 import { GAME_GLOSS, NAME_GLOSS } from "./glossary.js";
 import { figureOf, focused, lensFrom, sceneWords, seaWords, stepAt, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
 
@@ -1349,11 +1349,13 @@ async function moversPage() {
   const key = (lens, m) => `${lens.periods[m.a]}>${lens.periods[m.b]}`;
   const elsewhere = (lens, m, word) =>
     all.filter((o) => o.lens !== lens && o.movers.some((x) => key(o.lens, x) === key(lens, m) && x.words.some(([w]) => o.lens.words[w] === word)));
+  const BARE = new Set(all.flatMap(({ lens }) => [...lens.articles].filter(([i, article]) => !lens.words[i].includes(" ") && (lens.kind(i) === "person" || (lens.kind(i) === "other" && article.toLowerCase() === lens.words[i]))).map(([i]) => lens.words[i])));
   // The list first; what the source is and how to read the scores under it.
   view.replaceChildren(pageHead(t("nav_movers"), { ...fromPlay(), lede: t("play_bergeser_about"), sea: { words: MOVED } }));
   await perLens(all.map((o) => o.lens), (lens) => lensText(lens).short || lensText(lens).title, (lens, more) => {
     const { movers } = all.find((o) => o.lens === lens);
-    const section = el(`<section><ul class="movers"></ul><p class="sub"></p><p class="sub">${lensText(lens).about}</p></section>`);
+    // (above the list, one line on what its number and its dots are: matrix_about's measure, the source's flag)
+    const section = el(`<section><p class="list-key">${t("movers_key", lens.flag)}</p><ul class="movers"></ul><p class="sub"></p><p class="sub">${lensText(lens).about}</p></section>`);
     const controls = el(`<div class="controls"><label>${t("between")} <select name="pair">${movers
         .map((m, i) => `<option value="${i}">${lens.periods[m.a]} → ${lens.periods[m.b]}</option>`)
         .join("")}</select></label>
@@ -1361,13 +1363,18 @@ async function moversPage() {
     more.querySelector(":scope > .controls")?.remove();
     more.append(controls);
     const [pair, kind] = controls.querySelectorAll("select");
+    // A bare first name or a fragment: a word of one part that some source links to an article of a person, or to one
+    // of nothing more than itself ("susi", "budi", "fauzi"), and that the games do not know as a name (PEOPLE, BODIES)
+    // nor as an abbreviation (deal.js, isAbbr); or a word of three letters or fewer that is no abbreviation ("iii").
+    const bare = (i) => { const w = lens.words[i]; return !PEOPLE.includes(w) && !BODIES.includes(w) && !isAbbr(w) && (w.length <= 3 || BARE.has(w)) ? 1 : 0; };
     const draw = () => {
       const m = movers[pair.value];
       const rows = m.words
         .filter(([w]) => kind.value === "all" || (kind.value === "entities") === lens.articles.has(w))
-        .map(([w, s]) => ({ word: lens.words[w], s, also: elsewhere(lens, m, lens.words[w]) }));
-      rows.sort((x, y) => y.also.length - x.also.length || y.s - x.s);
-      section.querySelector("p").textContent = t("flagged", m.flagged, m.scored, lens.flag) + (rows.some((r) => r.also.length) ? " " + t("replicated") : "");
+        .map(([w, s]) => ({ word: lens.words[w], s, also: elsewhere(lens, m, lens.words[w]), bare: bare(w) }));
+      // (words a reader recognises lead: a bare first name or a fragment, "fauzi", "iii", after the rest)
+      rows.sort((x, y) => x.bare - y.bare || y.also.length - x.also.length || y.s - x.s);
+      section.querySelector("p.sub").textContent = t("flagged", m.flagged, m.scored, lens.flag) + (rows.some((r) => r.also.length) ? " " + t("replicated") : "");
       section.querySelector("ul").innerHTML = rows
         .slice(0, 120)
         .map((r) => `<li title="${r.also.map((o) => lensText(o.lens).title).join("; ")}">${link(r.word)} <span class="score"><i class="s${step(r.s)}"></i>${number(r.s)}${"●".repeat(r.also.length)}</span></li>`)
@@ -1757,13 +1764,15 @@ const PICTURES = {
   },
   // The quiz's own question, from the data, drawn as a picture of one and nothing to press: a year's own words as a
   // line of words, "which year?", and four years as a line of figures, the year they belong to ticked and underlined.
-  kuis: ({ years: y }, W, H) => {
+  kuis: ({ years: y, stick: s }, W, H) => {
     const peaks = peaksOf(y).filter((x) => x.stand >= 2.5), count = (p) => peaks.filter((x) => x.p === p).length;
     const p = y.years.map((_, i) => i).sort((a, b) => count(b) - count(a) || b - a)[0], words = peaks.filter((x) => x.p === p).map((x) => x.w);
     const choices = [p, ...y.years.map((_, i) => i).filter((i) => i !== p).sort((a, b) => Math.abs(a - p) - Math.abs(b - p) || a - b).slice(0, 3)].sort((a, b) => a - b);
+    // (a name shown as a name: the names the newsrooms' counts know, and those of the tide tables)
+    const names = new Set([...s.names, ...Object.values(y.tide).flatMap((by) => Object.values(by).flat().map((r) => r.word))]);
     let x = 0;
-    const said = words.slice(0, 5).map((word, k) => {
-      const w = word.length * 8.2, at = x;
+    const said = words.slice(0, 5).map((w0, k) => {
+      const word = shown(w0, names.has(w0) ? "person" : undefined), w = word.length * 8.2, at = x;
       x += w + 20;
       return at + w > W ? "" : `<g class="in" style="--i:${k}">${k ? svgText(at - 12, 20, "·", "soft", "middle") : ""}${svgText(at, 20, word, "strong")}</g>`;
     }).join("");
@@ -1797,7 +1806,7 @@ const PICTURES = {
     const pitch = H / rows.length, L = Math.min(W * 0.4, 10 + 7 * Math.max(...rows.map((r) => r.w.length))), most = Math.max(...rows.flatMap((r) => r.v)) * 1.04;
     return { svg: rows.map((r, k) => {
       const yy = pitch * (k + 0.5);
-      return `<g class="in" style="--i:${k}">${svgText(L - 8, yy + 4.5, r.w, "", "end")}<path class="line dotted" d="M${L} ${yy}H${W - 6}"/>${r.v.map((v, j) => `<circle class="c${j + 1}" cx="${(L + ((W - L - 12) * v) / most).toFixed(1)}" cy="${yy}" r="5.5"/>`).join("")}</g>`;
+      return `<g class="in" style="--i:${k}">${svgText(L - 8, yy + 4.5, shown(r.w), "", "end")}<path class="line dotted" d="M${L} ${yy}H${W - 6}"/>${r.v.map((v, j) => `<circle class="c${j + 1}" cx="${(L + ((W - L - 12) * v) / most).toFixed(1)}" cy="${yy}" r="5.5"/>`).join("")}</g>`;
     }).join(""), note: `${OUTLET.map((o, j) => `<i class="c${j + 1}"></i>${o}`).join(" ")} · ${y.years[last]}` };
   },
   // A row per name, a column per year, each row shaded against its own best year: the names in the order of that year.
@@ -1821,9 +1830,9 @@ const PICTURES = {
   // Each year in its own word: the word of years.json that stands highest in that year.
   tahun: ({ years: y }, W, H) => {
     const peaks = peaksOf(y).filter((x) => x.stand >= 2 && x.w.length <= 14), own = y.years.map((_, p) => peaks.find((x) => x.p === p)).map((x, p) => x && { p, w: x.w }).filter(Boolean);
-    const k = Math.max(2, Math.min(own.length, Math.floor(W / 112))), shown = [...Array(k)].map((_, j) => own[Math.round((j * (own.length - 1)) / (k - 1))]), w = (W - (k - 1) * 8) / k;
-    return { svg: shown.map((x, j) => `<g class="in" style="--i:${j}"><rect class="line" x="${(j * (w + 8)).toFixed(1)}" y="0.5" width="${w.toFixed(1)}" height="${H - 1}" rx="4"/>${j === k - 1 ? `<path class="on-line" d="M${(j * (w + 8) + 2).toFixed(1)} 1.5H${(j * (w + 8) + w - 2).toFixed(1)}" stroke-width="3"/>` : ""}
-      ${svgText(j * (w + 8) + 10, 22, y.years[x.p], "soft")}${x.w.split(" ").map((part, m) => svgText(j * (w + 8) + 10, H - 14 - (x.w.split(" ").length - 1 - m) * 18, part, "word")).join("")}</g>`).join(""),
+    const k = Math.max(2, Math.min(own.length, Math.floor(W / 112))), picked = [...Array(k)].map((_, j) => own[Math.round((j * (own.length - 1)) / (k - 1))]), w = (W - (k - 1) * 8) / k;
+    return { svg: picked.map((x, j) => `<g class="in" style="--i:${j}"><rect class="line" x="${(j * (w + 8)).toFixed(1)}" y="0.5" width="${w.toFixed(1)}" height="${H - 1}" rx="4"/>${j === k - 1 ? `<path class="on-line" d="M${(j * (w + 8) + 2).toFixed(1)} 1.5H${(j * (w + 8) + w - 2).toFixed(1)}" stroke-width="3"/>` : ""}
+      ${svgText(j * (w + 8) + 10, 22, y.years[x.p], "soft")}${shown(x.w).split(" ").map((part, m, all) => svgText(j * (w + 8) + 10, H - 14 - (all.length - 1 - m) * 18, part, "word")).join("")}</g>`).join(""),
     note: `Kompas ${y.years[0]}–${y.years.at(-1)}` };
   },
   // The frequent words of the first page that moved most: lights as high as they moved, as on the night sea.
@@ -1831,7 +1840,7 @@ const PICTURES = {
     const k = Math.max(3, Math.min(6, Math.floor(W / 64))), names = MOVED(f).slice(0, k), v = names.map((w) => f.moved[f.names.indexOf(w)]), top = Math.max(...v), water = H - 36, gap = W / k;
     return { svg: `<path class="line" d="M0 ${water}H${W}"/>` + names.map((w, j) => {
       const x = gap * (j + 0.5), y = water - ((water - 14) * v[j]) / top;
-      return `<g class="in" style="--i:${j}"><path class="line dotted" d="M${x.toFixed(1)} ${water}V${y.toFixed(1)}"/><circle class="${j ? "mute" : "on"}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${j ? 5 : 6.5}"/>${svgText(x, j % 2 ? H - 2 : H - 18, w, j ? "" : "strong", "middle")}</g>`;
+      return `<g class="in" style="--i:${j}"><path class="line dotted" d="M${x.toFixed(1)} ${water}V${y.toFixed(1)}"/><circle class="${j ? "mute" : "on"}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${j ? 5 : 6.5}"/>${svgText(x, j % 2 ? H - 2 : H - 18, shown(w), j ? "" : "strong", "middle")}</g>`;
     }).join(""), note: `Kompas ${f.periods[0]}–${f.periods.at(-1)}` };
   },
   // The names of the tide table by kind: a dot for each.
@@ -2869,7 +2878,7 @@ async function tidePage(k = "0", kind = "person") {
   const y = await json("years.json"), lens = OUTLETS[+k] || OUTLETS[0];
   const rows = y.tide[lens][kind].map((r) => ({ ...r, peak: Math.max(...r.share.map((v) => v || 0)) })).map((r) => ({ ...r, when: r.share.indexOf(r.peak) })).sort((a, b) => a.when - b.when || b.peak - a.peak);
   const kinds = ["person", "organisation", "place"], level = (v, peak) => [0.08, 0.25, 0.45, 0.65, 0.85].filter((s) => v / peak >= s).length;
-  const table = el(`<div class="tide" tabindex="0"><table><tr><th></th>${y.years.map((year) => `<th>${String(year).slice(2)}</th>`).join("")}</tr>${rows.map((r) =>
+  const table = el(`<div class="tide" tabindex="0"><table style="--cols:${y.years.length}"><tr><th></th>${y.years.map((year) => `<th>${String(year).slice(2)}</th>`).join("")}</tr>${rows.map((r) =>
     `<tr><th><a href="${href("potret", r.word)}">${r.word}</a></th>${r.share.map((v, i) => `<td style="--i:${i}" class="t${v === null ? "x" : level(v, r.peak)}" data-tip="${r.word} ${y.years[i]}: ${v === null ? "–" : number(v * 1000) + "‰"} ${t("of_pages", thousands(y.pages[lens][i]))}"></td>`).join("")}</tr>`).join("")}</table></div>`);
   table.dataset.tipTap = "";  // a tap on a cell says what a hover does
   for (const on of ["pointermove", "pointerdown"]) table.addEventListener(on, (e) => tip(e.target.dataset?.tip || null, e));
@@ -2921,7 +2930,7 @@ async function circlePage(name = "prabowo", k = "0") {
  *  the next two beside it; the rest under "more", two of them wide. */
 async function playPage() {
   // Two groups: the games ("Main"), the quiz leading; the explorers of the data ("Jelajah").
-  view.replaceChildren(pageHead(t("nav_play"), { kicker: t("play_kicker", 2, PLAY.length - 2), lede: t("play_lede"), sea: { words: QUIZ_NAMES, count: 4 } }),
+  view.replaceChildren(pageHead(t("nav_play"), { band: "game", kicker: t("play_kicker", 2, PLAY.length - 2), lede: t("play_lede"), sea: { words: QUIZ_NAMES, count: 4 } }),
     el(`<h2 class="cards-head play-head">${t("play_games")}</h2>`), pictured(el(`<ul class="cards doors play-cards play-top play-games">${PLAY.slice(0, 2).map((page, k) => playCard(page, !k)).join("")}</ul>`)),
     el(`<h2 class="cards-head play-head">${t("play_explore")}</h2>`), pictured(el(`<ul class="cards doors play-cards play-more">${PLAY.slice(2).map((page) => playCard(page)).join("")}</ul>`)));
 }

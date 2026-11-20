@@ -353,7 +353,10 @@ its line); once the first route has
   jump), and where they cross is marked as the lines reach it, the lead's named with its year. The page shows its first source as soon as that source has come, not after every source, and its pairs as soon as
   theirs have come: the two lists below the first screen are asked for only then, each a skeleton until it lands (each
   word is read from a bucket of 64, so the lists cost as much again as the pairs).
-- **Play** ("Mainan" / "Games", one word for the section everywhere): two groups, each under its heading. "Main" /
+- **Play** ("Mainan" / "Games", one word for the section everywhere): its kicker says what there is ("2 permainan, 8
+  penjelajah" / "2 games, 8 explorers"); on a phone its head is a toy's short head and the quiz's card is set tighter
+  (its picture lower), so that the first game's card and its button are whole on a 390x844 screen (`games.mjs`). Two
+  groups, each under its heading. "Main" /
   "Play": the two games, the quiz leading on the deep, its picture large, "guess the number" beside it (from 900px);
   each game's card ends on what pressing it does, drawn as the primary button ("Mulai kuis", "Mulai menebak"), the
   whole card being the link. "Jelajah" / "Explore": the eight explorers of the data in three columns, the tide table
@@ -364,7 +367,13 @@ its line); once the first route has
   line that scrolls sideways on a phone) stand above it, and every other choice (the newsroom, the term, the kind, the
   filter, the sources past the main three: the first page's, the books, the web's news) is folded under one "Atur" /
   "Options" control (`options` in app.js), open with no control of its own from 900px; what a toy says about its
-  numbers stands under its first result. Where a figure tells something on hover, a tap tells it too.
+  numbers stands under its first result, except what a list's numbers and marks are, which stands in a line above it
+  ("Bergeser": the number is the shift measured against words of the same frequency, the source's flag and up stands
+  out, each ● another source that flags it). A list leads with words a reader recognises: a bare first name or a
+  fragment ("budi", "iii": a word of one part some source links to a person or to nothing more than itself, or of three
+  letters or fewer, and no name or abbreviation the games know) comes after the rest. A table fits its width or says
+  where it goes on: the tide table on a phone sets each name on a line of its own over its row, the years sharing the
+  whole width, never a column cut at the screen's edge. Where a figure tells something on hover, a tap tells it too.
   A game shows every word through one function (`shown` in deal.js), in its rounds, its evidence, its plates and the
   hub's pictures: an abbreviation in upper case whether or not it is a name (a part that is all consonants, or of a
   short hand list: "KPK", "PPKM", "IKN", "Mahfud MD"), a name with capitals ("Sandiaga Uno"; a name the data counts as
