@@ -316,7 +316,7 @@ language or a resize returns to what was shown.
 ## Pages
 
 - **Home**: hero on the deep, full height: the map of words as a night sea with one route sailed (below); headline
-  in display type; one field ("Ketik sebuah kata", whole in its field at 320px; the button beside it says it sails) and a few chips, their label above them from 900px (on a
+  in display type; one field ("Ketik kata", whole in its field at 320px; the button beside it says it sails) and a few chips, their label above them from 900px (on a
   phone a row that scrolls and fades at its right edge, about 30px of the next chip peeking out under the fade). What the reader needs in the first ten seconds is on the
   sea: a legend of three glyphs (a light and its height, a route and its ports, a light ringed: "Klik atau ketuk sebuah
 cahaya: katanya berlayar") in its sky, on a phone two (the route is named by its own note, so the ringed light takes
@@ -377,10 +377,14 @@ phone has none: there they are left out, `sky` in app.js, never on the headline)
 - **Play** ("Mainan" / "Games", one word for the section everywhere): its kicker says what there is, counted from its
   cards ("2 permainan, 7 penjelajah" / "2 games, 7 explorers": `CARDS` in address.js); on a phone its head is a toy's short head and the quiz's card is set tighter
   (its picture lower), so that the first game's card and its button are whole on a 390x844 screen (`games.mjs`). Two
-  groups, each under its heading. "Main" /
-  "Play": the two games, the quiz leading on the deep, its picture large, "guess the number" beside it (from 900px);
-  each game's card ends on what pressing it does, drawn as the primary button ("Mulai kuis", "Mulai menebak"), the
-  whole card being the link. "Jelajah" / "Explore": the seven explorers of the data in three columns, the tide table
+  groups, each under its heading, counted from the cards in words ("Dua permainan" / "Two games", "Tujuh penjelajah" /
+  "Seven explorers": no "Main" under "Mainan"). The two games, the quiz leading on the deep, its picture large, "guess
+  the number" beside it (from 900px), each its picture over its text and as tall as the other, so neither has an empty
+  band: the quiz's picture is one of its own "which year" questions from quiz.json, a different one each visit, its
+  words as large as their lines fit; guess the number's, its question in words over its hundred squares (a word of
+  public life, "survei", never a word of the law beside a name); no name in a picture is ever cut (one too long for its
+  column is left out). Each game's card ends on what pressing it does, drawn as the primary button ("Mulai kuis", "Mulai menebak"), the
+  whole card being the link. The seven explorers of the data in three columns, the tide table
   and the year posters two columns wide. Each card and each explorer's first line says what it alone does: the tide
   table, every name against its own best year in one table to scan; the race, a race the reader sets up between names
   or words of their choice. What moved is one explorer, one ranking with a switch at its top, "Kata" / "Nama" (words,

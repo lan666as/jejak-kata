@@ -5,6 +5,10 @@ const unit = {
   en: { books: "book pages", news: "news articles", abstracts: "abstracts", web: "web pages" },
 };
 const unitOf = (language, lens) => unit[language][lens.lens.split("-")[1]];
+/** A small count in words, as a heading says it ("Dua permainan"); a larger one in figures. */
+const counted = (words) => (n) => { const w = words[n] || String(n); return w.charAt(0).toUpperCase() + w.slice(1); };
+const countId = counted(["nol", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh"]);
+const countEn = counted(["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]);
 
 // Stories as their cards show them: the key number, the title and the teaser. The rest of each story (its intro,
 // what it cannot say, its scenes) is in story.js, which only a story's own page loads. `published`: the day of the
@@ -442,7 +446,7 @@ export const TEXT = {
     doors: "Masuk dari sini",
     table_open: "Buka tabelnya",
     sailing: (word) => `Berlayar: ${word}.`,
-    hero_ask: "Ketik sebuah kata",
+    hero_ask: "Ketik kata",
     hero_go: "Berlayar",
     nav_quiz: "Kuis",
     limits_title: "Yang tidak dapat dikatakan data ini",
@@ -538,7 +542,7 @@ export const TEXT = {
     map_demo: (w) => `Contoh: rute “${w}”. Pilih kata sendiri untuk menggantinya.`,
     quiz_log: "Pelayaranmu", quiz_tally: (r, n) => `${r} benar dari ${n}`, quiz_save: "Simpan skornya sebagai gambar", quiz_plate: (game, r, n) => `Kuis Jejak Kata, “${game}”: ${r} dari ${n} benar`,
     save_csv: "Unduh datanya (CSV)", copy_embed: "Salin kode sematan", embed_open: "Baca ceritanya di Jejak Kata",
-    play_more: "Mainan lain", play_lead: "Mulai dari sini", play_games: "Main", play_explore: "Jelajah", play_go_kuis: "Mulai kuis", play_go_tebak: "Mulai menebak", path_key: "rute kata ini: satu titik tiap masa",
+    play_more: "Mainan lain", play_lead: "Mulai dari sini", play_games: (n) => `${countId(n)} permainan`, play_explore: (n) => `${countId(n)} penjelajah`, play_go_kuis: "Mulai kuis", play_go_tebak: "Mulai menebak", path_key: "rute kata ini: satu titik tiap masa",
     not_found: "Kata ini tidak termasuk kata-kata tersering di sumber mana pun.",
     is_name: "Kata ini hampir selalu ditulis dengan huruf kapital dan tidak punya artikel di Wikipedia bahasa Indonesia, jadi dianggap nama diri yang bukan milik umum dan tidak ditampilkan.",
     method: `
@@ -855,7 +859,7 @@ export const TEXT = {
     map_demo: (w) => `An example: the route of “${w}”. Choose a word of your own to replace it.`,
     quiz_log: "Your voyage", quiz_tally: (r, n) => `${r} right of ${n}`, quiz_save: "Save your score as an image", quiz_plate: (game, r, n) => `Jejak Kata quiz, “${game}”: ${r} of ${n} right`,
     save_csv: "Download the data (CSV)", copy_embed: "Copy embed code", embed_open: "Read the story on Jejak Kata",
-    play_more: "More to play with", play_lead: "Start here", play_games: "Play", play_explore: "Explore", play_go_kuis: "Start the quiz", play_go_tebak: "Start guessing", path_key: "this word's route: a port for each period",
+    play_more: "More to play with", play_lead: "Start here", play_games: (n) => `${countEn(n)} game${n === 1 ? "" : "s"}`, play_explore: (n) => `${countEn(n)} explorer${n === 1 ? "" : "s"}`, play_go_kuis: "Start the quiz", play_go_tebak: "Start guessing", path_key: "this word's route: a port for each period",
     not_found: "This word is not among the most common words of any source.",
     is_name: "This word is almost always capitalised and has no article on Indonesian Wikipedia, so it is treated as a private name and not shown.",
     method: `

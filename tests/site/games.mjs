@@ -480,7 +480,9 @@ for (const [w, h, touch] of SIZES) {
   // (on a phone the head is short enough that the first game's card and its button are whole on the first screen; the
   // kicker says what there is)
   const hub = await p.evaluate(() => ({ card: Math.round(document.querySelector(".play-games .play-card").getBoundingClientRect().bottom), kicker: document.querySelector(".page-head .kicker")?.textContent }));
-  log(`hub at ${w}: ${touch ? "the first game card whole on the first screen, " : ""}the kicker says what there is`, (!touch || hub.card <= h) && /^2 permainan, 7 penjelajah$/.test(hub.kicker), `card ends at ${hub.card}px of ${h}; “${hub.kicker}”`);
+  const pics = await p.evaluate(async () => { await new Promise((r) => setTimeout(r, 800)); return { heads: [...document.querySelectorAll(".play-head")].map((n) => n.textContent), cut: [...document.querySelectorAll(".play-pic text, .play-note")].map((n) => n.textContent).filter((x) => x.includes("…")) }; });
+  log(`hub at ${w}: ${touch ? "the first game card whole on the first screen, " : ""}the kicker says what there is, the groups are counted (not “Main” under “Mainan”), no name in a card's picture cut`, (!touch || hub.card <= h) && /^2 permainan, 7 penjelajah$/.test(hub.kicker) && pics.heads.join("|") === "Dua permainan|Tujuh penjelajah" && !pics.cut.length,
+    `card ends at ${hub.card}px of ${h}; “${hub.kicker}”; ${pics.heads.join(" / ")}${pics.cut.length ? `; cut: ${pics.cut.join(", ")}` : ""}`);
   const toys = [];
   for (const toy of ["menempel", "lingkaran", "redaksi", "pasang", "balap", "tahun", "bergeser", "entitas"]) {
     await p.goto(base + "#/" + toy); await p.waitForTimeout(1500);

@@ -1851,42 +1851,54 @@ const peaksOf = (y) => Object.entries(y.share).map(([w, by]) => {
 const svgText = (x, y, text, cls = "", anchor = "start") => `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}"${cls ? ` class="${cls}"` : ""}${anchor === "start" ? "" : ` text-anchor="${anchor}"`}>${escape(String(text))}</text>`;
 /** Rows of names with a dot each on one scale, the first in the route's colour (menempel, bergeser). */
 const dotRows = (rows, W, H, value) => {
-  // The names keep a column of at most 128px, clear of the picture's left edge: a longer one is cut with an ellipsis.
-  const n = rows.length, pitch = H / n, L = Math.min(W * 0.55, 128, 18 + 6.6 * Math.max(...rows.map((r) => r.label.length))), R = 44, most = Math.max(...rows.map((r) => r.v)) * 1.04, fits = Math.floor((L - 18) / 6.6);
+  // The names keep a column of at most half the picture and a little, clear of its left edge; a name longer than that
+  // is left out, never cut.
+  const room = Math.floor((W * 0.55 - 18) / 6.6);
+  rows = rows.filter((r) => r.label.length <= room);
+  const n = rows.length, pitch = H / n, L = Math.min(W * 0.55, 18 + 6.6 * Math.max(...rows.map((r) => r.label.length))), R = 44, most = Math.max(...rows.map((r) => r.v)) * 1.04;
   return rows.map((r, k) => {
     const y = pitch * (k + 0.5), x = L + ((W - L - R) * r.v) / most;
-    return `<g class="in" style="--i:${k}">${svgText(L - 8, y + 4.5, r.label.length > fits ? r.label.slice(0, fits - 1).trimEnd() + "…" : r.label, k ? "" : "strong", "end")}<path class="line dotted" d="M${L} ${y}H${W - R}"/>
+    return `<g class="in" style="--i:${k}">${svgText(L - 8, y + 4.5, r.label, k ? "" : "strong", "end")}<path class="line dotted" d="M${L} ${y}H${W - R}"/>
       <circle class="${k ? "mute" : "on"}" cx="${x.toFixed(1)}" cy="${y}" r="5.5"/>${svgText(W - R + 8, y + 4.5, value(r.v), "soft")}</g>`;
   }).join("");
 };
 const PICTURES = {
-  // Of 100 pages naming the person that "tersangka" sticks to most, how many hold it.
+  // One question of the game as it asks it: of 100 pages naming the person a word of public life ("survei", polls:
+  // never a word of the law beside a name, deal.js CAVEAT) sticks to most, how many hold it; the question itself over
+  // the picture where the picture is tall enough (the hub, from 900px).
   tebak: ({ stick: s }, W, H) => {
-    const word = "tersangka", i = namesFor(s, word, 1500)[0], n = Math.round(s.share[word][i][TERM] / 10), c = Math.min(H, W * 0.5) / 10;
-    const cells = [...Array(100)].map((_, k) => `<rect class="in ${k < n ? "on" : "mute faint"}" style="--i:${Math.floor(k / 10)}" x="${((k % 10) * c).toFixed(1)}" y="${(Math.floor(k / 10) * c).toFixed(1)}" width="${(c * 0.82).toFixed(1)}" height="${(c * 0.82).toFixed(1)}" rx="${(c * 0.16).toFixed(1)}"/>`).join("");
-    const size = Math.min(H * 0.5, (W - 10 * c) * 0.42);
-    return { svg: `${cells}<text class="big" x="${(10 * c + 18).toFixed(1)}" y="${(10 * c * 0.62).toFixed(1)}" style="font-size:${size.toFixed(0)}px">${n}</text>${svgText(10 * c + 20, 10 * c * 0.62 + 22, "/ 100", "soft")}`,
-      note: `“${word}” · ${escape(shown(s.names[i]))} · Kompas ${ERAS_SHOWN[TERM]}` };
+    const word = "survei", i = namesFor(s, word, 1500).find((j) => PEOPLE.includes(s.names[j])), n = Math.round(s.share[word][i][TERM] / 10);
+    const size = 19, per = Math.floor(W / (size * 0.5)), lines = [""];
+    for (const w of t("guess_ask", shown(s.names[i], "name"), word).replace(/<[^>]+>/g, "").split(" ")) (lines.at(-1) + " " + w).trim().length > per ? lines.push(w) : (lines[lines.length - 1] = (lines.at(-1) + " " + w).trim());
+    const top = H >= 220 ? Math.ceil(lines.length * size * 1.25 + 18) : 0, c = Math.min(H - top, W * 0.5) / 10;
+    const asked = top ? `<text class="ask" style="font-size:${size}px">${lines.map((l, k) => `<tspan x="0" y="${(size * (1 + 1.25 * k)).toFixed(1)}">${escape(l)}</tspan>`).join("")}</text>` : "";
+    const cells = [...Array(100)].map((_, k) => `<rect class="in ${k < n ? "on" : "mute faint"}" style="--i:${Math.floor(k / 10)}" x="${((k % 10) * c).toFixed(1)}" y="${(top + Math.floor(k / 10) * c).toFixed(1)}" width="${(c * 0.82).toFixed(1)}" height="${(c * 0.82).toFixed(1)}" rx="${(c * 0.16).toFixed(1)}"/>`).join("");
+    const big = Math.min(H * 0.5, (W - 10 * c) * 0.42);
+    return { svg: `${asked}${cells}<text class="big" x="${(10 * c + 18).toFixed(1)}" y="${(top + 10 * c * 0.62).toFixed(1)}" style="font-size:${big.toFixed(0)}px">${n}</text>${svgText(10 * c + 20, top + 10 * c * 0.62 + 22, "/ 100", "soft")}`,
+      note: `“${word}” · ${escape(shown(s.names[i], "name"))} · Kompas ${ERAS_SHOWN[TERM]}` };
   },
-  // The quiz's own question, from the data, drawn as a picture of one and nothing to press: a year's own words as a
-  // line of words, "which year?", and four years as a line of figures, the year they belong to ticked and underlined.
-  kuis: ({ years: y, stick: s }, W, H) => {
-    const peaks = peaksOf(y).filter((x) => x.stand >= 2.5), count = (p) => peaks.filter((x) => x.p === p).length;
-    const p = y.years.map((_, i) => i).sort((a, b) => count(b) - count(a) || b - a)[0], words = peaks.filter((x) => x.p === p).map((x) => x.w);
-    const choices = [p, ...y.years.map((_, i) => i).filter((i) => i !== p).sort((a, b) => Math.abs(a - p) - Math.abs(b - p) || a - b).slice(0, 3)].sort((a, b) => a - b);
-    // (a name shown as a name: the names the newsrooms' counts know, and those of the tide tables)
-    const names = new Set([...s.names, ...Object.values(y.tide).flatMap((by) => Object.values(by).flat().map((r) => r.word))]);
-    let x = 0;
-    const said = words.slice(0, 5).map((w0, k) => {
-      const word = shown(w0, names.has(w0) ? "person" : undefined), w = word.length * 8.2, at = x;
-      x += w + 20;
-      return at + w > W ? "" : `<g class="in" style="--i:${k}">${k ? svgText(at - 12, 20, "·", "soft", "middle") : ""}${svgText(at, 20, word, "strong")}</g>`;
-    }).join("");
-    const ask = t("quiz_year_ask").split(/(?<=\.)\s+/).at(-1), base = H - 12, gap = Math.min(96, W / 4);
-    return { svg: said + `<text class="ask" x="0" y="${Math.round((28 + base - 24) / 2 + 9)}">${escape(ask)}</text>` + choices.map((c, k) => {
+  // The quiz's own question, one of its "which year" questions as the quiz deals it (quiz.json, a different one each
+  // visit), drawn as a picture of one and nothing to press: the year's own words, every one of them (names as names,
+  // deal.js `shown`), as lines of words, "which year?", and four years as a line of figures, the year they belong to
+  // ticked and underlined.
+  kuis: ({ quiz: Q, sample }, W, H) => {
+    const asked = Q.years.map((y) => ({ ...y, clue: y.clue.filter((w) => !marker(w)) })).filter((y) => y.clue.length >= 8), { p, clue } = asked[Math.floor(sample * asked.length)], P = Q.periods;
+    const choices = [p, ...P.map((_, i) => i).filter((i) => i !== p).sort((a, b) => Math.abs(a - p) - Math.abs(b - p) || a - b).slice(0, 3)].sort((a, b) => a - b);
+    // (the words as large as their lines fit over the question, each line laid out by the browser, " · " between words)
+    const base = H - 12, room = base - 76, words = clue.map((w) => shown(w, Q.words[w]?.kind)), wrap = (size) => {
+      const out = [[]];
+      let x = 0;
+      for (const w of words) { const wide = w.length * size * 0.47 + (out.at(-1).length ? size : 0); if (out.at(-1).length && x + wide > W) (out.push([]), (x = 0)); x += out.at(-1).length ? wide : w.length * size * 0.47; out.at(-1).push(w); }
+      return out;
+    };
+    const size = [24, 21, 18, 16].find((z) => wrap(z).length * z * 1.4 <= room) || 16, lines = wrap(size).slice(0, Math.max(1, Math.floor(room / (size * 1.4))));
+    const said = lines.map((l, k) => `<text class="in word" style="--i:${k};font-size:${size}px" x="0" y="${(size * (1 + 1.4 * k)).toFixed(1)}">${l.map((w, j) => `${j ? `<tspan class="soft" style="font-size:${size}px"> · </tspan>` : ""}${escape(w)}`).join("")}</text>`).join("");
+    const askAt = Math.round((size * 1.4 * lines.length + base) / 2 + 2);
+    const ask = t("quiz_year_ask").split(/(?<=\.)\s+/).at(-1), gap = Math.min(96, W / 4);
+    return { svg: said + `<text class="ask" x="0" y="${askAt}">${escape(ask)}</text>` + choices.map((c, k) => {
       const at = k * gap, right = c === p;
-      return `<g class="in" style="--i:${k + 5}">${svgText(at, base, `${right ? "✓ " : ""}${y.years[c]}`, right ? "word on" : "word off")}${right ? `<path class="on-line" d="M${at} ${base + 7}H${at + 58}" stroke-width="3"/>` : ""}</g>`;
-    }).join(""), note: `Kompas ${y.years[p]}` };
+      return `<g class="in" style="--i:${k + lines.length}">${svgText(at, base, `${right ? "✓ " : ""}${P[c]}`, right ? "word on" : "word off")}${right ? `<path class="on-line" d="M${at} ${base + 7}H${at + 58}" stroke-width="3"/>` : ""}</g>`;
+    }).join(""), note: `Kompas ${P[p]}` };
   },
   // The names "tersangka" sticks to most.
   menempel: ({ stick: s }, W, H) => {
@@ -1955,7 +1967,7 @@ const PICTURES = {
 function pictured(box) {
   const pics = [...box.querySelectorAll(".play-pic")];
   const fill = async () => {
-    const [stick, years, first] = await Promise.all([stickOf(0), json("years.json"), json(`${MAIN}/first.json`)]), d = { stick, years, first };
+    const [stick, years, first, quiz] = await Promise.all([stickOf(0), json("years.json"), json(`${MAIN}/first.json`), pics.some((pic) => pic.dataset.page === "kuis") ? json("quiz.json") : null]), d = { stick, years, first, quiz, sample: Math.random() };
     for (const pic of pics) {
       let width = 0;
       new ResizeObserver(() => {
@@ -2467,7 +2479,9 @@ async function homePage() {
   if (!hero.isConnected) return;
   if (drawn) moor(first);
   hero.querySelector(".hero-sea .chart").replaceWith(figure.node);
-  sky();
+  // (and again whenever one of them comes or changes size: the year shows only once a route sails)
+  const sized = new ResizeObserver(() => sky());
+  hero.querySelectorAll(".hero-key, .chart .when, h1").forEach((n) => sized.observe(n));
   const lit = arriving && drawn && figure.chart.arrive?.((n) => t("tally", thousands(n)));
   if (lit) hear("arrive");
   await figure.chart.drawn();
@@ -3074,8 +3088,8 @@ async function playPage() {
   // (what there is, counted from the cards: the games, then the explorers)
   const games = ["kuis", "tebak"], explorers = CARDS.filter((p) => !games.includes(p));
   view.replaceChildren(pageHead(t("nav_play"), { band: "game", kicker: t("play_kicker", games.length, explorers.length), lede: t("play_lede"), sea: { words: QUIZ_NAMES, count: 4 } }),
-    el(`<h2 class="cards-head play-head">${t("play_games")}</h2>`), pictured(el(`<ul class="cards doors play-cards play-top play-games">${games.map((page, k) => playCard(page, !k)).join("")}</ul>`)),
-    el(`<h2 class="cards-head play-head">${t("play_explore")}</h2>`), pictured(el(`<ul class="cards doors play-cards play-more">${explorers.map((page) => playCard(page)).join("")}</ul>`)));
+    el(`<h2 class="cards-head play-head">${t("play_games", games.length)}</h2>`), pictured(el(`<ul class="cards doors play-cards play-top play-games">${games.map((page, k) => playCard(page, !k)).join("")}</ul>`)),
+    el(`<h2 class="cards-head play-head">${t("play_explore", explorers.length)}</h2>`), pictured(el(`<ul class="cards doors play-cards play-more">${explorers.map((page) => playCard(page)).join("")}</ul>`)));
 }
 
 /** The method on one word the first page sails (`jokowi`, from its third year to its fourth: from governor to

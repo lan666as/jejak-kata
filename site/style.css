@@ -1407,6 +1407,10 @@ tr.row-tr:is(:hover, :focus-within) a.to-word { color: var(--link); text-decorat
   .play-top .play-card:not(.lead) { display: grid; grid-template: "title pic" auto "text pic" 1fr "text note" auto / minmax(0, 1fr) minmax(0, 1.1fr); column-gap: var(--s5); }
   .play-top .play-card:not(.lead) .play-pic { grid-area: pic; height: auto; min-height: 136px; }  /* the picture fills the card's height: no empty band over the note */ .play-top .play-card:not(.lead) .play-note { grid-area: note; margin: 0; }
   .play-top .play-card:not(.lead) .card-title { grid-area: title; } .play-top .play-card:not(.lead) .card-text { grid-area: text; }
+  /* (on the hub the two games stand side by side as two of a kind: each its picture over its text, as tall as the
+     other, so no band of either is empty) */
+  .play-games .play-card:not(.lead) { display: flex; flex-direction: column; justify-content: flex-end; }
+  .play-games .play-card:not(.lead) .play-pic { flex: 1; height: auto; min-height: 250px; margin-bottom: var(--s2); }
   .play-more { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: dense; }
   .play-more .wide { grid-column: span 2; } .play-more .wide.right { grid-column: 2 / span 2; }
 }
