@@ -203,11 +203,11 @@ void main() {
  * (`pick`; by touch a held sea names it at the first tap and chooses it at the second). Nothing is drawn while the
  * pointer is still; with reduced motion no lean, and the light is still named.
  */
-export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hold = false, most: carry = Infinity, names: named = Infinity, explore = false, controls = {}, pitch: tilted = null, fly = false, rung: from = 0, over = () => [], host = null }) {
+export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hold = false, most: carry = Infinity, names: named = Infinity, explore = false, keys = null, controls = {}, pitch: tilted = null, fly = false, rung: from = 0, over = () => [], host = null }) {
   const node = document.createElement("div");
   node.className = `chart night gl${explore ? " explore" : ""}`;
   const button = (k, text) => `<button type="button" data-k="${k}" aria-label="${controls[k] || text}" title="${controls[k] || text}">${text}</button>`;
-  node.innerHTML = `<canvas ${explore ? `tabindex="0" role="application"` : `role="img"`} aria-label="${alt}"></canvas><canvas aria-hidden="true"></canvas>`
+  node.innerHTML = `<canvas ${explore ? `tabindex="0" role="application"` : keys ? `tabindex="0" role="application" aria-describedby="${keys}"` : `role="img"`} aria-label="${alt}"></canvas><canvas aria-hidden="true"></canvas>`
     + `<div class="when" aria-hidden="true" hidden><b></b><span class="when-bar"><i></i></span><span class="when-ends"><span>${periods[0]}</span><span>${periods.at(-1)}</span></span></div><div class="tally" aria-hidden="true" hidden></div>`
     + (explore ? `<div class="zoom">${button("in", "+")}${button("out", "−")}${button("all", "⤢")}${button("turn", "↻")}<button type="button" data-k="above" aria-pressed="false">${controls.above || "⬒"}</button></div>` : "");
   const [canvas, names, when, tally] = node.children, year = when.firstElementChild;
@@ -740,6 +740,42 @@ export function nightSea({ chart, name, pick, periods, tip, label: alt = "", hol
   hand.addEventListener("pointercancel", up);
   // A click or a tap chooses the nearest light, a finger's within a larger reach (Safari's click says not which it was);
   // by touch a held sea names it first, and the next tap on it chooses it.
+  // With `keys` (the hero: the id of the line that says how), the sea is reached by Tab: the light nearest the middle
+  // of its open water is ringed and named, the arrows move the ring to the next light that way, Enter sails it.
+  if (keys && !explore) {
+    const said = node.appendChild(Object.assign(document.createElement("span"), { className: "hidden" }));
+    said.setAttribute("aria-live", "polite");
+    const lights = () => {
+      const keep = kept(), rise = RISE * (1 - settle()), out = [];
+      for (let k = 0; k < Math.min(n, NEAR); k++) {
+        const p = project(chart.x[k] / 1000, Math.max(0, chart.moved[k] ?? 0) * rise, chart.y[k] / 1000);
+        if (p && p[0] > pad[3] && p[0] < W - pad[1] && p[1] > pad[0] && p[1] < H - pad[2] && name(chart.words[k]) && !keep.some(([l, t, r, b]) => p[0] > l && p[0] < r && p[1] > t && p[1] < b)) out.push([k, p]);
+      }
+      return out;
+    };
+    const ring = (k) => (reveal(k), (said.textContent = k >= 0 ? name(chart.words[k]) : ""));
+    const toward = (from, [dx, dy]) => {
+      let best = -1, score = Infinity;
+      for (const [k, p] of lights()) {
+        const along = (p[0] - from[0]) * dx + (p[1] - from[1]) * dy, aside = Math.abs((p[0] - from[0]) * dy - (p[1] - from[1]) * dx);
+        if (k !== hovered && along > 4 && aside < along * 1.5 && along + 2 * aside < score) [best, score] = [k, along + 2 * aside];
+      }
+      return best;
+    };
+    const middle = () => lights().reduce((best, [k, p]) => { const d = Math.hypot(p[0] - (pad[3] + W - pad[1]) / 2, p[1] - (pad[0] + H - pad[2]) / 2); return d < best[1] ? [k, d] : best; }, [-1, Infinity])[0];
+    canvas.addEventListener("focus", () => canvas.matches(":focus-visible") && hovered < 0 && ring(middle()));
+    canvas.addEventListener("blur", () => ring(-1));
+    canvas.addEventListener("keydown", (e) => {
+      const arrow = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+      const from = hovered >= 0 && project(chart.x[hovered] / 1000, Math.max(0, chart.moved[hovered] ?? 0) * RISE * (1 - settle()), chart.y[hovered] / 1000);
+      const k = arrow && (from ? toward(from, arrow) : middle());
+      if (arrow) k >= 0 && ring(k);
+      else if ((e.key === "Enter" || e.key === " ") && hovered >= 0) pick(chart.words[hovered]);
+      else if (e.key === "Escape" && hovered >= 0) ring(-1);
+      else return;
+      e.preventDefault();
+    });
+  }
   hand.addEventListener("click", (e) => {
     if (dragged) return void (dragged = false);
     if (!open(e)) return;

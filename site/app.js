@@ -712,7 +712,7 @@ async function chartFigure(name, list, pick = (word) => visit(href("kata", word)
   let lens = null;
   // At night, with `sea` (sea.js), the chart is the 3D sea; where WebGL2 is not there, the night chart of chart.js.
   const given = { chart: first, name: (id) => (lens ? lens.words[id] : label.get(id)), pick: async (id) => pick((await meta).words[id]), periods: first.periods, tip, label: t("chart_keys"), night, over, host };
-  const deep = sea && sea({ ...given, ...(explore ? { explore, label: t("sea_keys"), controls: { in: t("zoom_in"), out: t("zoom_out"), all: t("zoom_all"), turn: t("sea_turn"), above: t("sea_above"), level: t("sea_level") } } : { label: t("sea_label") }) });
+  const deep = sea && sea({ ...given, ...(explore ? { explore, label: t("sea_keys"), controls: { in: t("zoom_in"), out: t("zoom_out"), all: t("zoom_all"), turn: t("sea_turn"), above: t("sea_above"), level: t("sea_level") } } : { label: t("sea_label"), keys: night ? "hero-keys" : null }) });
   const chart = deep || seaChart(given);
   if (height && !(deep && explore)) chart.node.style.height = height;  // the map's sea is as tall as its band (style.css)
   // The rest of the islands join the chart with the lens, or (`eager`, the hero's arrival) as soon as they come.
@@ -2094,9 +2094,10 @@ async function embedPage(slug, k = "0", j = "0") {
  */
 async function homePage() {
   const down = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>`;
-  // What a light and a route are, in two glyphs, beside the sea; the dive is signposted by the tide line it ends on.
+  // What a light and a route are, and that a light is chosen by a click, a tap or the keys, in three glyphs, beside the sea; the dive is signposted by the tide line it ends on.
   const key = `<div class="hero-key"><p><svg viewBox="0 0 28 22" width="28" height="22" aria-hidden="true"><path class="water" d="M3 19h22"/><path d="M14 9v10" stroke-dasharray="2 2"/><circle class="light" cx="14" cy="6" r="3.5"/></svg>${t("hero_key_light")}</p>
-    <p><svg viewBox="0 0 28 22" width="28" height="22" aria-hidden="true"><path class="route" d="M3 16C9 4 17 18 25 7"/><circle class="port" cx="3" cy="16" r="2"/><circle class="port" cx="14" cy="11" r="2"/><circle class="port ship" cx="25" cy="7" r="3"/></svg>${t("hero_key_route")}</p></div>`;
+    <p class="route-key"><svg viewBox="0 0 28 22" width="28" height="22" aria-hidden="true"><path class="route" d="M3 16C9 4 17 18 25 7"/><circle class="port" cx="3" cy="16" r="2"/><circle class="port" cx="14" cy="11" r="2"/><circle class="port ship" cx="25" cy="7" r="3"/></svg>${t("hero_key_route")}</p>
+    <p id="hero-keys"><svg viewBox="0 0 28 22" width="28" height="22" aria-hidden="true"><circle class="light" cx="14" cy="11" r="3.5"/><circle class="ring" cx="14" cy="11" r="8"/></svg><span>${t("hero_key_pick")} <span class="keys">${t("hero_key_keys")}</span></span></p></div>`;
   const glossed = (w) => (gloss(w) ? ` title="${escape(gloss(w))}" aria-label="${escape(`${w}: ${gloss(w)}`)}"` : "");
   const hero = el(`<section class="hero" aria-labelledby="hero-title"><div class="hero-track"><div class="hero-sea"><div class="chart night"></div>${key}</div></div>
     <div class="hero-text"><h1 id="hero-title">${t("title")}</h1><p class="hero-lede">${t("hero_lede")}</p><div class="hero-ask"></div>

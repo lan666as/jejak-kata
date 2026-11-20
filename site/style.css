@@ -1000,6 +1000,10 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .hero-key svg { flex: none; fill: none; stroke: var(--on-deep-2); stroke-width: 1.5; stroke-linecap: round; }
 .hero-key .light { fill: var(--light-5); stroke: none; } .hero-key .route { stroke: var(--route-on-deep); stroke-width: 2.5; } .hero-key .port { fill: var(--route-on-deep); stroke: none; }
 .hero-key .ship { fill: var(--on-deep); }
+.hero-key .ring { stroke: var(--on-deep); stroke-width: 2; }
+/* the keys are said once the sea has the keyboard; until then only to a screen reader (the sea is described by this line) */
+.hero-key .keys { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.hero:has(canvas:focus-visible) .hero-key .keys { position: static; display: block; width: auto; height: auto; clip-path: none; white-space: normal; color: var(--on-deep); }
 .dives .hero-down .no-dive, html:not(.dives) .hero-down .dive-cue { display: none; }
 .tide-mark { flex: none; fill: none; stroke: var(--route-on-deep); stroke-width: 2; stroke-linecap: round; }
 .hero-down { flex: none; padding: 0 var(--s3); color: var(--on-deep); font-size: var(--t-small); white-space: nowrap; border-color: var(--line-deep-2); border-radius: var(--pill); }
@@ -1008,6 +1012,9 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
   .hero-lede { margin-bottom: var(--s4); font-size: var(--t-small); line-height: var(--l-small); }
   .hero-now .gloss { display: inline; } .hero-now .gloss::before { content: " · "; }
   .hero-key { right: calc(8.5rem + 2 * var(--gutter)); }
+  /* two lines is all the sky above the text holds: the route is named by its own note on the sea, so here the second
+     line says that a light is tapped */
+  .hero-key .route-key { display: none; }
 }
 .hero-down:hover { color: var(--on-deep); text-decoration: none; background: var(--deep-2); }
 /* while the sound waits for the reader's first gesture (on by default; a browser lets it start only then), a note under

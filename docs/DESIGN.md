@@ -280,7 +280,9 @@ language or a resize returns to what was shown.
 - **Home**: hero on the deep, full height: the map of words as a night sea with one route sailed (below); headline
   in display type; one field ("Ketik kata, lihat rutenya") and a few chips, their label above them from 900px (on a
   phone a row that scrolls and fades at its right edge, about 30px of the next chip peeking out under the fade). What the reader needs in the first ten seconds is on the
-  sea: a legend of two glyphs (a light and its height, a route and its ports) in its sky; once the first route has
+  sea: a legend of three glyphs (a light and its height, a route and its ports, a light ringed: "Klik atau ketuk sebuah
+cahaya: katanya berlayar") in its sky, on a phone two (the route is named by its own note, so the ringed light takes
+its line); once the first route has
   sailed, two notes drawn like marginalia (from the light that moved most in the open water a line down to the water,
   "higher: moved more"; from the route's middle a leader, "jokowi, 2012–2024: a port each year", on two lines where
   one would pass the gutter), which fade when
@@ -413,6 +415,10 @@ text has been painted. What is on screen is the data and nothing else:
   (within 24px). The sea takes the finger; the page scrolls from the band around it. No name is drawn under the buttons
   or the year; the names are what the reader reads here, so they stand at full strength (12px, on a halo of the deep),
   where a held sea names quietly.
+- **Keys on the hero**: the sea is the first stop of Tab after the header (`keys` in sea.js). It takes the one focus
+  ring, drawn inside its edge, and rings and names the light nearest the middle of its open water; the arrows move the
+  ring to the nearest light that way, Enter sails it, Escape lets it go; the key's third line then says so in a fourth
+  ("Di laut: panah memilih cahaya, Enter melayarkannya"), which is also what describes the sea to a screen reader.
 - **Touch on the hero**: a swipe up or down scrolls the page and a pinch zooms it, as anywhere; a finger moved sideways
   turns the view the few degrees a mouse does and lets it settle back; a tap sails the nearest word.
 - **The hand**, on every sea (the hero, the heads, a story's cover and stages, the footer, the map): it leans a few
