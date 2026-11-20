@@ -30,9 +30,13 @@ Colour roles (light / dark). Names used by the figures (`--sea --shoal --paper -
 | `--link` | `#0f5c8c` | `#7fc0ea` | links in running text |
 
 A figure's series take `--cat-1..8` in that order (plate.js): magenta (`--route`), orange (`--route-2`), aqua, yellow,
-blue, green, violet, red, each with its own light and dark step, checked for colour-blind separation of neighbours on
-each mode's paper, and each at least 3:1 on the paper it is read on (by day the aqua is a deep teal, `#0f8a73`, and the
-yellow a dark gold, `#b07a00`: the brighter ones stay for the night). Their names on a plate are set in ink beside a dot of their colour, never in the colour itself.
+blue, green, violet, plum, each with its own light and dark step, defined once in style.css (the night steps as
+`--cat-N-night`, which the dark scheme and a story's stage both take). Seven publishers share one strip, so every two of
+the first seven, not only neighbours, are held apart (`tests/site/stories.mjs`): by 14 in OKLab (x100) for normal
+vision and by 6 under protanopia, deuteranopia and tritanopia, and each at least 3:1 on the ground it is read on. By
+night they are apart in lightness as well as hue (a pale yellow, a light aqua and a lilac over a mid blue and a dark
+green); by day all must be dark enough for the paper, so the yellow is an olive gold, `#7a6500`, and the green a deep
+one. Their names on a plate are set in ink beside a dot of their colour, never in the colour itself.
 
 At night (the home hero) the islands take `--light-0..5`, dim to bright by how far a word moved; control edges on
 the deep use `--line-deep-2` (3:1 against `--deep`).

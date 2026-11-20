@@ -211,5 +211,39 @@ for (const slug of slugs) {
   problems.slice(0, 6).forEach((p) => console.log("     " + p));
   await page.close();
 }
+// The series colours (--cat-1..7: a strip of seven publishers) by day on the paper and by night on a story's stage:
+// each 3:1 on its ground, every two apart by 14 in OKLab (x100) for normal vision and by 6 under protanopia,
+// deuteranopia and tritanopia (Machado et al. 2009, full severity). And a strip of seven on a 320px phone: its legend
+// wraps inside the plate.
+{
+  const lin = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  const lum = (hex) => lin(hex).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0), ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+  const SEE = { protan: [[0.152286, 1.052583, -0.204868], [0.114503, 0.786281, 0.099216], [-0.003882, -0.048116, 1.051998]], deutan: [[0.367322, 0.860646, -0.227968], [0.280085, 0.672501, 0.047413], [-0.01182, 0.04294, 0.968881]],
+    tritan: [[1.255528, -0.076749, -0.178779], [-0.078411, 0.930809, 0.147602], [0.004733, 0.691367, 0.3039]] };
+  const lab = (rgb) => { const [l, m, q] = [[0.4122214708, 0.5363325363, 0.0514459929], [0.2119034982, 0.6806995451, 0.1073969566], [0.0883024619, 0.2817188376, 0.6299787005]].map((r) => Math.cbrt(r.reduce((s, k, i) => s + k * rgb[i], 0)));
+    return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * q, 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * q, 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * q]; };
+  const seen = (hex, kind) => (kind ? SEE[kind].map((r) => Math.min(1, Math.max(0, r.reduce((s, k, i) => s + k * lin(hex)[i], 0)))) : lin(hex));
+  const apart = (a, b, kind) => 100 * Math.hypot(...lab(seen(a, kind)).map((v, i) => v - lab(seen(b, kind))[i]));
+  const page = await browser.newPage({ viewport: { width: 320, height: 640 } });
+  await page.goto(base + "#/cerita/oknum/0/1"); await page.waitForTimeout(4000);
+  const hex = (c) => "#" + c.match(/\d+/g).slice(0, 3).map((v) => (+v).toString(16).padStart(2, "0")).join("");
+  const got = await page.evaluate(() => {
+    const read = (node) => { const cs = getComputedStyle(node); return [1, 2, 3, 4, 5, 6, 7].map((k) => { const d = document.createElement("i"); d.style.color = cs.getPropertyValue(`--cat-${k}`); node.append(d); const c = getComputedStyle(d).color; d.remove(); return c; }); };
+    const stage = document.querySelector(".stage-figure"), plate = stage.querySelector(".plate svg").getBoundingClientRect();
+    const names = [...stage.querySelectorAll(".plate svg text")].filter((t) => ["Kompas", "Bisnis"].includes(t.textContent)).map((t) => t.getBoundingClientRect().right);
+    return { day: read(document.querySelector("#view")), night: read(stage), paper: getComputedStyle(document.body).backgroundColor, overflow: Math.max(...names) - plate.right, names: names.length };
+  });
+  const problems = [];
+  for (const [when, colours, ground] of [["by day", got.day.map(hex), "#fbfcf8"], ["by night", got.night.map(hex), "#06121f"]]) {
+    colours.forEach((c, i) => ratio(c, ground) < 3 && problems.push(`${when} --cat-${i + 1} ${c} is ${ratio(c, ground).toFixed(2)}:1 on ${ground}`));
+    colours.forEach((a, i) => colours.slice(i + 1).forEach((b, j) => [[undefined, 14], ["protan", 6], ["deutan", 6], ["tritan", 6]].forEach(([kind, least]) =>
+      apart(a, b, kind) < least && problems.push(`${when} --cat-${i + 1} and --cat-${i + j + 2} only ${apart(a, b, kind).toFixed(1)} apart (${kind || "normal"})`))));
+  }
+  if (got.names < 2 || got.overflow > 0) problems.push(`the legend at 320px: ${got.names} names found, ${got.overflow.toFixed(0)}px past the plate`);
+  total += problems.length;
+  console.log(`${problems.length ? "FAIL" : "ok  "} series colours apart for normal and colour-blind vision, 3:1 on their ground; a seven-publisher legend inside a 320px plate`);
+  problems.slice(0, 8).forEach((p) => console.log("     " + p));
+  await page.close();
+}
 console.log(`${total ? `${total} PROBLEMS` : "stories hold"} (${((Date.now() - started) / 1000).toFixed(0)} s)`);
 await done(total);

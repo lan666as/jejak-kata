@@ -22,7 +22,10 @@
   --lift: 0 18px 40px -16px rgb(6 18 31 / .38), 0 2px 6px rgb(6 18 31 / .12);
   /* a figure's series, up to eight, in this order (plate.js): checked for colour-blind separation on the paper of each mode;
      each at least 3:1 on the paper (the aqua and the yellow as a deep teal and a dark gold by day) */
-  --cat-1: var(--route); --cat-2: var(--route-2); --cat-3: #0f8a73; --cat-4: #b07a00; --cat-5: #2a78d6; --cat-6: #008300; --cat-7: #6250d6; --cat-8: #e34948; --cat-9: var(--ink-2);
+  --cat-1: var(--route); --cat-2: var(--route-2); --cat-3: #0f9aa8; --cat-4: #7a6500; --cat-5: #2a4fd6; --cat-6: #0a5a10; --cat-7: #a070f0; --cat-8: #5a1050; --cat-9: var(--ink-2);
+  /* the same eight by night (the dark scheme and a story's stage, which is the deep in both): apart in lightness as
+     well as hue, so that neighbours stay apart for the colour-blind too (tests/site/stories.mjs measures them) */
+  --cat-1-night: #ea5aa6; --cat-2-night: #d98a2b; --cat-3-night: #5fd4c4; --cat-4-night: #f2e27a; --cat-5-night: #3d7fe0; --cat-6-night: #2f8a3e; --cat-7-night: #c3a6ff; --cat-8-night: #935e7c;
   /* names the figures read (chart.js, plate.js), defined from the roles */
   --sea: var(--chart); --shoal: var(--chart-3); --paper: var(--chart-2);
 
@@ -66,7 +69,7 @@
     --person: #3987e5; --organisation: #199e70; --place: #c98500; --other: #8f96a0;
     --seq-0: #1d3346; --seq-1: #104281; --seq-2: #1c5cab; --seq-3: #2a78d6; --seq-4: #6da7ec; --seq-5: #cde2fb;
     --lift: 0 18px 40px -12px rgb(0 0 0 / .6), 0 2px 6px rgb(0 0 0 / .4);
-    --cat-3: #199e70; --cat-4: #c98500; --cat-5: #3987e5; --cat-6: #0ca30c; --cat-7: #9085e9; --cat-8: #e66767;
+    --cat-3: var(--cat-3-night); --cat-4: var(--cat-4-night); --cat-5: var(--cat-5-night); --cat-6: var(--cat-6-night); --cat-7: var(--cat-7-night); --cat-8: var(--cat-8-night);
   }
 }
 @media (min-width: 900px) { :root { --gutter: var(--s6); } }
@@ -777,7 +780,7 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
    plate.js reads them here, and saves the image on paper), on a panel of the deep that the sea under the stages
    (below) shows through only faintly: its text keeps 4.5:1 over the brightest frame of the sea */
 .stage-figure { --paper: color-mix(in srgb, var(--deep) 92%, transparent); --line: var(--line-deep); --ink: #e8eff0; --ink-2: #b3c3cc; --ink-3: #8497a3;
-  --cat-1: #ea5aa6; --cat-2: #d98a2b; --cat-3: #199e70; --cat-4: #c98500; --cat-5: #3987e5; --cat-6: #0ca30c; --cat-7: #9085e9; --cat-8: #e66767; --cat-9: #b3c3cc; }
+  --cat-1: var(--cat-1-night); --cat-2: var(--cat-2-night); --cat-3: var(--cat-3-night); --cat-4: var(--cat-4-night); --cat-5: var(--cat-5-night); --cat-6: var(--cat-6-night); --cat-7: var(--cat-7-night); --cat-8: var(--cat-8-night); --cat-9: #b3c3cc; }
 .stage-figure .plate svg { max-height: var(--fig, calc(var(--stage-h) / 2)); border-color: transparent; border-radius: var(--r2); }
 /* the sea under the stages (app.js, storySea): held under them while they pass, seen around each figure's panel; the
    stages are then clear, and the graticule is the sea's own */
