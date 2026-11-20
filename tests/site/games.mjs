@@ -3,8 +3,11 @@
 // says (`write` writes it anew); many games of each kind are dealt, and it fails on a repeat or a near-duplicate within a
 // game (a topic, a word or a name, twice), a replay that repeats a question before its deck is spent, a question whose
 // answer is not among its choices or with two equal choices, a question under its margin (each margin checked again
-// here from the raw numbers, not from deal.js's verdict), a string missing in either language, and a "guess the number"
-// that one fixed guess would win.
+// here from the raw numbers, not from deal.js's verdict), a mark against the difficulty rule (hard over a ratio of 2,
+// easy with a little-known name), marks that fall, "which peaked first" between two of unlike sorts or without a real
+// peak, what was dealt not kept across page loads, a word shown wrongly (shown()), an Indonesian word with no English
+// gloss, a string missing in either language, the points or ranks not as given, and a "guess the number" that one
+// fixed guess would win.
 // Then one browser pass per game at 390 and 1440 that plays a whole game (the quiz by keyboard alone at 1440, by taps at
 // 390): the first action on screen without scrolling, the evidence drawn after each answer, focus on the control that
 // goes on, that control in the same place every round, the plate saved, no console errors; and on every toy, its first

@@ -77,7 +77,7 @@ export const stripLeast = (title, rows, width, series = [], pitch = null) => {
 /** The paper, the title broken into lines, the note and the site's name; `body(top)` draws between them. At least
  *  `least` tall. */
 function sheet(spec, width, height, body, least = 0) {
-  const { W, narrow, size, lines, top } = heading(spec.title, width), H = Math.round(Math.max(250, least, height || W * 0.62));
+  const { W, narrow, size, lines, top } = heading(spec.title, width), H = Math.round(Math.max(240, least, height || W * 0.62));
   const ink = css("--ink"), soft = css("--ink-2"), paper = css("--paper");
   const node = document.createElement("div");
   node.className = "plate";

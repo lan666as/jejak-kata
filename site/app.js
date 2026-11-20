@@ -2536,9 +2536,9 @@ function scorePlate(title, results, rounds, width = 640) {
  *  refused, and the game plays the same without it). */
 const VISIT = {}, VERSIONS = {}, DEALT = "dealt";
 const dealtLog = () => { try { const all = JSON.parse(kept("localStorage", DEALT) || "{}"); return all && typeof all === "object" ? all : {}; } catch { return {}; } };
-function visitDecks(game, made, lists) {
+function visitDecks(game, poolOf, made) {
   if (VISIT[game]) return VISIT[game];
-  const d = made(), v = (VERSIONS[game] = version(lists)), was = dealtLog()[game];
+  const pool = poolOf(), d = made(pool), v = (VERSIONS[game] = version(Array.isArray(pool) ? [pool] : Object.values(pool))), was = dealtLog()[game];
   try { if (was?.v === v) keptDecks(d, was.st); } catch {}
   return (VISIT[game] = d);
 }
@@ -2660,7 +2660,7 @@ function reveal(ev, W, answer, periods) {
  *  each answer a line said, and the evidence drawn; at the end the score as a plate to save, and its rank. */
 async function quizPage() {
   const Q = await json("quiz.json"), periods = Q.periods;
-  visitDecks("quiz", () => decks(pools(Q), Math.random), Object.values(pools(Q)));
+  visitDecks("quiz", () => pools(Q), (pool) => decks(pool, Math.random));
   view.replaceChildren(pageHead(t("nav_quiz"), { ...fromPlay(), lede: t("quiz_lede"), sea: { words: QUIZ_NAMES } }));
   const { board, box, go, log, tally } = gameBoard();
   view.append(board);
@@ -2764,8 +2764,8 @@ async function quizPage() {
 /** Guess the number: of 100 pages naming someone, how many also hold a word. Six rounds dealt from the visit's decks
  *  (site/deal.js: two each of a low, a middle and a high true value), then a score to share. */
 async function guessPage() {
-  const s = await stickOf(0), pool = guessPool(s);
-  visitDecks("guess", () => guessDecks(pool, Math.random), [pool]);
+  const s = await stickOf(0);
+  visitDecks("guess", () => guessPool(s), (pool) => guessDecks(pool, Math.random));
   view.replaceChildren(pageHead(t("play_tebak"), { ...fromPlay(), lede: t("guess_lede"), sea: { words: GUESS_WORDS } }));
   const { board, box, go, log, tally } = gameBoard();
   view.append(board);

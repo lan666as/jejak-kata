@@ -362,7 +362,7 @@ input[type="range"] { accent-color: var(--route); min-height: var(--tap); margin
 :is(.chips, .tabs)::before { left: calc(-1 * var(--s1)); margin-right: calc(-12px - var(--s2)); background: linear-gradient(to right, color-mix(in srgb, var(--ink) 30%, transparent), transparent); }
 :is(.chips, .tabs)::after { right: calc(-1 * var(--s1)); margin-left: calc(-12px - var(--s2)); background: linear-gradient(to left, color-mix(in srgb, var(--ink) 30%, transparent), transparent); }
 .more-left::before, .more-right::after { opacity: 1; }
-.chips.wrap { flex-wrap: wrap; overflow: visible; }
+.word .chips.wrap { flex-wrap: wrap; overflow: visible; }  /* (a word's page: its source chips in sight wrap; a toy keeps its one line, so its result begins on the first screen) */
 
 /* word lists: a chip per word */
 .words { display: flex; flex-wrap: wrap; gap: var(--s2); margin: var(--s2) 0 var(--s4); padding: 0; list-style: none; }
@@ -971,6 +971,7 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
    end is reached (app.js, read) */
 .read-cue { margin: 0; font-size: var(--t-meta); font-weight: 600; color: var(--on-deep-2); }
 .read-cue[hidden], .stage:not(.reading) .read-cue { display: none; }
+.caption:has(> .more-button) > .read-cue { display: none; }  /* (side by side, its control under the text: the shadow alone, the room for text kept) */
 .read-cue.done { visibility: hidden; }
 .stage.reading .caption:has(.read-cue:not([hidden], .done)) .turns { box-shadow: 0 10px 10px -8px rgb(0 0 0 / .55); }
 .scenes .stage.reading .turn .title { font-size: var(--t-h3); line-height: var(--l-h3); }  /* (a sheet is for reading: its title in a heading's size) */
