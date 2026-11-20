@@ -405,7 +405,7 @@ its line); once the first route has
   short hand list: "KPK", "PPKM", "IKN", "Mahfud MD"), a name with capitals ("Sandiaga Uno"; a name the data counts as
   a word, as `AS_NAME` in glossary.js writes it), a common word in lower case; the data keeps all in lower case. In
   English every Indonesian word a game shows as a clue, a choice or an answer carries what it means in brackets
-  ("didesak (urged)": text.js `GLOSS`, else glossary.js), a name only where it names a programme or an event;
+  ("didesak (urged)": text.js `GLOSS`, else glossary.js; a gloss holds no brackets of its own, so they never nest), a name only where it names a programme or an event;
   `games.mjs` fails on a word without. The quiz's card (the lead) pictures its own question as a picture, with
   nothing that looks pressable: a year's words as a line of words, "Tahun berapa?", and four years as a line of
   figures, the right one ticked and underlined in the route.
@@ -432,16 +432,17 @@ its line); once the first route has
   (`oneThing` and `fragment` in deal.js, the list gathered in `tests/site/quiz-data.mjs`): no word twice; of a word and
   a part of it ("ebola", "virus ebola") the whole; of two names of one Wikipedia article ("foke", "fauzi bowo"), of an
   abbreviation and the words it is made of ("psbb", "prokes"), of a term and its meaning in English ("pengampunan
-  pajak", "tax amnesty"), of two forms of a word ("vaksin", "divaksin") the first; no bare first name or fragment (the
+  pajak", "tax amnesty"), of two forms of a word ("vaksin", "divaksin") the first; of a body and its head, or a place and its event, with the rest the same (`SAME_HEAD`: "menteri pendidikan nasional", "kementerian pendidikan nasional"; "stadion kanjuruhan", "tragedi kanjuruhan"); no bare first name or fragment (the
   filter the lists use: "uno", "mario", "salihin", or a part of a term the data does not count whole, `PARTS`: "gugus").
+  Each word of a year's clue is on at least `FAME.clue` (150) Kompas pages in all, 2011-2024 (below that it is a name only that month's reporter knew: "cikeusik", "adang daradjatun", "sirte"; a year left with fewer than eight such words is not asked, as 2011).
   A word of one part that mostly comes inside one longer name that year is given whole ("akil" as "akil mochtar"); a
   word taken from past the first ten only where the games can say it in English and no other year has it. Every kind once where it can, none more than twice, the loanword
   question and the newsroom question once at most (`CAP`). Each question's difficulty is read from the data in one
   place (`DIFFICULTY` in deal.js) and shown in the round's line as three marks and a word ("mudah", "sedang", "sulit"):
-  a comparison by the ratio of the larger share to the next, hard from the margin to 2, middling to 4, easy from 4 (so
+  a comparison by the ratio of the larger share to the next, hard from the margin to 2, middling to 4, easy from 4 (which year is read the same way, by how many times its words stand above the nearest year within three: a list four times above its neighbours is not "sulit"; so
   no question marked "sulit" compares shares more than twice apart); "about the same" middling to hard; who by the pages
-  naming the name that year (hard at 150, easy from 6,000), and easy wherever no name offered shares more than one of
-  the words (an institution's own work, "memprediksi" for BMKG: only one choice can fit); which year by how far its words stand above the years near
+  naming the name that year (hard at 150, easy from 6,000), and easy only where no name offered shares more than one of
+  the words (an institution's own work, "memprediksi" for BMKG: only one choice can fit; where one shares two, never "mudah"); which year by how far its words stand above the years near
   it; which peaked first by the years between the peaks (hard at two or three, middling at four or five), easy only
   from six years apart and where both words are widely known (`FAME.wide`, 1,000 Kompas pages a year), else at least
   middling; and fame for every kind that names a person or a body (as answer, choice or clue): where the least known
@@ -457,7 +458,7 @@ its line); once the first route has
   offered beside the answer lie within three of it where the data allows and never all on one side; the names offered
   beside a "who" are of its own sort (a person among people of their own time and country, a party among parties:
   `PERSON_KIND`, `BODY_KIND`), in the news that year, and each kept company by at least one of the words shown
-  (`MARGIN.whoLeast`: a choice none of them fit gives the answer away; where there are not three such names, it is not
+  (`MARGIN.whoShared`: none shares more than a fifth of the words shown, rounded down, two of eleven; `MARGIN.whoLeast`: a choice none of them fit gives the answer away; where there are not three such names, it is not
   asked), so the evidence shows a real count for each. "Up, down or about the same" is asked only of a word on 150
   pages or more in both years (`MARGIN.trendPages`; with fewer the change is noise), "about the same" on 600
   (`samePages`), and its evidence says the rule: "“nyaris sama” berarti berubah kurang dari 15%" (the number from
@@ -467,7 +468,7 @@ its line); once the first route has
   keys, the games played, the names and words shown with the game that last showed them: deal.js `keep` and `kept`,
   written by the page to localStorage under a version of the questions, so that new data starts afresh; under 60 kB;
   nothing where storage is refused, and the game plays the same without it). A kind whose deck is spent sits out the
-  next game rather than start over at once, where the other kinds can fill it. After each answer a line is said, never
+  next game rather than start over at once, where the other kinds can fill it; a round no deck can fill (a deck's last card holding a name the game has shown) takes a card dealt longest ago (`early`) rather than leave the game a round short. After each answer a line is said, never
   the same one twice running, from pools that fit the question (text.js, the owner's wording): right, "Tepat." /
   "Betul." / "Kena." for any kind, "Ingatanmu bagus." too for "which year" and "who", the editor's praise too on a hard
   round of four choices; wrong, "Bukan. Jawabannya ..." / "Meleset. Yang benar: ...", "Ingatan memang suka menipu ..."
@@ -475,7 +476,7 @@ its line); once the first route has
   a name, "naik" in lower case, a common word in quotation marks, in English with what it means: “korupsi”
   (corruption)), and the evidence of exactly what was asked is drawn small in the plates' inks: the shares as marks on
   one scale (a row each; the three newsrooms in their colours; its labels at two significant digits, as few as keep
-  them apart), for "who" how many of the words shown kept each name offered company, or a line over the years (a
+  them apart, but the newsrooms' own with one decimal as the line above them says it: "10,5", not "11%"; 12px at least on a 390px screen, drawn at its own size), for "who" how many of the words shown kept each name offered company, or a line over the years (a
   word's, or a year's words together) with the years asked about marked, drawn in along its length (a cut with reduced
   motion). On a phone a round and its answer, evidence included, fit one screen above the bar (the page is brought to
   the round only where its answer would lie under the bar). The caution "sharing a page is not being accused" is shown
@@ -500,14 +501,14 @@ its line); once the first route has
   for the reader: until one is, the readout's place between − and + holds the invitation ("Geser, ketuk, ..."), never a
   dash, and the lock waits, set by a press or a drag on the track (the nearest stop), the arrow keys (a stop; Page keys
   five), or − and + (44px). Points: round(100 x max(0, 1 - |guess - truth| / max(10, 1.5 x truth))): 100 for the
-  truth, and each step off costs 10 for a small number, less for a large one (a guess within 2 always scores at least
+  truth, and each step off costs 10 for a number up to 6, less for a larger one (a guess within 2 always scores at least
   80; no one fixed guess averages 65%), as the rule says inside the card under the question until the first guess is
   locked. The answer is not simply shown: its mark sails (`--d-leg`) from the reader's guess to the truth
   along the scale, drawing its wake in the route, so how far off the guess was is a distance one sees travelled (a cut
   with reduced motion); then, each on its own line, a line that follows the points (90 or more, 60 or more, 25 or
-  more, less; a far miss said by its direction, "Jauh di atas. ..." or "Jauh di bawah. ...", saying what the number is,
-  never what the reader remembered), the numbers (the guess, the truth, the points), the context (pages counted; who has
-  the most of that word, or, where that is the name asked, so said plainly with the next after it; the least only where
+  more, less; an exact guess said so, "Tepat."; a far miss said by its direction, "Tebakanmu terlalu tinggi." or "Tebakanmu terlalu rendah.",
+  never what the number is or what the reader remembered), the numbers (the guess, the truth, the points), the context (pages counted; who has
+  the most of that word, or, where that name was the comparison less often than the next after it this visit, the next, said as second most (`guess_second`), so that one name is not leaned on; where the most is the name asked, so said plainly with the next after it; the least only where
   it adds something: not the name asked, not named already this game, and nearer the truth than the most) and the link
   on. A round of 60 points or more is a filled port; the rank at the end by the share of the points (80%
   and more, 55%, 30%, less).

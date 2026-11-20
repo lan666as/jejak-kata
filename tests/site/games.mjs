@@ -4,7 +4,7 @@
 // game (a topic, a word or a name, twice), a replay that repeats a question before its deck is spent, a question whose
 // answer is not among its choices or with two equal choices, a question under its margin (each margin checked again
 // here from the raw numbers, not from deal.js's verdict), a mark against the difficulty rule (hard over a ratio of 2,
-// easy with a little-known name), marks that fall, "which peaked first" between two of unlike sorts or without a real
+// easy with a little-known name; a year hard over words more than twice above its neighbours), marks that fall, "which peaked first" between two of unlike sorts or without a real
 // peak, what was dealt not kept across page loads, a word shown wrongly (shown()), an Indonesian word with no English
 // gloss, a string missing in either language, the points or ranks not as given, and a "guess the number" that one
 // fixed guess would win.
@@ -35,7 +35,7 @@ log("every kind can be dealt", KINDS.every((k) => pool[k].length >= 10), KINDS.f
 // beside a person, nothing the law does to someone (LAW_ACTS): Anas Urbaningrum's never "terlibat" or "menerima".
 { const { bare, article, gloss } = clueRules(), bad = [];
   for (const y of Q.years) {
-    y.clue.forEach((a, i) => { if (fragment(a, bare)) bad.push(`${P[y.p]}: “${a}” is a fragment`); y.clue.slice(i + 1).forEach((b) => oneThing(a, b, article, gloss) && bad.push(`${P[y.p]}: “${a}” and “${b}” are one thing`)); });
+    y.clue.forEach((a, i) => { if ((W[a]?.share || []).reduce((t, v, q) => t + v * Q.units[q], 0) < FAME.clue) bad.push(`${P[y.p]}: “${a}” is on under ${FAME.clue} Kompas pages in all`); if (fragment(a, bare)) bad.push(`${P[y.p]}: “${a}” is a fragment`); y.clue.slice(i + 1).forEach((b) => oneThing(a, b, article, gloss) && bad.push(`${P[y.p]}: “${a}” and “${b}” are one thing`)); });
   }
   for (const [n, { said }] of Object.entries(Q.who)) for (const [p, list] of Object.entries(said)) {
     if (new Set(list).size !== list.length) bad.push(`${n} ${P[p]}: a word twice`);
@@ -43,7 +43,7 @@ log("every kind can be dealt", KINDS.every((k) => pool[k].length >= 10), KINDS.f
     if (odd.length) bad.push(`${n} ${P[p]}: ${odd.join(", ")}`);
   }
   const anas = Object.values(Q.who["anas urbaningrum"]?.said || {}).flat();
-  log("every clue list names each thing once, by a whole name, and no “who” list accuses", !bad.length && anas.length && !anas.some((w) => ["terlibat", "menerima", "diduga"].includes(w)), bad.slice(0, 6).join("; ") || `Anas Urbaningrum: ${[...new Set(anas)].join(", ")}`); }
+  log("every clue list names each thing once, by a whole name, of words on at least " + FAME.clue + " Kompas pages in all (a body and its head, a place and its event are one thing), and no “who” list accuses", !bad.length && oneThing("menteri pendidikan nasional", "kementerian pendidikan nasional") && oneThing("stadion kanjuruhan", "tragedi kanjuruhan") && !oneThing("menteri pendidikan", "kementerian keuangan") && anas.length && !anas.some((w) => ["terlibat", "menerima", "diduga"].includes(w)), bad.slice(0, 6).join("; ") || `Anas Urbaningrum: ${[...new Set(anas)].join(", ")}`); }
 
 /** A question's margin, from the raw numbers: what is wrong with it, or "". */
 function margin(q) {
@@ -98,7 +98,7 @@ function margin(q) {
     for (const side of [-1, 1]) if (may.some((r) => Math.sign(r - p) === side && Math.abs(r - p) <= 2 * MARGIN.yearNear) && !offered.some((r) => Math.sign(r - p) === side)) return `every year offered on one side of ${q.answer}: ${q.choices}`;
   }
   if (q.kind === "who") {
-    const p = P.indexOf(q.ask[1]), clash = q.choices.filter((c) => c !== q.answer).find((c) => (Q.who[c]?.said[p] || []).filter((x) => q.clue.includes(x)).length > MARGIN.whoShared);
+    const p = P.indexOf(q.ask[1]), clash = q.choices.filter((c) => c !== q.answer).find((c) => (Q.who[c]?.said[p] || []).filter((x) => q.clue.includes(x)).length > Math.floor(MARGIN.whoShared * q.clue.length + 1e-9));
     if (clash) return `${clash} shares the clue of ${q.answer}`;
     if (pages(q.answer, p) < MARGIN.whoPages) return "too few pages";
     // (every name offered in the news that year, and of the answer's own sort: a person among people of their time, a
@@ -125,7 +125,22 @@ function hardness(q) {
   const e = q.ev, ratio = (v) => { const s = [...v].sort((a, b) => b - a); return s[0] / s[1]; };
   const r = q.kind === "freq" || q.kind === "resmi" || q.kind === "room" ? ratio(e.items.map((i) => i.v)) : q.kind === "trend" && q.answer !== "same" ? ratio(e.marks.map((p) => e.series[0].share[p])) : null;
   if (q.tier === 2 && r !== null && r > 2) return `marked hard at a ratio of ${r.toFixed(2)}`;
+  // (a year: the ten words' share in it over their highest in a year within three of it, read as any ratio is: none marked
+  // hard stands more than twice above its neighbours, none marked easy less than four times: "IKN, Rafah, Gibran, Gaza,
+  // makan siang gratis" is not hard)
+  if (q.kind === "year") {
+    const sum = (r) => q.clue.reduce((a, w) => a + (W[w]?.share[r] || 0), 0), p = P.indexOf(q.answer), rest = P.map((_, r) => r).filter((r) => r !== p && sum(r) * MARGIN.yearRatio <= sum(p));
+    const near = [...rest].sort((a, b) => Math.abs(a - p) - Math.abs(b - p)), within = near.filter((r) => Math.abs(r - p) <= MARGIN.yearNear), rivals = within.length >= 3 ? within : near.slice(0, 3), r = sum(p) / Math.max(...rivals.map(sum));
+    if (q.tier === 2 && r > 2) return `year ${q.answer} marked hard, its words ${r.toFixed(1)} times above the nearest year`;
+    if (q.tier === 0 && r < 4) return `year ${q.answer} marked easy, its words ${r.toFixed(1)} times above the nearest year`;
+  }
   const names = [...new Set([...q.topics, ...q.choices.map(String), ...(q.clue || []), ...(q.n ? [q.n] : [])])].filter((w) => PEOPLE.includes(w) || BODIES.includes(w) || ["person", "organisation"].includes(W[w]?.kind));
+  // (who: easy only where no name offered shares more than one of the words shown: "memeriksa, mengusut, menindak" fits the KPK
+  // and the police alike)
+  if (q.kind === "who" && q.tier === 0) {
+    const p = P.indexOf(q.ask[1]), likes = q.choices.filter((c) => c !== q.answer).map((c) => [c, (Q.who[c]?.said[p] || []).filter((x) => q.clue.includes(x)).length]).filter(([, n]) => n >= 2);
+    if (likes.length) return `marked easy, but ${likes.map(([c, n]) => `${c} shares ${n} of its ${q.clue.length} words`).join(", ")}`;
+  }
   const little = names.filter((w) => fameOf(w) < FAME.known);
   if (q.tier === 0 && little.length) return `marked easy with ${little.map((w) => `${w} (${Math.round(fameOf(w))} pages a year)`).join(", ")}`;
   return "";
@@ -138,7 +153,7 @@ for (const seed of [1, 2, 3]) {
   for (let g = 0; g < 100; g++) {
     const game = deal(d, rng, P), topics = new Set(), keys = new Set();
     if (game.length !== ROUNDS) games.short++;
-    [...game].sort((a, b) => a.turn - b.turn).forEach((q) => seen[q.kind].push(q.key));  // (in the order the decks dealt them)
+    [...game].sort((a, b) => a.turn - b.turn).forEach((q) => !q.early && seen[q.kind].push(q.key));  // (in the order the decks dealt them; not a card dealt early, rather than a game a round short)
     game.forEach((q, i) => {
       const where = `seed ${seed} game ${g} round ${i} ${q.key}`;
       games.dealt[q.kind]++;
@@ -201,7 +216,7 @@ const reload = (st, seed) => kept(decks(pool, seeded(seed)), st && JSON.parse(JS
     if (spent.length && room >= ROUNDS) (spentAt++, game.some((q) => spent.includes(q.kind)) || rested++);
     st = keep(d);
     size = Math.max(size, JSON.stringify(st).length);
-    [...game].sort((a, b) => a.turn - b.turn).forEach((q) => asked[q.kind].push(q.key));
+    [...game].sort((a, b) => a.turn - b.turn).forEach((q) => !q.early && asked[q.kind].push(q.key));
   }
   for (const k of KINDS) { const n = pool[k].length; for (let a = 0; a < asked[k].length; a += n) { const part = asked[k].slice(a, a + n); if (new Set(part).size !== part.length) repeats.push(`${k} within ${n}`); } }
   let again = 0, all = 0;
@@ -209,6 +224,13 @@ const reload = (st, seed) => kept(decks(pool, seeded(seed)), st && JSON.parse(JS
     for (let g = 0; g < 5; g++) { const d = reload(kept_, 300 + 7 * v + g), shownNow = new Set(deal(d, seeded(800 + 7 * v + g), P).flatMap(shownIn)); kept_ = keep(d); all += shownNow.size; shownNow.forEach((w) => (again += before.has(w), before.add(w))); } }
   log("kept across page loads: no question again before its deck is spent, a spent kind sits out the next game where the others fill it (9 times in 10 at least), a visit's names go to the back, under 60 kB kept",
     !repeats.length && again <= all / 100 && rested >= 0.9 * spentAt && spentAt >= 10 && size < 60000, `${repeats.slice(0, 3).join(", ") || "no early repeat"}; ${rested} of ${spentAt} spent kinds sat out; ${again} of ${all} names and words again within a visit of five; ${size} characters kept`); }
+// A name does not come round in "which peaked first" again and again: 32 names make its 134 pairs (each name in up to 13), so
+// over 50 visits of five games, each loaded afresh as the page loads, a name of one game's peak questions is in another game
+// of its visit's in at most 2 in 100 of those shown.
+{ let all = 0, again = 0, per = {};
+  for (let v = 0; v < 50; v++) { let kept_ = null; const before = new Set();
+    for (let g = 0; g < 5; g++) { const d = reload(kept_, 1300 + 7 * v + g), names = deal(d, seeded(1800 + 7 * v + g), P).filter((q) => q.kind === "peak").flatMap((q) => q.topics); kept_ = keep(d); all += names.length; names.forEach((n) => (before.has(n) && (again++, (per[n] = (per[n] || 0) + 1)), before.add(n))); } }
+  log("a name comes back in “which peaked first” within a visit at most 2 in 100 times", again <= all / 50, `${again} of ${all} names shown${again ? `: ${Object.entries(per).map(([n, c]) => `${n} ${c}`).join(", ")}` : ""}`); }
 { // (a version of other data is let go: the page compares deal.js's version of the questions; here, what a deck does with
   // keys it does not know: nothing)
   const rng = seeded(11), d = kept(decks(pool, rng), { games: 3, seen: [["x", 1]], decks: { year: { dealt: ["year:1999", 7], given: 5 } } });
@@ -226,6 +248,10 @@ const reload = (st, seed) => kept(decks(pool, seeded(seed)), st && JSON.parse(JS
   POINTED.forEach((w) => words.add(w));
   const bare = [...words].filter((w) => typeof w === "string" && !["up", "down", "same", ...OUTLET_NAMES].includes(w) && !isName(w, W[w]?.kind) && !GLOSS[w]?.en && !GAME_GLOSS[w] && !NAME_GLOSS[w] && !loan.has(w) && !IN_ENGLISH.includes(w));
   log("in English every Indonesian word a game can show has its gloss", !bare.length, `${bare.length} without: ${bare.slice(0, 12).join(", ")}`); }
+
+// A gloss is put in brackets by the games ("dilaporkan (reported to the police)"): none holds brackets of its own, or they nest.
+{ const nested = [...Object.entries(GAME_GLOSS), ...Object.entries(NAME_GLOSS), ...Object.entries(GLOSS).map(([k, v]) => [k, v.en])].filter(([, g]) => /[()]/.test(g)).map(([k, g]) => `${k}: ${g}`);
+  log("no gloss holds brackets of its own (the games bracket it: one level only)", !nested.length, nested.slice(0, 6).join("; ")); }
 
 // Guess the number: 300 games in one visit.
 const stick = JSON.parse(readFileSync(new URL("../../site/data/id-web-eras-kompas/stick.json", import.meta.url)));
@@ -297,7 +323,7 @@ log("points as given (round(100 x max(0, 1 - |guess - truth| / max(10, 1.5 x tru
   [[8, 5], [2, 6], [5, 1], [6, 2]].map(([g, v]) => `guess ${g}, truth ${v}: ${points(g, v)} points`).join("; "));
 
 // Every string the games use, in both languages.
-const KEYS = ["said_right", "said_right_memory", "said_right_hard", "said_close", "said_wrong", "said_wrong_memory", "said_streak", "said_near", "said_far_above", "said_far_below", "said_rank", "quiz_tier", "ask_room", "quiz_who_ask", "guess_numbers", "guess_counted", "guess_least", "guess_top", "guess_next", "guess_break", "guess_unset", "guess_less", "guess_more_one", "guess_of", "ask_freq", "ask_peak", "ask_resmi", "ask_room", "ask_trend", "trend_up", "trend_down", "trend_same",
+const KEYS = ["said_right", "said_right_memory", "said_right_hard", "said_close", "said_wrong", "said_wrong_memory", "said_streak", "said_near", "said_exact", "guess_second", "said_far_above", "said_far_below", "said_rank", "quiz_tier", "ask_room", "quiz_who_ask", "guess_numbers", "guess_counted", "guess_least", "guess_top", "guess_next", "guess_break", "guess_unset", "guess_less", "guess_more_one", "guess_of", "ask_freq", "ask_peak", "ask_resmi", "ask_room", "ask_trend", "trend_up", "trend_down", "trend_same",
   "room_era", "ev_freq", "ev_peak", "ev_room", "ev_trend", "ev_year", "ev_who", "caveat", "quiz_status", "quiz_streak", "quiz_keys", "quiz_plate_all", "guess_context", "next_toy",
   "played_best", "played_once", "quiz_year_ask", "quiz_who_ask", "quiz_tally", "quiz_save", "quiz_log", "quiz_next", "quiz_share", "guess_ask", "guess_lock", "guess_score",
   "guess_more", "guess_done", "guess_rule", "try_label", "guess_share", "copy_score", "copied", "again", "next", "nav_quiz", "play_tebak", "play_kuis", "quiz_lede", "guess_lede", "guess_yours"];
@@ -311,20 +337,21 @@ const OWN = {
     said_streak: ["Tiga beruntun. Jangan-jangan kamu wartawan."], quiz_who_ask: ["Kata-kata ini paling sering menemani satu nama di berita Kompas X. Nama yang mana?"],
     ask_room: ["Kompas, Tempo, atau Tribunnews: siapa paling sering menulis “X” di berita tentang X?"],
     said_near: ["Nyaris sempurna.", "Dekat.", "Lumayan, tapi meleset."],
-    said_far_above: ["Jauh di atas. Angkanya lebih kecil daripada kesannya."],
-    said_far_below: ["Jauh di bawah. Angkanya lebih besar daripada dugaanmu."],
-    guess_rule: ["Tepat: 100 poin. Tiap meleset satu angka, hilang 10 poin; untuk angka besar, lebih longgar."],
+    said_exact: ["Tepat."], said_far_above: ["Tebakanmu terlalu tinggi."],
+    said_far_below: ["Tebakanmu terlalu rendah."],
+    guess_rule: ["Tepat: 100 poin. Untuk angka sampai 6, tiap selisih satu angka memotong 10 poin; untuk angka lebih besar, kurang dari itu."],
     guess_top: ["Tak ada nama lain yang lebih sering sehalaman dengan “X”."] },
   en: { said_right: ["Spot on.", "Right.", "Got it."], said_right_memory: ["Good memory."], said_right_hard: ["Right, and no peeking.", "Correct. Not every editor would get that."],
     said_wrong: ["No. It was X.", "Missed. The answer: X."], said_wrong_memory: ["Memory plays tricks. It was X."], said_close: ["So close. X."],
     said_streak: ["Three in a row. Are you a reporter?"], quiz_who_ask: ["These words kept one name company in Kompas news in X. Which name?"],
     ask_room: ["Kompas, Tempo or Tribunnews: which writes “X” most often in stories about X?"],
     said_near: ["Almost exact.", "Close.", "Not bad, but off."],
-    said_far_above: ["Far above. The number is smaller than it seems."],
-    said_far_below: ["Far below. The number is bigger than you guessed."],
-    guess_rule: ["Exact: 100 points. Each step off costs 10; for large numbers it is more lenient."],
+    said_exact: ["Exact."], said_far_above: ["Your guess was too high."],
+    said_far_below: ["Your guess was too low."],
+    guess_rule: ["Exact: 100 points. For a number up to 6, each step off costs 10 points; for a larger one, fewer."],
     guess_top: ["No other name shares a page with “X” more often."] },
 };
+log("the rule line is true for every number: 10 a step up to 6, under 10 above, and an exact guess is said exact", [1, 2, 3, 4, 5, 6].every((v) => points(v + 1, v) === 90 && points(v + 3, v) === 70) && [12, 40, 100].every((v) => points(v + 1, v) > 90) && points(8, 7) >= 90 && points(7, 7) === 100 && TEXT.id.said_exact === "Tepat." && TEXT.en.said_exact === "Exact." && !TEXT.id.said_near.includes("Tepat.") && !TEXT.en.said_near.includes("Exact."));
 const said = (v) => [].concat(v).map((x) => (typeof x === "function" ? x("X", "X") : x));
 const off = Object.entries(OWN).flatMap(([l, keys]) => Object.entries(keys).filter(([k, list]) => JSON.stringify(said(TEXT[l][k])) !== JSON.stringify(list)).map(([k]) => `${l}.${k}`));
 log("the reactions and asks are worded as given", !off.length && TEXT.en.ask_trend("w", 1, 2) === "“w”, from 1 to 2: up, down, or about the same?" && ["Arsip berjalan", "Baru bangun tidur"].every((x) => TEXT.id.said_rank.includes(x)) && !JSON.stringify(said(TEXT.id.said_wrong)).includes("Belum") && !JSON.stringify(said(TEXT.en.said_wrong)).includes("Not yet"), off.join(", "));

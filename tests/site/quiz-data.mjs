@@ -6,7 +6,7 @@ import { STORIES } from "../../site/story.js";
 import { GUESS_WORDS } from "../../site/address.js";
 import { FEATURED, SHOWCASE, GLOSS } from "../../site/text.js";
 import { GAME_GLOSS, NAME_GLOSS, IN_ENGLISH } from "../../site/glossary.js";
-import { PEOPLE, BODIES, SENSITIVE, ACCUSING, LAW_ACTS, MARGIN, marker, fragment, bareSet, oneThing, isName } from "../../site/deal.js";
+import { PEOPLE, BODIES, SENSITIVE, ACCUSING, LAW_ACTS, MARGIN, FAME, marker, fragment, bareSet, oneThing, isName } from "../../site/deal.js";
 import { OUTLETS } from "../../site/scenes.js";
 
 const DATA = new URL("../../site/data/", import.meta.url).pathname, MAIN = "id-web-news-kompas", ERA = 2;
@@ -40,6 +40,8 @@ export function quizData() {
   // "salihin"). A word of one part that, that year, mostly comes as a part of one longer name or term ("gugus" in
   // "gugus tugas", "rajasa" in "hatta rajasa") is given as that whole.
   const { bare, article, gloss } = clueRules(), share = (w, p) => (isEntry(w) ? of("words", index.get(w))?.share[p] || 0 : 0);
+  // (a clue word a general reader knows: on at least FAME.clue Kompas pages in all the years, deal.js)
+  const total = (w) => (isEntry(w) ? (of("words", index.get(w))?.share || []).reduce((s, v, p) => s + v * meta.units[p], 0) : 0), known = (w) => total(w) >= FAME.clue;
   const wholes = new Map();
   for (const w of meta.words) if (w.includes(" ") && !hidden.has(index.get(w))) for (const part of w.split(" ")) (wholes.get(part) || wholes.set(part, []).get(part)).push(w);
   const whole = (w, p) => { if (w.includes(" ")) return w; const best = (wholes.get(w) || []).map((x) => [x, share(x, p)]).sort((a, b) => b[1] - a[1])[0]; return best && best[1] >= 0.5 * share(w, p) ? best[0] : w; };
@@ -54,7 +56,7 @@ export function quizData() {
       let w = whole(meta.words[i], p);
       if (w !== meta.words[i] && (PEOPLE.includes(w) || BODIES.includes(w))) continue;  // ("rajasa", of "hatta rajasa": a part of a name asked elsewhere)
       if (w !== meta.words[i] && !welcome(w)) w = meta.words[i];
-      if (marker(w) || fragment(w, bare) || !isEntry(w) || (k >= 10 && (!welcome(w) || elsewhere(w, p)))) continue;
+      if (marker(w) || fragment(w, bare) || !isEntry(w) || !known(w) || (k >= 10 && (!welcome(w) || elsewhere(w, p)))) continue;
       const at = clue.findIndex((x) => oneThing(x, w, article, gloss));
       if (at < 0) (clue.push(w), k >= 10 && filled.add(w));
       else if (w.split(" ").length > clue[at].split(" ").length && w.includes(clue[at])) clue[at] = w;  // (the whole for its part: "virus ebola" for "ebola")

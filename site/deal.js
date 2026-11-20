@@ -24,7 +24,7 @@ export const MARGIN = {
   peakSides: 2,
   roomPages: 300,  // which newsroom: each of the three names the name on at least this many pages (stick.json's own rule, app.js STUCK_PAGES)
   whoPages: 150,   // who: the name is on at least this many pages of the year whose verbs are shown
-  whoShared: 3,    // who: no other choice shares more than this many of the eleven words shown in that year (else two answers fit) ...
+  whoShared: 0.2,  // who: no other choice shares more than this share of the words shown in that year, rounded down (two of eleven, one of nine or fewer: the verbs a body and another do alike are two or three of seven, and then two answers fit) ...
   whoLeast: 1,     // ... and every other choice shares at least one (a choice none of the words fit gives the answer away)
   yearRatio: 1.5,  // which year: in every other year offered, the ten words together stand at most 1/1.5 of their year's share
   yearNear: 3,     // ... and the years offered lie within three of it where the data allows (never all on one side of it where both sides have one)
@@ -64,6 +64,8 @@ export const ACCUSING = ["terlibat", "menerima", "diduga", "dituduh", "terbukti"
 /** ... and what the law does to someone, left out beside a person (beside a body that enforces the law it is that body's
  *  work, and stays). */
 export const LAW_ACTS = ["memeriksa", "menetapkan", "menangkap", "menahan", "mengusut", "menyelidiki", "mendalami", "menyita", "menggeledah", "menuntut", "melaporkan", "diperiksa"];
+/** The first parts that make two entries one thing when the rest is the same ("menteri X", "kementerian X"; "stadion kanjuruhan", "tragedi kanjuruhan"). */
+export const SAME_HEAD = [["menteri", "kementerian"], ["stadion", "tragedi"], ["physical", "social"]];
 /** A bare first name or a fragment, which a list leads without and a clue never is: a word of one part that some
  *  source links to an article of a person, or to one of nothing more than itself ("susilo", "uno", "mario": `bare`, from
  *  every source's names), or of three letters or fewer ("ruf", "iii"); never a name or abbreviation the games know. */
@@ -77,6 +79,8 @@ export function oneThing(a, b, article = () => "", gloss = () => "") {
   if (a === b) return true;
   const pa = a.split(" "), pb = b.split(" "), inside = (x, y) => y.length > x.length && y.some((_, i) => x.every((p, j) => y[i + j] === p));
   if (inside(pa, pb) || inside(pb, pa)) return true;
+  // (a body and its head, a place and its event: "menteri pendidikan nasional", "kementerian pendidikan nasional"; the same rest, the first parts of one pair)
+  if (pa.length > 1 && pa.length === pb.length && pa.slice(1).join(" ") === pb.slice(1).join(" ") && SAME_HEAD.some((h) => h.includes(pa[0]) && h.includes(pb[0]))) return true;
   const [aa, ab] = [article(a), article(b)];
   if ((aa && aa === ab) || (aa && aa.toLowerCase() === b) || (ab && ab.toLowerCase() === a)) return true;
   // (one made of the first letters of the other's parts, in order: "psbb", "prokes" of "protokol kesehatan")
@@ -143,13 +147,18 @@ export const GUESS_DEAL = [2, 2, 2, 1, 0, 0];
  * - "about the same": middling to hard, harder the nearer the two are to the 15% the margin allows;
  * - which peaked first: by the years between the two peaks, hard at two or three, middling at four or five, easy only
  *   from six years and only where both words are widely known (FAME.wide): else at least middling;
- * - who: by how many pages name the name in that year, hard at 150 (the margin) and easy from 6,000;
+ * - who: by how many pages name the name in that year, hard at 150 (the margin) and easy from 6,000, but never easy where
+ *   a name offered shares two of the words (that is, it is easy only where none shares more than one);
  * - which year: by how distinctive its words are, their share in that year over their highest share in any year
- *   within three of it, hard at the margin (1.5) and easy from 30 times;
+ *   within three of it, as a comparison of two shares is read: hard from the margin (1.5) to 2, middling to 4, easy from 4
+ *   (so no year marked hard has words that stand more than twice above its neighbours', and a list that stands four times
+ *   above every year near it is not hard);
+ * - a year's clue words are each on at least FAME.clue (150) Kompas pages in all, 2011-2024 (a word of one episode, and
+ *   so of one year, is on a few hundred or less: below 150 it is a name only a reporter of that month knows);
  * - and fame, for every kind that names a person or a body (as answer, choice or clue): where the least known of them
  *   is named on fewer than FAME.known Kompas pages a year (2011-2024 on average), the question is at least middling.
  */
-export const FAME = { known: 400, wide: 1000 };
+export const FAME = { known: 400, wide: 1000, clue: 150 };
 // (a measure read through its knots, [value, difficulty], in log steps for a ratio or a count, straight for years)
 const through = (x, knots, log = true) => {
   const f = (v) => (log ? Math.log(v) : v), k = knots.findIndex(([v]) => x <= v);
@@ -163,7 +172,9 @@ export const DIFFICULTY = {
   same: (r) => through(r, [[1, 0.5], [MARGIN.same, 1]]),
   peak: (gap, both) => Math.max(through(gap, [[MARGIN.peakGap, 1], [3, 2 / 3 + 1e-9], [4, 2 / 3 - 1e-9], [6, 1 / 3 - 1e-9], [8, 0]], false), both >= FAME.wide ? 0 : 0.5),
   who: (pages) => through(pages, [[MARGIN.whoPages, 1], [6000, 0]]),
-  year: (distinct) => through(distinct, [[MARGIN.yearRatio, 1], [30, 0]]),
+  // (the ten words' share in their year over their highest in a year within three: a ratio like any other, so one scale; the
+  // years' own ratios run from 1.6 to 4.3, which the old scale of 1.5 to 30 read as hard throughout, even a list of words only that year had)
+  year: (distinct) => DIFFICULTY.ratio(distinct),
   /** ... and the fame floor: `fames`, the pages a year of each person or body the question names. */
   rated: (d, fames = []) => (fames.length && Math.min(...fames) < FAME.known ? Math.max(d, 0.5) : d),
 };
@@ -251,7 +262,7 @@ export function pools(Q) {
     const variants = Object.entries(Q.who[n].said).map(([p, said]) => ({ p: +p, said })).filter(({ p, said }) => said.length >= 5 && W[n] && pages(n, p) >= MARGIN.whoPages)
       .map(({ p, said }) => {
         const shared = (m) => (Q.who[m].said[p] || []).filter((x) => said.includes(x)).length;
-        const news = who.filter((m) => m !== n && Q.who[m].said[p] && W[m] && pages(m, p) >= MARGIN.whoPages && shared(m) <= MARGIN.whoShared && shared(m) >= MARGIN.whoLeast);
+        const news = who.filter((m) => m !== n && Q.who[m].said[p] && W[m] && pages(m, p) >= MARGIN.whoPages && shared(m) <= Math.floor(MARGIN.whoShared * said.length + 1e-9) && shared(m) >= MARGIN.whoLeast);
         const same = news.filter((m) => sortOf(m) === sortOf(n)), others = same.length >= 3 || PEOPLE.includes(n) ? same : news.filter((m) => BODIES.includes(m));
         // (its difficulty is rated again when its choices are drawn, by the least known of them: finish)
         return at(DIFFICULTY.rated(DIFFICULTY.who(pages(n, p)), fames([n])), { p, said, others, near: others.filter((m) => shared(m) >= 2), answer: n, m: DIFFICULTY.who(pages(n, p)), fame: Object.fromEntries([n, ...others].map((m) => [m, fame(m)])),
@@ -359,7 +370,8 @@ export function finish(kind, g, tier, rng, P, fresh = () => 1) {
     const picked = near.length >= 3 ? near : (tier === 0 && pick(known, 3).length >= 3 ? pick(known, 3) : pick(v.others, 3));
     if (picked.length < 3) return null;
     // (where no name offered shares more than one of the words, only the answer fits them: easy, whatever its pages)
-    const choices = shuffle([v.answer, ...picked], rng), d = DIFFICULTY.rated(Math.max(...picked.map((m) => v.counts[m])) <= 1 ? Math.min(v.m, 0.2) : v.m, choices.map((m) => v.fame[m]));
+    // (and where a name offered shares two or more, the question is never easy: those words fit it too)
+    const choices = shuffle([v.answer, ...picked], rng), d = DIFFICULTY.rated(Math.max(...picked.map((m) => v.counts[m])) <= 1 ? Math.min(v.m, 0.2) : Math.max(v.m, 1 / 3), choices.map((m) => v.fame[m]));
     return { ...base, d: +d.toFixed(3), tier: tierOf(d), ask: ["quiz_who_ask", P[v.p]], clue: v.said, choices,
       ev: { type: "marks", unit: "count", of: v.said.length, period: P[v.p], items: choices.map((m) => ({ label: m, v: v.counts[m] })) } };
   }
@@ -483,20 +495,22 @@ export function deal(d, rng, P) {
   for (const k of [...TIERS.keys()].sort((a, b) => TIERS[b] - TIERS[a] || a - b)) {
     const tier = TIERS[k];
     let q = null;
-    for (const spent of [false, true]) {
-      // (a round no kind left can fill: a spent deck comes round again, rather than a game a round short)
-      if (spent) { if (q) break; for (const x of all) if (!d[x].fresh.length) d[x].refill(); }
+    for (const spent of [false, true, "early"]) {
+      // (a round no kind left can fill: a spent deck comes round again, rather than a game a round short; and where
+      // that is not enough, as when a deck's last card holds a name this game has shown, one dealt longest ago, early)
+      if (spent) { if (q) break; if (spent === true) for (const x of all) if (!d[x].fresh.length) d[x].refill(); }
       const which = [order[k], ...shuffle((spent ? all : kinds).filter((x) => x !== order[k]), rng)].filter((x) => x && (count[x] || 0) < capOf(x));
       // (its own tier first, then the next; only a tier that leaves the game an order of rising marks with no kind
       // twice running)
       for (const off of [0, 1, 2]) for (const level of LEVELS) for (const kind of which) for (const at of [tier - off, tier + off].filter((x, i, l) => x >= 0 && x <= 2 && l.indexOf(x) === i)) {
         if (q || !ordered([...game, { kind, tier: at, d: 0 }])) continue;
         const welcome = (w) => !used.has(w) && age(w) >= level;
-        const g = d[kind].take((g) => g.topics.every(welcome), at, true);
+        const g = spent === "early" ? d[kind].early((g) => g.topics.every(welcome)) : d[kind].take((g) => g.topics.every(welcome), at, true);
         if (!g) continue;
         q = finish(kind, g, at, rng, P, (w) => (welcome(w) ? Math.min(age(w), 99) : 0));
         if (q && !ordered([...game, q])) q = null;
-        if (!q) d[kind].undo(g);
+        if (q && spent === "early") q.early = true;  // (not the deck's turn: the checks do not count it)
+        if (!q && spent !== "early") d[kind].undo(g);
       }
     }
     if (!q) continue;

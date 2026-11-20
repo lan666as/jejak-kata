@@ -2612,7 +2612,8 @@ function reveal(ev, W, answer, periods) {
   if (ev.type === "marks") {
     // (a count of words, or shares; the scale's labels at two significant digits, as few as keep them apart: each step
     // of 1, 2, 2.5 or 5 times a power of ten tried from the finest, the first whose labels stand 10px apart)
-    const fmt = ev.unit === "count" ? (v) => String(v) : percent, font = `400 12px ${getComputedStyle(document.documentElement).getPropertyValue("--type")}`;
+    // (the three newsrooms: the text beside says "10,5", so the marks do, with one decimal, and the scale's whole numbers without; else the site's percent)
+    const fmt = ev.unit === "count" ? (v) => String(v) : ev.outlets ? (v) => number(v * 100, Number.isInteger(+(v * 100).toFixed(6)) ? 0 : 1) : percent, value = ev.outlets ? (v) => number(v * 100, 1) : fmt, font = `400 12px ${getComputedStyle(document.documentElement).getPropertyValue("--type")}`;
     const n = ev.items.length, row = 24, L = Math.min(W * 0.42, 18 + 7.4 * Math.max(...ev.items.map((i) => i.label.length))), R = 52, H = n * row + 26;
     const top = Math.max(...ev.items.map((i) => i.v), ev.unit === "count" ? ev.of : 0) || 1, span = W - L - R;
     const steps = [-4, -3, -2, -1, 0, 1].flatMap((e) => [1, 2, 2.5, 5].map((m) => m * 10 ** (Math.floor(Math.log10(top)) + e))).filter((st) => ev.unit !== "count" || Number.isInteger(st));
@@ -2624,7 +2625,7 @@ function reveal(ev, W, answer, periods) {
     return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">${ticks.map((v, k) => `<path class="line" d="M${px(x(v))} 4V${n * row}"/>${svgText(x(v), H - 6, fmt(v), "soft", k === ticks.length - 1 && x(v) + measure(fmt(v), font) / 2 > W ? "end" : "middle")}`).join("")}
       ${ev.items.map((it, k) => {
         const y = row * k + row / 2, cls = ev.outlets ? `c${k + 1}` : it.label === answer ? "on" : "mute";
-        return `<g class="in" style="--i:${k}">${svgText(L - 8, y + 4.5, it.label, it.label === answer ? "strong" : "", "end")}<path class="line dotted" d="M${L} ${y}H${W - R}"/><circle class="${cls}" cx="${px(x(it.v))}" cy="${y}" r="7"/>${svgText(W - R + 8, y + 4.5, fmt(it.v), "soft")}</g>`;
+        return `<g class="in" style="--i:${k}">${svgText(L - 8, y + 4.5, it.label, it.label === answer ? "strong" : "", "end")}<path class="line dotted" d="M${L} ${y}H${W - R}"/><circle class="${cls}" cx="${px(x(it.v))}" cy="${y}" r="7"/>${svgText(W - R + 8, y + 4.5, value(it.v), "soft")}</g>`;
       }).join("")}</svg>`;
   }
   const H = 124, L = 8, R = 8, T = 22, B = 24, P = ev.series[0].share.length, x = (p) => L + ((W - L - R) * p) / (P - 1);
@@ -2769,6 +2770,7 @@ async function guessPage() {
   // (a word in English with what it means: "tersangka (suspect)")
   const word = (w) => (language === "en" && (GLOSS[w]?.en || GAME_GLOSS[w]) ? `${w} (${GLOSS[w]?.en || GAME_GLOSS[w]})` : w);
   let rounds = [], results = [], score = 0, k = 0, lows = new Set();
+  const tops = {};  // (how often each name stood as the comparison, over the visit: the one shown less comes first)
   const sailed = () => ((log.innerHTML = voyageMark(results, rounds.length)), (tally.textContent = `${score} / ${rounds.length * 100}`));
   // The scale (deal.js, STOPS and along): 0-20 in steps of 1 over two thirds of the track, 25-100 in steps of 5 over the
   // rest, its ticks where they fall; no guess until the reader sets one (a press or drag on the track, the keys, − and +).
@@ -2842,13 +2844,18 @@ async function guessPage() {
       // The line said follows the points (never the last of its far lines twice running), then the numbers, the
       // context, and the way on: each a line of its own.
       // (a far miss is said by its direction: a guess above the truth, or below it)
-      const c = q.context, tier = nearness(won), line = tier < 3 ? t("said_near")[tier] : sayOne(guess > q.v ? "said_far_above" : "said_far_below");
+      const c = q.context, tier = nearness(won), line = won === 100 ? t("said_exact") : tier < 3 ? t("said_near")[tier] : sayOne(guess > q.v ? "said_far_above" : "said_far_below");
       // The context: who has the most of the word (where that is the name asked, said plainly, with the next after it);
       // the least only where it adds something: not the name asked, not named already this game, and nearer the truth
       // than the most is.
       const least = c.lo[0] !== q.name && !lows.has(c.lo[0]) && q.v - c.lo[1] < c.hi[1] - q.v;
       if (least) lows.add(c.lo[0]);
-      const context = [t("guess_counted", thousands(q.pages), shown(q.name)), ...(c.hi[0] === q.name ? [t("guess_top", word(q.w)), t("guess_next", c.of, shown(c.next[0]), c.next[1])] : [t("guess_context", word(q.w), c.of, shown(c.hi[0]), c.hi[1])]),
+      // (the comparison: who has the most, or, where that name was shown less often than the next after it, the next
+      // after it, said as such, so that one name is not leaned on)
+      const second = c.next[0] !== q.name && (tops[c.next[0]] || 0) < (tops[c.hi[0]] || 0), [cn, cv] = second ? c.next : c.hi;
+      if (c.hi[0] !== q.name) tops[cn] = (tops[cn] || 0) + 1;
+      const compare = t(second ? "guess_second" : "guess_context", word(q.w), c.of, shown(cn), cv);
+      const context = [t("guess_counted", thousands(q.pages), shown(q.name)), ...(c.hi[0] === q.name ? [t("guess_top", word(q.w)), t("guess_next", c.of, shown(c.next[0]), c.next[1])] : [compare]),
         ...(least ? [t("guess_least", shown(c.lo[0]), c.lo[1])] : [])].join(" ");
       verdict.innerHTML = `<b>${escape(line)}</b><span class="numbers">${escape(t("guess_numbers", guess, q.v, won))}</span>
         <span class="context">${escape(context)}</span>
