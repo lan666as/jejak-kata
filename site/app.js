@@ -2570,6 +2570,7 @@ async function methodDemo() {
   const B = board([left + 4, top + 4, W - 4, H - 4]), font = `600 13px ${getComputedStyle(document.documentElement).getPropertyValue("--type")}`;
   const spot = (p, text, strong) => { const w = measure(text, strong ? font.replace("600", "800") : font) + 6; return B.place([[p[0] + 10, p[1] - 9], [p[0] - 10 - w, p[1] - 9], [p[0] - w / 2, p[1] - 30], [p[0] - w / 2, p[1] + 12]].map(([x, y]) => [x, y, x + w, y + 18]), text); };
   const name = (p, text, cls, from, strong) => { const k = spot(p, text, strong); return k ? `<text class="${cls}" data-from="${from}" x="${(k[0] + 3).toFixed(1)}" y="${(k[1] + 13).toFixed(1)}">${escape(text)}</text>` : ""; };
+  B.reserve([pa[0] - 9, pa[1] - 9, pa[0] + 9, pa[1] + 9], [pb[0] - 9, pb[1] - 9, pb[0] + 9, pb[1] + 9], ...words.map((x) => [X(x.at) - 5, Y(x.at) - 5, X(x.at) + 5, Y(x.at) + 5])).line([pa, pb], 3);
   const ships = [name(pa, `${word} ${ya}`, "demo-word", 3, true), name(pb, `${word} ${yb}`, "demo-word", 4, true)];
   // The words the page shows it with (step 2) are one drawing with the chart: at step 3 each sails from the list to its
   // own port and is named there; one the first screen has no port for leaves with the page's ties.
@@ -2577,8 +2578,6 @@ async function methodDemo() {
     const x = words.find((x) => x.w === w), to = x && spot([X(x.at), Y(x.at)], w), y = 164 + k * 18;
     return `<text class="demo-near${to ? " demo-goes" : ""}" data-from="2"${to ? ` style="--dx:${(to[0] + 3 - 104).toFixed(1)}px;--dy:${(to[1] + 13 - y).toFixed(1)}px"` : ' data-until="2"'} x="104" y="${y}">${escape(w)}</text>`;
   });
-  B.reserve([pa[0] - 9, pa[1] - 9, pa[0] + 9, pa[1] + 9], [pb[0] - 9, pb[1] - 9, pb[0] + 9, pb[1] + 9], ...words.map((x) => [X(x.at) - 5, Y(x.at) - 5, X(x.at) + 5, Y(x.at) + 5])).line([pa, pb], 3);
-
   const names = [...ships, ...words.filter((x) => x.from === 4).map((x) => name([X(x.at), Y(x.at)], x.w, "demo-near", x.from))];
   const lines = [0, 1, 2, 3, 4, 5, 6].map((k) => `<path class="demo-line${k === 2 ? " on" : ""}" d="M14 ${30 + k * 15}H${k === 2 ? 66 : 14 + 52 + ((k * 23) % 30)}"/>`).join("");
   const textX = 120;
