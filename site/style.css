@@ -286,7 +286,7 @@ h2:first-child { margin-top: var(--s6); }
 @media (min-width: 900px) { .page-head { padding: var(--s8) 0 calc(var(--s7) + var(--tide-h)); } .page-head:has(.word-title) { padding-top: var(--s6); } }
 @media (max-width: 899.98px) { .page-head:has(> .shore-sea):not(.joined, .lost) { padding-top: calc(var(--s9) + var(--s4)); } }  /* on a phone the sea is above the text: room for it */
 @media (max-width: 899.98px) {  /* a toy's head on a phone: less sea above, a smaller lede, so that the toy itself begins on the first screen */
-  .page-head.game:has(> .shore-sea):not(.joined, .lost) { padding-top: calc(var(--s8) + var(--s2)); padding-bottom: calc(var(--s5) + var(--tide-h)); margin-bottom: var(--s4); }
+  .page-head.game:has(> .shore-sea):not(.joined, .lost) { padding-top: calc(var(--s7) + var(--s2)); padding-bottom: calc(var(--s5) + var(--tide-h)); margin-bottom: var(--s4); }
   .page-head.game > .lede { margin-top: var(--s2); font-size: var(--t-body); line-height: var(--l-body); }
 }
 
@@ -786,7 +786,20 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 /* "Coba: …": real choices to try at once, beside a field or a list */
 .try { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin: var(--s3) 0 var(--s4); }
 .try > span { font-size: var(--t-small); color: var(--ink-2); margin-right: var(--s1); }
-.try .chip { min-height: var(--tap); }
+.try .chip { min-height: var(--tap); flex: none; }
+/* on a phone the row is one line that scrolls sideways under a fade at its right edge, as the first page's chips do */
+@media (max-width: 899.98px) {
+  .try { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * var(--gutter)); padding: var(--s1) var(--s7) var(--s1) var(--gutter);
+    mask-image: linear-gradient(90deg, #000 calc(100% - var(--s7)), transparent); }
+  .try::-webkit-scrollbar { display: none; }
+  .try > span { flex: none; }
+  .try { margin-block: var(--s2) var(--s3); } .options { margin-block: var(--s2); }
+  /* the race's chosen words: one line that scrolls sideways, so that the race begins on the first screen */
+  .race-pick .picked { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * var(--gutter)); padding: var(--s1) var(--s7) var(--s1) var(--gutter);
+    mask-image: linear-gradient(90deg, #000 calc(100% - var(--s7)), transparent); }
+  .race-pick .picked li { flex: none; }
+}
+
 
 /* chips chosen in a picker */
 .picked { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; margin: var(--s2) 0; padding: 0; list-style: none; }
@@ -1195,6 +1208,29 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .play-card .played { display: block; margin-top: var(--s2); font-size: var(--t-meta); font-weight: 600; color: var(--ink-3); }
 .play-card .played::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: var(--s2); border-radius: 50%; background: var(--route); }
 .play-top .lead .played { color: var(--on-deep-2); }
+/* a game's card ends on what pressing it does, drawn as the primary button (the whole card is the link) */
+.play-go { display: inline-flex; align-items: center; align-self: start; min-height: var(--tap); margin-top: var(--s3); padding: 0 var(--s5); border-radius: var(--r1); background: var(--route); color: var(--on-route); font-weight: 700; }
+.play-go::after { content: "→"; margin-left: var(--s2); transition: transform var(--d-press) var(--sail); }
+.play-card:is(:hover, :focus-visible) .play-go::after { transform: translateX(var(--s1)); }
+.play-top .lead .play-go { background: var(--route-on-deep); color: var(--deep); }
+.play-pic .word.on { fill: var(--p-on); } .play-pic .word.off { fill: var(--p-soft); }
+/* the hub's two groups, "Main" and "Jelajah", each under its heading */
+.play-head { margin: var(--s6) 0 0; } .play-head + .cards { margin-top: var(--s4); }
+/* "Atur": a toy's other choices, folded on a phone (app.js, options) */
+.options { margin: var(--s3) 0; }
+.options > summary { display: inline-flex; align-items: center; gap: var(--s2); min-height: var(--tap); padding: 0 var(--s4); border: var(--hair) solid var(--line); border-radius: var(--r1); background: var(--chart-2); font-size: var(--t-small); font-weight: 600; cursor: pointer; list-style: none; }
+.options > summary::-webkit-details-marker { display: none; }
+.options > summary::after { content: "+"; font-weight: 800; color: var(--ink-3); } .options[open] > summary::after { content: "−"; }
+.options-body > :first-child { margin-top: var(--s2); } .options-body .controls { margin: var(--s2) 0; }
+/* "Atur" beside a toy's first choice; opened, it takes the row under it. From 900px it stands open with no control of
+   its own (app.js, options), its choices in a row that wraps */
+.controls > .options { margin: 0; } .controls > .options[open] { flex-basis: 100%; }
+@media (min-width: 900px) {
+  .options[open] > summary { display: none; }  /* (closed, as a phone left it before turning, it keeps its control) */
+  .options-body { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s5); } .options-body > :first-child { margin-top: 0; }
+  .options-body .chips { margin-inline: 0; padding-inline: 0; } .options-body .chips + .chips { margin-top: var(--s4); }
+  .controls > .options[open] { flex: 1 1 auto; }
+}
 /* a play card answers the pointer as a story card does: the route drawn across its top */
 .play-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: var(--mark); background: var(--route); transform: scaleX(0); transform-origin: 0 50%; transition: transform var(--d-turn) var(--sail); }
 .play-card:is(:hover, :focus-visible)::before { transform: scaleX(1); }
@@ -1249,6 +1285,7 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 @media (min-width: 900px) {
   .play-top { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); grid-template-rows: auto auto; }
   .play-top li:first-child { grid-row: span 2; }
+  .play-games { grid-template-rows: auto; } .play-games li:first-child { grid-row: auto; }
   .play-top .lead { justify-content: flex-end; } .play-top .lead .play-pic { height: 250px; margin-bottom: var(--s2); }
   .play-top .play-card:not(.lead) { display: grid; grid-template: "title pic" auto "text pic" 1fr "text note" auto / minmax(0, 1fr) minmax(0, 1.1fr); column-gap: var(--s5); }
   .play-top .play-card:not(.lead) .play-pic { grid-area: pic; height: auto; min-height: 136px; }  /* the picture fills the card's height: no empty band over the note */ .play-top .play-card:not(.lead) .play-note { grid-area: note; margin: 0; }

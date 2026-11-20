@@ -346,15 +346,22 @@ its line); once the first route has
   jump), and where they cross is marked as the lines reach it, the lead's named with its year. The page shows its first source as soon as that source has come, not after every source, and its pairs as soon as
   theirs have come: the two lists below the first screen are asked for only then, each a skeleton until it lands (each
   word is read from a bucket of 64, so the lists cost as much again as the pairs).
-- **Play**: the first thing to play leads, on the deep, its picture large (two rows tall from 900px); the next two
-  beside it, text and picture side by side; the rest under "more" in three columns, the tide table and the year posters
-  two columns wide. The first page shows the same first three. A card the viewer has opened says so in a meta line
-  under its text, a game's with the best score (localStorage; nothing where storage is refused). A toy's head is
-  shorter on a phone (less sea above the kicker, the lede at the body's size), so that the toy begins on the first
-  screen. Where a figure tells something on hover, a tap tells it too.
+- **Play** ("Mainan" / "Games", one word for the section everywhere): two groups, each under its heading. "Main" /
+  "Play": the two games, the quiz leading on the deep, its picture large, "guess the number" beside it (from 900px);
+  each game's card ends on what pressing it does, drawn as the primary button ("Mulai kuis", "Mulai menebak"), the
+  whole card being the link. "Jelajah" / "Explore": the eight explorers of the data in three columns, the tide table
+  and the year posters two columns wide. The first page shows the first three. A card the viewer has opened says so
+  in a meta line under its text, a game's with the best score (localStorage; nothing where storage is refused). A
+  toy's head is shorter on a phone (less sea above the kicker, the lede at the body's size), and on a 390x844 phone its
+  result (the figure, list or table) begins in the first 560px (`games.mjs`): its first choice and the "Coba:" row (one
+  line that scrolls sideways on a phone) stand above it, and every other choice (the newsroom, the term, the kind, the
+  filter, the sources past the main three: the first page's, the books, the web's news) is folded under one "Atur" /
+  "Options" control (`options` in app.js), open with no control of its own from 900px; what a toy says about its
+  numbers stands under its first result. Where a figure tells something on hover, a tap tells it too.
   A game shows a name as a name (`shown` in deal.js: "Sandiaga Uno", "KPK", "Mahfud MD"), a common word in lower case;
-  the data keeps all in lower case. The quiz's card (the lead) pictures its own question: a year's words as chips,
-  "Tahun berapa?", and four years as the game shows them, the right one ticked.
+  the data keeps all in lower case. The quiz's card (the lead) pictures its own question as a picture, with
+  nothing that looks pressable: a year's words as a line of words, "Tahun berapa?", and four years as a line of
+  figures, the right one ticked and underlined in the route.
   A game is a board: the round on paper, and beside it the game's voyage so far (a port per round: filled where right,
   a ring where wrong, the ship on the round now; a run of three or more right ringed in `--beacon`, the streak), the
   tally and the one control that goes on (lock, next, play again), always in the same place: in the panel held beside

@@ -7,7 +7,8 @@
 // that one fixed guess would win.
 // Then one browser pass per game at 390 and 1440 that plays a whole game (the quiz by keyboard alone at 1440, by taps at
 // 390): the first action on screen without scrolling, the evidence drawn after each answer, focus on the control that
-// goes on, that control in the same place every round, the plate saved, no console errors; and on every toy, no
+// goes on, that control in the same place every round, the plate saved, no console errors; and on every toy, its first
+// control on the first screen, its result (figure, list, table) beginning in the first 560px of a 390x844 phone, and no
 // information only a hover shows.
 import { readFileSync, writeFileSync } from "node:fs";
 import { quizData } from "./quiz-data.mjs";
@@ -295,12 +296,16 @@ for (const [w, h, touch] of SIZES) {
       const r = controls[0]?.getBoundingClientRect();
       // Hover-only: anything with a tip that answers neither a tap (click) nor a key.
       const hoverOnly = [...view.querySelectorAll("[data-tip]")].length && !view.querySelector("[data-tip-tap]") ? 1 : 0;
-      return { first: r ? Math.round(r.bottom) : 9999, hoverOnly };
+      // Where the toy's result (its figure, list or table) begins.
+      const result = [...view.querySelectorAll(".plate, ul.movers, .tide, .race, .wall, .orbit")].find((n) => n.getClientRects().length && !head?.contains(n));
+      return { first: r ? Math.round(r.bottom) : 9999, hoverOnly, result: result ? Math.round(result.getBoundingClientRect().top) : 9999 };
     });
-    toys.push(`${toy} ${look.first}${look.hoverOnly ? " hover-only" : ""}`);
-    if (look.first > h || look.hoverOnly) failures++, console.log(`FAIL ${toy} at ${w}: first control ends at ${look.first}px${look.hoverOnly ? "; a tip only a hover shows" : ""}`);
+    toys.push(`${toy} ${look.first}/${look.result}${look.hoverOnly ? " hover-only" : ""}`);
+    // (on a 390x844 phone the result begins in the first 560px: the toy is seen working before any scroll)
+    const late = w === 390 && look.result > 560;
+    if (look.first > h || look.hoverOnly || late) failures++, console.log(`FAIL ${toy} at ${w}: first control ends at ${look.first}px, the result begins at ${look.result}px${look.hoverOnly ? "; a tip only a hover shows" : ""}`);
   }
-  console.log(`     toys at ${w}, where the first control ends: ${toys.join(", ")}`);
+  console.log(`     toys at ${w}, where the first control ends / the result begins (under 560px at 390): ${toys.join(", ")}`);
   await ctx.close();
 }
 console.log(`     ${((Date.now() - started) / 1000).toFixed(1)} s`);
