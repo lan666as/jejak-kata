@@ -195,7 +195,10 @@ const look = ([k, j]) => {
       if (bands.some((x) => x.a < from - 1.5 && x.b > from + 1.5 || x.a < to - 1.5 && x.b > to + 1.5)) wrong.push("a row of the panned chart is cut at rest");
       const named = bands.filter((x) => x.named), past = shut === null ? [] : gap.dataset.rows.split(",").map((run) => run.split("-").map(Number));
       if (named.length < bands.length) {
-        const out = named.filter((x) => (x.a < from - 1.5 || x.b > to + 1.5) && !past.some(([a, b]) => x.i >= a && x.i <= b));
+        // (where a step names more rows than the window can hold at their least pitch, as many of them as fit: the
+        // marks of the rows skipped take a row each, so all but two of the window's rows are named ones)
+        const room = Math.floor((win.bottom - from + 1.5) / (2 * half)), hidden = named.filter((x) => (x.a < from - 1.5 || x.b > to + 1.5) && !past.some(([a, b]) => x.i >= a && x.i <= b));
+        const out = named.length > room ? (named.length - hidden.length >= room - 2 ? [] : hidden) : hidden;
         if (out.length) wrong.push(`a row the step names is out of view (${out.map((x) => x.label).join(", ")})`);
         if (shut !== null && (r(gap).bottom > win.bottom + 1 || r(gap).top < from - 1)) wrong.push("the rows past the gap are not wholly in the window");
       }

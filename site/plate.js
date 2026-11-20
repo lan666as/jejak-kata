@@ -194,13 +194,13 @@ export function plate(spec, width, height) {
 }
 
 /** A row's name, ending at `L - 9`, at height y: a name too long for its column on two lines where the rows are `gap`
- *  apart or more, else a little smaller, never under 11.5px (11px on screen where a 300px plate shows in 288px). */
+ *  apart or more, else a little smaller, never under 12px. */
 function rowName(label, y, L, size, gap, ink) {
   if (label.length <= Math.floor((L - 14) / (size * 0.53))) return `<text x="${L - 9}" y="${y + size * 0.35}" text-anchor="end" style="font-size:${size}px;font-weight:600;fill:${ink}">${label}</text>`;
   // Two lines broken at the space that leaves the longer line shortest, then as large as that line allows.
   const cut = [...label].map((c, i) => (c === " " ? i : -1)).filter((i) => i > 0).sort((a, b) => Math.max(a, label.length - a) - Math.max(b, label.length - b))[0];
   const parts = cut && gap >= size * 1.9 ? [label.slice(0, cut), label.slice(cut + 1)] : [label];
-  const small = Math.max(11.5, Math.min(size, (L - 14) / Math.max(...parts.map((p) => p.length)) / 0.53));
+  const small = Math.max(12, Math.min(size, (L - 14) / Math.max(...parts.map((p) => p.length)) / 0.53));
   return `<text x="${L - 9}" y="${y + small * 0.35 - (parts.length - 1) * small * 0.55}" text-anchor="end" style="font-size:${small}px;font-weight:600;fill:${ink}">${parts.map((part, i) => `<tspan x="${L - 9}" dy="${i ? small * 1.1 : 0}">${part}</tspan>`).join("")}</text>`;
 }
 

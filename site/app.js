@@ -1427,7 +1427,7 @@ async function sceneFigure(scene, w, h, on) {
     // (a hand count is seen whole in the figure's room, where a strip beside it may be drawn taller to slide)
     const made = p.read ? units({ ...spec, note: scene.read[language].note, rows: p.rows, fills: p.fills, rest: p.rest }, w, on ? Math.min(h, figureSize(on)[1]) : h) : f.draw === "plate"
       ? plate({ ...spec, periods: p.states, series: p.rows.map((r) => ({ label: r.label, values: r.values.map((v) => v[0]), off: r.off?.map((v) => v[0]) })) }, w, h)
-      : strip({ ...spec, floor: 13, states: p.states, series: p.series, rows: p.rows, most: p.most, format: f.times ? (v) => "÷" + number(v) : undefined, empty: t("too_few"), rings: p.states.length > 1 ? t("rings", p.states[0]) : undefined }, w,
+      : strip({ ...spec, floor: 17, states: p.states, series: p.series, rows: p.rows, most: p.most, format: f.times ? (v) => "÷" + number(v) : undefined, empty: t("too_few"), rings: p.states.length > 1 ? t("rings", p.states[0]) : undefined }, w,
         sideBySide() ? Math.min(h, stripLeast(longestTitle(spec.title, p.states, w), p.rows.length, w, [...p.series, p.states.length > 1 ? t("rings", p.states[0]) : ""], ROOMY)) : h);
     return { ...made, show: (i, focus) => made.show(i, focused(p, focus)) };
   };
@@ -1477,7 +1477,7 @@ const panning = (part, w, room, from) => {
   const at = (pitch) => Math.max(...titles.map((title) => stripLeast(title, rows, w, series, pitch)));
   if (at(from) <= room) return 0;
   const span = namedRows(part), head = Math.max(...titles.map((title) => stripLeast(title, 0, w, series))) - 76, most = (at(null) - head - 76) / rows;
-  return at(span ? Math.max(13, Math.min(most, Math.floor((room - head - 8) / span))) : null);
+  return at(span ? Math.max(17, Math.min(most, Math.floor((room - head - 8) / span))) : null);
 };
 /** The room the sea's key takes on the stage, its line and the gap above it (none where the stages are not on the sea). */
 const keyRoom = (s) => { const key = s.stage.querySelector(".sea-key"); return key.offsetHeight ? key.offsetHeight + parseFloat(getComputedStyle(key.parentNode).rowGap) : 0; };
@@ -1517,7 +1517,7 @@ function share(s, part) {
   // pans keeps its title and legend pinned (stage, pinned): its window also holds, under them, the rows a step brings
   // forward (KEYS: the rows in their order, known before the data), so they are all in view.
   const span = need ? namedRows(part) : 0;
-  const named = span ? Math.min(need, whole - chrome - 72, Math.max(...titles.map((title) => stripLeast(title, 0, s.room.clientWidth, series))) - 76 + span * 13 + 8) : 0;
+  const named = span ? Math.min(need, whole - chrome - 72, Math.max(...titles.map((title) => stripLeast(title, 0, s.room.clientWidth, series))) - 76 + span * 17 + 8) : 0;
   const least = Math.max(whole * 0.4, FIG, named, part.read ? Math.floor(whole * 0.62) : 0), fits = whole - chrome - text - keyed >= least;
   s.node.style.setProperty("--turn", fits ? s.node.style.getPropertyValue("--turn") : "var(--t-body)");
   // (a caption that reads on keeps at least its head, two lines and its control; the figure keeps 240px all the same)
