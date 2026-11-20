@@ -10,7 +10,7 @@ import { seaChart } from "./chart.js";
 import { TEXT, LENS_TEXT, NOTES, GLOSS, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
 import { address, routeOf, named, canonical, EMBED, PAGES, PLAY, QUIZ_NAMES, GUESS_WORDS } from "./address.js";
 import { board, measure } from "./labels.js";
-import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, shown, BODIES } from "./deal.js";
+import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, shown, BODIES, PEOPLE } from "./deal.js";
 import { figureOf, focused, lensFrom, sceneWords, seaWords, stepAt, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
 
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
@@ -2412,15 +2412,23 @@ function voyageMark(results, rounds, { inline = false, width = 300 } = {}) {
   const path = [...Array(rounds)].map((_, k) => `${k ? "L" : "M"}${x(k).toFixed(1)},${y(k).toFixed(1)}`).join("");
   const done = results.length, sailed = [...Array(Math.max(1, done))].map((_, k) => `${k ? "L" : "M"}${x(k).toFixed(1)},${y(k).toFixed(1)}`).join("");
   const run = (k) => { let a = k, b = k; while (results[a - 1]?.ok) a--; while (results[b + 1]?.ok) b++; return results[k]?.ok ? b - a + 1 : 0; };
-  // Labels of the answers only where they have room: every port on a wide voyage, every other one on a narrow one.
-  const every = (W - 32) / Math.max(1, rounds - 1) < 34 ? 2 : 1;
+  // Labels of the answers only where they have room: each as long as fits between the labels beside it (shortened with
+  // an ellipsis, at least three letters), else left out; the last answered always, first.
+  const font = `700 12px ${css("--type")}`, room = [], says = {};
+  for (const k of [results.length - 1, ...results.map((_, i) => i).slice(0, -1)]) {
+    if (k < 0) continue;
+    const full = String(results[k].label), fits = (text) => { const w = measure(text, font), a = x(k) - w / 2, b = x(k) + w / 2; return a >= 0 && b <= W && room.every(([c, d]) => b + 6 <= c || a >= d + 6) ? [a, b] : null; };
+    let text = full, at = fits(text);
+    for (let n = full.length - 1; !at && n >= 3; n--) at = fits((text = full.slice(0, n).trimEnd() + "…"));
+    if (at) (room.push(at), (says[k] = text));
+  }
   return `<svg class="voyage-mark" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">
     <path class="sea-line" d="${path}" fill="none" stroke-dasharray="2 4"${c("--line-2", "stroke")}/>${done > 1 ? `<path class="sailed" d="${sailed}" fill="none" stroke-width="3" stroke-linecap="round"${c("--route", "stroke")}/>` : ""}
     ${[...Array(rounds)].map((_, k) => {
       const r = results[k], cls = !r ? (k === done ? "now" : "next") : r.ok ? "right" : "wrong";
       const fill = { right: c("--route", "fill"), wrong: c("--chart-2", "fill"), now: c("--ink", "fill"), next: c("--line-2", "fill") }[cls], stroke = cls === "wrong" ? c("--ink", "stroke") : "";
       return `${run(k) >= 3 ? `<circle class="streak" cx="${x(k).toFixed(1)}" cy="${y(k).toFixed(1)}" r="11" fill="none" stroke-width="2.5"${c("--beacon", "stroke")}/>` : ""}<circle class="${cls}" cx="${x(k).toFixed(1)}" cy="${y(k).toFixed(1)}" r="${{ right: 7, wrong: 6, now: 8, next: 3.5 }[cls]}"${fill}${stroke}${cls === "wrong" ? ' stroke-width="2"' : ""}/>
-        ${r && (k % every === 0 || k === done - 1) ? `<text x="${x(k).toFixed(1)}" y="${(y(k) + 26).toFixed(1)}" text-anchor="middle" style="font-size:12px;font-weight:700"${c(r.ok ? "--ink" : "--ink-3", "fill")}>${escape(String(r.label))}</text>` : ""}`;
+        ${r && says[k] ? `<text x="${x(k).toFixed(1)}" y="${(y(k) + 26).toFixed(1)}" text-anchor="middle" style="font-size:12px;font-weight:700"${c(r.ok ? "--ink" : "--ink-3", "fill")}>${escape(says[k])}</text>` : ""}`;
     }).join("")}</svg>`;
 }
 
@@ -2501,17 +2509,24 @@ const toCard = (box) => {
 function reveal(ev, W, answer, periods) {
   const px = (v) => v.toFixed(1);
   if (ev.type === "marks") {
-    const n = ev.items.length, row = 30, L = Math.min(W * 0.42, 18 + 7.4 * Math.max(...ev.items.map((i) => i.label.length))), R = 52, H = n * row + 26;
-    const top = Math.max(...ev.items.map((i) => i.v)), step = [1, 2, 2.5, 5].map((m) => m * 10 ** Math.floor(Math.log10(top / 4))).find((s) => top / s <= 4) || top / 4;
-    const most = Math.ceil(top / step) * step, x = (v) => L + ((W - L - R) * v) / most;
-    const ticks = [...Array(Math.round(most / step) + 1)].map((_, k) => k * step);
-    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">${ticks.map((v) => `<path class="line" d="M${px(x(v))} 4V${n * row}"/>${svgText(x(v), H - 6, percent(v), "soft", "middle")}`).join("")}
+    // (a count of words, or shares; the scale's labels at two significant digits, as few as keep them apart: each step
+    // of 1, 2, 2.5 or 5 times a power of ten tried from the finest, the first whose labels stand 10px apart)
+    const fmt = ev.unit === "count" ? (v) => String(v) : percent, font = `400 12px ${getComputedStyle(document.documentElement).getPropertyValue("--type")}`;
+    const n = ev.items.length, row = 24, L = Math.min(W * 0.42, 18 + 7.4 * Math.max(...ev.items.map((i) => i.label.length))), R = 52, H = n * row + 26;
+    const top = Math.max(...ev.items.map((i) => i.v), ev.unit === "count" ? ev.of : 0) || 1, span = W - L - R;
+    const steps = [-4, -3, -2, -1, 0, 1].flatMap((e) => [1, 2, 2.5, 5].map((m) => m * 10 ** (Math.floor(Math.log10(top)) + e))).filter((st) => ev.unit !== "count" || Number.isInteger(st));
+    const apart = (st) => { const most = Math.ceil(top / st - 1e-9) * st, list = [...Array(Math.round(most / st) + 1)].map((_, k) => k * st), gap = span / (list.length - 1);
+      return list.length <= 6 && list.every((v, k) => !k || gap >= (measure(fmt(v), font) + measure(fmt(list[k - 1]), font)) / 2 + 10) ? list : null; };
+    // (a count runs to the words shown, its last tick that number)
+    const ticks = ev.unit === "count" ? [...(steps.map(apart).find(Boolean) || [0]).filter((v) => v < ev.of && span * (1 - v / ev.of) >= 24), ev.of] : steps.map(apart).find(Boolean) || [0, top];
+    const most = ticks.at(-1), x = (v) => L + (span * v) / most;
+    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">${ticks.map((v, k) => `<path class="line" d="M${px(x(v))} 4V${n * row}"/>${svgText(x(v), H - 6, fmt(v), "soft", k === ticks.length - 1 && x(v) + measure(fmt(v), font) / 2 > W ? "end" : "middle")}`).join("")}
       ${ev.items.map((it, k) => {
         const y = row * k + row / 2, cls = ev.outlets ? `c${k + 1}` : it.label === answer ? "on" : "mute";
-        return `<g class="in" style="--i:${k}">${svgText(L - 8, y + 4.5, it.label, it.label === answer ? "strong" : "", "end")}<path class="line dotted" d="M${L} ${y}H${W - R}"/><circle class="${cls}" cx="${px(x(it.v))}" cy="${y}" r="7"/>${svgText(W - R + 8, y + 4.5, percent(it.v), "soft")}</g>`;
+        return `<g class="in" style="--i:${k}">${svgText(L - 8, y + 4.5, it.label, it.label === answer ? "strong" : "", "end")}<path class="line dotted" d="M${L} ${y}H${W - R}"/><circle class="${cls}" cx="${px(x(it.v))}" cy="${y}" r="7"/>${svgText(W - R + 8, y + 4.5, fmt(it.v), "soft")}</g>`;
       }).join("")}</svg>`;
   }
-  const H = 150, L = 8, R = 8, T = 22, B = 24, P = ev.series[0].share.length, x = (p) => L + ((W - L - R) * p) / (P - 1);
+  const H = 124, L = 8, R = 8, T = 22, B = 24, P = ev.series[0].share.length, x = (p) => L + ((W - L - R) * p) / (P - 1);
   const top = Math.max(...ev.series.flatMap((s) => s.share)) || 1, y = (v) => T + (H - T - B) * (1 - v / top);
   const years = [0, P - 1, ...ev.marks].filter((p, i, all) => all.indexOf(p) === i && (ev.marks.includes(p) || ev.marks.every((m) => Math.abs(m - p) > 2)));
   return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true"><path class="line" d="M${L} ${H - B}H${W - R}"/>
@@ -2532,10 +2547,19 @@ async function quizPage() {
   view.replaceChildren(pageHead(t("nav_quiz"), { ...fromPlay(), lede: t("quiz_lede"), sea: { words: QUIZ_NAMES } }));
   const { board, box, go, log, tally } = gameBoard();
   view.append(board, el(`<p class="note keys-note">${t("quiz_keys")}</p>`));
-  // (a name shown as a name: deal.js, shown)
-  const nm = (w) => shown(String(w), Q.words[w]?.kind), label = (q, c) => (q.kind === "trend" ? t(`trend_${c}`) : nm(c));
+  // A name shown as a name (deal.js, shown); in English an Indonesian word with what it means, where the site says
+  // (text.js GLOSS; an official word's loanword, story "kata-resmi"): "korupsi (corruption)".
+  const nm = (w) => shown(String(w), Q.words[w]?.kind), loan = Object.fromEntries(Q.resmi.map(([l, coin]) => [coin, l]));
+  const isName = (w) => PEOPLE.includes(w) || BODIES.includes(w) || ["person", "organisation", "place"].includes(Q.words[w]?.kind);
+  const meant = (w, not = []) => { const m = language === "en" && Q.words[w] && !isName(w) ? GLOSS[w]?.en || loan[w] : ""; return m && !not.includes(m) ? m : ""; };
+  const word = (w, not) => (meant(w, not) ? `${w} (${meant(w, not)})` : nm(w));
+  const label = (q, c) => (q.kind === "trend" ? t(`trend_${c}`) : q.kind === "year" || q.kind === "room" ? String(c) : word(c, q.choices));
+  // The answer as it would start a sentence: a name as a name, a common word in quotation marks (in English with what
+  // it means, where the site says), "Naik", a year, a newsroom.
+  const upper = (x) => x.charAt(0).toUpperCase() + x.slice(1);
+  const told = (q, c) => (q.kind === "trend" ? upper(t(`trend_${c}`)) : q.kind === "year" || q.kind === "room" || isName(c) ? label(q, c) : meant(c, q.choices) ? label(q, c) : `“${c}”`);
   const named = (ev) => ({ ...ev, items: ev.items?.map((it) => ({ ...it, label: nm(it.label) })), series: ev.series?.map((x) => ({ ...x, label: nm(x.label) })) });
-  let game = [], results = [], streak = 0, answer = null;
+  let game = [], results = [], streak = 0, answer = null, now = 0;
   const sailed = () => {
     log.innerHTML = voyageMark(results, game.length);
     tally.textContent = t("quiz_tally", results.filter((r) => r.ok).length, results.length) + (streak >= 2 ? ` · ${t("quiz_streak", streak)}` : "");
@@ -2546,14 +2570,17 @@ async function quizPage() {
     if (q.kind === "room") return t("ev_room", nm(q.n), q.w, it.map((o) => `${o.label} ${number(o.v * 100, 1)}`).join(", "));
     if (q.kind === "peak") return t("ev_peak", e.series[0].label, periods[e.marks[0]], e.series[1].label, periods[e.marks[1]]);
     if (q.kind === "trend") return t("ev_trend", e.series[0].label, periods[e.marks[0]], percent(e.series[0].share[e.marks[0]]), periods[e.marks[1]], percent(e.series[0].share[e.marks[1]]));
-    return t(q.kind === "year" ? "ev_year" : "ev_who", e.series[0].label, periods[e.marks[0]]);
+    if (q.kind === "who") return t("ev_who", e.period, nm(q.answer), q.ev.of, q.ev.of, Math.max(...q.ev.items.filter((x) => x.label !== q.answer).map((x) => x.v)));
+    return t("ev_year", periods[e.marks[0]]);
   };
   const round = (k) => {
     sailed();
     const q = game[k];
     answer = null;
-    box.innerHTML = `<p class="step">${t("quiz_status", k + 1, game.length)}</p><p class="ask" tabindex="-1">${t(q.ask[0], ...q.ask.slice(1).map(nm))}</p>
-      ${q.kind === "room" ? `<p class="sub">${t("room_era")}</p>` : ""}${q.clue ? `<ul class="words clue">${q.clue.map((w) => `<li>${escape(nm(w))}</li>`).join("")}</ul>` : ""}
+    now = k;
+    // (the round's state: its number, and how hard it is as three marks and a word: deal.js, DIFFICULTY)
+    box.innerHTML = `<p class="step">${t("quiz_status", k + 1, game.length)}<span class="tier" data-tier="${q.tier}"><i></i><i></i><i></i>${t("quiz_tier")[q.tier]}</span>${q.kind === "room" ? `<span>${t("room_era")}</span>` : ""}</p><p class="ask" tabindex="-1">${t(q.ask[0], ...q.ask.slice(1).map(nm))}</p>
+      ${q.clue ? `<ul class="words clue">${q.clue.map((w) => `<li>${escape(word(w))}</li>`).join("")}</ul>` : ""}
       <p class="choices">${q.choices.map((c, i) => `<button type="button" data-i="${i}"><span class="key" aria-hidden="true">${i + 1}</span>${escape(label(q, c))}</button>`).join("")}</p>
       ${q.kind === "room" ? `<p class="note caveat">${t("caveat")}</p>` : ""}<p class="verdict" role="status"></p><div class="reveal" hidden></div>`;
     go.disabled = true;
@@ -2570,7 +2597,9 @@ async function quizPage() {
     results.push({ ok, label: label(q, q.answer).split(" ")[0] });
     sailed();
     box.querySelectorAll(".choices button").forEach((x) => ((x.disabled = true), x.classList.toggle("right", q.choices[+x.dataset.i] === q.answer), x.classList.toggle("chosen", x === b && !ok)));
-    const said = ok ? (streak === 3 ? t("said_streak") : sayOne("said_right")) : sayOne("said_wrong", label(q, q.answer));
+    // (right in the last three rounds, the harder praise; a year missed by one, "nearly")
+    const said = ok ? (streak === 3 ? t("said_streak") : sayOne(now >= 7 ? "said_right_hard" : "said_right"))
+      : q.kind === "year" && Math.abs(+answer - +q.answer) === 1 ? t("said_close", told(q, q.answer)) : sayOne("said_wrong", told(q, q.answer));
     box.querySelector(".verdict").innerHTML = `<span><b>${escape(said)}</b> ${escape(evidence(q))}</span>`;
     const drawn = box.querySelector(".reveal"), W = Math.min(560, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft));
     drawn.hidden = false;

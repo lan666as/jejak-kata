@@ -11,7 +11,7 @@
 // information only a hover shows.
 import { readFileSync, writeFileSync } from "node:fs";
 import { quizData } from "./quiz-data.mjs";
-import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, seeded, MARGIN, KINDS, ROUNDS, GUESS_ROUNDS, SENSITIVE, OUTLET_NAMES, POINTED, PEOPLE, BODIES } from "../../site/deal.js";
+import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, seeded, shownIn, capOf, sortOf, marker, MARGIN, KINDS, ROUNDS, GUESS_ROUNDS, SENSITIVE, OUTLET_NAMES, POINTED, PEOPLE, BODIES, ROOM_WORDS } from "../../site/deal.js";
 import { TEXT } from "../../site/text.js";
 
 const FILE = new URL("../../site/data/quiz.json", import.meta.url).pathname, started = Date.now();
@@ -31,13 +31,16 @@ function margin(q) {
   if (q.kind === "freq" || q.kind === "resmi") {
     const p = P.indexOf(e.period), [a, b] = q.choices, [va, vb] = [W[a].share[p], W[b].share[p]];
     if (ratio(va, vb) < MARGIN.ratio) return `ratio ${ratio(va, vb).toFixed(2)}`;
+    if (q.kind === "freq" && Q.resmi.some((pair) => pair.includes(a) && pair.includes(b))) return "an official word and its loanword asked as “which is more frequent”";
     if (Math.max(pages(a, p), pages(b, p)) < MARGIN.pages || Math.min(pages(a, p), pages(b, p)) < MARGIN.least) return "too few pages";
     if ((va > vb ? a : b) !== q.answer) return "answer is not the larger";
   }
   if (q.kind === "room") {
     if (SENSITIVE.includes(q.w)) return `sensitive word ${q.w} beside ${q.n}`;
+    if (!ROOM_WORDS.includes(q.w)) return `“${q.w}” is not a word of public life (ROOM_WORDS)`;
+    if (e.items.some((i) => (i.v * 1000 * i.pages) / 1000 < MARGIN.roomHits)) return `a newsroom with under ${MARGIN.roomHits} pages of “${q.w}” beside ${q.n}`;
     const v = e.items.map((i) => i.v), s = [...v].sort((a, b) => b - a);
-    if (s[0] < MARGIN.ratio * s[1]) return `newsrooms ${v.join("/")}`;
+    if (s[0] < MARGIN.ratio * s[1] - 1e-9) return `newsrooms ${v.join("/")}`;  // (per mille as counted: 36 against 24 is 1.5)
     if (e.items.some((i) => i.pages < MARGIN.roomPages)) return "too few pages";
     if (OUTLET_NAMES[v.indexOf(s[0])] !== q.answer) return "answer is not the largest";
   }
@@ -54,19 +57,34 @@ function margin(q) {
   }
   if (q.kind === "year") {
     const clue = q.clue, sum = (p) => clue.reduce((s, w) => s + (W[w]?.share[p] || 0), 0), p = P.indexOf(q.answer);
-    const close = q.choices.filter((c) => c !== q.answer).find((c) => sum(P.indexOf(c)) * MARGIN.yearRatio > sum(p) || Math.abs(P.indexOf(c) - p) < 2);
+    const close = q.choices.filter((c) => c !== q.answer).find((c) => sum(P.indexOf(c)) * MARGIN.yearRatio > sum(p));
     if (close) return `year ${close} too near ${q.answer}`;
+    if (clue.some(marker)) return `a clue word names its year (${clue.filter(marker)})`;
+    if (P.some((_, r) => r !== p && sum(r) >= sum(p))) return `the clue stands higher in another year than ${q.answer}`;
+    // (the years offered near it: within MARGIN.yearNear where three such years may be offered, and on both sides of it
+    // where both sides have one within twice that)
+    const may = P.map((_, r) => r).filter((r) => r !== p && sum(r) * MARGIN.yearRatio <= sum(p)), offered = q.choices.filter((c) => c !== q.answer).map((c) => P.indexOf(c));
+    if (may.filter((r) => Math.abs(r - p) <= MARGIN.yearNear).length >= 3 && offered.some((r) => Math.abs(r - p) > MARGIN.yearNear) && !(may.some((r) => r < p && p - r <= 2 * MARGIN.yearNear) && may.some((r) => r > p && r - p <= 2 * MARGIN.yearNear))) return `years offered far from ${q.answer}: ${q.choices}`;
+    for (const side of [-1, 1]) if (may.some((r) => Math.sign(r - p) === side && Math.abs(r - p) <= 2 * MARGIN.yearNear) && !offered.some((r) => Math.sign(r - p) === side)) return `every year offered on one side of ${q.answer}: ${q.choices}`;
   }
   if (q.kind === "who") {
     const p = P.indexOf(q.ask[1]), clash = q.choices.filter((c) => c !== q.answer).find((c) => (Q.who[c]?.said[p] || []).filter((x) => q.clue.includes(x)).length > MARGIN.whoShared);
     if (clash) return `${clash} shares the clue of ${q.answer}`;
     if (pages(q.answer, p) < MARGIN.whoPages) return "too few pages";
+    // (every name offered in the news that year, and of the answer's own sort: a person among people of their time, a
+    // body among bodies, of its kind where three are there)
+    const out = q.choices.find((c) => !W[c] || pages(c, p) < MARGIN.whoPages);
+    if (out) return `${out} is on too few pages in ${q.ask[1]} to be offered`;
+    const odd = q.choices.find((c) => PEOPLE.includes(c) !== PEOPLE.includes(q.answer) || (PEOPLE.includes(c) && sortOf(c) !== sortOf(q.answer)));
+    if (odd) return `${odd} offered beside ${q.answer}`;
+    const shown = q.ev.items.map((i) => i.label).join() === q.choices.join() && q.ev.items.every((i) => i.v === (i.label === q.answer ? q.clue.length : (Q.who[i.label]?.said[p] || []).filter((x) => q.clue.includes(x)).length));
+    if (!shown) return "the evidence does not count the words shown beside each name offered";
   }
   return "";
 }
 
 // The quiz: 300 games in one visit (decks kept between them, as the page keeps them), from three seeds.
-const games = { bad: [], dealt: Object.fromEntries(KINDS.map((k) => [k, 0])), short: 0, kinds: new Set() };
+const games = { bad: [], dealt: Object.fromEntries(KINDS.map((k) => [k, 0])), short: 0, kinds: new Set() }, band = [[], [], []];
 for (const seed of [1, 2, 3]) {
   const rng = seeded(seed), d = decks(pool, rng), seen = Object.fromEntries(KINDS.map((k) => [k, []]));
   for (let g = 0; g < 100; g++) {
@@ -77,9 +95,11 @@ for (const seed of [1, 2, 3]) {
       games.dealt[q.kind]++;
       seen[q.kind].push(q.key);
       if (i && game[i - 1].kind === q.kind) games.bad.push(`${where}: the same kind twice running`);
+      if (game.filter((x) => x.kind === q.kind).length > capOf(q.kind)) games.bad.push(`${where}: ${game.filter((x) => x.kind === q.kind).length} questions of the kind ${q.kind} (at most ${capOf(q.kind)})`);
+      band[i < 3 ? 0 : i < 7 ? 1 : 2].push(q.d);
       if (keys.has(q.key)) games.bad.push(`${where}: asked twice`);
       keys.add(q.key);
-      for (const t of q.topics) { if (topics.has(t)) games.bad.push(`${where}: “${t}” again in one game`); topics.add(t); }
+      for (const t of new Set([...q.topics, ...shownIn(q)])) { if (topics.has(t)) games.bad.push(`${where}: “${t}” again in one game`); topics.add(t); }
       if (!q.choices.includes(q.answer)) games.bad.push(`${where}: answer ${q.answer} not among ${q.choices}`);
       if (new Set(q.choices).size !== q.choices.length || q.choices.length < 2) games.bad.push(`${where}: choices ${q.choices}`);
       const m = margin(q);
@@ -96,7 +116,19 @@ for (const seed of [1, 2, 3]) {
   }
 }
 log("300 quizzes: no repeat, no near-duplicate, every answer among its choices, every question over its margin", !games.bad.length && !games.short, games.bad.slice(0, 5).join("; ") || `${games.short} short`);
-log("each kind dealt at least 200 times", KINDS.every((k) => games.dealt[k] >= 200), KINDS.map((k) => `${k} ${games.dealt[k]}`).join(", "));
+log("each kind dealt at least 150 times", KINDS.every((k) => games.dealt[k] >= 150), KINDS.map((k) => `${k} ${games.dealt[k]}`).join(", "));
+// Harder as they go: the average difficulty (deal.js, DIFFICULTY) of rounds 1-3, 4-7 and 8-10 rises, over these games
+// and over 200 games of 200 fresh visits (a first game, the one most readers play).
+{ const firsts = [[], [], []];
+  for (let v = 0; v < 200; v++) { const rng = seeded(100 + v); deal(decks(pool, rng), rng, P).forEach((q, i) => firsts[i < 3 ? 0 : i < 7 ? 1 : 2].push(q.d)); }
+  const mean = (list) => list.reduce((a, x) => a + x, 0) / list.length, rises = (b) => mean(b[0]) + 0.15 < mean(b[1]) && mean(b[1]) + 0.15 < mean(b[2]);
+  log("harder as they go: the mean difficulty of rounds 1-3, 4-7 and 8-10 rises by at least 0.15 each time", rises(band) && rises(firsts), `300 games ${band.map((b) => mean(b).toFixed(2)).join(" < ")}; 200 first games ${firsts.map((b) => mean(b).toFixed(2)).join(" < ")}`); }
+// The names and words of a game go to the back for the visit's next games: over 50 visits of five games, how many a
+// game shows that an earlier game of its visit showed.
+{ let again = 0, all = 0;
+  for (let v = 0; v < 50; v++) { const rng = seeded(500 + v), d = decks(pool, rng), before = new Set();
+    for (let g = 0; g < 5; g++) { const shown = new Set(deal(d, rng, P).flatMap(shownIn)); all += shown.size; shown.forEach((w) => (again += before.has(w), before.add(w))); } }
+  log("the names and words of a visit's earlier games come back in at most 1 in 100 of those its next four games show", again <= all / 100, `${again} of ${all}`); }
 // Within a visit, a question of a kind smaller than the games played (the years, the official words) comes back only
 // after the whole deck: checked above. Across a visit's first game and its second, no question at all repeats:
 { const rng = seeded(9), d = decks(pool, rng), a = deal(d, rng, P).map((q) => q.key), b = deal(d, rng, P).map((q) => q.key);
@@ -141,17 +173,27 @@ log(`300 guess games: six rounds, no word or name twice, every value as counted,
 log("no one fixed guess wins: the best (always guessing " + at + ") scores under half on average", best < 0.5, `${Math.round(best * 100)}%`);
 
 // Every string the games use, in both languages.
-const KEYS = ["said_right", "said_wrong", "said_streak", "said_near", "said_rank", "ask_freq", "ask_peak", "ask_resmi", "ask_room", "ask_trend", "trend_up", "trend_down", "trend_same",
+const KEYS = ["said_right", "said_right_hard", "said_close", "said_wrong", "said_streak", "said_near", "said_far", "said_rank", "quiz_tier", "ask_room", "quiz_who_ask", "ask_freq", "ask_peak", "ask_resmi", "ask_room", "ask_trend", "trend_up", "trend_down", "trend_same",
   "room_era", "ev_freq", "ev_peak", "ev_room", "ev_trend", "ev_year", "ev_who", "caveat", "quiz_status", "quiz_streak", "quiz_keys", "quiz_plate_all", "guess_context", "next_toy",
   "played_best", "played_once", "quiz_year_ask", "quiz_who_ask", "quiz_tally", "quiz_save", "quiz_log", "quiz_next", "quiz_share", "guess_ask", "guess_truth", "guess_lock", "guess_score",
   "guess_more", "guess_done", "guess_rule", "guess_off", "try_label", "guess_share", "copy_score", "copied", "again", "next", "nav_quiz", "play_tebak", "play_kuis", "quiz_lede", "guess_lede", "guess_yours"];
 const missing = ["id", "en"].flatMap((l) => KEYS.filter((k) => TEXT[l][k] === undefined).map((k) => `${l}.${k}`));
-const lengths = ["said_right", "said_wrong", "said_near", "said_rank"].filter((k) => TEXT.id[k]?.length !== TEXT.en[k]?.length);
+const lengths = ["said_right", "said_right_hard", "said_wrong", "said_near", "said_far", "said_rank", "quiz_tier"].filter((k) => TEXT.id[k]?.length !== TEXT.en[k]?.length);
 log("every string of the games in both languages", !missing.length && !lengths.length, [...missing, ...lengths].join(", "));
 // The owner's wording, exactly.
-const OWN = { id: ["Tepat.", "Kena.", "Tiga beruntun. Jangan-jangan kamu wartawan.", "Arsip berjalan", "Baru bangun tidur"], en: ["Spot on.", "Got it.", "Three in a row. Are you a reporter?", "A walking archive", "Just woke up"] };
-const flat = (l) => JSON.stringify([TEXT[l].said_right, TEXT[l].said_streak, TEXT[l].said_rank]);
-log("the reactions are worded as given", Object.entries(OWN).every(([l, list]) => list.every((s) => flat(l).includes(s))) && TEXT.id.said_wrong[3]("X") === "Ingatan memang suka menipu: X." && TEXT.en.ask_trend("w", 1, 2) === "“w”, from 1 to 2: up, down, or about the same?");
+const OWN = {
+  id: { said_right: ["Tepat.", "Betul.", "Kena.", "Ingatanmu bagus."], said_right_hard: ["Betul, dan tanpa menyontek.", "Benar. Redaktur pun belum tentu ingat."],
+    said_wrong: ["Bukan. Jawabannya X.", "Meleset. Yang benar: X.", "Belum. Jawabannya X.", "Ingatan memang suka menipu. Jawabannya X."], said_close: ["Nyaris. X."],
+    said_streak: ["Tiga beruntun. Jangan-jangan kamu wartawan."], quiz_who_ask: ["Kata-kata ini paling sering menemani satu nama di berita Kompas X. Nama yang mana?"],
+    ask_room: ["Kompas, Tempo, atau Tribunnews: siapa paling sering menulis “X” di berita tentang X?"] },
+  en: { said_right: ["Spot on.", "Right.", "Got it.", "Good memory."], said_right_hard: ["Right, and no peeking.", "Correct. Not every editor would get that."],
+    said_wrong: ["No. It was X.", "Missed. The answer: X.", "Not yet. It was X.", "Memory plays tricks. It was X."], said_close: ["So close. X."],
+    said_streak: ["Three in a row. Are you a reporter?"], quiz_who_ask: ["These words kept one name company in Kompas news in X. Which name?"],
+    ask_room: ["Kompas, Tempo or Tribunnews: which writes “X” most often in stories about X?"] },
+};
+const said = (v) => [].concat(v).map((x) => (typeof x === "function" ? x("X", "X") : x));
+const off = Object.entries(OWN).flatMap(([l, keys]) => Object.entries(keys).filter(([k, list]) => JSON.stringify(said(TEXT[l][k])) !== JSON.stringify(list)).map(([k]) => `${l}.${k}`));
+log("the reactions and asks are worded as given", !off.length && TEXT.en.ask_trend("w", 1, 2) === "“w”, from 1 to 2: up, down, or about the same?" && ["Arsip berjalan", "Baru bangun tidur"].every((x) => TEXT.id.said_rank.includes(x)), off.join(", "));
 console.log(`     (without a browser: ${((Date.now() - started) / 1000).toFixed(1)} s)`);
 
 // ---- in a browser ----------------------------------------------------------------------------------------------------

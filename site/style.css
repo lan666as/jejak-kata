@@ -710,7 +710,11 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
   body:has(.quiz-board) .site-foot { padding-bottom: 90px; }
   .quiz-voyage { grid-area: voyage; } .quiz-log .voyage-mark { display: block; width: 100%; height: 40px; } .quiz-log .voyage-mark text { display: none; }  /* (the answers under the ports: on the plate) */
   .quiz-bar { display: contents; } .quiz-bar .quiz-tally { grid-area: tally; font-size: var(--t-small); font-stretch: 100%; font-weight: 600; } .quiz-go { grid-area: go; min-width: 8rem; }
-  .quiz .ask { font-size: 1.3125rem; } .quiz .clue li { font-size: var(--t-body); }
+  .quiz .ask { font-size: 1.25rem; } .quiz .clue li { font-size: var(--t-small); }
+  /* (a round and its answer, evidence included, on one screen of a phone, above the bar) */
+  .quiz-card { padding: var(--s4); } .quiz .verdict b { font-size: var(--t-body); }
+  .quiz .ask, .quiz .verdict { margin-block: 0 var(--s2); } .quiz .clue { margin-top: var(--s2); }
+  .quiz .choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: var(--s3) 0; } .quiz .choices button { min-width: 0; padding-inline: var(--s3); font-size: var(--t-small); white-space: normal; text-wrap: balance; }
 }
 @media (min-width: 900px) { .quiz-board { grid-template-columns: minmax(0, 1fr) 20rem; gap: var(--s6); } .quiz-log { position: sticky; top: calc(var(--head-h) + var(--s5)); } }
 .voyage-mark .streak { stroke: var(--beacon); }
@@ -723,7 +727,8 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .quiz .clue li { padding: 0; border: 0; background: none; min-height: 0; font: 600 var(--t-lede)/1.4 var(--type); color: var(--ink); }
 .quiz .clue li + li::before { content: "·"; margin-right: var(--s3); color: var(--ink-3); }
 .quiz .rank { font: 700 var(--t-h3)/var(--l-h3, 1.15) var(--type); font-stretch: 80%; margin: 0 0 var(--s4); color: var(--route); }
-.quiz .caveat { margin: var(--s2) 0; font-size: var(--t-small); }
+.quiz .caveat { margin: var(--s2) 0; padding: 0 0 0 var(--s3); font-size: var(--t-small); background: none; border: 0; border-left: var(--rule) solid var(--line); border-radius: 0; }  /* (in sight, quietly: a rule, not a box) */
+.quiz-card > :last-child { margin-bottom: 0; }
 .quiz .verdict { flex-direction: column; align-items: flex-start; gap: var(--s2); font-size: var(--t-body); line-height: var(--l-body); }
 .quiz .verdict b { font-size: var(--t-lede); }
 .quiz .verdict .context { color: var(--ink-2); }
@@ -748,7 +753,12 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .quiz .choices button { font-size: var(--t-body); min-width: 6rem; }
 .quiz .choices .right, .quiz .choices .right:disabled { background: var(--ink); color: var(--chart); border-color: var(--ink); opacity: 1; }
 .quiz .ask { font: 700 clamp(1.375rem, 4.6vw, 2rem)/1.2 var(--type); font-stretch: 85%; max-width: 24em; text-wrap: balance; }
-.quiz .step { font-size: var(--t-meta); font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; margin: 0 0 var(--s2); }
+.quiz .step { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s3); font-size: var(--t-meta); font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; margin: 0 0 var(--s2); }
+/* how hard the round is: three marks, as many filled as its tier, and its word (app.js, quizPage; deal.js, DIFFICULTY) */
+.quiz .tier { display: inline-flex; align-items: center; gap: var(--s1); }
+.quiz .tier i { width: var(--s2); height: var(--s2); border-radius: 50%; box-shadow: inset 0 0 0 var(--rule) var(--ink-3); }
+.quiz .tier i:last-of-type { margin-right: var(--s1); }
+.quiz .tier[data-tier="0"] i:nth-of-type(-n + 1), .quiz .tier[data-tier="1"] i:nth-of-type(-n + 2), .quiz .tier[data-tier="2"] i { background: var(--ink-3); }
 .verdict { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); max-width: var(--measure); font-size: var(--t-lede); line-height: var(--l-lede); }
 .verdict:empty, .verdict[hidden] { display: none; }
 .gauge { position: relative; max-width: 560px; padding: var(--s2) 0 0; }
