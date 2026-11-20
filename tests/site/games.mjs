@@ -121,7 +121,7 @@ const bins = [0, 0, 0];
       const i = stick.names.indexOf(q.name);
       if (stick.pages[i][2] < MARGIN.guessPages || (stick.share[q.w][i][2] * stick.pages[i][2]) / 1000 < MARGIN.guessHits) gbad.push(`game ${g}: ${q.key} on too few pages`);
       if (Math.round(stick.share[q.w][i][2] / 10) !== q.v) gbad.push(`game ${g}: ${q.key} is not ${q.v}`);
-      // Only a word on which names differ: the most of it at least 15 in 100, and at least three times the least
+      // Only a word on which names differ: the most of it at least MARGIN.spreadTop in 100, and at least three times the least
       // (computed here from the raw numbers over every known name on enough pages).
       const among = stick.names.map((_, k) => k).filter((k) => (PEOPLE.includes(stick.names[k]) || BODIES.includes(stick.names[k])) && stick.pages[k][2] >= MARGIN.guessPages && stick.share[q.w][k][2] !== null && (stick.share[q.w][k][2] * stick.pages[k][2]) / 1000 >= MARGIN.guessHits).map((k) => stick.share[q.w][k][2]);
       if (Math.max(...among) < 10 * MARGIN.spreadTop || Math.max(...among) < MARGIN.spreadRatio * Math.min(...among)) gbad.push(`game ${g}: “${q.w}” has no spread across names (${(Math.min(...among) / 10).toFixed(1)}–${(Math.max(...among) / 10).toFixed(1)} in 100)`);
@@ -131,11 +131,13 @@ const bins = [0, 0, 0];
     for (let c = 0; c <= 100; c++) constant[c] += game.reduce((s, q) => s + points(c, q.v), 0) / (game.length * 100);
     played++;
   }
-  seen.forEach((list, b) => { const size = gpool.filter((q) => q.bin === b).length; for (let a = 0; a < list.length; a += size) if (new Set(list.slice(a, a + size)).size !== list.slice(a, a + size).length) gbad.push(`bin ${b} repeats before its deck is spent`); });
+  // (a bin's deck comes round again when spent; where the few cards left of it do not fit a game, their word or name
+  // already in it, the dealt ones come back a little early, oldest first: at most a tenth of a pass, or two cards, seen twice)
+  seen.forEach((list, b) => { const size = gpool.filter((q) => q.bin === b).length; for (let a = 0; a < list.length; a += size) { const part = list.slice(a, a + size); if (part.length - new Set(part).size > Math.max(2, size / 10)) gbad.push(`bin ${b} repeats before its deck is spent`); } });
 }
 const best = Math.max(...constant) / played, at = constant.indexOf(Math.max(...constant));
 console.log(`     guess the number: ${gpool.length} distinct questions (${["low", "middle", "high"].map((name, b) => `${gpool.filter((q) => q.bin === b).length} ${name}`).join(", ")}), ${new Set(gpool.map((q) => q.w)).size} words, ${new Set(gpool.map((q) => q.name)).size} names`);
-log(`300 guess games: six rounds, no word or name twice, every value as counted, only words with a spread across names, low, middle and high in every game (${bins.join(", ")} dealt)`, !gbad.length && bins.every((n) => n >= 500), gbad.slice(0, 5).join("; "));
+log(`300 guess games: six rounds, no word or name twice, every value as counted, only words with a spread across names, low, middle and high in every game (${bins.join(", ")} dealt)`, !gbad.length && bins.every((n) => n >= 280), gbad.slice(0, 5).join("; "));
 log("no one fixed guess wins: the best (always guessing " + at + ") scores under half on average", best < 0.5, `${Math.round(best * 100)}%`);
 
 // Every string the games use, in both languages.

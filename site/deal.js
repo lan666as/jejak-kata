@@ -19,7 +19,7 @@ export const MARGIN = {
   yearRatio: 1.5,  // which year: in every other year offered, the ten words together stand at most 1/1.5 of their year's share
   guessPages: 1500,// guess the number: the name is on at least this many pages of 2020-2024, so that "of 100" is a real hundred
   guessHits: 30,   // ... and at least this many of them hold the word (a count of 3 is not a share)
-  spreadTop: 15,   // ... and the word is asked only where names differ on it: the name with the most of it has at least 15 in 100 ...
+  spreadTop: 8,   // ... and the word is asked only where names differ on it: the name with the most of it has at least 8 in 100 ...
   spreadRatio: 3,  // ... and at least three times the share of the name with the least ("janji", 1 to 5 in 100 for every name, is not a game on a 0-100 scale)
 };
 
@@ -63,7 +63,7 @@ export const shown = (word, kind) => (PEOPLE.includes(word) || BODIES.includes(w
 export const ROUNDS = 10;
 export const TIERS = [0, 0, 0, 1, 1, 1, 1, 2, 2, 2];
 export const KINDS = ["year", "who", "freq", "peak", "resmi", "room", "trend"];
-/** Guess the number: six rounds, two each of a low, a middle and a high true value, so that no one guess always pays. */
+/** Guess the number: six rounds over low, middle and high true values, so that no one guess always pays. */
 export const GUESS_ROUNDS = 6;
 export const GUESS_BINS = [[1, 4], [5, 14], [15, 100]];  // most true values are small (half are 1 or 2 in 100): the bins are cut where the data has enough of each
 
@@ -281,23 +281,28 @@ export function guessPool(s, era = 2) {
 }
 /** A deck per bin of the true value, kept for a visit. */
 export const guessDecks = (pool, rng) => GUESS_BINS.map((_, b) => new Deck(pool.filter((q) => q.bin === b), rng));
-/** One game of six: two of each bin in a shuffled order, no word and no name twice. */
+/** One game of six: one high value, three middle and two low (few values in the data are high), in a shuffled
+ *  order, no word and no name twice. */
 export function guessDeal(d, rng) {
   const used = new Set(), game = [];
-  for (const b of shuffle([0, 0, 1, 1, 2, 2], rng)) {
-    // (where its bin has nothing left this pass of the deck that fits, the nearest bin that has)
-    const ok = (q) => q.topics.every((t) => !used.has(t)), q = [b, ...[0, 1, 2].filter((x) => x !== b).sort((x, y) => Math.abs(x - b) - Math.abs(y - b))].reduce((got, x) => got || d[x].take(ok, 0), null);
+  // The scarcest bin (the high values) is dealt first, while every word and name is still free; the game's order is
+  // shuffled after.
+  for (const b of [2, 1, 1, 1, 0, 0]) {
+    const ok = (q) => q.topics.every((t) => !used.has(t));
+    // (where what is left of its bin this pass does not fit, the bin's dealt cards come back early; only then the nearest bin)
+    const again = (x) => d[x].take(ok, 0) || ((d[x].fresh.push(...d[x].dealt.splice(0))), d[x].take(ok, 0));
+    const q = [b, ...[0, 1, 2].filter((x) => x !== b).sort((x, y) => Math.abs(x - b) - Math.abs(y - b))].reduce((got, x) => got || again(x), null);
     if (!q) continue;
     q.topics.forEach((t) => used.add(t));
     game.push(q);
   }
-  return game;
+  return shuffle(game, rng);
 }
-/** Points for a guess: 100 for the truth, less by how far off as a part of the truth (half the truth and five more off
+/** Points for a guess: 100 for the truth, less by how far off as a part of the truth (half the truth and three more off
  *  scores nothing), so that 6 against a true 2 costs as much as 30 against a true 50: most true values are small, and
  *  points by the plain distance would let one small guess, always, score well. "Right" (a filled port): within 3, or
  *  within a quarter of the truth where that is more. */
-export const points = (guess, truth) => Math.max(0, Math.round(100 - (100 * Math.abs(truth - guess)) / (truth / 2 + 5)));
+export const points = (guess, truth) => Math.max(0, Math.round(100 - (100 * Math.abs(truth - guess)) / (truth / 2 + 3)));
 export const close = (guess, truth) => Math.abs(truth - guess) <= Math.max(3, truth / 4);
 /** The line said after a guess, by how far off: at most 3, 10, 25, more. */
 export const nearness = (guess, truth) => [3, 10, 25].filter((d) => Math.abs(truth - guess) > d).length;
