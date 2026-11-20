@@ -237,7 +237,9 @@ A story is a voyage in three parts.
 
 Every caption stays in the document, in its beat, for screen readers and find-in-page; the visible caption is an
 `aria-live="polite"` region. With reduced motion the stage stays, steps cut instead of travelling and nothing snaps.
-A story keeps its place by step (not by pixels) across a language switch and the back button.
+A story keeps its place by step (not by pixels) across a language switch and the back button; its address follows the step
+on screen (`cerita/oknum/#/1/3`), as the map's and the race's follow their words (`rewrite` in app.js), so a switch of
+language or a resize returns to what was shown.
 
 ## Addresses and sharing
 

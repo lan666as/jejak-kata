@@ -1101,7 +1101,7 @@ async function chartPage(name = MAIN, ...list) {
   }, undefined, { sea: gl, explore: true });
   const deep = !!figure.chart.state;
   const update = async () => {
-    history.replaceState(null, "", href("peta", lens.lens, ...list));
+    rewrite("peta", lens.lens, ...list);
     view.querySelector(".map-demo")?.remove();
     pick.redraw();
     address();
@@ -1154,7 +1154,7 @@ async function racePage(name = MAIN, ...list) {
   select.addEventListener("change", () => visit(href("balap", select.value, ...list)));
   const holder = el("<div></div>");
   const draw = async () => {
-    history.replaceState(null, "", href("balap", lens.lens, ...list));
+    rewrite("balap", lens.lens, ...list);
     const entries = await entriesOf(lens, list);
     holder.replaceChildren(...(entries.length ? [played(race(lens, entries, null, 12), 0), el(`<h3>${t("frequency")}</h3>`), frequencyChart(lens, entries), tools(href("balap", lens.lens, ...list), { check: list })] : [el(`<p class="sub">${t("race_empty")}</p>`)]));
   };
@@ -1991,7 +1991,11 @@ async function storyPage(slug, scene, step, more) {
     heardScene = seen;
     if (landed === false && shore < middle) hear("land");  // ashore
     landed = shore < middle;
-    if (!rendering && !menuOpen()) marks.set(history.state?.id, seen >= 0 ? [seen, stages[seen].on()] : shore <= top ? [-1, top - shore] : null);
+    if (!rendering && !menuOpen()) {
+      marks.set(history.state?.id, seen >= 0 ? [seen, stages[seen].on()] : shore <= top ? [-1, top - shore] : null);
+      const at = seen >= 0 ? [String(seen), String(stages[seen].on())] : [];
+      if (at.join() !== here.slice(2).join()) rewrite("cerita", slug, ...at);
+    }
     const sailed = (top - rects[0].top) / (rects.at(-1).bottom - height - rects[0].top);
     masthead.style.setProperty("--voyage", Math.max(0, Math.min(1, sailed)).toFixed(4));
   };
@@ -2073,7 +2077,7 @@ async function embedPage(slug, k = "0", j = "0") {
     link.href = open(at);
     box.querySelector(".back").disabled = !at;
     box.querySelector(".on").disabled = at === n;
-    history.replaceState(history.state, "", href("cerita", slug, EMBED, String(k), String(at)));
+    rewrite("cerita", slug, EMBED, String(k), String(at));
     j = at;
   };
   if (WebAudio) box.querySelector(".embed-open").before(document.getElementById("sound").cloneNode(true));
@@ -2626,6 +2630,13 @@ addEventListener("resize", shell);
 
 /** The route on screen, and the address it was shown at (address.js). */
 let here = [], routed = "";
+/** The page on screen now shows `parts` (the map's words, a story's step): the address says so, in the same entry of
+ *  the history, and so does the route a language switch, a resize or the back button returns to. */
+function rewrite(...parts) {
+  here = parts;
+  history.replaceState(history.state, "", href(...parts));
+  routed = location.href;
+}
 function route() {
   tip(null);
   // The address says the route, and the language where it says one (an old address at the root does not). It is
