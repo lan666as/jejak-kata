@@ -23,7 +23,7 @@
 // - a chart's title or legend not wholly in view (a strip that pans: its pinned title and legend), a row cut at the
 //   top or foot of a panned strip at rest, any row the step names (its focus; "*" the row of all pages) out of view
 //   (in the window, or in the rows shown past the gap where the window elides it), a number on the beacon not wholly
-//   inside the window or the rows past the gap (half a pill cut at the figure's edge), any text on a figure under 11px on
+//   inside the window or the rows past the gap (half a pill cut at the figure's edge), any text on a figure under 12px on
 //   screen, a legend that names hollow rings at the moment where none are drawn; a stacked figure under 240px.
 // A look is of the screen as it stands: what it cannot see is a text drawn on a canvas (the seas' names: labels.mjs),
 // a colour's contrast, or an overlap between two pieces of text inside one SVG (labels.mjs holds the figures to that).
@@ -186,10 +186,10 @@ const look = ([k, j]) => {
     if (!tall && (f.top < win.top - 1 || f.bottom > win.bottom + 1)) wrong.push(`the figure is ${Math.round(f.height)}px tall in a room of ${Math.round(win.height)}px`);
     // (the opening's meta rises with it over the figure's foot)
     for (const n of [meta, key, nav]) if (n && n.getClientRects().length && hit(box, r(n)) && getComputedStyle(n).visibility !== "hidden" && !(j === 0 && n === meta && r(n).top >= box.bottom - 52 * (f.height / svg.viewBox.baseVal.height))) wrong.push(`the figure lies under ${n.className}`);
-    // No text on a figure under 11px on screen.
+    // No text on a figure under 12px on screen (at every phone size, 320 included).
     // (a plate held to a height keeps its shape inside its box: drawn at the smaller of the two scales)
     const scale = Math.min(f.width / svg.viewBox.baseVal.width, f.height / svg.viewBox.baseVal.height), small = Math.min(...[...svg.querySelectorAll("text")].filter((t) => t.textContent.trim()).map((t) => parseFloat(getComputedStyle(t).fontSize) * scale));
-    if (small < 10.95) wrong.push(`a label on the figure is ${small.toFixed(1)}px on screen`);
+    if (small < 11.95) wrong.push(`a label on the figure is ${small.toFixed(1)}px on screen`);
   }
   // The chart's head: a strip that pans shows its title and legend pinned over its window; any other, its own.
   const pin = stage.querySelector(".pinned"), pinned = tall && pin && getComputedStyle(pin).display !== "none";

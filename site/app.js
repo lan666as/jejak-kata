@@ -269,10 +269,15 @@ function tabs(labels, show, first = 0, style = "tabs") {
   const press = (i) => {
     buttons.forEach((b, j) => b.setAttribute("aria-pressed", i === j));
     show(i);
-    // In a row that scrolls sideways, the pressed one is brought into the row's view.
+    // In a row that scrolls sideways, the pressed one is brought into the row's view by the least scroll that shows it
+    // whole with a whole chip at the row's start (the row at rest starts at its first; never a chip cut at the left).
     requestAnimationFrame(() => {
-      const row = list.getBoundingClientRect(), at = buttons[i].getBoundingClientRect();
-      if (at.left < row.left || at.right > row.right) list.scrollLeft += at.left - row.left - parseFloat(getComputedStyle(list).paddingLeft);
+      const pad = parseFloat(getComputedStyle(list).paddingLeft) || 0, item = (b) => b.closest("li") || b, view_ = list.clientWidth - 2 * pad;
+      const right = item(buttons[i]).offsetLeft + item(buttons[i]).offsetWidth - list.firstElementChild.offsetLeft;
+      const starts = buttons.map((b) => item(b).offsetLeft - list.firstElementChild.offsetLeft);
+      const to = right <= view_ ? 0 : starts.find((x) => right - x <= view_) ?? starts[i];
+      list.scrollTo({ left: to, behavior: still() ? "auto" : "smooth" });
+      edged(list);
     });
   };
   buttons.forEach((b, i) => b.addEventListener("click", () => press(i)));
@@ -300,11 +305,23 @@ function awaited(holder, make, { shape = "part", then } = {}) {
   });
 }
 
+/** A row that scrolls sideways (.chips, .tabs) says where it goes on: a shadow at the edge beyond which more lies
+ *  (more-left, more-right), looked at as it scrolls, on a resize and as rows come into the page. */
+const edged = (row) => { const max = row.scrollWidth - row.clientWidth; row.classList.toggle("more-left", row.scrollLeft > 2); row.classList.toggle("more-right", max - row.scrollLeft > 2); };
+let edging = false;
+const edgeAll = () => edging || ((edging = true), requestAnimationFrame(() => ((edging = false), view.querySelectorAll(".chips, .tabs").forEach(edged))));
+document.addEventListener("scroll", (e) => e.target.matches?.(".chips, .tabs") && edged(e.target), true);
+addEventListener("resize", edgeAll);
+new MutationObserver(edgeAll).observe(view, { childList: true, subtree: true });
+
 /** Tabs over one holder: the content of the pressed tab replaces the last. With `fold` (the indices to keep in sight),
  *  the other tabs stand under one "Atur" control (`options`), with whatever else the content puts there. */
 function switcher(labels, content, first = 0, style = "tabs", fold = null) {
   const holder = el(`<div class="holder"></div>`), box = el("<div></div>"), list = tabs(labels, (i) => awaited(holder, () => content(i, more)), first, style);
   const more = fold && options();
+  // (the few in sight, with the one pressed, wrap onto a second line on a phone rather than scroll: none is cut, the
+  // pressed one always seen; the rest, under "Atur", scroll sideways with their edge cue)
+  if (fold) list.classList.add("wrap");
   box.append(list);
   if (fold) {
     const rest = el(`<ul class="${style}"></ul>`);
@@ -413,7 +430,7 @@ function stage(part, k, of, steer, intro = "") {
   const node = el(`<section class="scene" id="scene-${k}" aria-labelledby="scene-${k}-title">
     <div class="stage" data-step="0" tabindex="-1"><div class="stage-figure"></div>
       <div class="stage-side"><p class="stage-meta"><span class="stage-part">${of > 1 ? words.title : ""}</span><span class="count"></span></p>
-        <div class="caption"><div class="turns" aria-live="polite"></div><button type="button" class="more-button" aria-expanded="false" hidden>${t("read_on")}</button></div><p class="sea-key" aria-hidden="true"></p>
+        <div class="caption"><div class="turns" aria-live="polite"></div><p class="read-cue" aria-hidden="true" hidden>${t("read_cue")} ↓</p><button type="button" class="more-button" aria-expanded="false" hidden>${t("read_on")}</button></div><p class="sea-key" aria-hidden="true"></p>
         <div class="stage-nav"><button type="button" class="step back">${arrow("M15 5l-7 7 7 7")}<span>${t("step_back")}</span></button>
           <ol class="ticks" aria-label="${t("steps_label")}">${[...Array(n + 1)].map((_, j) => `<li><button type="button" aria-label="${escape(name(j).replace(/<[^>]+>/g, ""))}"></button></li>`).join("")}</ol>
           <button type="button" class="step on"><span>${t("step_on")}</span>${arrow("M9 5l7 7-7 7")}</button></div></div></div>
@@ -421,7 +438,9 @@ function stage(part, k, of, steer, intro = "") {
   const box = node.firstElementChild, room = box.firstElementChild, caption = box.querySelector(".caption"), turns = caption.firstElementChild, more = caption.lastElementChild, count = box.querySelector(".count");
   const ticks = [...box.querySelectorAll(".ticks button")], [back, ahead] = box.querySelectorAll(".step"), nav = box.querySelector(".stage-nav");
   let at = -1, figure = null, sizes = [];
-  const said = (j) => (j ? `<p class="head">${head(j)}</p><p>${part.steps[j - 1][language]}</p>`
+  // (a head that only repeats the first words of its text, "2016" over "2016. Empat padanan...", is not run into it)
+  const plain = (html) => html.replace(/<[^>]*>/g, "").trim().toLowerCase(), echo = (h, text) => !!plain(h) && plain(text).startsWith(plain(h).replace(/[.:]$/, ""));
+  const said = (j) => (j ? `<p class="head${echo(head(j), part.steps[j - 1][language]) ? " echo" : ""}">${head(j)}</p><p>${part.steps[j - 1][language]}</p>`
     : `<p class="title">${words.title}</p>${intro ? `<p class="intro">${intro}</p>` : ""}${words.text ? `<p>${words.text}</p>` : ""}${k ? "" : `<p class="hint">${t("stage_hint")}</p>`}`);
   const show = (j = at) => {
     if (!figure || j < 0) return;
@@ -553,19 +572,26 @@ function stage(part, k, of, steer, intro = "") {
     more.setAttribute("aria-expanded", on);
     more.textContent = t(on ? "read_less" : "read_on");
     turns.scrollTop = 0;
+    cue.hidden = true;
+    cue.classList.remove("done");
     if (!on) return turns.style.removeProperty("max-height");
     // (the sheet covers the stage above its controls, inside its padding; the whole stage where the controls stand
     // beside the figure, a screen held sideways, and above them too little is left to read in)
     const b = box.getBoundingClientRect(), nav = box.querySelector(".stage-nav").getBoundingClientRect(), cs = getComputedStyle(box);
     Object.entries({ "--sheet-top": cs.paddingTop, "--sheet-left": cs.paddingLeft, "--sheet-right": cs.paddingRight, "--sheet-bottom": (nav.top - b.top < 0.6 * b.height ? cs.paddingBottom : b.bottom - nav.top + parseFloat(cs.rowGap || 8) + "px") }).forEach(([k, v]) => box.style.setProperty(k, v));
     // (where the text is taller than the sheet, the sheet first shows its whole lines: none is cut at its foot)
+    // and says that it goes on: a shadow under the text's box (outside it, never over the text) and a line, "Geser ke
+    // atas untuk membaca terus", until its end is reached)
     const turn = turns.querySelector(".turn:not(.out)");
     turns.style.removeProperty("max-height");
     if (turn && turns.scrollHeight > turns.clientHeight + 1) {
+      cue.hidden = false;
       const top = turns.getBoundingClientRect().top;
       turns.style.maxHeight = Math.max(0, ...lineEnds(turn).map((y) => y - top).filter((y) => y <= turns.clientHeight)) + "px";
     }
   };
+  const cue = box.querySelector(".read-cue");
+  turns.addEventListener("scroll", () => cue.classList.toggle("done", turns.scrollTop + turns.clientHeight >= turns.scrollHeight - 2), { passive: true });
   more.addEventListener("click", () => read(!box.classList.contains("reading")));
   box.addEventListener("keydown", (e) => e.key === "Escape" && box.classList.contains("reading") && (read(false), more.focus()));
   ticks.forEach((b, m) => b.addEventListener("click", () => steer(m)));

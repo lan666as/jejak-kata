@@ -38,7 +38,7 @@ const rules = (tick, base, line, soft, draw) => tick.map((v) => draw(v, Math.abs
 
 /** A plate's width, and its title broken into lines at that width: how much room the title takes (`top`). */
 function heading(title, width) {
-  const W = Math.round(Math.max(300, Math.min(760, width))), narrow = W < 480;
+  const W = Math.round(Math.max(272, Math.min(760, width))), narrow = W < 480;
   const size = narrow ? 16 : 21, room = Math.floor((W - 24) / (size * 0.57)), lines = [""];
   for (const word of title.split(" ")) (lines.at(-1) + " " + word).trim().length > room ? lines.push(word) : (lines[lines.length - 1] = (lines.at(-1) + " " + word).trim());
   return { W, narrow, size, lines, top: 14 + lines.length * size * 1.14 };

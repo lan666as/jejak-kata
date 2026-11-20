@@ -100,7 +100,10 @@ it.
   language switch. The current page is marked in `--route`. Inside a story a 2px route-coloured line along the
   header's lower edge shows how far through the story one is.
 - **Buttons**: primary (route fill, on-route text), secondary (hairline, ink), quiet (text only). Height 44px on touch.
-  Chips are pills. One focus ring: 2px `--route`, 2px offset, on everything focusable.
+  Chips are pills. A row of chips or tabs that scrolls sideways on a phone starts at its first, shows a shadow at the
+  edge beyond which more lies (`edged` in app.js), and brings the pressed one into view by the least scroll that leaves
+  a whole chip at its start; a word's source chips in sight (the main three and the one pressed) wrap onto a second
+  line rather than scroll. One focus ring: 2px `--route`, 2px offset, on everything focusable.
 - **Field**: 44px, `--chart-2`, hairline; on the deep, `--deep-2` with no border.
 - **Page head** (the shore): kicker (meta, uppercase is not used; a short plain label), h1, lede, on a band of the
   deep that runs edge to edge, with the night sea held still behind it (one frame; darker under the text) and the
@@ -210,14 +213,17 @@ A story is a voyage in three parts.
    a long caption; the figure then keeps only its least and the captions are at the body's size), the caption shows
    its whole lines, as many as fit, and a labelled control, "Baca selengkapnya" / "Read on" (`clamp` in app.js):
    stacked, in the place of the row of ticks between the step buttons (the ticks set aside while it is there; the step
-   buttons step), the caption's head (an opening's title) run into its text in bold at the text's size, so that its
+   buttons step), the caption's head (an opening's title) run into its text in bold at the text's size (not a head that
+   only repeats its text's first words: "2016" over "2016. Empat padanan..."), so that its
    band holds lines of text and not a head alone (at least two where the figure keeps more than its least, 240px and
    the rows its steps name: `share`); side by side, under the caption's last line. One press opens the caption as a
    sheet of the deep standing on the controls, opaque, as tall as its text needs (a short text leaves the figure in
    sight) and at most the stage above them, the text set as it was; a second press ("Tutup" / "Close"), Escape or the
    next step closes it. Only where the text is
-   taller than the whole stage (very large type) does the sheet's text scroll, and its first screen still ends on a
-   whole line. So at rest a caption is read to its end or ends on a whole line above its control: no line is ever cut,
+   taller than the whole stage (very large type, a long opening on a 320px phone) does the sheet's text scroll, and its
+   first screen still ends on a whole line, with a cue that it goes on: a shadow under the text's box (outside it,
+   never a fade over the text) and a line under it, "Geser ke atas untuk membaca terus ↓" / "Swipe up to read on ↓",
+   until its end is reached. So at rest a caption is read to its end or ends on a whole line above its control: no line is ever cut,
    faded, or under the controls, the key or the figure, and nothing of another step shows through (the controls and
    the open sheet are opaque). The sea's key gives its line to the text before the text gives way: its line is the
    caption's too, and where the text needs it the key is not shown (`yields`). No caption ever scrolls inside its
@@ -246,7 +252,8 @@ A story is a voyage in three parts.
    its rows set closer where they must (26px on a phone, 22 beside a caption, down to 13 where a step names nine of
    seventeen rows on a 320px phone; `panning` in app.js). Beside the caption (a phone held sideways) a strip whose rows
    would stand closer than 18px in its room pans in the same way rather than be drawn smaller. No nested scrolling: a
-   swipe always moves the story. No text on a plate is under 11px on screen (`fit.mjs` holds every size to it): a
+   swipe always moves the story. No text on a plate is under 12px on screen, at every phone size, 320px included (a
+   plate is drawn no wider than its room down to 272px, so that it is never shrunk to fit; `fit.mjs` holds every size to it): a
    line's name and value too long for the column wrap onto a second line, a row's name onto two. Under each sticky stage lies a run of invisible beats, one per step,
    that the scroll snaps to; the scroll position chooses the step.
 3. **Landing**, on the chart (its paper covers the sea, which ends at the tide line above it): "What this data cannot
