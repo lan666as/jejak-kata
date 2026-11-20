@@ -192,7 +192,8 @@ A story is a voyage in three parts.
    is left to its pill): written from what is lit as the flight starts, and once the sea has landed from the names it
    placed, so it never lists a word the sea does not name; its room is kept from the first frame. With reduced motion no flight and no
    taking over, and the key. The figure stands on a panel of the deep (`--paper` at 92%)
-   and a caption on a shade of it (88%): their text keeps 4.5:1 over the brightest the sea can be. The sea draws only
+   and a caption, and the scene's name and count above it, on a shade of it (88%): their text keeps 4.5:1 over the
+   brightest the sea can be. The sea draws only
    while it flies, on the quality ladder from the rung the visit's moving sea settled on; with reduced motion a step
    crossfades through the deep; without WebGL2 the stage is the deep with the chart's graticule faint behind the
    figure. Where a story has several scenes, the scene's title stands above

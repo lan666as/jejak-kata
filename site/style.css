@@ -941,6 +941,9 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .sea-key { display: none; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); color: var(--on-deep-2); }
 .sea-on .sea-key { position: relative; z-index: 1; display: block; height: calc(1em * var(--l-meta)); overflow: hidden; white-space: nowrap; color: var(--on-deep);
   background: color-mix(in srgb, var(--deep) 88%, transparent); box-shadow: 0 0 var(--s3) var(--s2) color-mix(in srgb, var(--deep) 88%, transparent); }  /* (the caption's shade) */
+/* the scene's name and the step's count over the sea stand on the caption's shade too: on-deep-2 over it keeps 4.5:1
+   (5.9) over the brightest the sea can be, as the caption's text does */
+.sea-on .stage-meta { position: relative; z-index: 1; border-radius: var(--r1); background: color-mix(in srgb, var(--deep) 88%, transparent); box-shadow: 0 0 var(--s3) var(--s2) color-mix(in srgb, var(--deep) 88%, transparent); }
 /* where the sea names nothing on a step (app.js, storySea: a phone's long caption), the caption's shade covers its band */
 .sea-on .stage.mute .caption { background: color-mix(in srgb, var(--deep) 88%, transparent); border-radius: var(--r2); }
 .sea-on .stage:is(.mute, .yields) .sea-key { visibility: hidden; }
