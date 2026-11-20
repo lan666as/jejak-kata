@@ -1,7 +1,8 @@
 // node tests/site/fit.mjs [all] [slug ...]   Every page holds at any size, not at two. Every step of every story, and
 // a page of every other kind, at a spread of screens (small, short and landscape phones, a fold, tablets both ways,
-// laptops, a large screen, and text set larger: the root font at 130% and 200%), with reduced motion so that each
-// look is of the layout settled. Each story is walked twice: by scrolling to each step, and by the next button; and
+// laptops, a large screen, and text set larger: the root font at 130% and 200%, and at 130% once more set only after
+// the story has been laid out, as a reader who enlarges the text on a page already open), with reduced motion so that
+// each look is of the layout settled. Each story is walked twice: by scrolling to each step, and by the next button; and
 // once more with every caption 30% longer (injected here into story.js as it is served: story.js is not changed).
 // Fails on:
 // - anything wider than the screen (the page scrolls sideways), or text that stands past either edge of the screen
@@ -11,15 +12,18 @@
 //   line under the controls, the sea's key, the figure or the step's meta, or below the controls' top; text of
 //   anything else (the step before, a card) lying on a line of it; and a caption whose text goes on out of sight
 //   without the one way to read the rest, its "Baca selengkapnya" control, wholly on screen, 44px tall and clear of
-//   the text (app.js, stage: clamp). Where the button walk finds that control it presses it: the sheet that opens
-//   must be opaque, clear of the controls, and hold every line of the caption, whole (scrolled to its end where it is
-//   longer than the stage); pressed again, it closes. The controls must be opaque;
+//   the text (app.js, stage: clamp); a caption that reads on showing fewer than two lines of its text (beyond its
+//   head) while a stacked figure keeps more than its least, 240px. Where the button walk finds that control it presses
+//   it: the sheet that opens must be opaque, clear of the controls, hold every line of the caption, whole (scrolled to
+//   its end where it is longer than the stage), and be no taller than its text needs (a short text leaves the figure
+//   in sight); pressed again, it closes. The controls must be opaque;
 // - a figure not wholly in its room (title, rows, note: a strip that slides is held to its window); the stage's step
 //   and back buttons under 44px, a tick under 44px tall or 24px wide; a step that moves the figure or the caption's
 //   band (layout that jumps as one steps);
 // - a chart's title or legend not wholly in view (a strip that pans: its pinned title and legend), a row cut at the
 //   top or foot of a panned strip at rest, any row the step names (its focus; "*" the row of all pages) out of view
-//   (in the window, or in the rows shown past the gap where the window elides it), any text on a figure under 11px on
+//   (in the window, or in the rows shown past the gap where the window elides it), a number on the beacon not wholly
+//   inside the window or the rows past the gap (half a pill cut at the figure's edge), any text on a figure under 11px on
 //   screen, a legend that names hollow rings at the moment where none are drawn; a stacked figure under 240px.
 // A look is of the screen as it stands: what it cannot see is a text drawn on a canvas (the seas' names: labels.mjs),
 // a colour's contrast, or an overlap between two pieces of text inside one SVG (labels.mjs holds the figures to that).
@@ -34,17 +38,18 @@ const ALL = [[320, 568], [344, 882], [360, 640], [360, 740], [375, 667], [390, 8
   [1024, 768], [1180, 820], [1280, 800], [1366, 768], [1440, 900], [1920, 1080], [2560, 1440], [667, 375], [844, 390], [932, 430], [390, 844, 130], [390, 844, 200], [1280, 800, 200]];
 // The phones (and a tablet) a story's captions are held at, at three text sizes, as they are and 30% longer.
 const PHONES = [[320, 568], [360, 640], [360, 740], [375, 667], [390, 844], [412, 915], [430, 932], [844, 390], [932, 430], [768, 1024]].flatMap(([w, h]) => [100, 130, 200].map((f) => [w, h, f]));
-const key = ([w, h, f = 100]) => `${w}x${h}@${f}`;
+const key = ([w, h, f = 100, late = ""]) => `${w}x${h}@${f}${late}`;
 // (by default the stories, the long part, at five of them: the smallest phone, a phone with larger text, a phone held
 // sideways, a tablet upright and a laptop; the next button at the first three; with the captions 30% longer at the
 // first and third; the other pages at eight)
-const STORY_SIZES = every ? [...new Map([...ALL, ...PHONES].map((s) => [key(s), s])).values()] : [[320, 568], [360, 740], [390, 844, 130], [844, 390], [1366, 768]];
+// ([w, h, font, "late"]: the root font set only once the story is laid out)
+const STORY_SIZES = every ? [...new Map([...ALL, ...PHONES, [390, 844, 130, "late"]].map((s) => [key(s), s])).values()] : [[320, 568], [360, 740], [390, 844, 130], [390, 844, 130, "late"], [844, 390], [1366, 768]];
 const LONG_SIZES = every ? [...PHONES] : [[320, 568], [390, 844, 130]];
 // (by default the next button walks at the three hardest: the smallest phone, larger text, a phone held sideways)
-const BUTTON = (size) => every || ONLY || ["320x568@100", "390x844@130", "844x390@100"].includes(key(size));
+const BUTTON = (size) => every || ONLY || ["320x568@100", "390x844@130", "390x844@130late", "844x390@100"].includes(key(size));
 const PAGE_SIZES = every ? ALL : [[320, 568], [360, 740], [390, 844, 130], [844, 390], [1366, 768], [768, 1024], [1024, 768], [1920, 1080]];
 // FIT_SIZES=320x568,390x844@130 walks the stories at those sizes only (both ways), and no other page: a quick look.
-const ONLY = process.env.FIT_SIZES?.split(",").map((x) => x.match(/\d+/g).map(Number));
+const ONLY = process.env.FIT_SIZES?.split(",").map((x) => [...x.match(/\d+/g).map(Number), ...(/late/.test(x) ? ["late"] : [])].map((v, i) => (i === 2 && v === undefined ? 100 : v)));
 if (ONLY) STORY_SIZES.splice(0, Infinity, ...ONLY), LONG_SIZES.splice(0, Infinity, ...ONLY), PAGE_SIZES.splice(0, Infinity);
 const OTHERS = ["#/", "#/peta", "#/kata/korupsi", "#/tahun", "#/temuan", "#/metode", "#/main", "#/tebak", "#/kuis", "#/menempel", "#/redaksi", "#/balap", "#/entitas", "#/potret/jokowi", "#/cerita", "#/tidak-ada"];
 
@@ -159,6 +164,14 @@ const look = ([k, j]) => {
   if (under) wrong.push(`a line of the caption stands at or below the controls (“${under.text.slice(0, 24)}”)`);
   // What is out of sight is reached by the one way: the "read on" control, on screen, a target, clear of the text.
   const hidden = reading.gone.length ? Math.round(reading.gone.at(-1).bottom - reading.box.bottom) : 0;
+  // A caption that reads on shows at least two lines of its text where a stacked figure has more than its least (a
+  // step's head is not its text; an opening's title, run into its text, is).
+  const side = matchMedia("(width >= 900px) or ((orientation: landscape) and (width >= 560px))").matches;  // (app.js, SIDE)
+  const body = [...text.querySelectorAll(j ? "p:not(.head, .title)" : "p:not(.head)")].filter((p) => seen(p));
+  if (hidden && !side && body.length && win.height > 241) {
+    const lines = reading.shown.filter((l) => body.some((p) => { const b = r(p); return l.top >= b.top - 1 && l.bottom <= b.bottom + 1; })).length;
+    if (lines < 2) wrong.push(`the caption shows ${lines} line${lines === 1 ? "" : "s"} of its text while the figure takes ${Math.round(win.height)}px`);
+  }
   if (hidden) {
     const b = more && r(more);
     if (!seen(more) || !more.textContent.trim()) wrong.push(`the caption goes on out of sight (${hidden}px) with no control to read the rest`);
@@ -202,6 +215,16 @@ const look = ([k, j]) => {
         if (out.length) wrong.push(`a row the step names is out of view (${out.map((x) => x.label).join(", ")})`);
         if (shut !== null && (r(gap).bottom > win.bottom + 1 || r(gap).top < from - 1)) wrong.push("the rows past the gap are not wholly in the window");
       }
+      // The numbers on the beacon, whole: in the window above its cut, or within the rows shown past the gap.
+      const views = [...(seen(gap) ? gap.querySelectorAll("svg") : [])].map((v) => ({ box: r(v), vb: v.viewBox.baseVal }));
+      for (const g of svg.querySelectorAll(".row")) {
+        const pill = g.querySelector(".beacon");
+        if (!pill || pill.getAttribute("opacity") !== "1") continue;
+        const p = r(pill), y = +pill.getAttribute("y"), hgt = +pill.getAttribute("height");
+        const inWindow = p.top >= from - 1 && p.bottom <= to + 1, past = views.find((v) => y + hgt / 2 >= v.vb.y && y + hgt / 2 <= v.vb.y + v.vb.height);
+        const inPast = past && y >= past.vb.y - 0.5 && y + hgt <= past.vb.y + past.vb.height + 0.5;
+        if (!inWindow && !inPast && (past || (p.bottom > from + 1 && p.top < to - 1))) { wrong.push(`the number on the beacon of “${g.querySelector("text").textContent}” is cut at the figure's edge`); break; }
+      }
     }
     // Hollow rings are named in the legend only where they are drawn: not at the strip's first moment.
     const rings = svg.querySelector(".rings-key"), first = rings?.textContent.split(": ").at(-1), now = svg.querySelector(".state")?.textContent;
@@ -210,7 +233,7 @@ const look = ([k, j]) => {
     if (!side && win.height < 239.5) wrong.push(`the figure's window is ${Math.round(win.height)}px tall`);
   }
   for (const b of stage.querySelectorAll(".stage-nav .step")) { const s = r(b); if (s.width < 43.5 || s.height < 43.5) wrong.push(`a step button is ${Math.round(s.width)}x${Math.round(s.height)}px`); }
-  const ticks = [...stage.querySelectorAll(".ticks:not(.glance) button")].map(r);  // (a row of ticks too narrow to be targets is a picture: app.js, glance)
+  const ticks = [...stage.querySelectorAll(".ticks:not(.glance) button")].filter((b) => b.getClientRects().length).map(r);  // (a row of ticks too narrow to be targets is a picture: app.js, glance; set aside where the control to read on takes its place)
   if (ticks.some((s) => s.height < 43.5 || s.width < 23.5)) wrong.push(`a tick is ${Math.round(Math.min(...ticks.map((s) => s.width)))}x${Math.round(Math.min(...ticks.map((s) => s.height)))}px`);
   return { wrong, hidden, at: [Math.round(win.top), Math.round(win.height), Math.round(c.top), Math.round(c.height)].join(",") };
 };
@@ -236,6 +259,9 @@ const sheet = async (k) => {
     await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
   }
   if (seenLines.size < all) wrong.push(`the open caption shows ${seenLines.size} of its ${all} lines`);
+  // (no taller than its text: a sheet that does not scroll ends a little under its control)
+  const turns = cap.querySelector(".turns"), spare = r(cap).bottom - r(more).bottom;
+  if (turns.scrollHeight <= turns.clientHeight + 1 && spare > 40) wrong.push(`the open caption runs ${Math.round(spare)}px past its text, over the figure`);
   return [...new Set(wrong)];
 };
 
@@ -246,15 +272,15 @@ const report = (where, wrong) => { if (!wrong.length) return; failures++; consol
 const LONGER = `
 const grow = (h) => { if (typeof h !== "string" || !h) return h; const plain = h.replace(/<[^>]+>/g, ""), words = plain.split(/\\s+/); let add = "", i = 0; while (add.length < plain.length * 0.3) add += (add ? " " : "") + words[i++ % words.length]; return h + " " + add; };
 for (const s of STORIES) { for (const l of ["id", "en"]) s[l].intro = grow(s[l].intro); for (const p of s.scenes) { for (const l of ["id", "en"]) if (typeof p[l].text === "string") p[l].text = grow(p[l].text); p.steps.forEach((st) => { st.id = grow(st.id); st.en = grow(st.en); }); } }`;
-const fresh = async ([width, height, font = 100], longer = false) => {
+const fresh = async ([width, height, font = 100, late], longer = false) => {
   const page = await browser.newPage({ viewport: { width, height }, reducedMotion: "reduce", hasTouch: width < 900, isMobile: false });
   page.errors = [];
   page.on("pageerror", (e) => page.errors.push(e.message));
-  if (font !== 100) await page.addInitScript((font) => document.addEventListener("DOMContentLoaded", () => (document.documentElement.style.fontSize = font + "%")), font);
+  if (font !== 100 && !late) await page.addInitScript((font) => document.addEventListener("DOMContentLoaded", () => (document.documentElement.style.fontSize = font + "%")), font);
   if (longer) await page.route(/\/story\.js$/, async (route) => { const res = await route.fetch(); await route.fulfill({ response: res, body: (await res.text()) + LONGER, headers: { ...res.headers(), "content-encoding": "identity" } }); });
   return page;
 };
-const name = ([w, h, font], longer) => `${w}x${h}${font && font !== 100 ? ` @${font}%` : ""}${longer ? " (captions +30%)" : ""}`;
+const name = ([w, h, font, late], longer) => `${w}x${h}${font && font !== 100 ? ` @${font}%${late ? " set after load" : ""}` : ""}${longer ? " (captions +30%)" : ""}`;
 
 /** Every step of every story at one size: reached by scrolling, then by the next button (which also opens the caption
  *  where it goes on). */
@@ -265,6 +291,7 @@ async function stories(size, longer = false, button = !longer && BUTTON(size)) {
     await page.goto(`${base}#/cerita/${slug}`);
     await page.waitForSelector(".stage .plate svg", { state: "attached", timeout: 20000 }).catch(() => {});
     await page.waitForTimeout(600);
+    if (size[3] === "late") { await page.evaluate((f) => (document.documentElement.style.fontSize = f + "%"), size[2]); await page.waitForTimeout(1200); }
     await page.evaluate(helpers);
     report(`${slug} cover ${name(size, longer)}`, await page.evaluate(sideways));
     for (const [k, part] of story.scenes.entries()) {

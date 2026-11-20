@@ -418,7 +418,7 @@ function stage(part, k, of, steer, intro = "") {
           <button type="button" class="step on"><span>${t("step_on")}</span>${arrow("M9 5l7 7-7 7")}</button></div></div></div>
     <ol class="beats">${[...Array(n + 1)].map((_, j) => `<li class="beat"><div class="hidden">${hidden(j)}</div></li>`).join("")}</ol></section>`);
   const box = node.firstElementChild, room = box.firstElementChild, caption = box.querySelector(".caption"), turns = caption.firstElementChild, more = caption.lastElementChild, count = box.querySelector(".count");
-  const ticks = [...box.querySelectorAll(".ticks button")], [back, ahead] = box.querySelectorAll(".step");
+  const ticks = [...box.querySelectorAll(".ticks button")], [back, ahead] = box.querySelectorAll(".step"), nav = box.querySelector(".stage-nav");
   let at = -1, figure = null, sizes = [];
   const said = (j) => (j ? `<p class="head">${head(j)}</p><p>${part.steps[j - 1][language]}</p>`
     : `<p class="title">${words.title}</p>${intro ? `<p class="intro">${intro}</p>` : ""}${words.text ? `<p>${words.text}</p>` : ""}${k ? "" : `<p class="hint">${t("stage_hint")}</p>`}`);
@@ -524,8 +524,12 @@ function stage(part, k, of, steer, intro = "") {
   const clamp = () => {
     const turn = turns.querySelector(".turn:not(.out)");
     read(false);
-    box.classList.remove("yields", "clamped");
+    box.classList.remove("yields", "clamped", "runin");
     more.hidden = true;
+    // (stacked, "Baca selengkapnya" stands in the place of the row of ticks, between the step buttons, and the caption's
+    // band is all text; side by side, under the caption's last line)
+    const inNav = !sideBySide();
+    if (inNav !== (more.parentNode === nav)) (inNav ? nav.insertBefore(more, nav.lastElementChild) : caption.append(more));
     if (!turn || !caption.clientHeight) return;
     turn.style.removeProperty("height");
     turn.style.removeProperty("padding-block");
@@ -534,9 +538,12 @@ function stage(part, k, of, steer, intro = "") {
     if (text <= roomFor - keyed) return;
     box.classList.add("yields");  // (the key's line goes to the text)
     if (text <= roomFor) return;
+    // (stacked, its head then runs into its text and an opening's title takes a heading's size: the band holds lines of
+    // text, not a head alone)
+    if (!sideBySide() && (box.classList.add("runin"), turn.scrollHeight <= roomFor)) return;
     box.classList.add("clamped");
     more.hidden = false;
-    const top = turn.getBoundingClientRect().top, limit = roomFor - more.offsetHeight - parseFloat(getComputedStyle(more).marginTop);
+    const top = turn.getBoundingClientRect().top, limit = inNav ? roomFor : roomFor - more.offsetHeight - parseFloat(getComputedStyle(more).marginTop);
     const end = Math.max(0, ...lineEnds(turn).map((y) => y - top).filter((y) => y <= limit));
     Object.assign(turn.style, { height: end + "px", paddingBlock: end ? "" : "0" });  // (where not even a line fits, the control alone)
   };
@@ -1548,11 +1555,20 @@ function share(s, part) {
   const named = span ? Math.min(need, whole - chrome - 72, Math.max(...titles.map((title) => stripLeast(title, 0, s.room.clientWidth, series))) - 76 + span * 17 + 8) : 0;
   const least = Math.max(whole * 0.4, FIG, named, part.read ? Math.floor(whole * 0.62) : 0), fits = whole - chrome - text - keyed >= least;
   s.node.style.setProperty("--turn", fits ? s.node.style.getPropertyValue("--turn") : "var(--t-body)");
-  // (a caption that reads on keeps at least its head, two lines and its control; the figure keeps 240px all the same)
-  const floor = high(`<p class="head">x</p><p>x<br>x</p>`) + 44 + 8;
+  // (a caption that reads on keeps its head, two lines of its text and its control: above its least, 240px, and the
+  // rows its steps name, the figure gives way to them)
+  // (measured as such a caption is set: its head run into its text, an opening's title at a heading's size)
+  probe.classList.add("runin");
+  const floor = Math.max(0, ...[...Array(s.steps)].map((_, j) => {
+    probe.innerHTML = `<div class="turn">${s.said(j)}</div>`;
+    const body = probe.querySelector("p:not(.head, .title)"), line = body ? parseFloat(getComputedStyle(body).lineHeight) : 0;
+    if (!body) return 0;
+    probe.innerHTML = `<div class="turn">${s.said(j).replace(/(<p class="(?:head|title)">[^]*?<\/p>)<p[^>]*>[^]*$/, "$1<p>x</p>")}</div>`;
+    return probe.scrollHeight + line + 8;
+  }));  // (the control to read on stands among the step buttons: stage, clamp)  // (where the ticks are a picture, "Baca selengkapnya" takes their place: stage, clamp)
   probe.remove();
   if (!fits || need > whole - chrome - text - keyed) band = 0;  // a strip that slides anyway keeps its window: no band under it
-  let fig = Math.floor(fits ? Math.max(least, whole - chrome - text - keyed - band) : Math.max(FIG, named, part.read ? Math.floor(whole * 0.62) : 0, Math.min(whole * 0.4, whole - chrome - floor)));
+  let fig = Math.floor(fits ? Math.max(least, whole - chrome - text - keyed - band) : Math.max(FIG, named, Math.min(Math.max(part.read ? Math.floor(whole * 0.62) : 0, whole * 0.4), whole - chrome - floor)));
   if (fits && need > fig && need <= fig + band) fig = need;  // a strip seen whole, title to foot, before the sea's band (a step then left without one drops it)
   box.style.setProperty("--fig", fig + "px");
   s.tall = need > fig ? panning(part, s.room.clientWidth, fig, null) : 0;
@@ -2162,9 +2178,9 @@ async function storyPage(slug, scene, step, more) {
   frame();
 
   // The figures, each at the size of its stage, with the step each stage is on; then the sea under them.
+  stages.forEach(glance);
   if (sideBySide()) fit(stages, parts);
   else stages.forEach((s, k) => share(s, parts[k]));
-  stages.forEach(glance);
   document.fonts.ready.then(() => landing.isConnected && stages.forEach((s) => s.clamp()));  // (the lines as the type lays them out)
   // A screen turned or resized lays the story out again, at the step it is on (not when only a browser's bar comes and goes).
   const laid = [innerWidth, innerHeight], again = () => {
@@ -2174,6 +2190,12 @@ async function storyPage(slug, scene, step, more) {
   let waiting = 0;
   const turned = () => (clearTimeout(waiting), (waiting = setTimeout(again, 300)));
   addEventListener("resize", turned);
+  // Text made larger or smaller on a page already open (the reader's own setting) lays it out again as well: every
+  // stage's share of the screen and every caption's lines were measured at the old size.
+  const rem = el(`<span class="rem-probe" aria-hidden="true"></span>`);
+  scenes.append(rem);
+  let remWas = 0;
+  new ResizeObserver(() => { const now = rem.offsetWidth; if (landing.isConnected && remWas && Math.abs(now - remWas) > 0.5) route(); remWas = now; }).observe(rem);
   storySea(scenes.firstElementChild, stages, parts).then((to) => ((sea = to), frame()));
   await Promise.all(parts.map((part, k) => {
     const [w, h, zoom] = figureSize(stages[k].room);

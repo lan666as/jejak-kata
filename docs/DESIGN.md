@@ -208,9 +208,14 @@ A story is a voyage in three parts.
    size smaller (1rem, then `--t-small`). A hand count is given three fifths of the stage, and any stacked figure at
    least 240px and the rows its steps name. **Where a step still does not fit its band** (a short screen, large text,
    a long caption; the figure then keeps only its least and the captions are at the body's size), the caption shows
-   its whole lines, as many as fit, and under the last one a labelled control, "Baca selengkapnya" / "Read on"
-   (`clamp` in app.js). One press opens the caption as a sheet of the deep over the stage above the controls, opaque,
-   with the whole text; a second press ("Tutup" / "Close"), Escape or the next step closes it. Only where the text is
+   its whole lines, as many as fit, and a labelled control, "Baca selengkapnya" / "Read on" (`clamp` in app.js):
+   stacked, in the place of the row of ticks between the step buttons (the ticks set aside while it is there; the step
+   buttons step), the caption's head (an opening's title) run into its text in bold at the text's size, so that its
+   band holds lines of text and not a head alone (at least two where the figure keeps more than its least, 240px and
+   the rows its steps name: `share`); side by side, under the caption's last line. One press opens the caption as a
+   sheet of the deep standing on the controls, opaque, as tall as its text needs (a short text leaves the figure in
+   sight) and at most the stage above them, the text set as it was; a second press ("Tutup" / "Close"), Escape or the
+   next step closes it. Only where the text is
    taller than the whole stage (very large type) does the sheet's text scroll, and its first screen still ends on a
    whole line. So at rest a caption is read to its end or ends on a whole line above its control: no line is ever cut,
    faded, or under the controls, the key or the figure, and nothing of another step shows through (the controls and
@@ -220,7 +225,9 @@ A story is a voyage in three parts.
    (`SIDE` in app.js, the same media query in style.css): side by side from 900px wide, and on any screen held sideways
    from 560px (a phone in landscape gets the figure beside its captions, not over them); the controls take two rows only
    from 900px wide and 640px tall. A screen turned or resized lays the story out again at the step it is on (a
-   browser's bar coming and going does not: the stage is `100svh` tall). Ticks narrower than a 44px target are only a
+   browser's bar coming and going does not: the stage is `100svh` tall), and so does text made larger or smaller on a
+   page already open (the reader's own setting): every share of the stage and every caption's lines were measured at
+   the old size (`fit.mjs` walks a phone at 130% set only once the story is laid out). Ticks narrower than a 44px target are only a
    picture of the way through (`glance`); the step buttons step. From 900px a story's captions take at most two sizes: `--t-caption` where a
    step fits its column at it, and for every other step one size, the largest (`--t-lede`, the body's, `--t-small`) at
    which the story's longest caption fits, measured in the language and at the width shown; a step that does not fit
@@ -230,7 +237,7 @@ A story is a voyage in three parts.
    a window of that room, under its own title and legend, which stand pinned at the window's top (a second view of the
    same plate, so they always read whole), and **slides** through the window as the page scrolls through the scene; at
    rest a whole number of rows shows under the pinned head and the window ends at its last whole row (unless the
-   strip's foot has come in), never a row cut: at each step to the
+   strip's foot has come in), never a row cut, nor half a number's beacon (a pill is never taller than its row): at each step to the
    rows the step brings forward (at the opening to its top; where a step names none, as far down as the step is
    through the scene), between two steps between their places. Every row a step names is in the window at rest, at
    every size: where they lie further apart than the window holds (a row near the top and the row of all pages at the

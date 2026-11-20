@@ -910,6 +910,7 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
    further apart than the window holds, the rows between are elided: a row of three dots, then the rest (elided) */
 .stage.tall .pinned { display: block; overflow: hidden; z-index: 1; align-self: start; background: var(--deep); }
 .elided { display: none; }
+.rem-probe { position: absolute; width: 10rem; height: 0; visibility: hidden; pointer-events: none; }  /* (app.js, storyPage: text made larger on an open page lays the story out again) */
 .stage.tall .elided { display: block; z-index: 1; align-self: start; background: var(--deep); }
 .elided svg { display: block; max-width: none; overflow: hidden; }
 .elided .gap { display: block; width: 24px; margin-inline: auto; background: radial-gradient(circle at 4px 50%, var(--on-deep-2) 1.6px, transparent 2.2px) 0 0 / 8px 100% repeat-x; }
@@ -926,7 +927,9 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .more-button { flex: none; align-self: start; max-width: 100%; margin-top: auto; min-height: var(--tap); padding: 0 var(--s4); white-space: normal; text-align: start; color: var(--on-deep); background: var(--deep); border: var(--hair) solid var(--line-deep-2); font-weight: 600; }
 .more-button:hover { background: var(--deep-2); }
 .more-button[hidden] { display: none; }
-.scenes .stage.reading .caption { position: absolute; z-index: 3; inset: var(--sheet-top) var(--sheet-right) var(--sheet-bottom) var(--sheet-left); margin: 0; padding: var(--s4); gap: var(--s3);
+/* (the sheet is as tall as its text, standing on the controls, at most the stage above them: a short text leaves the
+   figure in sight) */
+.scenes .stage.reading .caption { position: absolute; z-index: 3; inset: auto var(--sheet-right) var(--sheet-bottom) var(--sheet-left); max-height: calc(100% - var(--sheet-top) - var(--sheet-bottom)); margin: 0; padding: var(--s4); gap: var(--s3);
   background: var(--deep); border: var(--hair) solid var(--line-deep-2); border-radius: var(--r2); }
 .stage.reading .turns { flex: 0 1 auto; padding-block: var(--s1); overflow-y: auto; overscroll-behavior: contain; scrollbar-color: var(--on-deep-2) transparent; }
 .stage.reading .turn { height: auto !important; }
@@ -942,7 +945,18 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .turn .title { font-size: var(--t-h2); line-height: var(--l-h2); }
 .turn .hint { display: none; font-size: var(--t-small); color: var(--on-deep-2); }
 .turn .intro { color: var(--on-deep-2); }
+/* stacked, a caption longer than its band runs its head (an opening's title) into its text, in bold at the text's size,
+   so that the band holds lines of text (app.js, stage: clamp; share measures the
+   same, .caption.runin); the sheet, opened, sets them as they were */
+:is(.stage.runin:not(.reading), .caption.runin) .turn :is(.head, .title) { display: inline; margin: 0; font: 800 var(--turn, var(--t-body))/var(--l-body) var(--type); font-stretch: 100%; }
+:is(.stage.runin:not(.reading), .caption.runin) .turn .head::after { content: ". "; }
+:is(.stage.runin:not(.reading), .caption.runin) .turn .title::after { content: " · "; }
+:is(.stage.runin:not(.reading), .caption.runin) .turn :is(.head, .title) + p { display: inline; }
+:is(.stage.runin:not(.reading), .caption.runin) .turn :is(.head, .title) + p::after { content: ""; display: block; margin-bottom: var(--s3); }
 .stage-nav { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s2); }
+/* where the ticks are only a picture (app.js, glance), a caption that reads on puts its control in their place */
+.stage-nav .more-button { grid-column: 2; justify-self: center; margin: 0; }
+.stage:is(.clamped, .reading) .stage-nav:has(> .more-button) .ticks { display: none; }
 .stage-nav .step { min-width: var(--tap); padding: 0 var(--s3); color: var(--on-deep); border-color: var(--line-deep); }
 .stage-nav .step:hover { background: var(--deep-2); border-color: var(--on-deep-2); }
 .stage-nav .step span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
