@@ -1193,12 +1193,14 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 .demo-small, .demo-near { font-size: 13px; fill: var(--ink-2); } .demo-near { font-weight: 600; } .demo-word { font: 800 13px var(--type); fill: var(--route); }
 .demo-tie { fill: none; stroke: var(--ink-3); } .demo-grid { stroke: var(--line); } .demo-dot { fill: var(--ink-3); }
 .demo-ship { fill: var(--route); stroke: var(--chart-2); stroke-width: 2; transition: transform var(--d-leg) var(--sail), opacity var(--d-turn) var(--sail); }
+.demo-figure .demo-goes { transition: transform var(--d-leg) var(--sail), opacity var(--d-turn) var(--sail); } .demo-goes.moved { transform: translate(var(--dx), var(--dy)); }
 .demo-trail { fill: none; stroke: var(--route); stroke-width: 2; stroke-dasharray: 4 4; }
 .demo-said { max-width: var(--measure); margin: var(--s3) 0; }
 .demo-room { display: grid; } .demo-room > * { grid-area: 1 / 1; } .demo-room > [aria-hidden] { visibility: hidden; }  /* as tall as the longest step: the controls never move */
 .demo-controls, .demo-steps { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
 .demo-steps { margin: 0; padding: 0; list-style: none; }
 .demo-steps button[aria-pressed="true"] { color: var(--route); border-color: var(--route); }
+.tests-verdict { max-width: var(--measure); margin: var(--s4) 0; padding-left: var(--s3); border-left: var(--rule) solid var(--beacon); font-weight: 600; }
 .demo-source { margin: var(--s3) 0 0; font-size: var(--t-meta); line-height: var(--l-meta); color: var(--ink-3); }
 @media (min-width: 900px) { .method-body { display: grid; grid-template-columns: minmax(0, 38rem) minmax(0, 1fr); gap: var(--s8); align-items: start; } .caveats { margin-top: 0; position: sticky; top: calc(var(--head-h) + var(--s5)); } }
 .caveats ul { padding-left: var(--s5); max-width: var(--measure); margin: 0; }

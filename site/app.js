@@ -2555,19 +2555,25 @@ async function methodDemo() {
   const [pa, pb] = [path.route[a], path.route[b]].map((p) => [X(p), Y(p)]);
   // Names on the chart are placed on one board (labels.js): the word first, then its company; one with no room is left out.
   const B = board([left + 4, top + 4, W - 4, H - 4]), font = `600 13px ${getComputedStyle(document.documentElement).getPropertyValue("--type")}`;
-  const name = (p, text, cls, from, strong) => {
-    const w = measure(text, strong ? font.replace("600", "800") : font) + 6, k = B.place([[p[0] + 10, p[1] - 9], [p[0] - 10 - w, p[1] - 9], [p[0] - w / 2, p[1] - 30], [p[0] - w / 2, p[1] + 12]].map(([x, y]) => [x, y, x + w, y + 18]), text);
-    return k ? `<text class="${cls}" data-from="${from}" x="${(k[0] + 3).toFixed(1)}" y="${(k[1] + 13).toFixed(1)}">${escape(text)}</text>` : "";
-  };
+  const spot = (p, text, strong) => { const w = measure(text, strong ? font.replace("600", "800") : font) + 6; return B.place([[p[0] + 10, p[1] - 9], [p[0] - 10 - w, p[1] - 9], [p[0] - w / 2, p[1] - 30], [p[0] - w / 2, p[1] + 12]].map(([x, y]) => [x, y, x + w, y + 18]), text); };
+  const name = (p, text, cls, from, strong) => { const k = spot(p, text, strong); return k ? `<text class="${cls}" data-from="${from}" x="${(k[0] + 3).toFixed(1)}" y="${(k[1] + 13).toFixed(1)}">${escape(text)}</text>` : ""; };
+  const ships = [name(pa, `${word} ${ya}`, "demo-word", 3, true), name(pb, `${word} ${yb}`, "demo-word", 4, true)];
+  // The words the page shows it with (step 2) are one drawing with the chart: at step 3 each sails from the list to its
+  // own port and is named there; one the first screen has no port for leaves with the page's ties.
+  const listed = company(a).map((w, k) => {
+    const x = words.find((x) => x.w === w), to = x && spot([X(x.at), Y(x.at)], w), y = 164 + k * 18;
+    return `<text class="demo-near${to ? " demo-goes" : ""}" data-from="2"${to ? ` style="--dx:${(to[0] + 3 - 104).toFixed(1)}px;--dy:${(to[1] + 13 - y).toFixed(1)}px"` : ' data-until="2"'} x="104" y="${y}">${escape(w)}</text>`;
+  });
   B.reserve([pa[0] - 9, pa[1] - 9, pa[0] + 9, pa[1] + 9], [pb[0] - 9, pb[1] - 9, pb[0] + 9, pb[1] + 9], ...words.map((x) => [X(x.at) - 5, Y(x.at) - 5, X(x.at) + 5, Y(x.at) + 5])).line([pa, pb], 3);
-  const names = [name(pa, `${word} ${ya}`, "demo-word", 3, true), name(pb, `${word} ${yb}`, "demo-word", 4, true), ...words.map((x) => name([X(x.at), Y(x.at)], x.w, "demo-near", x.from))];
+
+  const names = [...ships, ...words.filter((x) => x.from === 4).map((x) => name([X(x.at), Y(x.at)], x.w, "demo-near", x.from))];
   const lines = [0, 1, 2, 3, 4, 5, 6].map((k) => `<path class="demo-line${k === 2 ? " on" : ""}" d="M14 ${30 + k * 15}H${k === 2 ? 66 : 14 + 52 + ((k * 23) % 30)}"/>`).join("");
   const textX = 120;
   const svg = `<svg class="demo-figure" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${escape(said.join(" "))}">
     <g data-from="1"${until}><rect class="demo-page" x="0" y="10" width="96" height="128" rx="6"/>${lines}
       <text class="demo-big" x="${textX}" y="52">${thousands(lens.units[a])}</text><text class="demo-small" x="${textX}" y="72">${t("demo_pages")} · Kompas ${ya}</text>
       <text class="demo-big on" x="${textX}" y="116">${percent(e.share[a])}</text><text class="demo-small" x="${textX}" y="136">${escape(t("demo_hold", word))}</text></g>
-    <g data-from="2"${until}>${company(a).map((w, k) => `<path class="demo-tie" d="M66 ${60}C${wide ? 80 : 90} ${60} ${wide ? 60 : 70} ${164 + k * 18} 96 ${160 + k * 18}"/><text class="demo-near" x="104" y="${164 + k * 18}">${escape(w)}</text>`).join("")}</g>
+    <g data-from="2" data-until="2">${company(a).map((w, k) => `<path class="demo-tie" d="M66 ${60}C${wide ? 80 : 90} ${60} ${wide ? 60 : 70} ${164 + k * 18} 96 ${160 + k * 18}"/>`).join("")}</g>${listed.join("")}
     <g data-from="3">${grid}</g>
     ${words.map((x) => `<circle class="demo-dot" data-from="${x.from}" cx="${X(x.at).toFixed(1)}" cy="${Y(x.at).toFixed(1)}" r="4"/>`).join("")}
     <path class="demo-trail" data-from="4" pathLength="1" d="M${pa[0].toFixed(1)} ${pa[1].toFixed(1)}L${pb[0].toFixed(1)} ${pb[1].toFixed(1)}"/>
@@ -2582,6 +2588,7 @@ async function methodDemo() {
   const show = (n) => {
     at = n;
     box.querySelectorAll("[data-from]").forEach((x) => x.classList.toggle("shown", +x.dataset.from <= n && !(n > x.dataset.until)));
+    box.querySelectorAll(".demo-goes").forEach((x) => x.classList.toggle("moved", n >= 3));
     box.querySelectorAll(".demo-steps button").forEach((x) => x.setAttribute("aria-pressed", +x.dataset.step === n));
     const [x, y] = ship.dataset[n >= 4 ? "b" : "a"].split(",");
     ship.style.transform = `translate(${x}px,${y}px)`;
@@ -2597,6 +2604,15 @@ async function methodDemo() {
   return box;
 }
 
+/** The sensitivity table in one line, read from the numbers it shows: how many sources catch most of a large planted
+ *  change (80% of a word's use swapped: 80% or more caught), between what shares, the most any catches of a small one
+ *  (20%), and which sources catch less. */
+function verdict(tested) {
+  const found = (share) => tested.map((lens) => lens.sensitivity.found[share]), big = found("0.8"), strong = big.filter((x) => x >= 0.8);
+  const weak = tested.filter((lens) => lens.sensitivity.found["0.8"] < 0.8).map((lens) => lensText(lens).short || lensText(lens).title);
+  return el(`<p class="tests-verdict">${t("tests_verdict", strong.length, tested.length, percent(Math.min(...strong)), percent(Math.max(...strong)), percent(Math.max(...found("0.2"))), weak.length ? new Intl.ListFormat(language).format(weak) : "")}</p>`);
+}
+
 async function methodPage() {
   view.replaceChildren(pageHead(t("method_title"), { kicker: t("method_kicker"), lede: t("method_lede"), sea: { look: { dist: 1.9, x: 0.02, z: 0.06 }, pitch: 1.2, names: 24 } }), el(`<div class="method-body"><article class="prose">${t("method")}</article><aside class="caveats">${t("caveats")}</aside></div>`));
   const demo = el(`<div class="demo-holder"></div>`);
@@ -2607,6 +2623,7 @@ async function methodPage() {
   view.append(
     el(`<h2>${t("tests_title")}</h2>`),
     el(`<p class="sub">${t("tests_about")}</p>`),
+    verdict(tested),
     el(`<div class="table" tabindex="0"><table><tr><th>${t("lens")}</th><th class="n">${t("units")}</th><th class="n">20%</th><th class="n">40%</th><th class="n">80%</th><th class="n">${t("false_alarms")}</th></tr>
       ${tested.map((lens) => `<tr><td>${lensText(lens).title}</td><td class="n">${lens.units.reduce((x, y) => x + y).toLocaleString(language)}</td>
         ${["0.2", "0.4", "0.8"].map((share) => `<td class="n">${found(lens, share)}</td>`).join("")}<td class="n">${percent(lens.sensitivity.false_alarms)}</td></tr>`).join("")}

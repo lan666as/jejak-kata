@@ -19,6 +19,16 @@ const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport:
   await p.click("#menu-button"); await p.click("#language"); await p.waitForTimeout(2500);
   const words = await p.evaluate(() => [...document.querySelectorAll(".picked li")].map((li) => li.firstChild.textContent).join(", "));
   log("language switch keeps the words picked", words === "jokowi", `after removing prabowo and switching: ${words}`); await p.close(); }
+{ // the method's sensitivity table is said in one line above it, from the numbers the table shows; and the demo's words sail from its list to their ports
+  const p = await fresh(); await p.goto(base + "#/metode"); await p.waitForTimeout(3000);
+  const m = await p.evaluate(() => {
+    const rows = [...document.querySelectorAll(".table tr")].slice(1).map((tr) => [...tr.cells].map((c) => c.textContent)), n = (x) => parseFloat(x.replace(",", "."));
+    const big = rows.map((r) => r[4]).filter((x) => n(x) >= 80), sorted = [...big].sort((a, b) => n(a) - n(b)), small = rows.map((r) => r[2]).sort((a, b) => n(b) - n(a))[0];
+    return { said: document.querySelector(".tests-verdict")?.textContent || "", want: [`${big.length} dari ${rows.length}`, `${sorted[0]}–${sorted.at(-1)}`, `paling banyak ${small}`] };
+  });
+  await p.click('.demo-steps button[data-step="3"]'); await p.waitForTimeout(1200);
+  const sailed = await p.evaluate(() => [...document.querySelectorAll(".demo-goes")].map((x) => x.classList.contains("moved") && getComputedStyle(x).transform !== "none").every(Boolean) && document.querySelectorAll(".demo-goes").length);
+  log("method: the sensitivity said in a line from its table; the demo's words sail to their ports", m.want.every((x) => m.said.includes(x)) && sailed > 0, `“${m.said.slice(0, 90)}…” wants ${m.want.join(", ")}; ${sailed} words sailed`); await p.close(); }
 { // the header at 390px: opaque, and stuck at the top after a scroll
   const p = await fresh(); await p.goto(base + "#/kata/kpk"); await p.waitForTimeout(2500); await p.mouse.wheel(0, 1500); await p.waitForTimeout(600);
   const h = await p.evaluate(() => { const node = document.querySelector(".masthead"), r = node.getBoundingClientRect(), bg = getComputedStyle(node).backgroundColor;

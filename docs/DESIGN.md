@@ -344,7 +344,12 @@ its line); once the first route has
   figures on plates. The method opens with the method on one word the first page sails (`jokowi`, 2013 then 2014), in
   four steps stepped or played: the year's pages and the share that hold the word, the words it appears with most, its
   port on the chart among them, and a year on its new company, its new port and its shift; every number read from the
-  first page's lens (meta.json, words/, paths/, first.json), none written by hand. A play page's head sea lights that
+  first page's lens (meta.json, words/, paths/, first.json), none written by hand. The first three steps are one drawing: the page,
+  ties from its marked line to the words it shares pages with, and at the chart step those words sail (`--d-leg`) from
+  the list to their own ports and are named there (the ties go; a word with no port leaves with them). Above the
+  sensitivity table, one line says what it shows, read from the same numbers (`verdict` in app.js): how many sources
+  catch 80% or more of a large planted change and between what shares, the most any catches of a small one, and which
+  catch less; on a rule of `--beacon`. A play page's head sea lights that
   game's own words: those its picture shows.
 
 ## The night sea (`site/sea.js`)
