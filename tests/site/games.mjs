@@ -372,6 +372,13 @@ for (const [w, h, touch] of SIZES) {
   }
   const end = await p.evaluate(() => ({ score: document.querySelector(".quiz .score")?.textContent, rank: document.querySelector(".quiz .rank")?.textContent, plate: !!document.querySelector(".quiz .plate svg"), go: document.querySelector(".quiz-go").textContent }));
   const saved = await Promise.all([p.waitForEvent("download", { timeout: 5000 }).then((d) => d.suggestedFilename()).catch(() => null), p.locator(".quiz .controls button").first().click()]).then(([f]) => f);
+  // Every copy goes through one helper: where the clipboard is refused, the button says so and the text stands beside
+  // it, selected; nothing thrown.
+  { const before = errors.length;
+    await p.evaluate(() => { try { Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: () => Promise.reject(new DOMException("refused", "NotAllowedError")) } }); } catch {} });
+    await p.locator(".quiz .controls button").nth(1).click(); await p.waitForTimeout(100);
+    const said = await p.evaluate(() => { const b = document.querySelectorAll(".quiz .controls button")[1], f = document.querySelector(".quiz .copy-field"); return { text: b.textContent, field: !!f && f.value.length > 10 && document.activeElement === f && f.selectionEnd - f.selectionStart === f.value.length }; });
+    log(`quiz at ${w}: a refused copy says so (“Tidak bisa menyalin”) and leaves the text selected to copy by hand`, said.text === "Tidak bisa menyalin" && said.field && errors.length === before, `“${said.text}”${said.field ? "" : ", no text selected beside it"}${errors.length > before ? `; ${errors.slice(before).join(" / ")}` : ""}`); }
   log(`quiz at ${w}: the first answer on screen, ${ROUNDS} rounds ${touch ? "by taps" : "by keyboard alone"}, the evidence drawn and focus on “next” each time, “next” in one place, a plate saved`,
     first > 0 && quiz.rounds === ROUNDS && quiz.figures === ROUNDS && quiz.focus === ROUNDS && quiz.places.size === 1 && end.plate && end.rank && /\.png$/.test(saved || "") && !errors.length,
     `first answer ${first > 0 ? `ends at ${first}px` : `below the screen (${-first}px)`}; ${quiz.rounds} rounds; ${quiz.figures} figures; focus on next ${quiz.focus}×; next at ${[...quiz.places].join(" | ")}; ${end.score} “${end.rank}”; saved ${saved}; errors ${errors.slice(0, 2).join(" / ") || 0}`);
@@ -446,7 +453,7 @@ for (const [w, h, touch] of SIZES) {
   // (on a phone the head is short enough that the first game's card and its button are whole on the first screen; the
   // kicker says what there is)
   const hub = await p.evaluate(() => ({ card: Math.round(document.querySelector(".play-games .play-card").getBoundingClientRect().bottom), kicker: document.querySelector(".page-head .kicker")?.textContent }));
-  log(`hub at ${w}: ${touch ? "the first game card whole on the first screen, " : ""}the kicker says what there is`, (!touch || hub.card <= h) && /^2 permainan, 8 penjelajah$/.test(hub.kicker), `card ends at ${hub.card}px of ${h}; “${hub.kicker}”`);
+  log(`hub at ${w}: ${touch ? "the first game card whole on the first screen, " : ""}the kicker says what there is`, (!touch || hub.card <= h) && /^2 permainan, 7 penjelajah$/.test(hub.kicker), `card ends at ${hub.card}px of ${h}; “${hub.kicker}”`);
   const toys = [];
   for (const toy of ["menempel", "lingkaran", "redaksi", "pasang", "balap", "tahun", "bergeser", "entitas"]) {
     await p.goto(base + "#/" + toy); await p.waitForTimeout(1500);
@@ -458,9 +465,14 @@ for (const [w, h, touch] of SIZES) {
       const hoverOnly = [...view.querySelectorAll("[data-tip]")].length && !view.querySelector("[data-tip-tap]") ? 1 : 0;
       // Where the toy's result (its figure, list or table) begins.
       const result = [...view.querySelectorAll(".plate, ul.movers, .tide, .race, .wall, .orbit")].find((n) => n.getClientRects().length && !head?.contains(n));
-      return { first: r ? Math.round(r.bottom) : 9999, hoverOnly, result: result ? Math.round(result.getBoundingClientRect().top) : 9999 };
+      // One behaviour for every row or label that stands for a word or a name: a link to its page (a portrait, else the
+      // word's), reachable by keyboard, its name the word itself (app.js toWord).
+      const links = [...view.querySelectorAll("a.to-word")].filter((n) => n.getClientRects().length);
+      const odd = links.filter((n) => !/\/(kata|potret)\/|#\/(kata|potret)\//.test(n.getAttribute("href") || "") || n.tabIndex < 0 || !n.textContent.trim()).length;
+      return { first: r ? Math.round(r.bottom) : 9999, hoverOnly, result: result ? Math.round(result.getBoundingClientRect().top) : 9999, links: links.length, odd };
     });
-    toys.push(`${toy} ${look.first}/${look.result}${look.hoverOnly ? " hover-only" : ""}`);
+    toys.push(`${toy} ${look.first}/${look.result} ${look.links} links${look.hoverOnly ? " hover-only" : ""}`);
+    if (!look.links || look.odd) failures++, console.log(`FAIL ${toy} at ${w}: ${look.links} rows or labels link to their page${look.odd ? `, ${look.odd} not as the rest` : ""}`);
     // (on a 390x844 phone the result begins in the first 560px: the toy is seen working before any scroll)
     const late = w === 390 && look.result > 560;
     if (look.first > h || look.hoverOnly || late) failures++, console.log(`FAIL ${toy} at ${w}: first control ends at ${look.first}px, the result begins at ${look.result}px${look.hoverOnly ? "; a tip only a hover shows" : ""}`);

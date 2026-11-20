@@ -213,7 +213,8 @@ export const longestTitle = (title, states, width) => (typeof title !== "functio
  * Rows on one scale. `spec`: {title (or, to follow the moment shown, title(moment)), note, states: [labels], series: [names], rows: [{label, values: [state][series]}],
  * format: (v) => text, pages: (i) => text, most: the value at the right edge (else the round tick at or past the largest),
  * base: as for lines, empty: what a row with no value at a state means (its rule: too few pages), floor: the least its
- * rows stand apart (18px; a story's stage may ask for less, app.js panning)}. A row with no
+ * rows stand apart (18px; a story's stage may ask for less, app.js panning), link: (label) => the page a row's name
+ * leads to (an explorer's rows, app.js toWord)}. A row with no
  * value at the state shown has an open dash where its dots would start, and the first such row says why (`empty`). One dot per series in every row; `show(i, focus)` moves the dots to
  * state i and leaves a ring where they were at the first state; rows not named in `focus` fade.
  */
@@ -232,7 +233,10 @@ export function strip(spec, width, height) {
     [head, pitch] = [T, gap];
     x = (v) => L + ((W - L - R) * v) / most;
     y = (k) => T + gap * (k + 0.5);
-    const size = Math.max(12, Math.min(narrow ? 13 : 14, gap * 0.9)), name = (label, k) => rowName(label, y(k), L, size, gap, ink);
+    // (a row's name, where `spec.link(label)` gives its page, a link to it: app.js toWord, with its chevron where there
+    // is no hover)
+    const size = Math.max(12, Math.min(narrow ? 13 : 14, gap * 0.9)), to = (label) => spec.link?.(label);
+    const name = (label, k) => (to(label) ? `<a class="to-word" href="${to(label)}">${rowName(label, y(k), L, size, gap, ink)}<text class="chev" aria-hidden="true" x="${L - 6}" y="${y(k) + size * 0.35}" style="font-size:${size}px;font-weight:700;fill:${soft}">›</text></a>` : rowName(label, y(k), L, size, gap, ink));
     const pill = Math.min(20, Math.max(15, Math.floor(gap) - 1));  // (the beacon within its row, never past it: no half pill at a window's edge)
     return `${legend.marks.map((m, k) => `<g${k < spec.series.length ? "" : ` class="rings-key"`}><circle cx="${m.x + 5}" cy="${top + 10 + m.line * 16}" ${k < spec.series.length ? `r="4.5" fill="${css(COLOURS[k])}"` : `r="4" fill="none" stroke="${soft}" stroke-width="1.2"`}/>${legendName(m, top, soft)}</g>`).join("")}
     <text class="state" x="${below ? 12 : W - 12}" y="${top + (below ? 32 + extra : 15)}" text-anchor="${below ? "start" : "end"}" style="font-size:14px;font-weight:800;fill:${ink}"></text>
@@ -246,6 +250,7 @@ export function strip(spec, width, height) {
       <text class="value" x="${W - R + 8}" y="${y(k) + size * 0.35}" style="font-size:12px;font-weight:700;fill:${ink}"></text></g>`).join("")}`;
   }, stripLeast(spec.title, rows, width, [...spec.series, ...(spec.rings ? [spec.rings] : [])], spec.floor || PITCH.floor));
   const groups = [...made.svg.querySelectorAll(".row")], state = made.svg.querySelector(".state"), inked = css("--ink"), ringsKey = made.svg.querySelector(".rings-key");
+  if (spec.link) made.svg.setAttribute("role", "group");  // (its rows' names are links: an image's parts are not read)
   Object.assign(made.svg.dataset, { head, pitch });
   const show = (i, focus) => {
     state.textContent = spec.states[i];
@@ -354,6 +359,7 @@ export async function plateImage(node) {
   style.textContent = `@font-face{font-family:"Bricolage";src:url(${await typeface}) format("woff2");font-weight:200 800;font-stretch:75% 100%}`;
   svg.prepend(style);
   svg.querySelectorAll("[style]").forEach((n) => (n.style.transition = "none"));
+  svg.querySelectorAll(".chev").forEach((n) => n.remove());  // (a link's chevron is for a finger, not for the image)
   const [w, h] = [svg.width.baseVal.value, svg.height.baseVal.value];
   image.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(onPaper(new XMLSerializer().serializeToString(svg), drawnOn.get(shown)));
   await image.decode();

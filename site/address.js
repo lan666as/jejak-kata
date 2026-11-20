@@ -91,3 +91,8 @@ function words([page, arg], language) {
 
 /** The pages to play with, in the order the play page shows them. */
 export const PLAY = ["kuis", "tebak", "menempel", "lingkaran", "redaksi", "pasang", "balap", "tahun", "bergeser", "entitas"];
+/** An address that opens another explorer's page with its switch set ("entitas": what moved, its names): it keeps its
+ *  page and its address, and has no card of its own on the hub. */
+export const SAME = { entitas: "bergeser" };
+/** The cards of the hub: a game or an explorer each, counted for what the hub says it has. */
+export const CARDS = PLAY.filter((p) => !SAME[p]);

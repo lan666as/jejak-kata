@@ -113,7 +113,8 @@ it.
   text): the stories index sails the newest three stories' words; findings and the pages
   about change, the words that moved most; the play pages, the names or words their game asks about; a word's page,
   its own route; the method, the whole chart from above with its graticule; the 404, no route. Names on a held sea
-  stay in its open water and never touch each other or a ship's pill (each takes a box; a pill moves a line up or
+  stay in its open water, never on the head's text (its kicker, title and lede are reserved on the sea's board, so
+  that a ship's pill, which may stand anywhere on the water, keeps off them too), and never touch each other or a ship's pill (each takes a box; a pill moves a line up or
   down, tied to its point, rather than cover another). The tide line is the curve along which
   the home hero's dive turns the night into paper (the shader's `edge()`), drawn across the width with a thread of
   foam; it is the one boundary between the deep and the chart everywhere: under every head, where a story comes
@@ -291,7 +292,10 @@ language or a resize returns to what was shown.
   Telegram, Facebook, LinkedIn, Bluesky and email in two columns, each a plain link with a small mark of a few strokes
   (inline SVG; no script, image or font of those sites is ever loaded), then under a hairline "Salin tautan", and on a
   stage and the landing "Salin kode sematan" (the frame above as an iframe). It is the one way to copy the address
-  where there is a share control (the landing's tools have no second "copy link"). From 900px a stage's sheet and the
+  where there is a share control (the landing's tools have no second "copy link"). Every copy on the site (a link, an
+  embed, a citation, a game's score) goes through one helper (`copier` in app.js): where the browser refuses the
+  clipboard the button says so, "Tidak bisa menyalin" / "Could not copy", and the text stands beside it in a field,
+  selected, to copy by hand; nothing is thrown. From 900px a stage's sheet and the
   cover's open upward, over the figure or the deck, never past the edge below; on a phone the sheet rises from the
   screen's foot over a veil of the deep. It closes on Escape or a press elsewhere. Not printed.
 - **Share images** (`og.jpg`, 1200x630, under 300 kB, made by `tests/site/publish.mjs` at deploy): a card on the
@@ -360,14 +364,25 @@ its line); once the first route has
   jump), and where they cross is marked as the lines reach it, the lead's named with its year. The page shows its first source as soon as that source has come, not after every source, and its pairs as soon as
   theirs have come: the two lists below the first screen are asked for only then, each a skeleton until it lands (each
   word is read from a bucket of 64, so the lists cost as much again as the pairs).
-- **Play** ("Mainan" / "Games", one word for the section everywhere): its kicker says what there is ("2 permainan, 8
-  penjelajah" / "2 games, 8 explorers"); on a phone its head is a toy's short head and the quiz's card is set tighter
+- **Play** ("Mainan" / "Games", one word for the section everywhere): its kicker says what there is, counted from its
+  cards ("2 permainan, 7 penjelajah" / "2 games, 7 explorers": `CARDS` in address.js); on a phone its head is a toy's short head and the quiz's card is set tighter
   (its picture lower), so that the first game's card and its button are whole on a 390x844 screen (`games.mjs`). Two
   groups, each under its heading. "Main" /
   "Play": the two games, the quiz leading on the deep, its picture large, "guess the number" beside it (from 900px);
   each game's card ends on what pressing it does, drawn as the primary button ("Mulai kuis", "Mulai menebak"), the
-  whole card being the link. "Jelajah" / "Explore": the eight explorers of the data in three columns, the tide table
-  and the year posters two columns wide. The first page shows the first three. A card the viewer has opened says so
+  whole card being the link. "Jelajah" / "Explore": the seven explorers of the data in three columns, the tide table
+  and the year posters two columns wide. Each card and each explorer's first line says what it alone does: the tide
+  table, every name against its own best year in one table to scan; the race, a race the reader sets up between names
+  or words of their choice. What moved is one explorer, one ranking with a switch at its top, "Kata" / "Nama" (words,
+  or names: what has a Wikipedia article, the names of one article on one line), two halves of one control beside
+  "Atur"; "bergeser" opens it on the words and "entitas" (the old address of the names) on the names (`SAME` in
+  address.js: an address with no card of its own). **One behaviour for every explorer**: every row or label that
+  stands for a word or a name (a strip's rows, a table's names, the race's names, the circle's names, the posters'
+  words, the lists) is a link to that word's page, a person's portrait where there is one (`toWord` in app.js; in a
+  plate's SVG `strip`'s `link`): its text in the row's ink, the site's link underline on hover and focus, a chevron
+  where there is no hover, reached by Tab, its name the word itself (a value beside it is not part of its name).
+  `games.mjs` fails on an explorer without such links or with one that is not as the rest. The tide table's colours
+  are named at their ends in words ("hampir tidak ada", "tahun terbaiknya"). The first page shows the first three. A card the viewer has opened says so
   in a meta line under its text, a game's with the best score (localStorage; nothing where storage is refused). A
   toy's head is shorter on a phone (less sea above the kicker, the lede at the body's size), and on a 390x844 phone its
   result (the figure, list or table) begins in the first 560px (`games.mjs`): its first choice and the "Coba:" row (one
@@ -376,9 +391,12 @@ its line); once the first route has
   "Options" control (`options` in app.js), open with no control of its own from 900px; what a toy says about its
   numbers stands under its first result, except what a list's numbers and marks are, which stands in a line above it
   ("Bergeser": the number is the shift measured against words of the same frequency, the source's flag and up stands
-  out, each ● another source that flags it). A list leads with words a reader recognises: a bare first name or a
-  fragment ("budi", "iii": a word of one part some source links to a person or to nothing more than itself, or of three
-  letters or fewer, and no name or abbreviation the games know) comes after the rest. A table fits its width or says
+  out, each ● another source that flags it). A list leads with words a reader recognises, in every source: a bare
+  first name or a fragment ("budi", "iii": a word of one part some source links to a person or to nothing more than
+  itself, or of three letters or fewer, and no name or abbreviation the games know: deal.js `fragment`), a name of one
+  part whose article does not name it ("christian" linked to "Kekristenan"), and in an Indonesian source a word the
+  first page's source does not count or that ends as English does ("peny", "constant", "product", "gross", "trade")
+  come after the rest. A table fits its width or says
   where it goes on: the tide table on a phone sets each name on a line of its own over its row, the years sharing the
   whole width, never a column cut at the screen's edge. Where a figure tells something on hover, a tap tells it too.
   A game shows every word through one function (`shown` in deal.js), in its rounds, its evidence, its plates and the

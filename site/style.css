@@ -421,6 +421,7 @@ th:last-child, td:last-child { padding-right: 0; }
 /* legends */
 .legend { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); align-items: center; margin: var(--s2) 0; font-size: var(--t-meta); line-height: var(--l-meta); color: var(--ink-2); max-width: none; }
 .legend span { display: inline-flex; align-items: center; }
+.tide-key .scale-key { gap: 3px; } .tide-key .scale-key i { margin: 0; } .tide-key .scale-key > span:first-child { margin-right: var(--s1); } .tide-key .scale-key > span:last-child { margin-left: var(--s1); }
 .legend i, .score i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: var(--s1); flex: none; }
 /* A fifth series and on: aqua, blue, violet, red (--cat-3, 5, 7, 8), after magenta, orange, ink and the dashed grey. */
 .legend i.k4, .picked li.k4 { background: var(--cat-3); } .legend i.k5, .picked li.k5 { background: var(--cat-5); } .legend i.k6, .picked li.k6 { background: var(--cat-7); } .legend i.k7, .picked li.k7 { background: var(--cat-8); }
@@ -740,13 +741,17 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .voyage-mark .streak { stroke: var(--beacon); }
 .quiz .choices .key { display: inline-grid; place-items: center; min-width: 1.4em; height: 1.4em; border-radius: var(--r1); font-size: var(--t-meta); font-weight: 700; color: var(--ink-3); border: var(--hair) solid var(--line); }
 @media (pointer: coarse) { .quiz .choices .key, .keys-note { display: none; } }
-.quiz .choices .right::after { content: "✓"; font-weight: 800; } .quiz .choices .chosen::after { content: "✗"; font-weight: 800; }
+/* (the mark's room kept in every choice from the start, so that marking an answer never makes a row of choices wrap) */
+.quiz .choices button::after { content: "✓"; font-weight: 800; visibility: hidden; }
+.quiz .choices .right::after { content: "✓"; visibility: visible; } .quiz .choices .chosen::after { content: "✗"; visibility: visible; }
 .quiz .choices .right .key { color: inherit; border-color: currentColor; }
 /* a year's or a name's words: a line of words, not chips (they are read, not pressed) */
 .quiz .clue { display: flex; flex-wrap: wrap; gap: 0 var(--s3); margin: var(--s3) 0 0; padding: 0; list-style: none; }
 .quiz .clue li { padding: 0; border: 0; background: none; min-height: 0; font: 600 var(--t-lede)/1.4 var(--type); color: var(--ink); }
 .quiz .clue li + li::before { content: "·"; margin-right: var(--s3); color: var(--ink-3); }
 .quiz .rank { font: 700 var(--t-h3)/var(--l-h3, 1.15) var(--type); font-stretch: 80%; margin: 0 0 var(--s4); color: var(--route); }
+/* where the browser refuses to copy, the text beside the button, selected, to copy by hand (app.js, copier) */
+.copy-field { display: block; flex: 1 1 100%; width: 100%; min-height: var(--tap); margin-top: var(--s2); padding: 0 var(--s3); font: inherit; font-size: var(--t-small); color: var(--ink); background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r1); }
 /* how this game stands against the best so far (app.js, gameEnd) */
 .quiz .best { margin: calc(-1 * var(--s2)) 0 var(--s4); font-size: var(--t-body); font-weight: 600; color: var(--ink-2); }
 .quiz .caveat { margin: var(--s2) 0; padding: 0 0 0 var(--s3); font-size: var(--t-small); background: none; border: 0; border-left: var(--rule) solid var(--line); border-radius: 0; }  /* (in sight, quietly: a rule, not a box) */
@@ -1284,6 +1289,27 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
   .play-top.play-games .lead .play-pic { height: clamp(112px, 29vw, 230px); }
   .page-head.game + .play-head { margin-top: 0; } .play-head + .play-games { margin-top: var(--s3); }
 }
+/* A row or a label of an explorer that stands for a word or a name is a link to its page, the same everywhere (app.js,
+   toWord): its text in the row's ink, the site's link underline on hover and focus, and where there is no hover a
+   chevron after it; in a plate's SVG the same on its text */
+a.to-word { color: inherit; text-decoration: none; text-underline-offset: 3px; }
+a.to-word:hover, a.to-word:focus-visible { color: var(--link); text-decoration: underline; text-decoration-thickness: 2px; }
+.poster a.to-word:hover, .poster a.to-word:focus-visible { color: inherit; }
+a.to-word:hover text, a.to-word:focus-visible text { text-decoration: underline; fill: var(--link); }
+.to-word .chev { display: none; }
+@media (hover: none) {
+  a.to-word:not(svg a)::after { content: "\203A" / ""; margin-left: .3em; font-weight: 700; color: var(--ink-3); }
+  .poster a.to-word::after { color: inherit; opacity: .7; }
+  .to-word .chev { display: inline; }
+}
+/* What moved: words or names, two halves of one control beside "Atur" (app.js, moversPage) */
+.toy-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s3); margin: var(--s3) 0; }
+.toy-row > .options { margin: 0; } .toy-row > .options[open] { flex-basis: 100%; }
+.switch { display: inline-flex; margin: 0; padding: 2px; list-style: none; border: var(--hair) solid var(--line-2); border-radius: var(--pill); background: var(--chart-2); }
+.switch a { display: inline-flex; align-items: center; min-height: calc(var(--tap) - 4px); padding: 0 var(--s4); border-radius: var(--pill); font: 600 var(--t-small)/1 var(--type); color: var(--ink-2); text-decoration: none; }
+.switch a[aria-pressed="true"] { background: var(--ink); color: var(--chart-2); }
+.switch a:hover { color: var(--ink); } .switch a[aria-pressed="true"]:hover { color: var(--chart-2); }
+@media (min-width: 900px) { .toy-row > .options[open] { flex: 1 1 auto; flex-basis: auto; } }
 /* "Atur": a toy's other choices, folded on a phone (app.js, options) */
 .options { margin: var(--s3) 0; }
 .options > summary { display: inline-flex; align-items: center; gap: var(--s2); min-height: var(--tap); padding: 0 var(--s4); border: var(--hair) solid var(--line); border-radius: var(--r1); background: var(--chart-2); font-size: var(--t-small); font-weight: 600; cursor: pointer; list-style: none; }
