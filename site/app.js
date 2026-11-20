@@ -2915,7 +2915,7 @@ async function tidePage(k = "0", kind = "person") {
   const rows = y.tide[lens][kind].map((r) => ({ ...r, peak: Math.max(...r.share.map((v) => v || 0)) })).map((r) => ({ ...r, when: r.share.indexOf(r.peak) })).sort((a, b) => a.when - b.when || b.peak - a.peak);
   const kinds = ["person", "organisation", "place"], level = (v, peak) => [0.08, 0.25, 0.45, 0.65, 0.85].filter((s) => v / peak >= s).length;
   const table = el(`<div class="tide" tabindex="0"><table style="--cols:${y.years.length}"><tr><th></th>${y.years.map((year) => `<th>${String(year).slice(2)}</th>`).join("")}</tr>${rows.map((r) =>
-    `<tr><th>${toWord(r.word, kind === "person")}</th>${r.share.map((v, i) => `<td style="--i:${i}" class="t${v === null ? "x" : level(v, r.peak)}" data-tip="${r.word} ${y.years[i]}: ${v === null ? "–" : number(v * 1000) + "‰"} ${t("of_pages", thousands(y.pages[lens][i]))}"></td>`).join("")}</tr>`).join("")}</table></div>`);
+    `<tr><th>${toWord(r.word, kind === "person", escape(shown(r.word, "place")))}</th>${r.share.map((v, i) => `<td style="--i:${i}" class="t${v === null ? "x" : level(v, r.peak)}" data-tip="${escape(shown(r.word, "place"))} ${y.years[i]}: ${v === null ? "–" : number(v * 1000) + "‰"} ${t("of_pages", thousands(y.pages[lens][i]))}"></td>`).join("")}</tr>`).join("")}</table></div>`);
   table.dataset.tipTap = "";  // a tap on a cell says what a hover does
   for (const on of ["pointermove", "pointerdown"]) table.addEventListener(on, (e) => tip(e.target.dataset?.tip || null, e));
   table.addEventListener("pointerleave", () => tip(null));
