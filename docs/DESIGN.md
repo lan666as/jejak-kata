@@ -334,7 +334,9 @@ its line); once the first route has
   that came and went or came to stay, the top eight, the rest folded. The rule is written on the page beside a rule
   of `--beacon` (from 900px beside what the pairs are, so that the lead pair begins on the first screen). A pair's two
   lines draw themselves together as the figure first comes near (once; at once with reduced motion or reached by a
-  jump), and where they cross is marked as the lines reach it, the lead's named with its year. The page shows its first source as soon as that source has come, not after every source.
+  jump), and where they cross is marked as the lines reach it, the lead's named with its year. The page shows its first source as soon as that source has come, not after every source, and its pairs as soon as
+  theirs have come: the two lists below the first screen are asked for only then, each a skeleton until it lands (each
+  word is read from a bucket of 64, so the lists cost as much again as the pairs).
 - **Play**: the first thing to play leads, on the deep, its picture large (two rows tall from 900px); the next two
   beside it, text and picture side by side; the rest under "more" in three columns, the tide table and the year posters
   two columns wide. The first page shows the same first three. A game is a board: the round on paper, and beside it the game's voyage so far (a port

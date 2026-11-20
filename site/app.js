@@ -1245,9 +1245,16 @@ async function findingsPage() {
     box.append(el(`<h2>${t("swaps_title")}</h2>`), el(`<div class="told"><p class="sub">${t("swaps_about")}</p><p class="rule">${t("swaps_rule", pairs.length, swaps.length, Math.min(LEAD, pairs.length))}</p></div>`),
       folded(pairs, LEAD, () => el(`<ul class="duets">${shown.map(([r, f], k) => `<li${k ? ` style="grid-column:span ${span(k)}"` : ""}><a href="${href("kata", lens.words[r.word])}"><b class="duet-word">${lens.words[r.word]}</b><span class="duet-was">${escape(t("in_company", lens.words[f.word]))}</span>${k ? duet(lens, r, f, col(k), Math.round(col(1) * 0.45)) : duet(lens, r, f, w - (wide ? 66 : 50), wide ? 300 : 200, true)}</a></li>`).join("")}</ul>`),
         (list) => sparks(lens, list.map((p) => p[0]), list.map((p) => p[1]))));
+    // The words that came and went or stayed lie below the first screen: the pairs are shown as soon as theirs have
+    // come, and only then are these asked for, each list in its own place (a skeleton until it comes).
     for (const kind of ["went", "stayed"]) {
-      const entries = (await Promise.all(arrivals[kind].map(([w]) => entry(lens, w)))).filter(Boolean);
-      box.append(el(`<h2>${t(kind + "_title")}</h2>`), el(`<p class="sub">${t(kind + "_about")} ${t("list_rule", Math.min(8, entries.length), entries.length)}</p>`), folded(entries, 8, (list) => sparks(lens, list)));
+      const holder = el("<div></div>");
+      box.append(el(`<h2>${t(kind + "_title")}</h2>`), holder);
+      awaited(holder, async () => {
+        const entries = (await Promise.all(arrivals[kind].map(([w]) => entry(lens, w)))).filter(Boolean), part = document.createDocumentFragment();
+        part.append(el(`<p class="sub">${t(kind + "_about")} ${t("list_rule", Math.min(8, entries.length), entries.length)}</p>`), folded(entries, 8, (list) => sparks(lens, list)));
+        return part;
+      });
     }
     return box;
   };
