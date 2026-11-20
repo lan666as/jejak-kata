@@ -10,7 +10,8 @@ export const OUTLET = ["Kompas", "Tempo", "Tribunnews"];
 export const PUBLISHER = { "kompas.com": "Kompas", "tempo.co": "Tempo", "tribunnews.com": "Tribunnews", "bisnis.com": "Bisnis", "okezone.com": "Okezone", "detik.com": "Detik", "liputan6.com": "Liputan6",
   "polri.go.id": { id: "Situs Polri", en: "Police's site" }, "mil.id": { id: "Situs TNI", en: "Army's site" } };
 export const said = (label, language) => label[language] || label;
-export const dash = (label) => String(label).replace("-", "–");
+/** A range of numbers with its dash ("2010-2014" → "2010–2014"); a hyphen between letters stays ("Hati-hati"). */
+export const dash = (label) => String(label).replace(/(\d)-(?=\d)/g, "$1–");
 /** How many words a "fell" plate lists: fewer on a phone. */
 export const FELL = (wide) => (wide ? 14 : 11);
 

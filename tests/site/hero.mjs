@@ -59,4 +59,19 @@ for (const [name, options, init, expect] of [
     await page.close();
   }
 }
+// On the smallest phone (320x568): nothing of the sky (the legend, the year) lies on the headline, and the field's
+// placeholder is whole in its field.
+{ const page = await browser.newPage({ viewport: { width: 320, height: 568 }, hasTouch: true, isMobile: true });
+  await page.goto(base + "#/");
+  await page.waitForFunction(() => document.querySelector(".hero .chart[data-route]"), null, { timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(() => {
+    const h = document.querySelector(".hero h1").getBoundingClientRect(), over = (b) => b.bottom > h.top && b.top < h.bottom && b.right > h.left && b.left < h.right;
+    const on = [...document.querySelectorAll(".hero-key, .hero .when")].filter((n) => getComputedStyle(n).visibility === "visible" && n.getClientRects().length && over(n.getBoundingClientRect())).map((n) => n.className);
+    const input = document.querySelector(".hero .suggest input"), cs = getComputedStyle(input), c = document.createElement("canvas").getContext("2d");
+    c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    return { on, need: Math.ceil(c.measureText(input.placeholder).width), room: Math.floor(input.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)) };
+  });
+  log("hero @320x568", !r.on.length && r.need <= r.room, `${r.on.length ? `on the headline: ${r.on.join(", ")}` : "nothing on the headline"}; the placeholder ${r.need}px in its field's ${r.room}px`);
+  await page.close(); }
 await done(failures);

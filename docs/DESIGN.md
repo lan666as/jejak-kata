@@ -130,7 +130,9 @@ it.
 - **Figure plate**: paper `--chart-2` on the chart; on a story's stage (the deep in both schemes) it is drawn on the
   stage itself in the night's inks (the dark scheme's values, `.stage-figure` in style.css), and saved as an image on
   paper in the page's inks. Its scale runs from 0 in round steps (1, 2, 2.5 or 5 times a power of ten, at most five)
-  to the step at or past the largest value; where the values are a part of a base year, the 100% line is drawn stronger. Title is a sentence with the number in it. A
+  to the step at or past the largest value; where the values are a part of a base year, the 100% line is drawn stronger. Title is a sentence with the number in it,
+  broken into lines by its measured width (never cut), a size smaller on the narrowest plates (under 330px: a phone of
+  320 to 360) so that a long finding leaves its rows the room. A
   title is read beside what the plate shows at every step: it names only that moment, or one the plate shows at every
   step (a line plate's periods; a strip's first moment, which stays on it as hollow rings, named in its legend:
   "lingkaran kosong: 2010–2014" / "hollow rings: 2010–2014", shown only at the moments where rings are drawn apart from
@@ -197,7 +199,8 @@ A story is a voyage in three parts.
    while it flies, on the quality ladder from the rung the visit's moving sea settled on; with reduced motion a step
    crossfades through the deep; without WebGL2 the stage is the deep with the chart's graticule faint behind the
    figure. Where a story has several scenes, the scene's title stands above
-   the caption as a label; the one count is the step's. Captions do not scroll past as boxes:
+   the caption as a label, whole (on two lines where it must, never cut), the count beside it as wide at every step, so
+   the label wraps alike at every step and nothing under it moves; the one count is the step's. Captions do not scroll past as boxes:
    the stage stays, the caption turns (`--d-turn`), the figure's marks travel (`--d-leg`). Scroll, swipe, the arrow
    keys, space, or the next/previous controls all move one step; scrolling settles on a step (scroll snap,
    proximity). Step 0 of a scene opens it: the scene's title and text, so the reader knows the figure before it
@@ -213,9 +216,12 @@ A story is a voyage in three parts.
    size smaller (1rem, then `--t-small`). A hand count is given three fifths of the stage, and any stacked figure at
    least 240px and the rows its steps name. **Where a step still does not fit its band** (a short screen, large text,
    a long caption; the figure then keeps only its least and the captions are at the body's size), the caption shows
-   its whole lines, as many as fit, and a labelled control, "Baca selengkapnya" / "Read on" (`clamp` in app.js):
+   up to its last whole sentence that fits (the rest set aside until it is read on; only where not even the first
+   sentence of its text fits, its whole lines, as many as fit), and a labelled control, "Baca selengkapnya" / "Read on" (`clamp` in app.js):
    stacked, in the place of the row of ticks between the step buttons (the ticks set aside while it is there; the step
-   buttons step), the caption's head (an opening's title) run into its text in bold at the text's size (not a head that
+   buttons step), the caption's head (an opening's title) run into its text in bold at the text's size, closed by a full
+   stop unless it ends on one of its own ("Hati-hati: polisi."; a hyphen between letters stays one, only a range of
+   numbers takes a dash: scenes.js `dash`) (not a head that
    only repeats its text's first words: "2016" over "2016. Empat padanan..."), so that its
    band holds lines of text and not a head alone (at least two where the figure keeps more than its least, 240px and
    the rows its steps name: `share`); side by side, under the caption's last line. One press opens the caption as a
@@ -310,11 +316,12 @@ language or a resize returns to what was shown.
 ## Pages
 
 - **Home**: hero on the deep, full height: the map of words as a night sea with one route sailed (below); headline
-  in display type; one field ("Ketik kata, lihat rutenya") and a few chips, their label above them from 900px (on a
+  in display type; one field ("Ketik sebuah kata", whole in its field at 320px; the button beside it says it sails) and a few chips, their label above them from 900px (on a
   phone a row that scrolls and fades at its right edge, about 30px of the next chip peeking out under the fade). What the reader needs in the first ten seconds is on the
   sea: a legend of three glyphs (a light and its height, a route and its ports, a light ringed: "Klik atau ketuk sebuah
 cahaya: katanya berlayar") in its sky, on a phone two (the route is named by its own note, so the ringed light takes
-its line); once the first route has
+its line); the legend and the year stand in the sky only where it has room for them over the headline (a 320x568
+phone has none: there they are left out, `sky` in app.js, never on the headline); once the first route has
   sailed, two notes drawn like marginalia (from the light that moved most in the open water a line down to the water,
   "higher: moved more"; from the route's middle a leader, "jokowi, 2012–2024: a port each year", on two lines where
   one would pass the gutter), which fade when

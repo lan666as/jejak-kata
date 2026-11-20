@@ -177,6 +177,25 @@ const look = ([k, j]) => {
     if (!seen(more) || !more.textContent.trim()) wrong.push(`the caption goes on out of sight (${hidden}px) with no control to read the rest`);
     else if (b.top < head - 1 || b.bottom > H + 1 || b.height < 43.5) wrong.push(`the control to read on is not wholly on screen or under 44px (${Math.round(b.top)}–${Math.round(b.bottom)})`);
   }
+  // A caption cut short ends on its last whole sentence that fits (app.js, clamp: the rest set aside until it is read
+  // on); only where not even the first sentence of its text fits is it cut at a whole line, and then no sentence ends
+  // in sight. Either way its control to read on is there.
+  if (stage.classList.contains("clamped") && text === cap.querySelector(".turn:not(.out)")) {
+    const said = text.textContent.trim(), bottom = r(text).bottom, range = document.createRange(), walk = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+    let fits = false;
+    for (let t = walk.nextNode(); t && !fits; t = walk.nextNode()) if (!t.parentElement.closest(".head, .title")) for (const m of t.data.matchAll(/[.?!…]["”’)]*(?=\s|$)/g)) {
+      range.setStart(t, m.index); range.setEnd(t, m.index + 1);
+      const g = range.getClientRects()[0];
+      if (g?.height && g.bottom <= bottom + 1) fits = true;
+    }
+    if (text.whole && !/[.?!…]["”’)]*$/.test(said)) wrong.push(`the caption is cut short off a sentence's end (“…${said.slice(-24)}”)`);
+    if (!text.whole && fits) wrong.push(`the caption is cut at a line though a whole sentence of it fits (“…${said.slice(-24)}”)`);
+    if (!seen(more)) wrong.push("a caption cut short has no control to read the rest");
+  }
+  // The scene's name over the caption, and the plate's title, are whole: never cut, never past their room.
+  const part = meta?.querySelector(".stage-part");
+  if (part && seen(part) && part.scrollWidth > part.clientWidth + 1) wrong.push(`the scene's name is cut (“${part.textContent.slice(0, 30)}”)`);
+  if (svg) for (const line of svg.querySelectorAll(".title tspan")) if (line.getComputedTextLength() > svg.viewBox.baseVal.width - 12) { wrong.push(`the plate's title runs past its width (“${line.textContent.slice(0, 30)}”)`); break; }
   for (const b of stage.querySelectorAll(".stage-nav .step")) if (!opaque(b)) wrong.push("a control is not opaque");
   // A step's text set apart (old: cards in the page's scroll) never stands off its band.
   if (card && seen(card) && Math.abs(r(card).top - c.top) > 4) wrong.push(`the step's card stands at ${Math.round(r(card).top)}px, its band at ${Math.round(c.top)}px`);

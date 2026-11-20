@@ -17,7 +17,9 @@ import { figureOf, focused, lensFrom, sceneWords, seaWords, stepAt, FELL, OUTLET
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
 // cold on a phone, does without them. `plating()` resolves once these names are there.
 let plate, strip, units, plates, longestTitle, savePlate, plateImage, stripLeast, inks, plated = null;
-const plating = () => (plated ||= import("./plate.js").then((m) => ({ plate, strip, units, plates, savePlate, plateImage, stripLeast, longestTitle, inks } = m)));
+// (and once the type is there in the plates' weight: a plate's title is broken into lines by its measured width)
+const plating = () => (plated ||= Promise.all([import("./plate.js"), document.fonts.load(`800 16px ${getComputedStyle(document.documentElement).getPropertyValue("--type")}`).catch(() => null)])
+  .then(([m]) => ({ plate, strip, units, plates, savePlate, plateImage, stripLeast, longestTitle, inks } = m)));
 
 const DATA = "data";
 const STEPS = [2, 4, 7, 12, 20]; // shift boundaries of the colour steps
@@ -416,6 +418,22 @@ const lineEnds = (node) => {
   }
   return ends;
 };
+/** Where each sentence of the text under `node` ends (not in a head or title run into it): its text node, the offset
+ *  past its stop, and where its line ends on the screen. */
+const sentences = (node) => {
+  const out = [], walk = document.createTreeWalker(node, NodeFilter.SHOW_TEXT), range = document.createRange();
+  for (let text = walk.nextNode(); text; text = walk.nextNode()) {
+    if (text.parentElement.closest(".head, .title")) continue;
+    const line = parseFloat(getComputedStyle(text.parentElement).lineHeight);
+    for (const m of text.data.matchAll(/[.?!…]["”’)]*(?=\s|$)/g)) {
+      range.setStart(text, m.index);
+      range.setEnd(text, m.index + 1);
+      const r = range.getClientRects()[0];
+      if (r?.height) out.push({ node: text, offset: m.index + m[0].length, y: (r.top + r.bottom) / 2 + Math.min(r.height, line || r.height) / 2 });
+    }
+  }
+  return out;
+};
 /** The rows a step names (their indices, in order) as runs [first, last], two rows a single row apart in one run
  *  (eliding one row saves nothing). */
 const apart = (named) => named.reduce((runs, i) => (runs.length && i - runs.at(-1)[1] <= 2 ? (runs.at(-1)[1] = i) : runs.push([i, i]), runs), []);
@@ -444,11 +462,16 @@ function stage(part, k, of, steer, intro = "") {
     <ol class="beats">${[...Array(n + 1)].map((_, j) => `<li class="beat"><div class="hidden">${hidden(j)}</div></li>`).join("")}</ol></section>`);
   const box = node.firstElementChild, room = box.firstElementChild, caption = box.querySelector(".caption"), turns = caption.firstElementChild, more = caption.lastElementChild, count = box.querySelector(".count");
   const ticks = [...box.querySelectorAll(".ticks button")], [back, ahead] = box.querySelectorAll(".step"), nav = box.querySelector(".stage-nav");
+  // (the count as wide at every step, "7 langkah" or "2 / 7", so that the scene's name beside it wraps the same way
+  // at every step and nothing under it moves)
+  count.style.minWidth = Math.max(t("steps_n", n).length, 2 * String(n).length + 3) + "ch";
   let at = -1, figure = null, sizes = [];
   // (a head that only repeats the first words of its text, "2016" over "2016. Empat padanan...", is not run into it)
   const plain = (html) => html.replace(/<[^>]*>/g, "").trim().toLowerCase(), echo = (h, text) => !!plain(h) && plain(text).startsWith(plain(h).replace(/[.:]$/, ""));
-  const said = (j) => (j ? `<p class="head${echo(head(j), part.steps[j - 1][language]) ? " echo" : ""}">${head(j)}</p><p>${part.steps[j - 1][language]}</p>`
-    : `<p class="title">${words.title}</p>${intro ? `<p class="intro">${intro}</p>` : ""}${words.text ? `<p>${words.text}</p>` : ""}${k ? "" : `<p class="hint">${t("stage_hint")}</p>`}`);
+  // (run into its text, a head or title is closed by a full stop, unless it ends on a stop of its own: "Hati-hati: polisi.")
+  const stop = (h) => (/[.?!…]["”’)]*$/.test(plain(h)) ? " stop" : "");
+  const said = (j) => (j ? `<p class="head${echo(head(j), part.steps[j - 1][language]) ? " echo" : ""}${stop(head(j))}">${head(j)}</p><p>${part.steps[j - 1][language]}</p>`
+    : `<p class="title${stop(words.title)}">${words.title}</p>${intro ? `<p class="intro">${intro}</p>` : ""}${words.text ? `<p>${words.text}</p>` : ""}${k ? "" : `<p class="hint">${t("stage_hint")}</p>`}`);
   const show = (j = at) => {
     if (!figure || j < 0) return;
     box.dataset.plate = figure.at(part.steps[Math.max(0, j - 1)], j);
@@ -557,6 +580,7 @@ function stage(part, k, of, steer, intro = "") {
     // band is all text; side by side, under the caption's last line)
     const inNav = !sideBySide();
     if (inNav !== (more.parentNode === nav)) (inNav ? nav.insertBefore(more, nav.lastElementChild) : caption.append(more));
+    if (turn?.whole) (turn.innerHTML = turn.whole), delete turn.whole;
     if (!turn || !caption.clientHeight) return;
     turn.style.removeProperty("height");
     turn.style.removeProperty("padding-block");
@@ -571,6 +595,16 @@ function stage(part, k, of, steer, intro = "") {
     box.classList.add("clamped");
     more.hidden = false;
     const top = turn.getBoundingClientRect().top, limit = inNav ? roomFor : roomFor - more.offsetHeight - parseFloat(getComputedStyle(more).marginTop);
+    // (it ends on the last whole sentence that fits, the rest set aside until it is read on; only where not even the
+    // first sentence of its text fits, on its last whole line)
+    const stop = sentences(turn).filter((s) => s.y - top <= limit).at(-1);
+    if (stop) {
+      turn.whole = turn.innerHTML;
+      const rest = document.createRange();
+      rest.setStart(stop.node, stop.offset);
+      rest.setEndAfter(turn.lastChild);
+      rest.deleteContents();
+    }
     const end = Math.max(0, ...lineEnds(turn).map((y) => y - top).filter((y) => y <= limit));
     Object.assign(turn.style, { height: end + "px", paddingBlock: end ? "" : "0" });  // (where not even a line fits, the control alone)
   };
@@ -579,6 +613,8 @@ function stage(part, k, of, steer, intro = "") {
     more.setAttribute("aria-expanded", on);
     more.textContent = t(on ? "read_less" : "read_on");
     turns.scrollTop = 0;
+    const whole = turns.querySelector(".turn:not(.out)");
+    if (on && whole?.whole) (whole.innerHTML = whole.whole), delete whole.whole;
     cue.hidden = true;
     cue.classList.remove("done");
     if (!on) return turns.style.removeProperty("max-height");
@@ -599,8 +635,9 @@ function stage(part, k, of, steer, intro = "") {
   };
   const cue = box.querySelector(".read-cue");
   turns.addEventListener("scroll", () => cue.classList.toggle("done", turns.scrollTop + turns.clientHeight >= turns.scrollHeight - 2), { passive: true });
-  more.addEventListener("click", () => read(!box.classList.contains("reading")));
-  box.addEventListener("keydown", (e) => e.key === "Escape" && box.classList.contains("reading") && (read(false), more.focus()));
+  // (closed, the caption is cut again where it was)
+  more.addEventListener("click", () => (box.classList.contains("reading") ? clamp() : read(true)));
+  box.addEventListener("keydown", (e) => e.key === "Escape" && box.classList.contains("reading") && (clamp(), more.focus()));
   ticks.forEach((b, m) => b.addEventListener("click", () => steer(m)));
   back.addEventListener("click", () => steer(at - 1));
   ahead.addEventListener("click", () => steer(at + 1));
@@ -2346,8 +2383,21 @@ async function homePage() {
     for (let m = 1, sum = w[0]; m < w.length; sum += w[m++]) { const g = (room - 30 - sum) / m; if (g >= 4 && g <= 20 && (best === null || Math.abs(g - 8) < Math.abs(best - 8))) best = g; }
     if (best !== null) row.style.gap = best.toFixed(1) + "px";
   };
-  document.fonts.ready.then(peek);
+  // The key and the year stand in the sky over the text only where the sky has room for them: on a short phone they
+  // would lie on the headline, and there they are left out (the notes on the sea still say what a light's height and a
+  // route are, and the line under the field what sails).
+  const sky = () => {
+    if (!hero.isConnected) return removeEventListener("resize", sky);
+    const h = hero.querySelector("h1").getBoundingClientRect(), top = h.top - hero.getBoundingClientRect().top, sea = hero.querySelector(".hero-sea").getBoundingClientRect();
+    for (const node of hero.querySelectorAll(".hero-key, .chart .when")) {
+      node.classList.remove("no-room");
+      const k = node.getBoundingClientRect();
+      node.classList.toggle("no-room", k.bottom - sea.top + 8 > top && k.left < h.right && k.right > h.left);
+    }
+  };
+  document.fonts.ready.then(() => (peek(), sky()));
   addEventListener("resize", peek);
+  addEventListener("resize", sky);
   hero.querySelector(".hero-try").addEventListener("click", (e) => e.target.matches("button") && (wanted(), sail(e.target.textContent)));
 
   // The 3D sea is fetched beside the data, and made only once the hero's text has been painted.
@@ -2375,6 +2425,7 @@ async function homePage() {
   if (!hero.isConnected) return;
   if (drawn) moor(first);
   hero.querySelector(".hero-sea .chart").replaceWith(figure.node);
+  sky();
   const lit = arriving && drawn && figure.chart.arrive?.((n) => t("tally", thousands(n)));
   if (lit) hear("arrive");
   await figure.chart.drawn();

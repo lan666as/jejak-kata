@@ -1005,9 +1005,9 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
    so that the band holds lines of text (app.js, stage: clamp; share measures the
    same, .caption.runin); the sheet, opened, sets them as they were */
 :is(.stage.runin:not(.reading), .caption.runin) .turn :is(.head, .title) { display: inline; margin: 0; font: 800 var(--turn, var(--t-body))/var(--l-body) var(--type); font-stretch: 100%; }
-:is(.stage.runin:not(.reading), .caption.runin) .turn .head::after { content: ". "; }
+:is(.stage.runin:not(.reading), .caption.runin) .turn :is(.head, .title)::after { content: ". "; }
+:is(.stage.runin:not(.reading), .caption.runin) .turn :is(.head, .title).stop::after { content: " "; }
 :is(.stage.runin:not(.reading), .caption.runin) .turn .head.echo { display: none; }  /* (a head that only repeats its text's first words) */
-:is(.stage.runin:not(.reading), .caption.runin) .turn .title::after { content: " · "; }
 :is(.stage.runin:not(.reading), .caption.runin) .turn :is(.head, .title) + p { display: inline; }
 :is(.stage.runin:not(.reading), .caption.runin) .turn :is(.head, .title) + p::after { content: ""; display: block; margin-bottom: var(--s3); }
 .stage-nav { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s2); }
@@ -1161,6 +1161,7 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 /* what a light and a route are, beside the sea, until the dive turns it to paper */
 .hero-key { position: absolute; top: var(--s4); left: var(--gutter); display: grid; gap: var(--s1); max-width: 17rem; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta);
   color: var(--on-deep-2); opacity: calc(1 - var(--away)); pointer-events: none; }
+.hero .no-room { visibility: hidden; }  /* the key or the year, where the sky has no room for it above the headline (app.js, homePage) */
 .hero-key p { display: flex; align-items: center; gap: var(--s2); margin: 0; }
 .hero-key svg { flex: none; fill: none; stroke: var(--on-deep-2); stroke-width: 1.5; stroke-linecap: round; }
 .hero-key .light { fill: var(--light-5); stroke: none; } .hero-key .route { stroke: var(--route-on-deep); stroke-width: 2.5; } .hero-key .port { fill: var(--route-on-deep); stroke: none; }
@@ -1538,8 +1539,8 @@ main.embed { min-height: 0; padding: var(--s4) var(--gutter); }
 .cover .share .share-to { top: auto; bottom: calc(100% + var(--s2)); }  /* opens upward, over the deck: below lies the cover's edge */
 .cover .share > summary { min-height: calc(var(--tap) + var(--s2)); color: var(--on-deep); background: var(--deep); border-color: var(--line-deep-2); }
 .cover .share > summary:hover { background: var(--deep-2); border-color: var(--on-deep); }
-.stage-meta .count { margin-left: auto; white-space: nowrap; }
-.stage-part { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }  /* the scene, named: the one count is the step's */
+.stage-meta .count { margin-left: auto; white-space: nowrap; text-align: right; }
+.stage-part { min-width: 0; text-wrap: balance; }  /* the scene, named whole (on a narrow phone on two lines, never cut): the one count is the step's */
 .share.step > summary { width: var(--s6); height: var(--s5); min-height: 0; margin: calc(-1 * var(--s1)) calc(-1 * var(--s2)) calc(-1 * var(--s1)) 0; padding: 0; border: 0; background: none; color: inherit; }
 .share.step > summary:hover { color: var(--on-deep); background: none; }
 .share.step .share-to { top: auto; bottom: calc(100% + var(--s2)); left: auto; right: 0; }  /* opens over the figure, not past the screen */

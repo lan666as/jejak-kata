@@ -25,7 +25,7 @@ const points = (v) => (v * 100).toLocaleString(document.documentElement.lang, { 
 const at = (node, x, y) => (node.style.transform = `translate(${x}px,${y}px)`);
 const ink = document.createElement("canvas").getContext("2d");
 /** How wide a text is in the site's typeface, bold, at `size` px. */
-const wide = (text, size) => ((ink.font = `700 ${size}px ${css("--type")}`), ink.measureText(text).width);
+const wide = (text, size, weight = 700) => ((ink.font = `${weight} ${size}px ${css("--type")}`), ink.measureText(text).width);
 const escape = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
 /** Round ticks from 0 to `top` or just past it: a step of 1, 2, 2.5 or 5 times a power of ten, at most five steps. */
@@ -36,11 +36,13 @@ const ticks = (top) => {
 /** The scale's lines: one per tick, and where the values are a part of a base (`base`, 1: 100%), its line stronger. */
 const rules = (tick, base, line, soft, draw) => tick.map((v) => draw(v, Math.abs(v - base) < 1e-9 ? soft : line, Math.abs(v - base) < 1e-9 ? 1.5 : 1)).join("");
 
-/** A plate's width, and its title broken into lines at that width: how much room the title takes (`top`). */
+/** A plate's width, and its title broken into lines at that width, measured in its own type (with a little to spare):
+ *  how much room the title takes (`top`). On the narrowest plates (a phone of 320 to 360px) the title is a size smaller,
+ *  so that a long finding leaves its rows the room. */
 function heading(title, width) {
   const W = Math.round(Math.max(272, Math.min(760, width))), narrow = W < 480;
-  const size = narrow ? 16 : 21, room = Math.floor((W - 24) / (size * 0.57)), lines = [""];
-  for (const word of title.split(" ")) (lines.at(-1) + " " + word).trim().length > room ? lines.push(word) : (lines[lines.length - 1] = (lines.at(-1) + " " + word).trim());
+  const size = W < 330 ? 14 : narrow ? 16 : 21, room = (W - 24) / 1.04, lines = [""];
+  for (const word of title.split(" ")) lines.at(-1) && wide(lines.at(-1) + " " + word, size, 800) > room ? lines.push(word) : (lines[lines.length - 1] = (lines.at(-1) + " " + word).trim());
   return { W, narrow, size, lines, top: 14 + lines.length * size * 1.14 };
 }
 /** A strip's legend, a dot and a name per series, wrapped into as many lines as the plate's width needs (on a wide
