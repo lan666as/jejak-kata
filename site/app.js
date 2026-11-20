@@ -1870,15 +1870,6 @@ const PICTURES = {
       return `<g class="in" style="--i:${j}"><path class="line dotted" d="M${x.toFixed(1)} ${water}V${y.toFixed(1)}"/><circle class="${j ? "mute" : "on"}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${j ? 5 : 6.5}"/>${svgText(x, j % 2 ? H - 2 : H - 18, shown(w), j ? "" : "strong", "middle")}</g>`;
     }).join(""), note: `Kompas ${f.periods[0]}–${f.periods.at(-1)}` };
   },
-  // The names of the tide table by kind: a dot for each.
-  entitas: ({ years: y }, W, H) => {
-    const kinds = ["person", "organisation", "place"], col = W / 3, lines = Math.floor((H - 26) / 12);
-    return { svg: kinds.map((kind, j) => {
-      const list = y.tide[KOMPAS][kind], per = Math.ceil(list.length / lines), gap = Math.min(12, (col - 14) / per);
-      return list.map((_, k) => `<circle class="in ${kind}" style="--i:${Math.floor(k / per)}" cx="${(j * col + 5 + (k % per) * gap).toFixed(1)}" cy="${(5 + Math.floor(k / per) * 12).toFixed(1)}" r="${Math.min(4.5, gap * 0.4).toFixed(1)}"/>`).join("")
-        + svgText(j * col, H - 4, `${list.length} ${t("kind_" + kind)}`, "soft");
-    }).join(""), note: `Kompas ${y.years[0]}–${y.years.at(-1)}` };
-  },
 };
 /** The play cards' pictures, drawn once their data has come (when they come near the screen) and again when their
  *  width changes; where the data cannot come, the card is text alone. */
