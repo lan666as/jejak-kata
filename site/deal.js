@@ -19,6 +19,8 @@ export const MARGIN = {
   yearRatio: 1.5,  // which year: in every other year offered, the ten words together stand at most 1/1.5 of their year's share
   guessPages: 1500,// guess the number: the name is on at least this many pages of 2020-2024, so that "of 100" is a real hundred
   guessHits: 30,   // ... and at least this many of them hold the word (a count of 3 is not a share)
+  spreadTop: 15,   // ... and the word is asked only where names differ on it: the name with the most of it has at least 15 in 100 ...
+  spreadRatio: 3,  // ... and at least three times the share of the name with the least ("janji", 1 to 5 in 100 for every name, is not a game on a 0-100 scale)
 };
 
 /** Names a general reader would know. The data names hundreds of people and bodies, many by a fragment ("setiawan",
@@ -48,6 +50,14 @@ export const SENSITIVE = ["tersangka", "korupsi", "suap", "ditangkap", "ditahan"
 export const POINTED = ["tersangka", "korupsi", "suap", "ditangkap", "diperiksa", "saksi", "divonis", "terdakwa", "mundur", "maaf", "viral", "kritik", "mengkritik", "demo",
   "hoaks", "janji", "utang", "etik", "oknum", "survei", "elektabilitas", "tegas", "marah", "gagal", "sukses", "rakyat", "sidang", "dilaporkan", "membantah", "klarifikasi"];
 export const OUTLET_NAMES = ["Kompas", "Tempo", "Tribunnews"];
+
+/** A name as a name, wherever a game shows one: a person, a body or a place (PEOPLE, BODIES, or a kind the data gives)
+ *  with capitals, an abbreviation in upper case ("KPK", "Mahfud MD"), a brand as it writes itself; every other word as
+ *  counted, in lower case. The data keeps every word in lower case: this is how it is shown, not what is counted. */
+const UPPER = new Set(["kpk", "dpr", "sby", "pdip", "tni", "kpu", "pks", "pkb", "mui", "fpi", "pbb", "ojk", "bmkg", "pln", "asean", "fifa", "isis", "nato", "mpr", "dpd", "unesco", "bpjs", "pt", "kai", "md", "ham", "pp", "ri", "dki", "ppp", "psi", "kpai", "bnn", "bnpb", "bpk", "lps", "ui", "itb", "ugm"]);
+const SPELT = { tiktok: "TikTok", youtube: "YouTube", whatsapp: "WhatsApp", nasdem: "NasDem" };
+export const shown = (word, kind) => (PEOPLE.includes(word) || BODIES.includes(word) || ["person", "organisation", "place"].includes(kind)
+  ? word.split(" ").map((p) => SPELT[p] || (UPPER.has(p) ? p.toUpperCase() : p.charAt(0).toUpperCase() + p.slice(1))).join(" ") : word);
 
 /** The quiz: ten rounds, three easy, four middling, three hard; the kinds in a rhythm, never the same twice running. */
 export const ROUNDS = 10;
@@ -249,8 +259,9 @@ export function deal(d, rng, P) {
 }
 
 // ---- guess the number ----------------------------------------------------------------------------------------------
-/** The questions of "guess the number", from Kompas's stick.json in 2020-2024: every word with every known name
- *  that is on enough pages, its true value (of 100 pages) and a line of context: who has the most and the least of it. */
+/** The questions of "guess the number", from Kompas's stick.json in 2020-2024: every word with a spread across names
+ *  (MARGIN.spreadTop, spreadRatio) with every known name that is on enough pages, its true value (of 100 pages) and a
+ *  line of context: who has the most and the least of it. */
 export function guessPool(s, era = 2) {
   const names = s.names.map((n, i) => i).filter((i) => (PEOPLE.includes(s.names[i]) || BODIES.includes(s.names[i])) && s.pages[i][era] >= MARGIN.guessPages);
   const out = [];
@@ -258,6 +269,7 @@ export function guessPool(s, era = 2) {
     const known = names.filter((i) => s.share[w][i][era] !== null && (s.share[w][i][era] * s.pages[i][era]) / 1000 >= MARGIN.guessHits);
     if (known.length < 3) continue;
     const by = [...known].sort((a, b) => s.share[w][b][era] - s.share[w][a][era]), [hi, lo] = [by[0], by.at(-1)];
+    if (s.share[w][hi][era] / 10 < MARGIN.spreadTop || s.share[w][hi][era] < MARGIN.spreadRatio * s.share[w][lo][era]) continue;  // (a word with no spread across names)
     for (const i of known) {
       const v = Math.round(s.share[w][i][era] / 10);
       if (v < 1) continue;

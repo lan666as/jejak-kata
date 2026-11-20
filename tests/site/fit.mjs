@@ -36,9 +36,12 @@ const ALL = [[320, 568], [344, 882], [360, 640], [360, 740], [375, 667], [390, 8
 const PHONES = [[320, 568], [360, 640], [360, 740], [375, 667], [390, 844], [412, 915], [430, 932], [844, 390], [932, 430], [768, 1024]].flatMap(([w, h]) => [100, 130, 200].map((f) => [w, h, f]));
 const key = ([w, h, f = 100]) => `${w}x${h}@${f}`;
 // (by default the stories, the long part, at five of them: the smallest phone, a phone with larger text, a phone held
-// sideways, a tablet upright and a laptop; with the captions 30% longer at three; the other pages at eight)
+// sideways, a tablet upright and a laptop; the next button at the first three; with the captions 30% longer at the
+// first and third; the other pages at eight)
 const STORY_SIZES = every ? [...new Map([...ALL, ...PHONES].map((s) => [key(s), s])).values()] : [[320, 568], [360, 740], [390, 844, 130], [844, 390], [1366, 768]];
-const LONG_SIZES = every ? [...PHONES] : [[320, 568], [390, 844, 130], [844, 390]];
+const LONG_SIZES = every ? [...PHONES] : [[320, 568], [390, 844, 130]];
+// (by default the next button walks at the three hardest: the smallest phone, larger text, a phone held sideways)
+const BUTTON = (size) => every || ONLY || ["320x568@100", "390x844@130", "844x390@100"].includes(key(size));
 const PAGE_SIZES = every ? ALL : [[320, 568], [360, 740], [390, 844, 130], [844, 390], [1366, 768], [768, 1024], [1024, 768], [1920, 1080]];
 // FIT_SIZES=320x568,390x844@130 walks the stories at those sizes only (both ways), and no other page: a quick look.
 const ONLY = process.env.FIT_SIZES?.split(",").map((x) => x.match(/\d+/g).map(Number));
@@ -66,14 +69,18 @@ const helpers = () => {
   const r = (n) => n.getBoundingClientRect();
   const hit = (a, b) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
   const seen = (n) => !!n && n.getClientRects().length > 0 && n.checkVisibility({ opacityProperty: true, visibilityProperty: true }) && !n.closest(".hidden");
-  /** The lines of text under `node` as the reader sees them: a box per line (a line's pieces joined). */
+  /** The lines of text under `node` as the reader sees them: a box per line (a line's pieces joined), as tall as its
+   *  glyphs' box or, where the line is set tighter than that (a title), as its line (about the same middle). */
   const lines = (node) => {
     const boxes = [], walk = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
     for (let t = walk.nextNode(); t; t = walk.nextNode()) {
       if (!t.textContent.trim() || !seen(t.parentElement)) continue;
-      const range = document.createRange();
+      const range = document.createRange(), line = parseFloat(getComputedStyle(t.parentElement).lineHeight);
       range.selectNodeContents(t);
-      for (const b of range.getClientRects()) if (b.width > 1 && b.height > 1) boxes.push({ top: b.top, bottom: b.bottom, left: b.left, right: b.right, text: t.textContent.trim() });
+      for (const b of range.getClientRects()) {
+        const h = Math.min(b.height, line || b.height), mid = (b.top + b.bottom) / 2;
+        if (b.width > 1 && b.height > 1) boxes.push({ top: mid - h / 2, bottom: mid + h / 2, left: b.left, right: b.right, text: t.textContent.trim() });
+      }
     }
     const rows = [];
     for (const b of boxes.sort((a, b) => a.top - b.top)) {
@@ -119,8 +126,10 @@ const helpers = () => {
   /** Text of anything else in the scene that is seen on a line of the caption (the step before, a card, a ghost). */
   const ghosts = (scene, text, shownLines) => {
     const out = [];
+    if (!shownLines.length) return out;
+    const area = { top: Math.min(...shownLines.map((l) => l.top)), bottom: Math.max(...shownLines.map((l) => l.bottom)), left: Math.min(...shownLines.map((l) => l.left)), right: Math.max(...shownLines.map((l) => l.right)) };
     for (const n of scene.querySelectorAll("*")) {
-      if (text.contains(n) || n.contains(text) || ![...n.childNodes].some((c) => c.nodeType === 3 && c.textContent.trim()) || !seen(n)) continue;
+      if (text.contains(n) || n.contains(text) || ![...n.childNodes].some((c) => c.nodeType === 3 && c.textContent.trim()) || !hit(r(n), area) || !seen(n)) continue;
       const box = clip(n), on = lines(n).map((a) => ({ ...a, top: Math.max(a.top, box.top), bottom: Math.min(a.bottom, box.bottom), left: Math.max(a.left, box.left), right: Math.min(a.right, box.right) }))
         .find((a) => a.bottom - a.top > 2 && a.right - a.left > 2 && shownLines.some((l) => hit(a, l)));
       if (on) out.push(`text shows through the caption (“${on.text.slice(0, 24)}”)`);
@@ -184,9 +193,9 @@ const look = ([k, j]) => {
       const scale = f.height / svg.viewBox.baseVal.height, half = (+svg.dataset.pitch * scale) / 2;
       const bands = [...svg.querySelectorAll(".row")].map((g, i) => { const y = r(g.querySelector("line")).top; return { i, a: y - half, b: y + half, named: g.style.opacity === "1", label: g.querySelector("text").textContent }; });
       if (bands.some((x) => x.a < from - 1.5 && x.b > from + 1.5 || x.a < to - 1.5 && x.b > to + 1.5)) wrong.push("a row of the panned chart is cut at rest");
-      const named = bands.filter((x) => x.named), past = shut === null ? [] : gap.dataset.rows.split("-").map(Number);
+      const named = bands.filter((x) => x.named), past = shut === null ? [] : gap.dataset.rows.split(",").map((run) => run.split("-").map(Number));
       if (named.length < bands.length) {
-        const out = named.filter((x) => (x.a < from - 1.5 || x.b > to + 1.5) && !(past.length && x.i >= past[0] && x.i <= past[1]));
+        const out = named.filter((x) => (x.a < from - 1.5 || x.b > to + 1.5) && !past.some(([a, b]) => x.i >= a && x.i <= b));
         if (out.length) wrong.push(`a row the step names is out of view (${out.map((x) => x.label).join(", ")})`);
         if (shut !== null && (r(gap).bottom > win.bottom + 1 || r(gap).top < from - 1)) wrong.push("the rows past the gap are not wholly in the window");
       }
@@ -212,13 +221,15 @@ const sheet = async (k) => {
   if (!opaque(cap)) wrong.push("the open caption is not opaque");
   if (hit(r(cap), r(nav))) wrong.push("the open caption lies under the controls");
   const all = window.__fit.lines(text).length;
+  // (taller than the stage, the sheet scrolls: at its top no line is cut; scrolled, each line is seen whole somewhere)
+  const scroller = [cap, ...cap.querySelectorAll("*")].find((n) => ["auto", "scroll"].includes(getComputedStyle(n).overflowY)) || cap;
   let seenLines = new Set();
   for (let tries = 0; tries < 40; tries++) {
-    const at = read(text, stage, [["the controls", nav]]);
-    wrong.push(...at.wrong);
-    at.shown.forEach((l) => seenLines.add(Math.round(l.top + cap.scrollTop)));
-    if (cap.scrollTop + cap.clientHeight >= cap.scrollHeight - 1) break;
-    cap.scrollTop += Math.max(20, cap.clientHeight - 40);
+    const at = read(text, stage, [["the controls", nav], ["its own control", more]]);
+    wrong.push(...at.wrong.filter((w) => !tries || !/cut at rest/.test(w)));
+    at.shown.forEach((l) => seenLines.add(Math.round(l.top + scroller.scrollTop)));
+    if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1) break;
+    scroller.scrollTop += Math.max(20, scroller.clientHeight - 40);
     await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
   }
   if (seenLines.size < all) wrong.push(`the open caption shows ${seenLines.size} of its ${all} lines`);
@@ -244,7 +255,7 @@ const name = ([w, h, font], longer) => `${w}x${h}${font && font !== 100 ? ` @${f
 
 /** Every step of every story at one size: reached by scrolling, then by the next button (which also opens the caption
  *  where it goes on). */
-async function stories(size, longer = false, button = !longer) {
+async function stories(size, longer = false, button = !longer && BUTTON(size)) {
   const page = await fresh(size, longer);
   for (const slug of slugs) {
     const story = STORIES.find((s) => s.slug === slug);
@@ -258,7 +269,7 @@ async function stories(size, longer = false, button = !longer) {
       for (let j = 0; j <= part.steps.length; j++) {
         await page.evaluate(([k, j]) => { const s = document.getElementById(`scene-${k}`); scrollTo(0, scrollY + s.getBoundingClientRect().top - document.querySelector(".masthead").offsetHeight + j * s.querySelector(".beat").offsetHeight + 2); }, [k, j]);
         await page.waitForFunction(([k, j]) => +document.querySelector(`#scene-${k} .stage`).dataset.step === j, [k, j], { timeout: 1500 }).catch(() => {});
-        await page.waitForTimeout(70);
+        await page.waitForTimeout(40);
         const s = await page.evaluate(look, [k, j]);
         looks++;
         if (j) at.add(s.at);
@@ -269,7 +280,8 @@ async function stories(size, longer = false, button = !longer) {
     if (button) {
       // From the first stage's opening, the next button, step by step to the last.
       await page.evaluate(() => { const s = document.getElementById("scene-0"); scrollTo(0, scrollY + s.getBoundingClientRect().top - document.querySelector(".masthead").offsetHeight + 2); });
-      await page.waitForTimeout(120);
+      await page.waitForFunction(() => +document.querySelector("#scene-0 .stage").dataset.step === 0, null, { timeout: 1500 }).catch(() => {});
+      await page.waitForTimeout(70);
       for (const [k, part] of story.scenes.entries()) for (let j = 0; j <= part.steps.length; j++) {
         if (k || j) {
           await page.click(`#scene-${j ? k : k - 1} .stage-nav .step.on`);

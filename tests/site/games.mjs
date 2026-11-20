@@ -106,6 +106,7 @@ log("each kind dealt at least 200 times", KINDS.every((k) => games.dealt[k] >= 2
 const stick = JSON.parse(readFileSync(new URL("../../site/data/id-web-eras-kompas/stick.json", import.meta.url)));
 const gpool = guessPool(stick), gbad = [];
 let constant = Array(101).fill(0), played = 0;
+const bins = [0, 0, 0];
 { const rng = seeded(4), d = guessDecks(gpool, rng), seen = [[], [], []];
   for (let g = 0; g < 300; g++) {
     const game = guessDeal(d, rng), topics = new Set();
@@ -120,7 +121,13 @@ let constant = Array(101).fill(0), played = 0;
       const i = stick.names.indexOf(q.name);
       if (stick.pages[i][2] < MARGIN.guessPages || (stick.share[q.w][i][2] * stick.pages[i][2]) / 1000 < MARGIN.guessHits) gbad.push(`game ${g}: ${q.key} on too few pages`);
       if (Math.round(stick.share[q.w][i][2] / 10) !== q.v) gbad.push(`game ${g}: ${q.key} is not ${q.v}`);
+      // Only a word on which names differ: the most of it at least 15 in 100, and at least three times the least
+      // (computed here from the raw numbers over every known name on enough pages).
+      const among = stick.names.map((_, k) => k).filter((k) => (PEOPLE.includes(stick.names[k]) || BODIES.includes(stick.names[k])) && stick.pages[k][2] >= MARGIN.guessPages && stick.share[q.w][k][2] !== null && (stick.share[q.w][k][2] * stick.pages[k][2]) / 1000 >= MARGIN.guessHits).map((k) => stick.share[q.w][k][2]);
+      if (Math.max(...among) < 10 * MARGIN.spreadTop || Math.max(...among) < MARGIN.spreadRatio * Math.min(...among)) gbad.push(`game ${g}: “${q.w}” has no spread across names (${(Math.min(...among) / 10).toFixed(1)}–${(Math.max(...among) / 10).toFixed(1)} in 100)`);
+      bins[q.bin]++;
     }
+    if (new Set(game.map((q) => q.bin)).size < 3) gbad.push(`game ${g}: its values are not low, middle and high (${game.map((q) => q.v).join(", ")})`);
     for (let c = 0; c <= 100; c++) constant[c] += game.reduce((s, q) => s + points(c, q.v), 0) / (game.length * 100);
     played++;
   }
@@ -128,7 +135,7 @@ let constant = Array(101).fill(0), played = 0;
 }
 const best = Math.max(...constant) / played, at = constant.indexOf(Math.max(...constant));
 console.log(`     guess the number: ${gpool.length} distinct questions (${["low", "middle", "high"].map((name, b) => `${gpool.filter((q) => q.bin === b).length} ${name}`).join(", ")}), ${new Set(gpool.map((q) => q.w)).size} words, ${new Set(gpool.map((q) => q.name)).size} names`);
-log("300 guess games: six rounds, no word or name twice, every value as counted", !gbad.length, gbad.slice(0, 5).join("; "));
+log(`300 guess games: six rounds, no word or name twice, every value as counted, only words with a spread across names, low, middle and high in every game (${bins.join(", ")} dealt)`, !gbad.length && bins.every((n) => n >= 500), gbad.slice(0, 5).join("; "));
 log("no one fixed guess wins: the best (always guessing " + at + ") scores under half on average", best < 0.5, `${Math.round(best * 100)}%`);
 
 // Every string the games use, in both languages.

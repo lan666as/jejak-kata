@@ -194,13 +194,13 @@ export function plate(spec, width, height) {
 }
 
 /** A row's name, ending at `L - 9`, at height y: a name too long for its column on two lines where the rows are `gap`
- *  apart or more, else a little smaller. */
+ *  apart or more, else a little smaller, never under 11.5px (11px on screen where a 300px plate shows in 288px). */
 function rowName(label, y, L, size, gap, ink) {
   if (label.length <= Math.floor((L - 14) / (size * 0.53))) return `<text x="${L - 9}" y="${y + size * 0.35}" text-anchor="end" style="font-size:${size}px;font-weight:600;fill:${ink}">${label}</text>`;
   // Two lines broken at the space that leaves the longer line shortest, then as large as that line allows.
   const cut = [...label].map((c, i) => (c === " " ? i : -1)).filter((i) => i > 0).sort((a, b) => Math.max(a, label.length - a) - Math.max(b, label.length - b))[0];
   const parts = cut && gap >= size * 1.9 ? [label.slice(0, cut), label.slice(cut + 1)] : [label];
-  const small = Math.max(10, Math.min(size, (L - 14) / Math.max(...parts.map((p) => p.length)) / 0.53));
+  const small = Math.max(11.5, Math.min(size, (L - 14) / Math.max(...parts.map((p) => p.length)) / 0.53));
   return `<text x="${L - 9}" y="${y + small * 0.35 - (parts.length - 1) * small * 0.55}" text-anchor="end" style="font-size:${small}px;font-weight:600;fill:${ink}">${parts.map((part, i) => `<tspan x="${L - 9}" dy="${i ? small * 1.1 : 0}">${part}</tspan>`).join("")}</text>`;
 }
 
@@ -212,7 +212,8 @@ export const longestTitle = (title, states, width) => (typeof title !== "functio
 /**
  * Rows on one scale. `spec`: {title (or, to follow the moment shown, title(moment)), note, states: [labels], series: [names], rows: [{label, values: [state][series]}],
  * format: (v) => text, pages: (i) => text, most: the value at the right edge (else the round tick at or past the largest),
- * base: as for lines, empty: what a row with no value at a state means (its rule: too few pages)}. A row with no
+ * base: as for lines, empty: what a row with no value at a state means (its rule: too few pages), floor: the least its
+ * rows stand apart (18px; a story's stage may ask for less, app.js panning)}. A row with no
  * value at the state shown has an open dash where its dots would start, and the first such row says why (`empty`). One dot per series in every row; `show(i, focus)` moves the dots to
  * state i and leaves a ring where they were at the first state; rows not named in `focus` fade.
  */
@@ -242,7 +243,7 @@ export function strip(spec, width, height) {
       ${spec.empty ? `<g class="empty" opacity="0"><rect x="${L + 6}" y="${y(k) - 3}" width="18" height="6" rx="3" fill="none" stroke="${soft}" stroke-width="1.2"/><text x="${L + 32}" y="${y(k) + 4}" style="font-size:12px;fill:${soft}"></text></g>` : ""}
       <rect class="beacon" x="${W - R + 3}" y="${y(k) - 10}" height="20" rx="4" fill="${beacon}" opacity="0"/>
       <text class="value" x="${W - R + 8}" y="${y(k) + size * 0.35}" style="font-size:12px;font-weight:700;fill:${ink}"></text></g>`).join("")}`;
-  }, stripLeast(spec.title, rows, width, [...spec.series, ...(spec.rings ? [spec.rings] : [])], PITCH.floor));
+  }, stripLeast(spec.title, rows, width, [...spec.series, ...(spec.rings ? [spec.rings] : [])], spec.floor || PITCH.floor));
   const groups = [...made.svg.querySelectorAll(".row")], state = made.svg.querySelector(".state"), inked = css("--ink"), ringsKey = made.svg.querySelector(".rings-key");
   Object.assign(made.svg.dataset, { head, pitch });
   const show = (i, focus) => {

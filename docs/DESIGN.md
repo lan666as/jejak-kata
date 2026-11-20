@@ -198,40 +198,49 @@ A story is a voyage in three parts.
    proximity). Step 0 of a scene opens it: the scene's title and text, so the reader knows the figure before it
    moves. The caption shows its head, the text, and "3 / 6"; a row of ticks shows the steps and takes a tap.
    Nothing is ever cut: on a phone the stage shares its height by need (`--fig`): the caption band keeps room for its
-   tallest step and, where the stages lie on the sea, a band of the sea under it (`BAND`, 76px: a ring and its name in a
-   pill, clear of the text and the controls), and the figure gets the rest, at least half (a strip that slides, up to
-   three fifths). A strip that would be seen whole, title to foot, if the sea's band gave way takes that room, and a strip
-   that slides anyway keeps its window: the sea's band gives way first. On a step where the sea then names nothing, the
-   caption's shade covers the band and the key is not shown (an empty band is worse than none); on a phone a step's own
-   words come before the scene's route (the route is sailed only where the step brings no word of its own). Where the tallest
-   step would not fit beside that, the stage's captions are set a size smaller (1rem, then `--t-small`). A hand count
-   is given three fifths of the stage, and any stacked figure at least 240px (and, flowing, 55% of the stage): the
-   caption gives way first. **Where even that leaves the figure too little** (under two fifths: a short screen,
-   large text, a long caption), the captions leave the stage and **flow**: each step's caption is a card in its beat, in
-   the page's own scroll, standing exactly where the caption's band begins when its step is reached, at the body's size;
-   a card longer than the band is read on by scrolling the page (the beats are as tall as the longest card needs, so
-   the step does not change before its card's end has passed above the controls; the last card is read before the
-   stage leaves). The figure, the scene's name and count and the controls stay; a card passes under them as it goes,
-   never sits under them when read: where a card goes on under the controls its foot fades out above them and a small
-   mark there says it goes on, and the controls cover all below them to the stage's edge, so no line ends half under a
-   button. No caption ever scrolls inside a box. **Stacked or side by side** is one rule
+   tallest step, the key's line and, where the stages lie on the sea, a band of the sea between them (`BAND`, 76px: a
+   ring and its name in a pill, clear of the text and the controls), and the figure gets the rest, at least two fifths
+   (a strip that slides, up to three fifths). A strip that would be seen whole, title to foot, if the sea's band gave
+   way takes that room, and a strip that slides anyway keeps its window: the sea's band gives way first. On a step
+   where the sea then names nothing, the caption's shade covers the band and the key is not shown (an empty band is
+   worse than none); on a phone a step's own words come before the scene's route (the route is sailed only where the
+   step brings no word of its own). Where the tallest step would not fit beside that, the stage's captions are set a
+   size smaller (1rem, then `--t-small`). A hand count is given three fifths of the stage, and any stacked figure at
+   least 240px and the rows its steps name. **Where a step still does not fit its band** (a short screen, large text,
+   a long caption; the figure then keeps only its least and the captions are at the body's size), the caption shows
+   its whole lines, as many as fit, and under the last one a labelled control, "Baca selengkapnya" / "Read on"
+   (`clamp` in app.js). One press opens the caption as a sheet of the deep over the stage above the controls, opaque,
+   with the whole text; a second press ("Tutup" / "Close"), Escape or the next step closes it. Only where the text is
+   taller than the whole stage (very large type) does the sheet's text scroll, and its first screen still ends on a
+   whole line. So at rest a caption is read to its end or ends on a whole line above its control: no line is ever cut,
+   faded, or under the controls, the key or the figure, and nothing of another step shows through (the controls and
+   the open sheet are opaque). The sea's key gives its line to the text before the text gives way: its line is the
+   caption's too, and where the text needs it the key is not shown (`yields`). No caption ever scrolls inside its
+   band. **Stacked or side by side** is one rule
    (`SIDE` in app.js, the same media query in style.css): side by side from 900px wide, and on any screen held sideways
    from 560px (a phone in landscape gets the figure beside its captions, not over them); the controls take two rows only
    from 900px wide and 640px tall. A screen turned or resized lays the story out again at the step it is on (a
    browser's bar coming and going does not: the stage is `100svh` tall). Ticks narrower than a 44px target are only a
    picture of the way through (`glance`); the step buttons step. From 900px a story's captions take at most two sizes: `--t-caption` where a
    step fits its column at it, and for every other step one size, the largest (`--t-lede`, the body's, `--t-small`) at
-   which the story's longest caption fits, measured in the language and at the width shown. No caption is cut, and
-   none scrolls. On a phone a short caption leaves the rest of the band to the sea (its shade is only as tall as its text).
+   which the story's longest caption fits, measured in the language and at the width shown; a step that does not fit
+   even at the smallest reads on as on a phone. On a phone a short caption leaves the rest of the band to the sea (its
+   shade is only as tall as its text).
    A strip of more rows than that room keeps 26px apart (`stripLeast` in plate.js) is drawn at the height that does, in
    a window of that room, under its own title and legend, which stand pinned at the window's top (a second view of the
    same plate, so they always read whole), and **slides** through the window as the page scrolls through the scene; at
    rest a whole number of rows shows under the pinned head and the window ends at its last whole row (unless the
    strip's foot has come in), never a row cut: at each step to the
    rows the step brings forward (at the opening to its top; where a step names none, as far down as the step is
-   through the scene), between two steps between their places; the window's edges fade where the strip goes on. No
-   nested scrolling: a swipe always moves the story. No text on a plate is under 12px: a line's name and value too
-   long for the column wrap onto a second line. Under each sticky stage lies a run of invisible beats, one per step,
+   through the scene), between two steps between their places. Every row a step names is in the window at rest, at
+   every size: where they lie further apart than the window holds (a row near the top and the row of all pages at the
+   foot), the window **elides** the rows between: it shows the first run of named rows, then a gap marked by a row of
+   three dots, then the next run (a third view of the plate, `elided`); and the window is given the rows that needs,
+   its rows set closer where they must (26px on a phone, 22 beside a caption, down to 13 where a step names nine of
+   seventeen rows on a 320px phone; `panning` in app.js). Beside the caption (a phone held sideways) a strip whose rows
+   would stand closer than 18px in its room pans in the same way rather than be drawn smaller. No nested scrolling: a
+   swipe always moves the story. No text on a plate is under 11px on screen (`fit.mjs` holds every size to it): a
+   line's name and value too long for the column wrap onto a second line, a row's name onto two. Under each sticky stage lies a run of invisible beats, one per step,
    that the scroll snaps to; the scroll position chooses the step.
 3. **Landing**, on the chart (its paper covers the sea, which ends at the tide line above it): "What this data cannot
    say" as a bordered panel, its paragraphs (the story's own, word for word) a list, each led in bold by its own first
@@ -343,6 +352,9 @@ its line); once the first route has
   under its text, a game's with the best score (localStorage; nothing where storage is refused). A toy's head is
   shorter on a phone (less sea above the kicker, the lede at the body's size), so that the toy begins on the first
   screen. Where a figure tells something on hover, a tap tells it too.
+  A game shows a name as a name (`shown` in deal.js: "Sandiaga Uno", "KPK", "Mahfud MD"), a common word in lower case;
+  the data keeps all in lower case. The quiz's card (the lead) pictures its own question: a year's words as chips,
+  "Tahun berapa?", and four years as the game shows them, the right one ticked.
   A game is a board: the round on paper, and beside it the game's voyage so far (a port per round: filled where right,
   a ring where wrong, the ship on the round now; a run of three or more right ringed in `--beacon`, the streak), the
   tally and the one control that goes on (lock, next, play again), always in the same place: in the panel held beside
@@ -364,7 +376,9 @@ its line); once the first route has
   length (a cut with reduced motion). A question that sets a name beside a word carries the caution "sharing a page is
   not being accused" in sight, and never asks it of a word that reads as an accusation (deal.js, `SENSITIVE`): those are
   asked only as "guess the number" asks them. In "guess the number" (six rounds, two each of a low, a middle and a high
-  true value, so that no one guess always pays; only names a reader knows and words with a point, `POINTED`; points by
+  true value, so that no one guess always pays; only names a reader knows and words with a point, `POINTED`, on which
+names differ: the name with the most of it has at least 15 in 100 and three times the least, `MARGIN.spreadTop` and
+`spreadRatio`; points by
   how far off as a part of the truth, said in a line above the board before the first round) the answer is not simply
   shown: its mark sails (`--d-leg`) from the reader's guess to the truth along the scale, drawing its wake in the
   route, so how far off the guess was is a distance one sees travelled (a cut with reduced motion); then a line by how

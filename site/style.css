@@ -140,6 +140,9 @@ main:focus { outline: none; }
 .head-button { min-width: var(--tap); padding: 0 var(--s3); gap: var(--s2); color: var(--on-deep); background: transparent; border-color: transparent; }
 .head-button:hover { background: var(--deep-2); border-color: transparent; }
 .head-button[aria-expanded="true"] { background: var(--deep-2); }
+/* a bar too narrow for its words in its own type (a small phone with large text) keeps the menu's mark and its name for
+   a screen reader only */
+@container head (width < 17em) { #menu-button span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } }
 #menu-button svg path { transition: transform var(--d-turn) var(--sail); transform-origin: 12px 12px; }
 #menu-button[aria-expanded="true"] .bar-1 { transform: translateY(4px) rotate(45deg); }
 #menu-button[aria-expanded="true"] .bar-2 { transform: translateY(-4px) rotate(-45deg); }
@@ -847,7 +850,7 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .sea-on .scene, .sea-on .stage { background: transparent; }
 .sea-on .stage::before { content: none; }
 /* over the sea a caption and the step's controls keep a shade of the deep under them, as the figure has its panel */
-.sea-on .caption { padding-inline: var(--gutter); margin-inline: calc(-1 * var(--gutter)); }  /* room for the shade */
+.sea-on .caption { padding-inline: var(--gutter); margin-inline: calc(-1 * var(--gutter)); margin-bottom: calc(-1 * (var(--t-meta) * var(--l-meta) + var(--gap))); }  /* room for the shade; the key's line is the caption's too, and goes to its text where it needs it (app.js, stage: clamp) */
 .sea-on .turn { border-radius: var(--r2); background: color-mix(in srgb, var(--deep) 88%, transparent); box-shadow: 0 0 var(--s4) var(--s3) color-mix(in srgb, var(--deep) 88%, transparent); }
 /* at a new scene the sea takes the whole stage for a leg (app.js, storySea): the figure, the caption and its meta give
    way, then come back over it */
@@ -856,31 +859,47 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 /* the key: what the sea shows, in a line above the controls (as many words named as fit it, app.js); its room is kept from the start (a phone's stage
    shares its height with it, app.js share), so nothing moves when it is written */
 .sea-key { display: none; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); color: var(--on-deep-2); }
-.sea-on .sea-key { display: block; height: calc(1em * var(--l-meta)); overflow: hidden; white-space: nowrap; color: var(--on-deep);
+.sea-on .sea-key { position: relative; z-index: 1; display: block; height: calc(1em * var(--l-meta)); overflow: hidden; white-space: nowrap; color: var(--on-deep);
   background: color-mix(in srgb, var(--deep) 88%, transparent); box-shadow: 0 0 var(--s3) var(--s2) color-mix(in srgb, var(--deep) 88%, transparent); }  /* (the caption's shade) */
 /* where the sea names nothing on a step (app.js, storySea: a phone's long caption), the caption's shade covers its band */
 .sea-on .stage.mute .caption { background: color-mix(in srgb, var(--deep) 88%, transparent); border-radius: var(--r2); }
-.sea-on .stage.mute .sea-key { visibility: hidden; }
+.sea-on .stage:is(.mute, .yields) .sea-key { visibility: hidden; }
 .sea-on .stage-nav .step { background: var(--deep); }
 .sea-on .stage-nav .step:hover { background: var(--deep-2); }
 .stage-figure .sub { color: var(--on-deep-2); }
-/* stacked, a strip of more rows than its room keeps apart is drawn at its own height in a window of that room and
-   slides through it as the page scrolls (app.js, share and slide); its edges fade where it goes on */
-@media not ((width >= 900px) or ((orientation: landscape) and (width >= 560px))) {
-  .stage.tall .stage-figure { overflow: hidden; place-items: start center; mask-image: linear-gradient(#000 var(--cut, 100%), transparent var(--cut, 100%)); }
-  .stage.tall .stage-figure > :not(.pinned) { transform: translateY(calc(-1 * var(--slide, 0px))); }
-  /* its title and legend stand pinned over it (app.js, stage: pinned), on the deep */
-  .stage.tall .pinned { display: block; overflow: hidden; z-index: 1; align-self: start; background: var(--deep); }
-  .stage.tall .stage-figure .plate svg { max-height: none; }
-  /* flowing, the deep stands behind the figure's whole room, its faded edges too: a card read on passes under it unseen */
-  .scenes .scene.flow .stage { background: linear-gradient(var(--deep) calc(var(--fig) + 2 * var(--s3)), transparent 0); }
-}
-.stage-side { grid-area: side; display: flex; flex-direction: column; gap: var(--s2); min-height: 0; }
+/* a strip of more rows than its room keeps apart (a phone; held sideways, one whose names would be drawn smaller) is
+   drawn at its own height in a window of that room and slides through it as the page scrolls (app.js, share, fit and
+   slide); the window ends at its last whole row (--cut) */
+.stage.tall .stage-figure { overflow: hidden; place-items: start center; mask-image: linear-gradient(#000 var(--cut, 100%), transparent var(--cut, 100%)); }
+.stage.tall .stage-figure > :not(.pinned, .elided) { transform: translateY(calc(-1 * var(--slide, 0px))); }
+/* its title and legend stand pinned over it (app.js, stage: pinned), on the deep; where the rows a step names lie
+   further apart than the window holds, the rows between are elided: a row of three dots, then the rest (elided) */
+.stage.tall .pinned { display: block; overflow: hidden; z-index: 1; align-self: start; background: var(--deep); }
+.elided { display: none; }
+.stage.tall .elided { display: block; z-index: 1; align-self: start; background: var(--deep); }
+.elided svg { display: block; max-width: none; overflow: hidden; }
+.elided .gap { display: block; width: 24px; margin-inline: auto; background: radial-gradient(circle at 4px 50%, var(--on-deep-2) 1.6px, transparent 2.2px) 0 0 / 8px 100% repeat-x; }
+.stage.tall .stage-figure .plate svg { max-height: none; }
+.stage-side { --gap: var(--s2); grid-area: side; display: flex; flex-direction: column; gap: var(--gap); min-height: 0; }
 .stage-meta { display: flex; justify-content: space-between; gap: var(--s3); max-width: none; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); font-weight: 600; color: var(--on-deep-2); font-variant-numeric: tabular-nums; }
-.caption { flex: 1; display: grid; align-content: start; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-deep) transparent; }
-.caption.more { mask-image: linear-gradient(#000 calc(100% - var(--s6)), transparent); }
-.caption:focus-visible { outline-offset: calc(-1 * var(--rule)); }
-.turn { grid-area: 1 / 1; align-self: start; transition: opacity var(--d-turn) var(--sail), transform var(--d-turn) var(--sail); }
+/* the caption: its text whole in its band, or (app.js, stage: clamp) up to its last whole line with "Baca selengkapnya"
+   at the band's foot, which opens it as a sheet of the deep over the stage above the controls, opaque; the text scrolls
+   in the sheet only where it is taller than the stage */
+.caption { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.turns { display: grid; align-content: start; min-height: 0; }
+/* (a turn reaches a few pixels past its text, so that its clip never touches a glyph standing past its line) */
+.turn { grid-area: 1 / 1; align-self: start; overflow: clip; padding-block: var(--s1); margin-block: calc(-1 * var(--s1)); transition: opacity var(--d-turn) var(--sail), transform var(--d-turn) var(--sail); }
+.more-button { flex: none; align-self: start; max-width: 100%; margin-top: auto; min-height: var(--tap); padding: 0 var(--s4); white-space: normal; text-align: start; color: var(--on-deep); background: var(--deep); border: var(--hair) solid var(--line-deep-2); font-weight: 600; }
+.more-button:hover { background: var(--deep-2); }
+.more-button[hidden] { display: none; }
+.scenes .stage.reading .caption { position: absolute; z-index: 3; inset: var(--sheet-top) var(--sheet-right) var(--sheet-bottom) var(--sheet-left); margin: 0; padding: var(--s4); gap: var(--s3);
+  background: var(--deep); border: var(--hair) solid var(--line-deep-2); border-radius: var(--r2); }
+.stage.reading .turns { flex: 0 1 auto; padding-block: var(--s1); overflow-y: auto; overscroll-behavior: contain; scrollbar-color: var(--on-deep-2) transparent; }
+.stage.reading .turn { height: auto !important; }
+.scenes .stage.reading .turn .title { font-size: var(--t-h3); line-height: var(--l-h3); }  /* (a sheet is for reading: its title in a heading's size) */
+.stage.reading .more-button { margin-top: 0; }
+.stage.reading .sea-key { visibility: hidden; }
+.stage.reading .stage-nav { margin-top: auto; }  /* (the controls stay where they were) */
 @starting-style { .turn { opacity: 0; transform: translateY(var(--s2)); } .turn.back { transform: translateY(calc(-1 * var(--s2))); } }
 .turn.out { opacity: 0; transform: translateY(calc(-1 * var(--s2))); pointer-events: none; }
 .turn.out.back { transform: translateY(var(--s2)); }
@@ -907,33 +926,14 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .ticks [aria-current]::before { background: var(--route-on-deep); }
 .ticks li:first-child [aria-current]::before { background: var(--route-on-deep); box-shadow: none; }
 .beats { margin: calc(-1 * var(--stage-h)) 0 0; padding: 0; list-style: none; pointer-events: none; }
-.beat { position: relative; height: var(--beat); scroll-snap-align: start; }
+.beat { position: relative; height: var(--beat); height: round(down, var(--beat), 1px); scroll-snap-align: start; }  /* (a whole number of pixels: the steps' places, a beat apart, never drift from the stage's) */
 .beat:last-child { height: calc(var(--stage-h) + var(--s1)); }  /* a little slack, so that rounded beats never unstick the last step */
 .beat > .hidden { top: 50%; }
-/* where the stage cannot hold its longest caption (app.js, share and fit), the captions flow as cards, each in its beat,
-   standing where the caption's band is when its step is reached; the figure, the meta and the controls stay over them */
-.scene.flow .stage { background: transparent; }
-.scene.flow .caption { visibility: hidden; }
-.scene.flow .sea-key { display: none; }  /* (the band under the figure is the cards', not the sea's) */
-.scene.flow .said p { font-size: var(--t-body); line-height: var(--l-body); }
-.scene.flow .said .head { font-size: var(--t-h3); line-height: var(--l-h3); }
-.scene.flow .said .title { font-size: var(--t-h2); line-height: var(--l-h2); }
-.scene.flow :is(.stage-figure, .stage-meta, .stage-nav) { background: var(--deep); box-shadow: 0 0 0 var(--s2) var(--deep); }  /* (a card read on passes under them, unseen) */
-.scene.flow .beat { height: var(--beat-flow); }
-.scene.flow .beat:last-child { height: calc(var(--stage-h) + var(--said-more) + var(--s1)); }
-.said { position: absolute; top: var(--said-top); left: var(--said-left); width: var(--said-width); padding-top: var(--s2); pointer-events: auto; }
-/* a card longer than its band: its foot fades out above the controls, a mark there says it goes on (app.js, stage:
-   below), and the controls cover all under them to the stage's edge, so no line ends half under a button */
-.scene.flow .stage-nav { position: relative; box-shadow: 0 0 0 var(--s2) var(--deep), 0 var(--s5) 0 var(--s4) var(--deep); }
-.scene.flow .stage-nav::before { content: ""; position: absolute; left: 0; right: 0; bottom: calc(100% + var(--s2)); height: var(--s7); background: linear-gradient(transparent, var(--deep)); }
-.scene.flow .stage-nav::after { content: ""; position: absolute; left: calc(50% - 5px); bottom: calc(100% + var(--s3)); width: 10px; height: 10px; border: solid var(--on-deep-2); border-width: 0 var(--rule) var(--rule) 0; transform: rotate(45deg); }
-.scene.flow .stage-nav::before, .scene.flow .stage-nav::after { opacity: 0; pointer-events: none; transition: opacity var(--d-turn) var(--sail); }
-.scene.flow .stage.more-below .stage-nav::before, .scene.flow .stage.more-below .stage-nav::after { opacity: 1; }
 @media ((width >= 900px) or ((orientation: landscape) and (width >= 560px))) {
   .stage { grid-template: "figure side" minmax(0, 1fr) / minmax(0, 1fr) var(--side); gap: var(--s7); padding: var(--s5) max(var(--gutter), (100% - var(--content)) / 2); }
   .stage-figure { height: auto; min-height: 0; }
   .stage-figure .plate svg { max-height: calc(var(--stage-h) - 2 * var(--s5)); }
-  .stage-side { gap: var(--s4); padding: var(--s2) 0; }
+  .stage-side { --gap: var(--s4); padding: var(--s2) 0; }
   .caption { padding-top: clamp(0px, 12vh - var(--s6), 96px); }  /* a short caption sits a little below the top, a fixed amount: nothing moves as captions turn */
   .turn p { font-size: var(--caption, var(--t-caption)); line-height: 1.38; }  /* --caption: a size smaller where a long step needs it (app.js, fit) */
   .turn .head { font-size: var(--t-h2); line-height: var(--l-h2); }
@@ -968,6 +968,7 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .limits-list li { padding: var(--s4) 0 var(--s4) var(--s5); border-top: var(--hair) solid var(--line); line-height: 1.65; position: relative; }
 .limits-list li::before { content: ""; position: absolute; left: 0; top: calc(var(--s4) + .55em); width: var(--s2); height: var(--rule); background: var(--route); }
 .limits-list li > b:first-child { color: var(--ink); }
+.limits-list li { overflow-wrap: anywhere; }  /* (a long word in large type breaks rather than run past the screen) */
 .next-story { max-width: calc(var(--measure) + 2 * var(--s6)); margin-top: var(--s7); padding: var(--s5) var(--s6) var(--s6); gap: var(--s3); }
 @media (min-width: 900px) {
   .landing { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); column-gap: var(--s7); align-items: start; }
@@ -1158,6 +1159,7 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 :is(.play-pic, .reveal) text { font-size: 13px; font-weight: 600; fill: var(--p-ink); }
 :is(.play-pic, .reveal) .strong { font-weight: 800; } :is(.play-pic, .reveal) .soft { font-size: 12px; font-weight: 400; fill: var(--p-soft); }
 :is(.play-pic, .reveal) .word { font-size: 16px; font-weight: 800; font-stretch: 80%; }
+.play-pic .ask { font-size: 20px; font-weight: 800; font-stretch: 80%; fill: var(--p-ink); }  /* the quiz's question, in its picture */
 :is(.play-pic, .reveal) .big { font-weight: 800; font-stretch: 75%; fill: var(--p-ink); } :is(.play-pic, .reveal) .faint { opacity: .25; }
 :is(.play-pic, .reveal) .halo { paint-order: stroke; stroke: var(--p-ground); stroke-width: 4px; stroke-linejoin: round; }
 :is(.play-pic, .reveal) .line { fill: none; stroke: var(--p-line); stroke-width: 1.5; } :is(.play-pic, .reveal) .dotted { stroke-dasharray: 1 3; stroke-linecap: round; }

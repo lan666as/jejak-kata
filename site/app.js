@@ -10,7 +10,7 @@ import { seaChart } from "./chart.js";
 import { TEXT, LENS_TEXT, NOTES, GLOSS, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
 import { address, routeOf, named, canonical, EMBED, PAGES, PLAY, QUIZ_NAMES, GUESS_WORDS } from "./address.js";
 import { board, measure } from "./labels.js";
-import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, BODIES } from "./deal.js";
+import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, shown, BODIES } from "./deal.js";
 import { figureOf, focused, lensFrom, sceneWords, seaWords, stepAt, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
 
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
@@ -360,6 +360,21 @@ const beaconed = (room) => [...room.querySelectorAll(".plate:not(.off) .beacon[o
   return n ? parseFloat(n.replace(/[.,](?=\d{3}\b)/g, "").replace(",", ".")) : NaN;
 });
 
+/** Where each line of text under `node` ends, in pixels of the screen: its glyphs' box, or where the line is set
+ *  tighter than that (a title), its line's height about the same middle. */
+const lineEnds = (node) => {
+  const ends = [], walk = document.createTreeWalker(node, NodeFilter.SHOW_TEXT), range = document.createRange();
+  for (let text = walk.nextNode(); text; text = walk.nextNode()) {
+    const line = parseFloat(getComputedStyle(text.parentElement).lineHeight);
+    range.selectNodeContents(text);
+    for (const r of range.getClientRects()) if (r.height) ends.push((r.top + r.bottom) / 2 + Math.min(r.height, line || r.height) / 2);
+  }
+  return ends;
+};
+/** The rows a step names (their indices, in order) as runs [first, last], two rows a single row apart in one run
+ *  (eliding one row saves nothing). */
+const apart = (named) => named.reduce((runs, i) => (runs.length && i - runs.at(-1)[1] <= 2 ? (runs.at(-1)[1] = i) : runs.push([i, i]), runs), []);
+
 /**
  * A scene of a story on its stage. The figure holds the screen and the caption sits in one place beside it (below
  * it on a narrow screen); moving a step turns the caption while the figure's marks travel. Step 0 opens the scene
@@ -377,12 +392,12 @@ function stage(part, k, of, steer, intro = "") {
   const node = el(`<section class="scene" id="scene-${k}" aria-labelledby="scene-${k}-title">
     <div class="stage" data-step="0" tabindex="-1"><div class="stage-figure"></div>
       <div class="stage-side"><p class="stage-meta"><span class="stage-part">${of > 1 ? words.title : ""}</span><span class="count"></span></p>
-        <div class="caption" aria-live="polite"></div><p class="sea-key" aria-hidden="true"></p>
+        <div class="caption"><div class="turns" aria-live="polite"></div><button type="button" class="more-button" aria-expanded="false" hidden>${t("read_on")}</button></div><p class="sea-key" aria-hidden="true"></p>
         <div class="stage-nav"><button type="button" class="step back">${arrow("M15 5l-7 7 7 7")}<span>${t("step_back")}</span></button>
           <ol class="ticks" aria-label="${t("steps_label")}">${[...Array(n + 1)].map((_, j) => `<li><button type="button" aria-label="${escape(name(j).replace(/<[^>]+>/g, ""))}"></button></li>`).join("")}</ol>
           <button type="button" class="step on"><span>${t("step_on")}</span>${arrow("M9 5l7 7-7 7")}</button></div></div></div>
     <ol class="beats">${[...Array(n + 1)].map((_, j) => `<li class="beat"><div class="hidden">${hidden(j)}</div></li>`).join("")}</ol></section>`);
-  const box = node.firstElementChild, room = box.firstElementChild, caption = box.querySelector(".caption"), count = box.querySelector(".count");
+  const box = node.firstElementChild, room = box.firstElementChild, caption = box.querySelector(".caption"), turns = caption.firstElementChild, more = caption.lastElementChild, count = box.querySelector(".count");
   const ticks = [...box.querySelectorAll(".ticks button")], [back, ahead] = box.querySelectorAll(".step");
   let at = -1, figure = null, sizes = [];
   const said = (j) => (j ? `<p class="head">${head(j)}</p><p>${part.steps[j - 1][language]}</p>`
@@ -399,13 +414,31 @@ function stage(part, k, of, steer, intro = "") {
   // pans between their two places. The window ends at its last whole row (--cut), except where the strip's foot, its
   // axis and note, has come into it. `places` are worked out once, from the rows each step leaves unfaded (attributes
   // only: nothing is laid out between two steps, so no mark starts to travel), then the figure is shown at its step again.
-  let places = null;  // per step: where the strip stands (y), where its window ends (cut) and where its foot comes in (foot)
+  // Where the rows a step names lie further apart than the window holds (a row near the top and the row of all pages
+  // at the foot), the window elides the rows between: it shows the first of them, then a gap (a row of three dots),
+  // then the rest (`elided`, a third view of the same plate), so that no row the step names is cut off.
+  let places = null;  // per step: where the strip stands (y), where its window ends (cut), where its foot comes in (foot), the rows past a gap (past)
   const pinned = el(`<svg class="pinned" aria-hidden="true"><use/></svg>`);
+  const elided = el(`<div class="elided" aria-hidden="true"></div>`);
   const slide = (f) => {
     if (!places) return;
-    const j = Math.max(0, Math.min(n, f)), a = places[Math.floor(j)], b = places[Math.ceil(j)], y = a.y + (b.y - a.y) * (j - Math.floor(j)), near = places[Math.round(j)];
+    // (within a few pixels of a step, at the step: at rest a row is never cut by a hair of the way to the next)
+    const j = Math.max(0, Math.min(n, Math.abs(f - Math.round(f)) < 0.02 ? Math.round(f) : f)), a = places[Math.floor(j)], b = places[Math.ceil(j)], y = a.y + (b.y - a.y) * (j - Math.floor(j)), near = places[Math.round(j)];
     room.style.setProperty("--slide", `${y.toFixed(1)}px`);
-    room.style.setProperty("--cut", !near.cut || y >= near.foot - 1 ? "100%" : `${near.cut}px`);
+    room.style.setProperty("--cut", near.past ? `${near.past.end}px` : !near.cut || y >= near.foot - 1 ? "100%" : `${near.cut}px`);
+    elide(near);
+  };
+  const elide = (place) => {
+    const p = place.past && panned();
+    elided.style.display = p ? "" : "none";
+    if (!p) return;
+    const runs = place.past.runs, width = p.svg.getBoundingClientRect().width;
+    if (elided.dataset.rows !== runs.map((run) => run.join("-")).join(",")) {
+      elided.dataset.rows = runs.map((run) => run.join("-")).join(",");
+      elided.innerHTML = runs.map(([from, to]) => `<span class="gap" style="height:${p.pitch}px"></span><svg viewBox="0 ${(p.head + from * p.pitch) / p.scale} ${p.svg.viewBox.baseVal.width} ${((to - from + 1) * p.pitch) / p.scale}"
+        style="width:${width}px;height:${(to - from + 1) * p.pitch}px"><use href="#${p.svg.id}"/></svg>`).join("");
+    }
+    Object.assign(elided.style, { marginTop: place.cut + "px", width: width + "px" });
   };
   /** The plate shown, if it is a strip that pans: its svg, scale, head (title and legend) and row pitch, in pixels. */
   const panned = () => {
@@ -424,7 +457,7 @@ function stage(part, k, of, steer, intro = "") {
     Object.assign(pinned.style, { width: p.svg.getBoundingClientRect().width + "px", height: p.head + "px" });
   };
   const reach = () => {
-    room.append(pinned);
+    room.append(pinned, elided);
     const open = room.clientHeight;
     places = [...Array(n + 1)].map((_, j) => {
       show(j);
@@ -432,6 +465,13 @@ function stage(part, k, of, steer, intro = "") {
       if (!p) return { y: 0, cut: 0, foot: 0 };  // (a plate of the stack with no rows, a hand count: seen from its top)
       const m = Math.max(1, Math.floor((open - p.head) / p.pitch)), last = Math.max(0, p.rows.length - m), foot = Math.max(0, p.svg.getBoundingClientRect().height - open);
       const named = p.rows.flatMap((r, i) => (r.style.opacity === "1" ? [i] : []));
+      const runs = named.length > 1 && named.length < p.rows.length && named.at(-1) - named[0] >= m ? apart(named) : [];
+      if (runs.length > 1) {
+        // (the window: the first run of named rows, then for each other run a gap and the run, each row whole)
+        const [[a, b], ...rest] = runs, shown = m - rest.reduce((sum, [c, d]) => sum + d - c + 2, 0);
+        const first = Math.max(0, Math.min(a - Math.floor((shown - (b - a + 1)) / 2), rest[0][0] - 1 - shown));
+        if (shown >= b - a + 1) return { y: first * p.pitch, cut: Math.floor(p.head + shown * p.pitch), foot, past: { runs: rest, end: Math.floor(p.head + m * p.pitch) } };
+      }
       const first = !j || !named.length || named.length === p.rows.length ? Math.round((last * j) / n)
         : named.at(-1) - named[0] < m ? named[0] - Math.floor((m - 1 - (named.at(-1) - named[0])) / 2) : named[0];
       return { y: Math.min(foot, Math.max(0, Math.min(last, first)) * p.pitch), cut: Math.floor(p.head + m * p.pitch), foot };
@@ -446,56 +486,67 @@ function stage(part, k, of, steer, intro = "") {
     show();
     if (was >= 0) hear("step", backwards, j ? beaconed(room) : [], j);
     // The caption turns: the one that was leaves a few pixels the way the reader came from, the new one comes in.
-    for (const old of caption.querySelectorAll(".turn:not(.out)")) {
+    for (const old of turns.querySelectorAll(".turn:not(.out)")) {
       old.classList.add("out");
       old.classList.toggle("back", backwards);
       old.setAttribute("aria-hidden", "true");
       setTimeout(() => old.remove(), parseFloat(getComputedStyle(old).transitionDuration) * 1000 + 60);
     }
-    caption.append(el(`<div class="turn${backwards ? " back" : ""}" style="${sizes[j] || ""}">${said(j)}</div>`));
-    caption.scrollTop = 0;
+    turns.append(el(`<div class="turn${backwards ? " back" : ""}" style="${sizes[j] || ""}">${said(j)}</div>`));
     count.textContent = j ? `${j} / ${n}` : t("steps_n", n);
     ticks.forEach((b, m) => (b.classList.toggle("past", m < j), m === j ? b.setAttribute("aria-current", "step") : b.removeAttribute("aria-current")));
-    requestAnimationFrame(more);
+    clamp();
   };
-  // A caption longer than its band scrolls inside it; the band's lower edge fades while there is more below.
-  // A long caption can also be reached and scrolled by keyboard.
-  const more = () => {
-    caption.classList.toggle("more", caption.scrollTop + caption.clientHeight < caption.scrollHeight - 2);
-    if (caption.scrollHeight > caption.clientHeight + 2) caption.tabIndex = 0;
-    else if (document.activeElement !== caption) caption.removeAttribute("tabindex");
+  // A caption is read whole, in its band, or up to its last whole line with "Baca selengkapnya" under it: one press
+  // opens it as a sheet of the deep over the stage, opaque, with the whole text (scrolled in the sheet only where it is
+  // taller than the stage), and it closes on a second press, Escape, or the next step. Nothing is ever cut mid-line,
+  // faded or left under the controls, and the sea's key gives its line to the text before the text gives way.
+  const clamp = () => {
+    const turn = turns.querySelector(".turn:not(.out)");
+    read(false);
+    box.classList.remove("yields", "clamped");
+    more.hidden = true;
+    if (!turn || !caption.clientHeight) return;
+    turn.style.removeProperty("height");
+    turn.style.removeProperty("padding-block");
+    const key = box.querySelector(".sea-key"), keyed = key.offsetHeight ? key.offsetHeight + parseFloat(getComputedStyle(box.querySelector(".stage-side")).rowGap) : 0;
+    const roomFor = caption.clientHeight - parseFloat(getComputedStyle(caption).paddingTop), text = turn.scrollHeight;
+    if (text <= roomFor - keyed) return;
+    box.classList.add("yields");  // (the key's line goes to the text)
+    if (text <= roomFor) return;
+    box.classList.add("clamped");
+    more.hidden = false;
+    const top = turn.getBoundingClientRect().top, limit = roomFor - more.offsetHeight - parseFloat(getComputedStyle(more).marginTop);
+    const end = Math.max(0, ...lineEnds(turn).map((y) => y - top).filter((y) => y <= limit));
+    Object.assign(turn.style, { height: end + "px", paddingBlock: end ? "" : "0" });  // (where not even a line fits, the control alone)
   };
-  caption.addEventListener("scroll", more, { passive: true });
+  const read = (on) => {
+    box.classList.toggle("reading", on);
+    more.setAttribute("aria-expanded", on);
+    more.textContent = t(on ? "read_less" : "read_on");
+    turns.scrollTop = 0;
+    if (!on) return turns.style.removeProperty("max-height");
+    // (the sheet covers the stage above its controls, inside its padding; the whole stage where the controls stand
+    // beside the figure, a screen held sideways, and above them too little is left to read in)
+    const b = box.getBoundingClientRect(), nav = box.querySelector(".stage-nav").getBoundingClientRect(), cs = getComputedStyle(box);
+    Object.entries({ "--sheet-top": cs.paddingTop, "--sheet-left": cs.paddingLeft, "--sheet-right": cs.paddingRight, "--sheet-bottom": (nav.top - b.top < 0.6 * b.height ? cs.paddingBottom : b.bottom - nav.top + parseFloat(cs.rowGap || 8) + "px") }).forEach(([k, v]) => box.style.setProperty(k, v));
+    // (where the text is taller than the sheet, the sheet first shows its whole lines: none is cut at its foot)
+    const turn = turns.querySelector(".turn:not(.out)");
+    turns.style.removeProperty("max-height");
+    if (turn && turns.scrollHeight > turns.clientHeight + 1) {
+      const top = turns.getBoundingClientRect().top;
+      turns.style.maxHeight = Math.max(0, ...lineEnds(turn).map((y) => y - top).filter((y) => y <= turns.clientHeight)) + "px";
+    }
+  };
+  more.addEventListener("click", () => read(!box.classList.contains("reading")));
+  box.addEventListener("keydown", (e) => e.key === "Escape" && box.classList.contains("reading") && (read(false), more.focus()));
   ticks.forEach((b, m) => b.addEventListener("click", () => steer(m)));
   back.addEventListener("click", () => steer(at - 1));
   ahead.addEventListener("click", () => steer(at + 1));
   go(0);
   // Each step's caption at the size that fits its band (fit, from 900px).
-  const sized = (list) => ((sizes = list), caption.querySelector(".turn:not(.out)")?.setAttribute("style", sizes[at] || ""), more());
-  // Where the stage cannot hold its longest caption beside its figure (share, fit), the captions leave it: each step's
-  // caption is a card in its beat, in the page's flow, standing where the caption's band is when the step is reached and
-  // read on by scrolling the page; the beats are as tall as the longest card needs (--beat-flow). The figure stays.
-  const beats = [...node.querySelectorAll(".beat")];
-  const flow = (on) => {
-    node.classList.toggle("flow", on);
-    beats.forEach((b, j) => (b.innerHTML = on ? `<div class="said turn"${j ? "" : ` id="scene-${k}-title"`}>${said(j)}</div>` : `<div class="hidden">${hidden(j)}</div>`));
-    if (!on) return node.style.removeProperty("--beat-flow");
-    const at = box.getBoundingClientRect(), band = caption.getBoundingClientRect(), end = box.querySelector(".stage-nav").getBoundingClientRect().top - box.querySelector(".sea-key").offsetHeight - 8;
-    node.style.setProperty("--said-top", band.top - at.top + "px");
-    const pad = getComputedStyle(caption), inset = parseFloat(pad.paddingLeft);
-    node.style.setProperty("--said-left", band.left - at.left + inset + "px");
-    node.style.setProperty("--said-width", band.width - inset - parseFloat(pad.paddingRight) + "px");
-    // A card longer than the band is read on by scrolling the page: it stays its step's until half the beat has passed.
-    const tallest = Math.max(...beats.map((b) => b.firstElementChild.offsetHeight)), room = end - band.top;
-    node.style.setProperty("--beat-flow", Math.ceil(Math.max(box.clientHeight * 0.7, tallest + 32, 2 * (tallest - room) + 64)) + "px");
-    node.style.setProperty("--said-more", Math.ceil(Math.max(0, tallest - room + 16)) + "px");  // (the last step's card is read on before the stage goes)
-  };
-  /** Flowing, whether the step's card goes on under the controls (style.css: its foot fades, a mark says so). */
-  const below = () => {
-    const card = node.classList.contains("flow") && beats[at]?.querySelector(".said");
-    box.classList.toggle("more-below", !!card && card.getBoundingClientRect().bottom > box.querySelector(".stage-nav").getBoundingClientRect().top - 8);
-  };
-  return { node, stage: box, room, caption, said, sized, flow, below, steps: n + 1, on: () => at, go, slide, figure: () => figure, hold: (made) => ((figure = made), box.classList.contains("tall") ? reach() : show()) };
+  const sized = (list) => ((sizes = list), turns.querySelector(".turn:not(.out)")?.setAttribute("style", sizes[at] || ""), clamp());
+  return { node, stage: box, room, caption, said, sized, clamp, steps: n + 1, on: () => at, go, slide, figure: () => figure, hold: (made) => ((figure = made), box.classList.contains("tall") ? reach() : show()) };
 }
 
 // ---- figures --------------------------------------------------------------
@@ -1376,7 +1427,7 @@ async function sceneFigure(scene, w, h, on) {
     // (a hand count is seen whole in the figure's room, where a strip beside it may be drawn taller to slide)
     const made = p.read ? units({ ...spec, note: scene.read[language].note, rows: p.rows, fills: p.fills, rest: p.rest }, w, on ? Math.min(h, figureSize(on)[1]) : h) : f.draw === "plate"
       ? plate({ ...spec, periods: p.states, series: p.rows.map((r) => ({ label: r.label, values: r.values.map((v) => v[0]), off: r.off?.map((v) => v[0]) })) }, w, h)
-      : strip({ ...spec, states: p.states, series: p.series, rows: p.rows, most: p.most, format: f.times ? (v) => "÷" + number(v) : undefined, empty: t("too_few"), rings: p.states.length > 1 ? t("rings", p.states[0]) : undefined }, w,
+      : strip({ ...spec, floor: 13, states: p.states, series: p.series, rows: p.rows, most: p.most, format: f.times ? (v) => "÷" + number(v) : undefined, empty: t("too_few"), rings: p.states.length > 1 ? t("rings", p.states[0]) : undefined }, w,
         sideBySide() ? Math.min(h, stripLeast(longestTitle(spec.title, p.states, w), p.rows.length, w, [...p.series, p.states.length > 1 ? t("rings", p.states[0]) : ""], ROOMY)) : h);
     return { ...made, show: (i, focus) => made.show(i, focused(p, focus)) };
   };
@@ -1402,62 +1453,93 @@ const STRIPS = {
   left: (p) => [p.names.length, [...OUTLET, t("rings", "+1")]],
   split: (p) => [p.pairs.length, [p[language].series, t("rings", p.periods[0])]],
 };  // (rows, and the legend's names: the series, and where the first moment stays as rings, what they are)
+/** How many rows a strip's window must hold for every row a step names to be in it: where they lie far apart, the
+ *  first of them, a gap and the rest (stage, `elided`). */
+const namedRows = (part) => {
+  const keys = KEYS[part.type]?.(part) || [], rows = STRIPS[part.type]?.(part)[0] || 0;
+  // (where the order of the rows comes only with the data, as many as could be needed: each named row and a gap)
+  if (!keys.length) return Math.max(0, ...part.steps.map((step) => Math.min(rows, 2 * (step.focus || []).length - 1)));
+  return Math.max(0, ...part.steps.map((step) => {
+    const at = [...new Set((step.focus || []).map((key) => keys.indexOf(key)).filter((i) => i >= 0))].sort((a, b) => a - b);
+    if (!at.length || at.length === keys.length) return 0;
+    return Math.min(at.at(-1) - at[0] + 1, apart(at).reduce((sum, [a, b]) => sum + b - a + 2, -1));
+  }));
+};
+/** A strip's titles and legend as known before its data: [titles, rows, series]. */
+const stripOf = (part) => [[].concat(part[language].plate).flatMap((x) => (typeof x === "function" ? part.steps.map((step) => x(dash(step.at))) : [x])).filter((x) => typeof x === "string"), ...(STRIPS[part.type]?.(part) || [0, []])];
+/** How tall a strip that pans in a window `room` tall is drawn (0: it does not pan, `from` being the pitch below which
+ *  it would): its rows as far apart as the window lets it hold every row a step names, at most as on a phone (26px,
+ *  22 beside a caption), closer where a step names many rows on a small screen (nine of seventeen on a 320px phone),
+ *  never closer than 13px (its names at 12px). */
+const panning = (part, w, room, from) => {
+  const [titles, rows, series] = stripOf(part);
+  if (!rows) return 0;
+  const at = (pitch) => Math.max(...titles.map((title) => stripLeast(title, rows, w, series, pitch)));
+  if (at(from) <= room) return 0;
+  const span = namedRows(part), head = Math.max(...titles.map((title) => stripLeast(title, 0, w, series))) - 76, most = (at(null) - head - 76) / rows;
+  return at(span ? Math.max(13, Math.min(most, Math.floor((room - head - 8) / span))) : null);
+};
+/** The room the sea's key takes on the stage, its line and the gap above it (none where the stages are not on the sea). */
+const keyRoom = (s) => { const key = s.stage.querySelector(".sea-key"); return key.offsetHeight ? key.offsetHeight + parseFloat(getComputedStyle(key.parentNode).rowGap) : 0; };
 /**
  * Stacked (a phone held upright, a tablet), a stage shares its height between the figure and the caption band by need
- * (--fig): the band keeps room for its tallest step and, where the stages lie on the sea, a band of the sea under it
- * (BAND), and the figure gets the rest, at least two fifths (a strip that slides, up to three fifths). Where the tallest
- * step would not fit beside that, the captions are set a size smaller (--turn: 1rem, then --t-small). A strip that would
- * be seen whole if the sea's band gave way takes that room, and one that slides anyway keeps its window: the sea's band
- * gives way first. A strip of more rows than its room keeps 26px apart is drawn at the height that does (`tall`), in a
- * window of that room, and slides through it as the page scrolls through the scene (stage, `slide`). Where even the
- * smallest captions would leave the figure less than two fifths of the stage (a short screen, large text, a long
- * caption), the captions leave the stage and flow under the figure as cards (stage, `flow`), at the body's size.
+ * (--fig): the band keeps room for its tallest step, the sea's key and, where the stages lie on the sea, a band of the
+ * sea between them (BAND), and the figure gets the rest, at least two fifths (a strip that slides, up to three fifths).
+ * Where the tallest step would not fit beside that, the captions are set a size smaller (--turn: 1rem, then
+ * --t-small). A strip that would be seen whole if the sea's band gave way takes that room, and one that slides anyway
+ * keeps its window: the sea's band gives way first. A strip of more rows than its room keeps 26px apart is drawn at the
+ * height that does (`tall`), in a window of that room that holds every row a step names, and slides through it as the
+ * page scrolls through the scene (stage, `slide`). Where even the smallest captions would leave the figure less than
+ * its least (two fifths, 240px, the rows a step names), the figure keeps its least, the captions are set at the body's
+ * size, and a step longer than its band shows its whole lines and "Baca selengkapnya" (stage, `clamp`).
  */
 const TURN = ["", "1rem", "var(--t-small)"];
-const BAND = 76;
-const FIG = 240;  // the least a stacked figure is given: a chart needs some rows to be one; the caption gives way (flows) first  // the sea's band under the longest caption: room for a ring and its name (a 30px pill) clear of the text and the controls
+const BAND = 76;  // the sea's band under the longest caption: room for a ring and its name (a 30px pill) clear of the text and the key
+const FIG = 240;  // the least a stacked figure is given: a chart needs some rows to be one; the caption gives way (reads on) first
 function share(s, part) {
   const box = s.stage, side = box.querySelector(".stage-side"), style = getComputedStyle(box);
-  const whole = box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - parseFloat(style.rowGap), chrome = side.offsetHeight - s.caption.offsetHeight;
-  const titles = [].concat(part[language].plate).flatMap((x) => (typeof x === "function" ? part.steps.map((step) => x(dash(step.at))) : [x])).filter((x) => typeof x === "string"), [rows, series] = STRIPS[part.type]?.(part) || [0, []];
+  const whole = box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - parseFloat(style.rowGap), chrome = side.offsetHeight - s.caption.offsetHeight, keyed = keyRoom(s);
+  const [titles, rows, series] = stripOf(part);
   const need = rows ? Math.max(...titles.map((title) => stripLeast(title, rows, s.room.clientWidth, series))) : 0;
   // The figure wants half the stage, a strip taller than that up to three fifths (its window shows more of its rows).
   const want = need ? Math.min(need, whole * 0.6) : whole / 2;
   const probe = el(`<div class="caption" style="position:absolute;visibility:hidden;width:${s.caption.clientWidth}px;height:auto;overflow:visible"></div>`);
   side.append(probe);
   let band = box.closest(".sea-on") ? BAND : 0;  // (where the stages lie on the sea)
-  const high = (j) => ((probe.innerHTML = `<div class="turn">${s.said(j)}</div>`), probe.scrollHeight);
+  const high = (html) => ((probe.innerHTML = `<div class="turn">${html}</div>`), probe.scrollHeight);
   let text = 0;
   for (const size of TURN) {
     s.node.style.setProperty("--turn", size || "var(--t-body)");
-    text = Math.max(...[...Array(s.steps)].map((_, j) => high(j)));
-    if (whole - chrome - text - band >= want) break;
+    text = Math.max(...[...Array(s.steps)].map((_, j) => high(s.said(j))));
+    if (whole - chrome - text - keyed - band >= want) break;
   }
+  // A hand count (a scene's `read`, a mark per place) is seen whole only at three fifths of the stage or so. A strip that
+  // pans keeps its title and legend pinned (stage, pinned): its window also holds, under them, the rows a step brings
+  // forward (KEYS: the rows in their order, known before the data), so they are all in view.
+  const span = need ? namedRows(part) : 0;
+  const named = span ? Math.min(need, whole - chrome - 72, Math.max(...titles.map((title) => stripLeast(title, 0, s.room.clientWidth, series))) - 76 + span * 13 + 8) : 0;
+  const least = Math.max(whole * 0.4, FIG, named, part.read ? Math.floor(whole * 0.62) : 0), fits = whole - chrome - text - keyed >= least;
+  s.node.style.setProperty("--turn", fits ? s.node.style.getPropertyValue("--turn") : "var(--t-body)");
+  // (a caption that reads on keeps at least its head, two lines and its control; the figure keeps 240px all the same)
+  const floor = high(`<p class="head">x</p><p>x<br>x</p>`) + 44 + 8;
   probe.remove();
-  // A hand count (a scene's `read`, a mark per place) is seen whole only at three fifths of the stage or so: the captions flow
-  // beside it where they would not leave it that.
-  // A strip that pans keeps its title and legend pinned (stage, pinned): its window also holds, under them, the most rows
-  // any step brings forward at once (KEYS: the rows in their order, known before the data), so they are all in view.
-  const keys = KEYS[part.type]?.(part) || [], span = Math.max(0, ...part.steps.map((step) => { const at = (step.focus || []).map((key) => keys.indexOf(key)).filter((i) => i >= 0); return at.length ? Math.max(...at) - Math.min(...at) + 1 : 0; }));
-  const named = need && span ? Math.min(need, whole - chrome - 100, Math.max(...titles.map((title) => stripLeast(title, 0, s.room.clientWidth, series))) - 76 + span * 26 + 8) : 0;
-  const least = Math.max(FIG, named, part.read ? Math.floor(whole * 0.62) : 0), flow = whole - chrome - text < Math.max(whole * 0.4, least);
-  if (flow) s.node.style.setProperty("--turn", "var(--t-body)");
-  if (flow || need > whole - chrome - text) band = 0;  // a strip that slides anyway keeps its window: no band under it
-  // (flowing, the figure keeps all but a band of about seven lines for the cards: a strip shows as much as it can)
-  let fig = Math.floor(flow ? Math.max(least, whole * 0.55, need ? Math.min(need, whole - chrome - 160) : whole * 0.5) : Math.max(whole * 0.4, least, whole - chrome - text - band));
-  if (!flow && need > fig && need <= fig + band) fig = need;  // a strip seen whole, title to foot, before the sea's band (a step then left without one drops it)
+  if (!fits || need > whole - chrome - text - keyed) band = 0;  // a strip that slides anyway keeps its window: no band under it
+  let fig = Math.floor(fits ? Math.max(least, whole - chrome - text - keyed - band) : Math.max(FIG, named, part.read ? Math.floor(whole * 0.62) : 0, Math.min(whole * 0.4, whole - chrome - floor)));
+  if (fits && need > fig && need <= fig + band) fig = need;  // a strip seen whole, title to foot, before the sea's band (a step then left without one drops it)
   box.style.setProperty("--fig", fig + "px");
-  s.tall = need > fig ? need : 0;
+  s.tall = need > fig ? panning(part, s.room.clientWidth, fig, null) : 0;
   box.classList.toggle("tall", !!s.tall);
-  s.flow(flow);
+  s.clamp();
 }
 /** Side by side (from 900px, and a phone or tablet held sideways) a story's captions take at most two sizes:
  *  --t-caption where a step fits its band at it, and for every other step one size smaller, the largest of the ladder
  *  at which the longest caption of the whole story fits (an opening's title then at --t-h2). Measured in the language and
- *  at the width shown: no caption is cut, none scrolls, and the type does not step from size to size. A stage whose
- *  longest caption does not fit its band at the smallest size flows its captions as cards beside the figure (`flow`). */
+ *  at the width shown, so the type does not step from size to size; a step that does not fit its band even at the
+ *  smallest shows its whole lines and "Baca selengkapnya" (stage, `clamp`). A strip whose rows would stand closer than
+ *  its floor in the figure's room (its names then drawn smaller) is drawn at its own height and pans in a window of that
+ *  room, as on a phone (`tall`). */
 const CAPTION = ["", "--caption:var(--t-lede);--caption-title:var(--t-h2)", "--caption:var(--t-body);--caption-title:var(--t-h2)", "--caption:var(--t-small);--caption-title:var(--t-h3)"];
-function fit(stages) {
+function fit(stages, parts) {
   const fits = stages.map((s) => {
     const probe = el(`<div class="caption" style="position:absolute;visibility:hidden;width:${s.caption.clientWidth}px;height:auto;overflow:visible"></div>`);
     s.caption.after(probe);
@@ -1465,9 +1547,13 @@ function fit(stages) {
     probe.remove();
     return rows;
   });
-  const flowing = fits.map((rows) => !rows.every((row) => row.at(-1))), held = fits.filter((_, k) => !flowing[k]);
+  const held = fits.filter((rows) => rows.every((row) => row.at(-1)));
   const small = CAPTION.findIndex((_, c) => c && held.every((rows) => rows.every((row) => row[c]))), smaller = CAPTION[small < 0 ? CAPTION.length - 1 : small];
-  stages.forEach((s, k) => (s.sized(flowing[k] ? [] : fits[k].map((row) => (row[0] ? "" : smaller))), s.flow(flowing[k])));
+  stages.forEach((s, k) => {
+    s.tall = panning(parts[k], figureSize(s.room)[0], s.room.clientHeight, 18);
+    s.stage.classList.toggle("tall", !!s.tall);
+    s.sized(fits[k].map((row) => (row[0] ? "" : smaller)));
+  });
 }
 /** Stacked or side by side: the one rule for a story's stages (style.css says the same). */
 const SIDE = "(width >= 900px) or ((orientation: landscape) and (width >= 560px))";
@@ -1622,23 +1708,31 @@ const PICTURES = {
     const cells = [...Array(100)].map((_, k) => `<rect class="in ${k < n ? "on" : "mute faint"}" style="--i:${Math.floor(k / 10)}" x="${((k % 10) * c).toFixed(1)}" y="${(Math.floor(k / 10) * c).toFixed(1)}" width="${(c * 0.82).toFixed(1)}" height="${(c * 0.82).toFixed(1)}" rx="${(c * 0.16).toFixed(1)}"/>`).join("");
     const size = Math.min(H * 0.5, (W - 10 * c) * 0.42);
     return { svg: `${cells}<text class="big" x="${(10 * c + 18).toFixed(1)}" y="${(10 * c * 0.62).toFixed(1)}" style="font-size:${size.toFixed(0)}px">${n}</text>${svgText(10 * c + 20, 10 * c * 0.62 + 22, "/ 100", "soft")}`,
-      note: `“${word}” · ${s.names[i]} · Kompas ${ERAS_SHOWN[TERM]}` };
+      note: `“${word}” · ${escape(shown(s.names[i]))} · Kompas ${ERAS_SHOWN[TERM]}` };
   },
-  // A year's own words, and four years to choose from.
+  // The quiz's own question, from the data: a year's own words, "which year?", and four years to choose from as the
+  // game shows them (a key each), the year they belong to ticked.
   kuis: ({ years: y }, W, H) => {
     const peaks = peaksOf(y).filter((x) => x.stand >= 2.5), count = (p) => peaks.filter((x) => x.p === p).length;
-    const p = y.years.map((_, i) => i).sort((a, b) => count(b) - count(a) || b - a)[0], clue = peaks.filter((x) => x.p === p).slice(0, 3).map((x) => x.w);
+    const p = y.years.map((_, i) => i).sort((a, b) => count(b) - count(a) || b - a)[0], words = peaks.filter((x) => x.p === p).map((x) => x.w);
     const choices = [...new Set([p - 6, p - 3, p, p + 3, p + 5].map((i) => Math.max(0, Math.min(y.years.length - 1, i))))].slice(0, 4).sort((a, b) => a - b);
-    // The year's words over the picture's height, the four years at its foot: no empty band under them.
-    const w = Math.min(72, (W - 24) / 4), h = 30, top = H - h - 2, pitch = Math.max(22, (top - 20 - 18) / Math.max(1, clue.length - 1));
-    return { svg: clue.map((word, k) => svgText(0, 20 + k * pitch, word, k ? "" : "strong word")).join("") + choices.map((c, k) => {
-      const x = k * (w + 8);
-      return `<g class="in" style="--i:${k}"><rect class="${c === p ? "on" : "line"}" x="${x.toFixed(1)}" y="${top}" width="${w.toFixed(1)}" height="${h}" rx="${h / 2}"/>${svgText(x + w / 2, top + h / 2 + 4.5, y.years[c], c === p ? "on-text" : "", "middle")}</g>`;
+    // (as many of the year's words as fit a line, each a chip; the question; the four choices at the foot)
+    let x = 0;
+    const chips = words.slice(0, 4).map((word, k) => {
+      const w = 22 + word.length * 7.8, at = x;
+      x += w + 8;
+      return at + w > W ? "" : `<g class="in" style="--i:${k}"><rect class="line" x="${at.toFixed(1)}" y="1" width="${w.toFixed(1)}" height="28" rx="14"/>${svgText(at + w / 2, 19.5, word, "strong", "middle")}</g>`;
+    }).join("");
+    const ask = t("quiz_year_ask").split(/(?<=\.)\s+/).at(-1), h = 40, top = H - h - 1, w = Math.min(104, (W - 24) / 4);
+    return { svg: chips + `<text class="ask" x="0" y="${Math.round((30 + top) / 2 + 9)}">${escape(ask)}</text>` + choices.map((c, k) => {
+      const at = k * (w + 8), right = c === p;
+      return `<g class="in" style="--i:${k + 4}"><rect class="${right ? "on" : "line"}" x="${at.toFixed(1)}" y="${top}" width="${w.toFixed(1)}" height="${h}" rx="6"/>
+        ${svgText(at + 14, top + h / 2 + 4.5, right ? "✓" : String(k + 1), right ? "on-text" : "soft", "middle")}${svgText(at + w / 2 + 9, top + h / 2 + 4.5, y.years[c], right ? "on-text strong" : "", "middle")}</g>`;
     }).join(""), note: `Kompas ${y.years[p]}` };
   },
   // The names "tersangka" sticks to most.
   menempel: ({ stick: s }, W, H) => {
-    const word = "tersangka", rows = namesFor(s, word, STUCK_PAGES).slice(0, Math.max(3, Math.min(5, Math.floor(H / 26)))).map((i) => ({ label: s.names[i], v: s.share[word][i][TERM] }));
+    const word = "tersangka", rows = namesFor(s, word, STUCK_PAGES).slice(0, Math.max(3, Math.min(5, Math.floor(H / 26)))).map((i) => ({ label: shown(s.names[i], "person"), v: s.share[word][i][TERM] }));
     return { svg: dotRows(rows, W, H, (v) => `${Math.round(v / 10)}%`), note: `“${word}” · Kompas ${ERAS_SHOWN[TERM]}` };
   },
   // Who shares a page with prabowo, nearer the more often.
@@ -1648,9 +1742,9 @@ const PICTURES = {
     const angle = (k) => ((k % 2 ? 90 : -90) + (half > 1 ? (Math.floor(k / 2) / (half - 1) - 0.5) * 110 : 0)) * (Math.PI / 180);
     return { svg: `<ellipse class="line dotted" cx="${cx}" cy="${cy}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}"/>` + list.map(([, v], k) => {
       const r = 0.98 - 0.42 * (v / most), x = cx + rx * r * Math.cos(angle(k)), y = cy + ry * r * Math.sin(angle(k));
-      return `<g class="in" style="--i:${k}"><path class="line" d="M${cx} ${cy}L${x.toFixed(1)} ${y.toFixed(1)}"/><circle class="mute" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(3 + 4 * (v / most)).toFixed(1)}"/>${W >= 300 && k < 4 ? svgText(x, y + (k % 2 ? 20 : -11), s.names[list[k][0]], "soft halo", "middle") : ""}</g>`;
-    }).join("") + `<circle class="on" cx="${cx}" cy="${cy}" r="7"/>${svgText(cx, cy + 26, name, "strong halo", "middle")}`,
-    note: `${name} · Kompas ${ERAS_SHOWN[TERM]}` };
+      return `<g class="in" style="--i:${k}"><path class="line" d="M${cx} ${cy}L${x.toFixed(1)} ${y.toFixed(1)}"/><circle class="mute" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(3 + 4 * (v / most)).toFixed(1)}"/>${W >= 300 && k < 4 ? svgText(x, y + (k % 2 ? 20 : -11), shown(s.names[list[k][0]], "person"), "soft halo", "middle") : ""}</g>`;
+    }).join("") + `<circle class="on" cx="${cx}" cy="${cy}" r="7"/>${svgText(cx, cy + 26, shown(name), "strong halo", "middle")}`,
+    note: `${shown(name)} · Kompas ${ERAS_SHOWN[TERM]}` };
   },
   // The words on which the three newsrooms differ most in the last year: a dot for each.
   redaksi: ({ years: y }, W, H) => {
@@ -1668,7 +1762,7 @@ const PICTURES = {
     const all = y.tide[KOMPAS].person.map((r) => ({ ...r, peak: Math.max(...r.share.map((v) => v || 0)) })).map((r) => ({ ...r, when: r.share.indexOf(r.peak) })).sort((a, b) => a.when - b.when || b.peak - a.peak);
     const n = Math.floor(H / 13), rows = [...Array(n)].map((_, k) => all[Math.round((k * (all.length - 1)) / (n - 1))]), L = W >= 420 ? 104 : 0, cw = (W - L) / y.years.length, ch = H / n;
     const level = (v, peak) => [0.08, 0.25, 0.45, 0.65, 0.85].filter((s) => v / peak >= s).length;
-    return { svg: rows.map((r, k) => (L ? svgText(L - 6, ch * (k + 0.5) + 4.5, r.word, "soft", "end") : "") + r.share.map((v, c) => `<rect class="in s${v === null ? 0 : level(v, r.peak)}" style="--i:${c}" x="${(L + c * cw + 1).toFixed(1)}" y="${(k * ch + 1).toFixed(1)}" width="${(cw - 2).toFixed(1)}" height="${(ch - 2).toFixed(1)}" rx="2"/>`).join("")).join(""),
+    return { svg: rows.map((r, k) => (L ? svgText(L - 6, ch * (k + 0.5) + 4.5, shown(r.word, "person"), "soft", "end") : "") + r.share.map((v, c) => `<rect class="in s${v === null ? 0 : level(v, r.peak)}" style="--i:${c}" x="${(L + c * cw + 1).toFixed(1)}" y="${(k * ch + 1).toFixed(1)}" width="${(cw - 2).toFixed(1)}" height="${(ch - 2).toFixed(1)}" rx="2"/>`).join("")).join(""),
       note: `${t("kind_person")} · Kompas ${y.years[0]}–${y.years.at(-1)}` };
   },
   // Who was named most in the last year, as bars.
@@ -1678,7 +1772,7 @@ const PICTURES = {
     const L = Math.min(W * 0.4, 10 + 7 * Math.max(...rows.map((r) => r.w.length))), room = W - L - 48;
     return { svg: `<text class="big faint" x="${W}" y="${H - 4}" text-anchor="end" style="font-size:${Math.round(H * 0.42)}px">${y.years[last]}</text>` + rows.map((r, k) => {
       const yy = pitch * k + 4, h = pitch - 8;
-      return `<g class="in" style="--i:${k}">${svgText(L - 8, yy + h / 2 + 4.5, r.w, k ? "" : "strong", "end")}<rect class="${k ? "mute" : "on"}" x="${L}" y="${yy.toFixed(1)}" width="${((room * r.v) / top).toFixed(1)}" height="${h.toFixed(1)}" rx="2"/>${svgText(L + (room * r.v) / top + 6, yy + h / 2 + 4.5, percent(r.v), "soft")}</g>`;
+      return `<g class="in" style="--i:${k}">${svgText(L - 8, yy + h / 2 + 4.5, shown(r.w), k ? "" : "strong", "end")}<rect class="${k ? "mute" : "on"}" x="${L}" y="${yy.toFixed(1)}" width="${((room * r.v) / top).toFixed(1)}" height="${h.toFixed(1)}" rx="2"/>${svgText(L + (room * r.v) / top + 6, yy + h / 2 + 4.5, percent(r.v), "soft")}</g>`;
     }).join(""), note: `Kompas ${y.years[last]}` };
   },
   // Each year in its own word: the word of years.json that stands highest in that year.
@@ -1828,7 +1922,7 @@ async function storySea(holder, stages, parts) {
   const nameOf = (id) => (lens ? lens.words[id] : named.get(id));
   // What lies over the sea on the stage shown: no name is written under it (while the sea has the stage, only the
   // controls and the key).
-  const over = () => [...stages[k].stage.querySelectorAll(full ? ".sea-key, .stage-nav" : ".stage-meta, .caption .turn:not(.out), .sea-key, .stage-nav, .stage-figure .plate:not(.off) svg")];
+  const over = () => [...stages[k].stage.querySelectorAll(full ? ".sea-key, .stage-nav" : ".stage-meta, .caption .turn:not(.out), .more-button:not([hidden]), .sea-key, .stage-nav, .stage-figure .plate:not(.off) svg")];
   const wide = sideBySide(), sea = module.nightSea({ chart: first, name: nameOf, pick: (id) => visit(href("kata", nameOf(id))), periods: first.periods, tip, label: t("sea_label"),
     hold: true, fly: true, rung: window.seaRung ?? 0, names: 0, over, host: holder.parentNode });
   if (!sea) return null;
@@ -1993,7 +2087,7 @@ async function storyPage(slug, scene, step, more) {
     // All that is measured is measured first; then the stages are told their step.
     const top = head(), rects = stages.map((s) => s.node.getBoundingClientRect()), beats = stages.map((s) => s.node.querySelector(".beat").offsetHeight);
     const middle = top + (innerHeight - top) / 2, height = innerHeight - top;
-    stages.forEach((s, k) => (s.go(Math.max(0, Math.min(s.steps - 1, Math.round((top - rects[k].top) / beats[k])))), s.slide((top - rects[k].top) / beats[k]), s.below()));
+    stages.forEach((s, k) => (s.go(Math.max(0, Math.min(s.steps - 1, Math.round((top - rects[k].top) / beats[k])))), s.slide((top - rects[k].top) / beats[k])));
     // The step steered to is reached (also where the browser has no scrollend, as Safari before 26).
     if (aim && Math.abs(rects[aim[0]].top - top + aim[1] * beats[aim[0]]) < 2) aim = null;
     const seen = rects.findIndex((r) => r.top <= middle && r.bottom >= middle), shore = landing.getBoundingClientRect().top;
@@ -2025,8 +2119,8 @@ async function storyPage(slug, scene, step, more) {
       const forward = ["ArrowDown", "ArrowRight", "PageDown"].includes(e.key) || (e.key === " " && !e.shiftKey);
       if (!forward && !["ArrowUp", "ArrowLeft", "PageUp", " "].includes(e.key)) return;
       if (e.target.closest?.("input, textarea, select, .masthead") || (e.key === " " && e.target.closest?.("button, a, summary"))) return;
-      const caption = e.target.closest?.(".caption");
-      if (caption && caption.scrollHeight > caption.clientHeight && e.key.startsWith("Arrow")) return;  // a long caption scrolls itself
+      const sheet = e.target.closest?.(".reading .caption")?.querySelector(".turns");
+      if (sheet && sheet.scrollHeight > sheet.clientHeight + 1 && ["ArrowDown", "ArrowUp"].includes(e.key)) return;  // an open caption taller than the stage scrolls itself
       // Only while a stage holds the middle of the screen: elsewhere the keys scroll the page as they always do.
       const top = head(), middle = top + (innerHeight - top) / 2;
       const k = stages.findIndex((s) => { const r = s.node.getBoundingClientRect(); return r.top <= middle && r.bottom >= middle; });
@@ -2041,9 +2135,10 @@ async function storyPage(slug, scene, step, more) {
   frame();
 
   // The figures, each at the size of its stage, with the step each stage is on; then the sea under them.
-  if (sideBySide()) fit(stages);
+  if (sideBySide()) fit(stages, parts);
   else stages.forEach((s, k) => share(s, parts[k]));
   stages.forEach(glance);
+  document.fonts.ready.then(() => landing.isConnected && stages.forEach((s) => s.clamp()));  // (the lines as the type lays them out)
   // A screen turned or resized lays the story out again, at the step it is on (not when only a browser's bar comes and goes).
   const laid = [innerWidth, innerHeight], again = () => {
     if (!landing.isConnected) return removeEventListener("resize", turned);
@@ -2437,16 +2532,18 @@ async function quizPage() {
   view.replaceChildren(pageHead(t("nav_quiz"), { ...fromPlay(), lede: t("quiz_lede"), sea: { words: QUIZ_NAMES } }));
   const { board, box, go, log, tally } = gameBoard();
   view.append(board, el(`<p class="note keys-note">${t("quiz_keys")}</p>`));
-  const label = (q, c) => (q.kind === "trend" ? t(`trend_${c}`) : c);
+  // (a name shown as a name: deal.js, shown)
+  const nm = (w) => shown(String(w), Q.words[w]?.kind), label = (q, c) => (q.kind === "trend" ? t(`trend_${c}`) : nm(c));
+  const named = (ev) => ({ ...ev, items: ev.items?.map((it) => ({ ...it, label: nm(it.label) })), series: ev.series?.map((x) => ({ ...x, label: nm(x.label) })) });
   let game = [], results = [], streak = 0, answer = null;
   const sailed = () => {
     log.innerHTML = voyageMark(results, game.length);
     tally.textContent = t("quiz_tally", results.filter((r) => r.ok).length, results.length) + (streak >= 2 ? ` · ${t("quiz_streak", streak)}` : "");
   };
   const evidence = (q) => {
-    const e = q.ev, it = e.items;
+    const e = named(q.ev), it = e.items;
     if (q.kind === "freq" || q.kind === "resmi") return t("ev_freq", e.period, it[0].label, percent(it[0].v), it[1].label, percent(it[1].v));
-    if (q.kind === "room") return t("ev_room", q.n, q.w, it.map((o) => `${o.label} ${number(o.v * 100, 1)}`).join(", "));
+    if (q.kind === "room") return t("ev_room", nm(q.n), q.w, it.map((o) => `${o.label} ${number(o.v * 100, 1)}`).join(", "));
     if (q.kind === "peak") return t("ev_peak", e.series[0].label, periods[e.marks[0]], e.series[1].label, periods[e.marks[1]]);
     if (q.kind === "trend") return t("ev_trend", e.series[0].label, periods[e.marks[0]], percent(e.series[0].share[e.marks[0]]), periods[e.marks[1]], percent(e.series[0].share[e.marks[1]]));
     return t(q.kind === "year" ? "ev_year" : "ev_who", e.series[0].label, periods[e.marks[0]]);
@@ -2455,8 +2552,8 @@ async function quizPage() {
     sailed();
     const q = game[k];
     answer = null;
-    box.innerHTML = `<p class="step">${t("quiz_status", k + 1, game.length)}</p><p class="ask" tabindex="-1">${t(...q.ask)}</p>
-      ${q.kind === "room" ? `<p class="sub">${t("room_era")}</p>` : ""}${q.clue ? `<ul class="words clue">${q.clue.map((w) => `<li>${escape(w)}</li>`).join("")}</ul>` : ""}
+    box.innerHTML = `<p class="step">${t("quiz_status", k + 1, game.length)}</p><p class="ask" tabindex="-1">${t(q.ask[0], ...q.ask.slice(1).map(nm))}</p>
+      ${q.kind === "room" ? `<p class="sub">${t("room_era")}</p>` : ""}${q.clue ? `<ul class="words clue">${q.clue.map((w) => `<li>${escape(nm(w))}</li>`).join("")}</ul>` : ""}
       <p class="choices">${q.choices.map((c, i) => `<button type="button" data-i="${i}"><span class="key" aria-hidden="true">${i + 1}</span>${escape(label(q, c))}</button>`).join("")}</p>
       ${q.kind === "room" ? `<p class="note caveat">${t("caveat")}</p>` : ""}<p class="verdict" role="status"></p><div class="reveal" hidden></div>`;
     go.disabled = true;
@@ -2470,15 +2567,15 @@ async function quizPage() {
     const ok = answer === q.answer;
     streak = ok ? streak + 1 : 0;
     hear(ok ? "right" : "wrong");
-    results.push({ ok, label: q.kind === "who" ? q.answer.split(" ")[0] : label(q, q.answer).split(" ")[0] });
+    results.push({ ok, label: label(q, q.answer).split(" ")[0] });
     sailed();
     box.querySelectorAll(".choices button").forEach((x) => ((x.disabled = true), x.classList.toggle("right", q.choices[+x.dataset.i] === q.answer), x.classList.toggle("chosen", x === b && !ok)));
     const said = ok ? (streak === 3 ? t("said_streak") : sayOne("said_right")) : sayOne("said_wrong", label(q, q.answer));
     box.querySelector(".verdict").innerHTML = `<span><b>${escape(said)}</b> ${escape(evidence(q))}</span>`;
-    const shown = box.querySelector(".reveal"), W = Math.min(560, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft));
-    shown.hidden = false;
-    shown.innerHTML = reveal(q.ev, W, q.answer, periods);
-    shown.scrollIntoView({ block: "nearest", behavior: still() ? "auto" : "smooth" });  // the result where the hand was, clear of the bar
+    const drawn = box.querySelector(".reveal"), W = Math.min(560, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft));
+    drawn.hidden = false;
+    drawn.innerHTML = reveal(named(q.ev), W, nm(q.answer), periods);
+    drawn.scrollIntoView({ block: "nearest", behavior: still() ? "auto" : "smooth" });  // the result where the hand was, clear of the bar
     go.disabled = false;
     go.focus({ preventScroll: true });
   };
@@ -2519,7 +2616,7 @@ async function guessPage() {
     sailed();
     if (k === rounds.length) return end();
     const q = rounds[k];
-    box.replaceChildren(el(`<p class="step">${t("quiz_status", k + 1, rounds.length)}</p>`), el(`<p class="ask" tabindex="-1">${t("guess_ask", escape(q.name), escape(q.w))}</p>`),
+    box.replaceChildren(el(`<p class="step">${t("quiz_status", k + 1, rounds.length)}</p>`), el(`<p class="ask" tabindex="-1">${t("guess_ask", escape(shown(q.name)), escape(q.w))}</p>`),
       el(`<div class="gauge"><input type="range" min="0" max="100" step="1" value="50" aria-label="${t("guess_yours")}"><div class="scale"><i class="sail" hidden></i><i class="yours"></i><i class="truth" hidden></i></div><output aria-hidden="true">50</output></div>`),
       el(`<p class="note caveat">${t("caveat")}</p>`), el(`<p class="verdict" role="status"></p>`));
     const [slider, scale, output] = box.querySelector(".gauge").children, [sail, yours, truth] = scale.children, verdict = box.querySelector(".verdict");
@@ -2547,8 +2644,8 @@ async function guessPage() {
       truth.style.transform = at(q.v);
       sail.style.clipPath = `inset(0 ${100 - hi}% 0 ${lo}%)`;
       const c = q.context;
-      verdict.innerHTML = `<span><b>${escape(t("said_near")[nearness(guess, q.v)])}</b> ${escape(t("guess_off", guess, q.v))} ${t("guess_truth", q.v, thousands(q.pages), escape(q.name), escape(q.w), won)}</span>
-        <span class="context">${escape(t("guess_context", q.w, c.of, c.hi[0], c.hi[1], c.lo[0], c.lo[1]))} <a href="${href("menempel", q.w, "0", "2", BODIES.includes(q.name) ? "o" : "p")}">${t("guess_more", escape(q.w))}</a></span>`;
+      verdict.innerHTML = `<span><b>${escape(t("said_near")[nearness(guess, q.v)])}</b> ${escape(t("guess_off", guess, q.v))} ${t("guess_truth", q.v, thousands(q.pages), escape(shown(q.name)), escape(q.w), won)}</span>
+        <span class="context">${escape(t("guess_context", q.w, c.of, shown(c.hi[0]), c.hi[1], shown(c.lo[0]), c.lo[1]))} <a href="${href("menempel", q.w, "0", "2", BODIES.includes(q.name) ? "o" : "p")}">${t("guess_more", escape(q.w))}</a></span>`;
       go.textContent = k + 1 === rounds.length ? t("guess_score") : t("next");
       verdict.scrollIntoView({ block: "nearest", behavior: still() ? "auto" : "smooth" });
       go.focus({ preventScroll: true });

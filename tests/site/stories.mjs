@@ -4,8 +4,9 @@
 // At every step the stage must be stuck under the header, show the step's caption and counter, have its figure wholly on
 // screen at the step's moment with a strip's rows at least 17px apart on screen and no text under 12px (a strip drawn
 // taller than its window on a phone: the window on screen, and the rows the step names inside it), and keep its caption
-// band on screen, showing the whole step or at least six lines (a caption longer than the band must scroll in it); on a
-// phone no caption is cut at all (an opening longer than the band rises over the figure's foot, wholly on screen).
+// band on screen, showing the whole step or at least six lines (a caption longer than the band ends on a whole line
+// with its "Baca selengkapnya" control: app.js, stage: clamp; fit.mjs reads it line by line); on a phone no caption
+// runs past its band.
 // Where the stages lie on the sea, going down, once the sea has landed: the key above the controls names one of the
 // step's own words (seaWords in scenes.js, those the chart has) or, where the caption leaves the sea no room to name one,
 // the band is dropped (the caption's shade covers it; counted in the summary); it lists no word the sea has not named on
@@ -36,18 +37,17 @@ const look = () => {
   if (k < 0) return { k, landing, y: scrollY };
   const stage = scenes[k].querySelector(".stage"), plates = [...stage.querySelectorAll(".plate")], shown = plates.filter((p) => !p.classList.contains("off"));
   const tall = stage.classList.contains("tall"), win = stage.querySelector(".stage-figure").getBoundingClientRect();
-  // (where the captions flow as cards, app.js stage: flow, the step's card is its caption; tests/site/fit.mjs holds the cards to their places)
-  const flow = scenes[k].classList.contains("flow"), card = flow && scenes[k].querySelectorAll(".beat")[+stage.dataset.step]?.querySelector(".said");
+  const turn = stage.querySelector(".caption .turn:not(.out)"), more = stage.querySelector(".more-button:not([hidden])");
   const fig = tall ? win : shown[0]?.querySelector("svg").getBoundingClientRect(), cap = stage.querySelector(".caption"), c = cap.getBoundingClientRect();
   const rows = [...(shown[0]?.querySelectorAll(".row") || [])], named = rows.filter((r) => r.style.opacity === "1").length < rows.length ? rows.filter((r) => r.style.opacity === "1") : [];
   return { k, y: scrollY, landing, step: +stage.dataset.step, plate: +stage.dataset.plate, shownAt: plates.findIndex((p) => !p.classList.contains("off")), stack: !!stage.querySelector(".plates"),
     plates: shown.length, units: !!shown[0]?.querySelector(".tally"), stuck: Math.round(stage.getBoundingClientRect().top - head),
     fig: fig && [fig.top - head, vh - fig.bottom, fig.left, vw - fig.right].map(Math.round), moment: shown[0]?.querySelector(".state, .marker text")?.textContent || "",
     cap: [c.top - head, vh - c.bottom].map(Math.round), capHeight: Math.round(c.height),
-    longer: !flow && cap.scrollHeight > cap.clientHeight + 1, scrolls: ["auto", "scroll"].includes(getComputedStyle(cap).overflowY),
-    squeezed: !flow && cap.clientHeight < Math.min(cap.scrollHeight, 6 * parseFloat(getComputedStyle(cap.querySelector(".turn:not(.out) p:last-child") || cap).lineHeight)) - 2,
+    longer: !!turn && turn.scrollHeight > turn.clientHeight + 1, more: !!more, scrolls: ["auto", "scroll"].includes(getComputedStyle(cap).overflowY),
+    squeezed: !!turn && cap.clientHeight < Math.min(turn.scrollHeight, 6 * parseFloat(getComputedStyle(cap.querySelector(".turn:not(.out) p:last-child") || cap).lineHeight)) - 2,
     // (a turn comes in from a few pixels below: --s2)
-    phone: vw < 900, cut: !flow && (() => { const t = cap.querySelector(".turn:not(.out)")?.getBoundingClientRect(); return !!t && (t.top < head - 1 || t.bottom > c.bottom + 9); })(),
+    phone: vw < 900, cut: (() => { const t = turn?.getBoundingClientRect(); return !!t && (t.top < head - 1 || t.bottom > c.bottom + 9); })(),
     // (a strip that pans shows its title and legend pinned over the window's top: the rows show under them; where the
     // rows a step names span more than that, as many as fit from the first, and fit.mjs holds the rest of it)
     outside: (() => { const pin = stage.querySelector(".pinned"), from = pin && getComputedStyle(pin).display !== "none" ? pin.getBoundingClientRect().bottom : win.top, ys = named.map((r) => r.querySelector("line").getBoundingClientRect().top);
@@ -56,7 +56,7 @@ const look = () => {
     pitch: (() => { const ys = [...(shown[0]?.querySelectorAll(".row > line") || [])].map((t) => t.getBoundingClientRect().top); return ys.length > 1 ? Math.round(Math.min(...ys.slice(1).map((y, i) => y - ys[i]))) : null; })(),
     key: stage.querySelector(".sea-key").textContent, mute: stage.classList.contains("mute"), landed: stage.querySelector(".sea-key").dataset.at === `${k}/${stage.dataset.step}`, sea: !!document.querySelector(".story-sea .chart"),
     named: document.querySelector(".story-sea .chart")?.sea?.labels().names.map((n) => n.text) || [],
-    text: (card || cap.querySelector(".turn:not(.out)"))?.textContent.replace(/\s+/g, " ").trim() || "", count: stage.querySelector(".count").textContent,
+    text: turn?.textContent.replace(/\s+/g, " ").trim() || "", count: stage.querySelector(".count").textContent,
     tick: [...stage.querySelectorAll(".ticks button")].findIndex((b) => b.getAttribute("aria-current") === "step") };
 };
 /** In the page: whether some caption can be read, at least 40px of it, between the header and the bottom of the screen. */
@@ -98,7 +98,8 @@ function judge(story, k, j, s, before = null) {
   if (s.phone && s.cut) wrong.push("the caption is cut: not wholly on screen in its band");
   if (!s.phone && s.squeezed) wrong.push("the caption band shows less than the step or six lines");
   if (s.cap.some((d) => d < -1)) wrong.push(`the caption band is off screen (top, bottom: ${s.cap.join(", ")})`);
-  if (!s.phone && s.longer && !s.scrolls) wrong.push("the caption is longer than its band and the band does not scroll");
+  if (s.longer && !s.more) wrong.push("the caption is longer than its band and has no control to read on");
+  if (s.scrolls) wrong.push("the caption scrolls in its band");
   if (s.capHeight < 60) wrong.push(`the caption band is ${s.capHeight}px tall`);
   if (s.sea && s.landed) {
     // The step's own words: one of them named, or the band dropped (where the caption leaves the sea no room to name one).
