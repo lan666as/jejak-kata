@@ -111,10 +111,10 @@ for (const [width, height] of [[360, 740], [768, 1000], [1440, 900]]) { // the m
   const p = await fresh(); await p.goto(base + "#/balap"); await p.waitForTimeout(2500); const n = await p.locator(".race .row").count();
   await p.fill(".suggest input", "megawati"); await p.waitForTimeout(300); await p.keyboard.press("Enter"); await p.waitForTimeout(1500);
   log("race takes a new word", (await p.locator(".race .row").count()) >= n, `${n} -> ${await p.locator(".race .row").count()} rows; errors ${p.errors.length}`); await p.close(); }
-{ // quiz, both games
+{ // quiz: ten rounds to a score (games.mjs plays it fully, by keyboard and by taps)
   const p = await fresh(); await p.goto(base + "#/kuis"); await p.waitForTimeout(2500); let rounds = 0;
-  for (let i = 0; i < 8; i++) { if (!(await p.locator(".choices button").count())) break; await p.locator(".choices button").first().click(); await p.waitForTimeout(150); await p.locator(".verdict button").click(); await p.waitForTimeout(500); rounds++; }
-  log("quiz plays eight rounds to a score", (await p.locator(".score").count()) === 1, `${rounds} rounds; score shown: ${(await p.locator(".score").count()) === 1}; errors ${p.errors.length}`); await p.close(); }
+  for (let i = 0; i < 10; i++) { if (!(await p.locator(".choices button:not([disabled])").count())) break; await p.locator(".choices button").first().click(); await p.waitForTimeout(150); await p.locator(".quiz-go").click(); await p.waitForTimeout(300); rounds++; }
+  log("quiz plays ten rounds to a score", (await p.locator(".score").count()) === 1, `${rounds} rounds; score shown: ${(await p.locator(".score").count()) === 1}; errors ${p.errors.length}`); await p.close(); }
 { // portrait cold
   const p = await fresh(); await p.goto(base + "#/potret/setya%20novanto"); await p.waitForTimeout(3000);
   log("portrait opens cold", (await p.locator("h1").innerText()).includes("setya"), `${(await p.locator("#view").innerText()).slice(0, 70).replace(/\s+/g, " ")}; errors ${p.errors.length}`); await p.close(); }
@@ -132,13 +132,13 @@ for (const [width, height] of [[360, 740], [768, 1000], [1440, 900]]) { // the m
     log(`${hash} at 390px`, (await p.locator(test).count()) > 0 && !wide && !p.errors.length, `${await p.locator(test).count()} marks; sideways scroll: ${wide}; errors ${p.errors.length}`); }
   await p.goto(base + "#/tebak"); await p.waitForTimeout(2000); let n = 0;
   { // the answer sails from the guess to the truth, its wake drawn between the two
-    await p.locator(".gauge input").fill("90"); await p.locator(".controls button").click(); await p.waitForTimeout(1200);
-    const g = await p.evaluate(() => ({ truth: +document.querySelector(".verdict").textContent.match(/\d+/)[0], clip: getComputedStyle(document.querySelector(".gauge .sail")).clipPath,
+    await p.locator(".gauge input").fill("90"); await p.locator(".quiz-go").click(); await p.waitForTimeout(1200);
+    const g = await p.evaluate(() => ({ truth: +document.querySelectorAll(".verdict b")[1].textContent.match(/\d+/)[0], clip: getComputedStyle(document.querySelector(".gauge .sail")).clipPath,
       moved: Math.round(document.querySelector(".gauge .truth").getBoundingClientRect().left - document.querySelector(".gauge .scale").getBoundingClientRect().left) }));
     const [right, left] = (g.clip.match(/inset\(0px ([\d.]+)% 0px ([\d.]+)%\)/) || []).slice(1).map(Number), [lo, hi] = [Math.min(g.truth, 90), Math.max(g.truth, 90)];
     log("guess: the answer sails to the truth over its wake", left === lo && 100 - right === hi, `truth ${g.truth}, guess 90; wake ${g.clip}; truth's mark ${g.moved}px along`);
     await p.goto(base + "#/tebak"); await p.waitForTimeout(2000); }
-  for (let i = 0; i < 6; i++) { await p.locator(".gauge input").fill(String(20 + 10 * i)); await p.locator(".controls button").click(); await p.waitForTimeout(200); n += await p.locator(".verdict:not([hidden])").count(); await p.locator(".controls button").click(); await p.waitForTimeout(250); }
+  for (let i = 0; i < 6; i++) { await p.locator(".gauge input").fill(String(20 + 10 * i)); await p.locator(".quiz-go").click(); await p.waitForTimeout(200); n += await p.locator(".verdict .context").count(); await p.locator(".quiz-go").click(); await p.waitForTimeout(250); }
   log("guess the number plays six rounds to a score", (await p.locator(".score").count()) === 1, `${n} verdicts; score: ${await p.locator(".score").innerText().catch(() => "-")}; errors ${p.errors.length}`);
   await p.close(); }
 { // no chart text under 11px on a phone (360 and 430 wide): every figure drawn as SVG, on every page with figures, scrolled

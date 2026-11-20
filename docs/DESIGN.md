@@ -339,11 +339,36 @@ its line); once the first route has
   word is read from a bucket of 64, so the lists cost as much again as the pairs).
 - **Play**: the first thing to play leads, on the deep, its picture large (two rows tall from 900px); the next two
   beside it, text and picture side by side; the rest under "more" in three columns, the tide table and the year posters
-  two columns wide. The first page shows the same first three. A game is a board: the round on paper, and beside it the game's voyage so far (a port
-  per round: filled where right, a ring where wrong, the ship on the round now); at the end the score as a plate
-  to save as an image. In "guess the number" the answer is not simply shown: its mark sails (`--d-leg`) from the
-  reader's guess to the truth along the scale, drawing its wake in the route, so how far off the guess was is a
-  distance one sees travelled (a cut with reduced motion).
+  two columns wide. The first page shows the same first three. A card the viewer has opened says so in a meta line
+  under its text, a game's with the best score (localStorage; nothing where storage is refused). A toy's head is
+  shorter on a phone (less sea above the kicker, the lede at the body's size), so that the toy begins on the first
+  screen. Where a figure tells something on hover, a tap tells it too.
+  A game is a board: the round on paper, and beside it the game's voyage so far (a port per round: filled where right,
+  a ring where wrong, the ship on the round now; a run of three or more right ringed in `--beacon`, the streak), the
+  tally and the one control that goes on (lock, next, play again), always in the same place: in the panel held beside
+  the round from 900px, in a bar held at the screen's foot on a phone (the voyage without its labels, the tally, the
+  control), where the thumb is. Keys: 1-4 choose, Enter goes on; after an answer focus is on that control, after
+  "next" on the new question. A wrong answer is marked by a dashed edge and a cross, the right one filled with a tick,
+  never by colour alone. At the end the score as a plate to save as an image, its rank in a line, one press to play
+  again, and the toy that follows from it.
+  **The quiz** ("Kuis") is one game of ten rounds dealt by `site/deal.js` from `site/data/quiz.json` (gathered from the
+  data by `node tests/site/games.mjs write`): seven kinds of question (which year, from its ten most characteristic
+  words; who, from their verbs and adjectives in a year; which was more frequent in a year; which peaked first; official
+  word or loanword in 2024; which newsroom most often puts a word beside a name; up, down or about the same between two
+  years), in a rhythm (every kind once, never one twice running) and harder as they go (three easy, four middling, three
+  hard). A question is dealt only where its answer clears its margin (`MARGIN` in deal.js, one place); within a game no
+  word, name or year is asked about twice, and a deck per kind, kept for the visit, deals every question once before
+  any comes again. After each answer a line is said (never the same one twice running; the owner's wording, in
+  text.js) and the evidence is drawn small in the plates' inks: the shares as marks on one scale (a row each; the three
+  newsrooms in their colours), or a word's line over the years with the years asked about marked, drawn in along its
+  length (a cut with reduced motion). A question that sets a name beside a word carries the caution "sharing a page is
+  not being accused" in sight, and never asks it of a word that reads as an accusation (deal.js, `SENSITIVE`): those are
+  asked only as "guess the number" asks them. In "guess the number" (six rounds, two each of a low, a middle and a high
+  true value, so that no one guess always pays; points by how far off as a part of the truth) the answer is not simply
+  shown: its mark sails (`--d-leg`) from the reader's guess to the truth along the scale, drawing its wake in the
+  route, so how far off the guess was is a distance one sees travelled (a cut with reduced motion); then a line by how
+  far off, and one of context (who has the most and the least of that word). A tap on the scale sets the guess there;
+  the arrows move it.
 - **Method, stories index, other play pages**: the page head pattern, the same cards, fields, chips and tables;
   figures on plates. The method opens with the method on one word the first page sails (`jokowi`, 2013 then 2014), in
   four steps stepped or played: the year's pages and the share that hold the word, the words it appears with most, its

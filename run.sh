@@ -43,11 +43,11 @@ stage_validate() {
   for entry in $LENSES; do python -m idhist.planted ${entry//:/ }; done
   for lens in $EXPECTED; do python -m idhist.expected "$lens"; done
 }
-stage_export()   { each export; each highlights; python -m idhist.together; }
+stage_export()   { each export; each highlights; python -m idhist.together; node tests/site/games.mjs write; }  # (the games read site/data/quiz.json, gathered from the rest)
 stage_look()     {  # the site used like a reader, in a real browser; needs `npm install` in tests/site once
   for f in site/*.js; do node --check "$f"; done
   node tests/site/captions.mjs  # every number a story writes is what its figure shows (fails until the text is corrected)
-  node tests/site/stories.mjs && node tests/site/pages.mjs && node tests/site/hero.mjs && node tests/site/sound.mjs && node tests/site/labels.mjs && node tests/site/fit.mjs && node tests/site/fails.mjs && node tests/site/webkit.mjs  # webkit: skips where WebKit cannot run
+  node tests/site/stories.mjs && node tests/site/pages.mjs && node tests/site/hero.mjs && node tests/site/sound.mjs && node tests/site/labels.mjs && node tests/site/fit.mjs && node tests/site/games.mjs && node tests/site/fails.mjs && node tests/site/webkit.mjs  # webkit: skips where WebKit cannot run
 }
 stage_deploy()   {  # publish site/ (with its data and its generated pages) as the gh-pages branch, if it passes `look` and meta.mjs; not part of a plain ./run.sh
   stage_look

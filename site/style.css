@@ -282,6 +282,10 @@ a.kicker:hover::before { transform: translateX(calc(-1 * var(--s1))); }
 h2:first-child { margin-top: var(--s6); }
 @media (min-width: 900px) { .page-head { padding: var(--s8) 0 calc(var(--s7) + var(--tide-h)); } .page-head:has(.word-title) { padding-top: var(--s6); } }
 @media (max-width: 899.98px) { .page-head:has(> .shore-sea):not(.joined, .lost) { padding-top: calc(var(--s9) + var(--s4)); } }  /* on a phone the sea is above the text: room for it */
+@media (max-width: 899.98px) {  /* a toy's head on a phone: less sea above, a smaller lede, so that the toy itself begins on the first screen */
+  .page-head.game:has(> .shore-sea):not(.joined, .lost) { padding-top: calc(var(--s8) + var(--s2)); padding-bottom: calc(var(--s5) + var(--tide-h)); margin-bottom: var(--s4); }
+  .page-head.game > .lede { margin-top: var(--s2); font-size: var(--t-body); line-height: var(--l-body); }
+}
 
 /* buttons: secondary by default, .primary, .quiet */
 button, .button, a[role="button"] { display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); min-height: var(--tap); padding: 0 var(--s4);
@@ -688,7 +692,49 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 @keyframes hop { 40% { transform: translateY(-3px); } }
 @media (prefers-reduced-motion: no-preference) { .voyage-mark .now { animation: hop var(--d-leg) var(--sail) infinite alternate; transform-box: fill-box; transform-origin: center; } }
 .quiz-card .plate svg { width: 100%; margin: var(--s4) 0 var(--s2); }
+/* the bar: the tally and the one control that goes on (lock, next, play again), always in the same place: beside the
+   round from 900px, held at the screen's foot on a phone, where the thumb is */
+.quiz-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s3); margin-top: var(--s2); }
+.quiz-bar .quiz-tally { margin: 0; }
+.quiz-go { min-width: 9rem; }
+@media (max-width: 899.98px) {
+  .quiz-board { gap: 0; }
+  .quiz-log { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; margin: 0; padding: var(--s2) var(--gutter) calc(var(--s2) + env(safe-area-inset-bottom));
+    border: 0; border-top: var(--hair) solid var(--line); border-radius: 0; background: var(--chart);
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "voyage go" "tally go"; column-gap: var(--s4); align-items: center; }
+  .quiz-log h3 { display: none; }
+  .quiz-board { margin-bottom: 110px; }  /* room for the bar at the foot, so that nothing is left under it */
+  body:has(.quiz-board) .site-foot { padding-bottom: 90px; }
+  .quiz-voyage { grid-area: voyage; } .quiz-log .voyage-mark { display: block; width: 100%; height: 40px; } .quiz-log .voyage-mark text { display: none; }  /* (the answers under the ports: on the plate) */
+  .quiz-bar { display: contents; } .quiz-bar .quiz-tally { grid-area: tally; font-size: var(--t-small); font-stretch: 100%; font-weight: 600; } .quiz-go { grid-area: go; min-width: 8rem; }
+  .quiz .ask { font-size: 1.3125rem; } .quiz .clue li { font-size: var(--t-body); }
+}
 @media (min-width: 900px) { .quiz-board { grid-template-columns: minmax(0, 1fr) 20rem; gap: var(--s6); } .quiz-log { position: sticky; top: calc(var(--head-h) + var(--s5)); } }
+.voyage-mark .streak { stroke: var(--beacon); }
+.quiz .choices .key { display: inline-grid; place-items: center; min-width: 1.4em; height: 1.4em; border-radius: var(--r1); font-size: var(--t-meta); font-weight: 700; color: var(--ink-3); border: var(--hair) solid var(--line); }
+@media (pointer: coarse) { .quiz .choices .key, .keys-note { display: none; } }
+.quiz .choices .right::after { content: "✓"; font-weight: 800; } .quiz .choices .chosen::after { content: "✗"; font-weight: 800; }
+.quiz .choices .right .key { color: inherit; border-color: currentColor; }
+/* a year's or a name's words: a line of words, not chips (they are read, not pressed) */
+.quiz .clue { display: flex; flex-wrap: wrap; gap: 0 var(--s3); margin: var(--s3) 0 0; padding: 0; list-style: none; }
+.quiz .clue li { padding: 0; border: 0; background: none; min-height: 0; font: 600 var(--t-lede)/1.4 var(--type); color: var(--ink); }
+.quiz .clue li + li::before { content: "·"; margin-right: var(--s3); color: var(--ink-3); }
+.quiz .rank { font: 700 var(--t-h3)/var(--l-h3, 1.15) var(--type); font-stretch: 80%; margin: 0 0 var(--s4); color: var(--route); }
+.quiz .caveat { margin: var(--s2) 0; font-size: var(--t-small); }
+.quiz .verdict { flex-direction: column; align-items: flex-start; gap: var(--s2); font-size: var(--t-body); line-height: var(--l-body); }
+.quiz .verdict b { font-size: var(--t-lede); }
+.quiz .verdict .context { color: var(--ink-2); }
+.reveal { display: block; height: auto; margin: var(--s3) 0 0; scroll-margin: calc(var(--head-h) + var(--s4)) 0 170px; }  /* (170px: the bar held at a phone's foot) */
+.quiz .verdict { scroll-margin: calc(var(--head-h) + var(--s4)) 0 170px; }
+.reveal svg { display: block; max-width: 100%; height: auto; overflow: visible; font-family: var(--type); }
+.reveal .alt { fill: var(--route-2); } .reveal .alt-line { stroke: var(--route-2); fill: none; } .reveal .on-line { stroke-linejoin: round; stroke-linecap: round; }
+@media (prefers-reduced-motion: no-preference) {
+  .reveal .draw { stroke-dasharray: 2000; animation: reveal-draw var(--d-leg) var(--sail) both; } .reveal .in { animation: fade var(--d-turn) var(--sail) calc(var(--i, 0) * 45ms + 200ms) both; }
+}
+@keyframes reveal-draw { from { stroke-dashoffset: 2000; } to { stroke-dashoffset: 0; } }
+.next-toy { margin: var(--s4) 0 0; font-weight: 600; }
+.gauge input[type="range"] { height: var(--tap); accent-color: var(--route); cursor: pointer; }
+.gauge .scale { cursor: pointer; touch-action: none; }
 .quiz .choices button { box-shadow: inset 0 calc(-1 * var(--mark)) 0 transparent; }
 .quiz .choices button:hover:not(:disabled) { box-shadow: inset 0 calc(-1 * var(--mark)) 0 var(--route); }  /* the route drawn along the answer one is about to give */
 .quiz .choices .chosen, .quiz .choices .chosen:disabled { border-style: dashed; opacity: 1; }
@@ -711,6 +757,11 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .gauge output { display: block; margin-top: var(--s2); font: 800 var(--t-h1)/1.1 var(--type); font-stretch: 75%; font-variant-numeric: tabular-nums; }
 .gauge output::after { content: " dari 100"; font-size: var(--t-body); font-weight: 400; color: var(--ink-2); }
 :lang(en) .gauge output::after { content: " of 100"; }
+
+/* "Coba: …": real choices to try at once, beside a field or a list */
+.try { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin: var(--s3) 0 var(--s4); }
+.try > span { font-size: var(--t-small); color: var(--ink-2); margin-right: var(--s1); }
+.try .chip { min-height: var(--tap); }
 
 /* chips chosen in a picker */
 .picked { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; margin: var(--s2) 0; padding: 0; list-style: none; }
@@ -1100,23 +1151,26 @@ main.home { max-width: none; padding: 0 0 var(--s9); }
 /* a play card leads with a small picture of its own figure, drawn from its data (app.js, PICTURES) in the plate's inks,
    with a note of what it shows; the route's colour marks what the game asks about */
 .play-card { position: relative; overflow: hidden; gap: var(--s2); }
-.play-pic { --p-ink: var(--ink); --p-soft: var(--ink-3); --p-line: var(--line); --p-dot: var(--ink-3); --p-on: var(--route); --p-on-ink: var(--on-route); --p-ground: var(--chart-2);
+.play-pic, .reveal { --p-ink: var(--ink); --p-soft: var(--ink-3); --p-line: var(--line); --p-dot: var(--ink-3); --p-on: var(--route); --p-on-ink: var(--on-route); --p-ground: var(--chart-2);
   display: block; height: 136px; margin-bottom: var(--s1); }
-.play-pic svg { display: block; overflow: visible; font-family: var(--type); }
-.play-pic text { font-size: 13px; font-weight: 600; fill: var(--p-ink); }
-.play-pic .strong { font-weight: 800; } .play-pic .soft { font-size: 12px; font-weight: 400; fill: var(--p-soft); }
-.play-pic .word { font-size: 16px; font-weight: 800; font-stretch: 80%; }
-.play-pic .big { font-weight: 800; font-stretch: 75%; fill: var(--p-ink); } .play-pic .faint { opacity: .25; }
-.play-pic .halo { paint-order: stroke; stroke: var(--p-ground); stroke-width: 4px; stroke-linejoin: round; }
-.play-pic .line { fill: none; stroke: var(--p-line); stroke-width: 1.5; } .play-pic .dotted { stroke-dasharray: 1 3; stroke-linecap: round; }
-.play-pic .mute { fill: var(--p-dot); } .play-pic .on { fill: var(--p-on); } .play-pic .on-line { stroke: var(--p-on); fill: none; }
-.play-pic .on-text { fill: var(--p-on-ink); }
-.play-pic .c1 { fill: var(--cat-1); } .play-pic .c2 { fill: var(--cat-2); } .play-pic .c3 { fill: var(--cat-3); }
-.play-pic .person { fill: var(--person); } .play-pic .organisation { fill: var(--organisation); } .play-pic .place { fill: var(--place); }
-.play-pic .s0 { fill: var(--seq-0); opacity: .45; } .play-pic .s1 { fill: var(--seq-1); } .play-pic .s2 { fill: var(--seq-2); } .play-pic .s3 { fill: var(--seq-3); } .play-pic .s4 { fill: var(--seq-4); } .play-pic .s5 { fill: var(--seq-5); }
+:is(.play-pic, .reveal) svg { display: block; overflow: visible; font-family: var(--type); }
+:is(.play-pic, .reveal) text { font-size: 13px; font-weight: 600; fill: var(--p-ink); }
+:is(.play-pic, .reveal) .strong { font-weight: 800; } :is(.play-pic, .reveal) .soft { font-size: 12px; font-weight: 400; fill: var(--p-soft); }
+:is(.play-pic, .reveal) .word { font-size: 16px; font-weight: 800; font-stretch: 80%; }
+:is(.play-pic, .reveal) .big { font-weight: 800; font-stretch: 75%; fill: var(--p-ink); } :is(.play-pic, .reveal) .faint { opacity: .25; }
+:is(.play-pic, .reveal) .halo { paint-order: stroke; stroke: var(--p-ground); stroke-width: 4px; stroke-linejoin: round; }
+:is(.play-pic, .reveal) .line { fill: none; stroke: var(--p-line); stroke-width: 1.5; } :is(.play-pic, .reveal) .dotted { stroke-dasharray: 1 3; stroke-linecap: round; }
+:is(.play-pic, .reveal) .mute { fill: var(--p-dot); } :is(.play-pic, .reveal) .on { fill: var(--p-on); } :is(.play-pic, .reveal) .on-line { stroke: var(--p-on); fill: none; }
+:is(.play-pic, .reveal) .on-text { fill: var(--p-on-ink); }
+:is(.play-pic, .reveal) .c1 { fill: var(--cat-1); } :is(.play-pic, .reveal) .c2 { fill: var(--cat-2); } :is(.play-pic, .reveal) .c3 { fill: var(--cat-3); }
+:is(.play-pic, .reveal) .person { fill: var(--person); } :is(.play-pic, .reveal) .organisation { fill: var(--organisation); } :is(.play-pic, .reveal) .place { fill: var(--place); }
+:is(.play-pic, .reveal) .s0 { fill: var(--seq-0); opacity: .45; } :is(.play-pic, .reveal) .s1 { fill: var(--seq-1); } :is(.play-pic, .reveal) .s2 { fill: var(--seq-2); } :is(.play-pic, .reveal) .s3 { fill: var(--seq-3); } :is(.play-pic, .reveal) .s4 { fill: var(--seq-4); } :is(.play-pic, .reveal) .s5 { fill: var(--seq-5); }
 .play-note { min-height: calc(var(--t-meta) * var(--l-meta)); margin-bottom: var(--s2); font-size: var(--t-meta); line-height: var(--l-meta); color: var(--ink-3); }
 .play-note i { display: inline-block; width: 8px; height: 8px; margin: 0 var(--s1) 0 var(--s2); border-radius: 50%; } .play-note i:first-child { margin-left: 0; }
 .play-note .c1 { background: var(--cat-1); } .play-note .c2 { background: var(--cat-2); } .play-note .c3 { background: var(--cat-3); }
+.play-card .played { display: block; margin-top: var(--s2); font-size: var(--t-meta); font-weight: 600; color: var(--ink-3); }
+.play-card .played::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: var(--s2); border-radius: 50%; background: var(--route); }
+.play-top .lead .played { color: var(--on-deep-2); }
 /* a play card answers the pointer as a story card does: the route drawn across its top */
 .play-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: var(--mark); background: var(--route); transform: scaleX(0); transform-origin: 0 50%; transition: transform var(--d-turn) var(--sail); }
 .play-card:is(:hover, :focus-visible)::before { transform: scaleX(1); }

@@ -12,7 +12,7 @@ const CASES = [
   ["a word", "#/kata/kpk", "id-web-news-kompas/meta.json", ".lens-section", null],
   ["findings", "#/temuan", "id-web-news-kompas/meta.json", ".duets svg", null],
   ["the map", "#/peta", "id-web-news-kompas/first.json", ".chart > canvas", null],
-  ["play: the quiz", "#/kuis", "id-web-news-kompas/meta.json", ".choices button", null],
+  ["play: the quiz", "#/kuis", "quiz.json", ".choices button", null],
 ];
 for (const width of [390, 1440]) for (const [name, hash, file, there, scroll] of CASES) {
   const page = await browser.newPage({ viewport: { width, height: width < 900 ? 844 : 900 } }), errors = [];

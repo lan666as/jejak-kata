@@ -90,4 +90,4 @@ function words([page, arg], language) {
 }
 
 /** The pages to play with, in the order the play page shows them. */
-export const PLAY = ["tebak", "kuis", "menempel", "lingkaran", "redaksi", "pasang", "balap", "tahun", "bergeser", "entitas"];
+export const PLAY = ["kuis", "tebak", "menempel", "lingkaran", "redaksi", "pasang", "balap", "tahun", "bergeser", "entitas"];

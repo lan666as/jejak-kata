@@ -10,6 +10,7 @@ import { seaChart } from "./chart.js";
 import { TEXT, LENS_TEXT, NOTES, GLOSS, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
 import { address, routeOf, named, canonical, EMBED, PAGES, PLAY, QUIZ_NAMES, GUESS_WORDS } from "./address.js";
 import { board, measure } from "./labels.js";
+import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, BODIES } from "./deal.js";
 import { figureOf, focused, lensFrom, sceneWords, seaWords, stepAt, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
 
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
@@ -177,8 +178,8 @@ const tideLine = (above = false) => `<svg class="tide-line${above ? " above" : "
  *  night sea held still behind them (`sea`: what `shore` is given) and the tide line under them, where the page's
  *  paper begins. `more`: what else belongs in the head (a note about a name). The title rises in, word by word, or
  *  letter by letter for a word's own page. */
-const pageHead = (title, { kicker, to, lede, cls = "", sea = {}, more = "" } = {}) => {
-  const head = el(`<div class="page-head shore${sea ? "" : " joined"}"><div class="shore-sea">${sea ? GRATICULE : ""}</div>${kicker ? (to ? `<a class="kicker" href="${to}">${kicker}</a>` : `<p class="kicker">${kicker}</p>`) : ""}
+const pageHead = (title, { kicker, to, lede, cls = "", sea = {}, more = "", band = "" } = {}) => {
+  const head = el(`<div class="page-head shore${sea ? "" : " joined"}${band ? ` ${band}` : ""}"><div class="shore-sea">${sea ? GRATICULE : ""}</div>${kicker ? (to ? `<a class="kicker" href="${to}">${kicker}</a>` : `<p class="kicker">${kicker}</p>`) : ""}
     <h1${cls ? ` class="${cls}"` : ""}>${title}</h1>${lede ? `<p class="lede">${lede}</p>` : ""}${more}${sea ? tideLine() : ""}</div>`);
   rise(head.querySelector("h1"), cls === "word-title");
   if (sea) shore(head, { pitch: 0.62, ...sea });  // a head is a short band: its sea is seen from higher, so that it fills it  // without: the head runs on into a band of the deep below it (the map's)
@@ -239,7 +240,7 @@ async function shore(box, { words = [], count = 3, routes = null, name: named, l
   return sea;
 }
 /** The kicker of a page reached from the play page: a way back to it. */
-const fromPlay = () => ({ kicker: t("nav_play"), to: href("main") });
+const fromPlay = () => ({ kicker: t("nav_play"), to: href("main"), band: "game" });  // a toy's head: shorter on a phone, so that the toy begins on the first screen
 // What the sea behind each family of pages shows (shore, `words`): only the routes of words the page is about.
 /** The words of the first screen that moved most, among its frequent ones: for the pages about change. */
 const MOVED = (first) => first.words.map((_, k) => k).filter((k) => k < 800 && first.moved[k] !== null).sort((a, b) => first.moved[b] - first.moved[a]).map((k) => first.names[k]);
@@ -255,7 +256,8 @@ function tip(text, e) {
   tipNode.style.top = e.clientY + 14 + "px";
 }
 function hover(node, text) {
-  node.addEventListener("pointermove", (e) => tip(typeof text === "function" ? text(e) : text, e));
+  node.dataset.tipTap = "";  // what a hover shows, a tap shows too (a touch screen has no hover)
+  for (const on of ["pointermove", "pointerdown"]) node.addEventListener(on, (e) => tip(typeof text === "function" ? text(e) : text, e));
   node.addEventListener("pointerleave", () => tip(null));
 }
 
@@ -1727,8 +1729,13 @@ function pictured(box) {
   return box;
 }
 const WIDE = { pasang: "wide", tahun: "wide right" };  // on a wide screen these two take two columns of "more"
+/** What the hub says of a toy this viewer has opened, and of a game their best (record, playedLog). */
+const playedMark = (page) => {
+  const was = playedLog()[page];
+  return !was ? "" : `<span class="played">${was.best ? t("played_best", `${was.best[0]} / ${was.best[1]}`) : t("played_once")}</span>`;
+};
 const playCard = (page, lead = false) => `<li${WIDE[page] ? ` class="${WIDE[page]}"` : ""}><a class="card play-card${lead ? " lead" : ""}" href="${href(page)}">${lead ? `<span class="kicker">${t("play_lead")}</span>` : ""}<span class="play-pic" data-page="${page}"></span><span class="play-note"></span>
-  <b class="card-title">${t(`play_${page}`)}</b><span class="card-text">${t(`play_${page}_about`)}</span></a></li>`;
+  <b class="card-title">${t(`play_${page}`)}</b><span class="card-text">${t(`play_${page}_about`)}</span>${playedMark(page)}</a></li>`;
 /** The first thing to play leads, on the deep, its picture large; the next two beside it. */
 const playTop = () => pictured(el(`<ul class="cards doors play-cards play-top">${PLAY.slice(0, 3).map((page, k) => playCard(page, !k)).join("")}</ul>`));
 
@@ -2301,20 +2308,24 @@ async function portraitPage(word) {
 }
 
 /** A game's voyage, one port per round: answered right (filled in the route's colour), wrong (a ring), the round on
- *  now (the ship) and those to come (small dots); under each answered port, its answer. With `inline`, its colours
- *  are written into it, so that it can be saved as an image (plate.js reads no stylesheet). */
+ *  now (the ship) and those to come (small dots); under each answered port, its answer; a run of three or more right
+ *  ringed in the beacon (the streak). With `inline`, its colours are written into it, so that it can be saved as an
+ *  image (plate.js reads no stylesheet). */
 function voyageMark(results, rounds, { inline = false, width = 300 } = {}) {
   const W = width, H = 92, x = (k) => 16 + ((W - 32) * k) / Math.max(1, rounds - 1), y = (k) => 38 + 10 * Math.sin(k * 1.3);
   const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(), c = (name, attr) => (inline ? ` ${attr}="${css(name)}"` : "");
   const path = [...Array(rounds)].map((_, k) => `${k ? "L" : "M"}${x(k).toFixed(1)},${y(k).toFixed(1)}`).join("");
   const done = results.length, sailed = [...Array(Math.max(1, done))].map((_, k) => `${k ? "L" : "M"}${x(k).toFixed(1)},${y(k).toFixed(1)}`).join("");
+  const run = (k) => { let a = k, b = k; while (results[a - 1]?.ok) a--; while (results[b + 1]?.ok) b++; return results[k]?.ok ? b - a + 1 : 0; };
+  // Labels of the answers only where they have room: every port on a wide voyage, every other one on a narrow one.
+  const every = (W - 32) / Math.max(1, rounds - 1) < 34 ? 2 : 1;
   return `<svg class="voyage-mark" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">
     <path class="sea-line" d="${path}" fill="none" stroke-dasharray="2 4"${c("--line-2", "stroke")}/>${done > 1 ? `<path class="sailed" d="${sailed}" fill="none" stroke-width="3" stroke-linecap="round"${c("--route", "stroke")}/>` : ""}
     ${[...Array(rounds)].map((_, k) => {
       const r = results[k], cls = !r ? (k === done ? "now" : "next") : r.ok ? "right" : "wrong";
       const fill = { right: c("--route", "fill"), wrong: c("--chart-2", "fill"), now: c("--ink", "fill"), next: c("--line-2", "fill") }[cls], stroke = cls === "wrong" ? c("--ink", "stroke") : "";
-      return `<circle class="${cls}" cx="${x(k).toFixed(1)}" cy="${y(k).toFixed(1)}" r="${{ right: 7, wrong: 6, now: 8, next: 3.5 }[cls]}"${fill}${stroke}${cls === "wrong" ? ' stroke-width="2"' : ""}/>
-        ${r ? `<text x="${x(k).toFixed(1)}" y="${(y(k) + 26).toFixed(1)}" text-anchor="middle" style="font-size:11px;font-weight:700"${c(r.ok ? "--ink" : "--ink-3", "fill")}>${escape(String(r.label))}</text>` : ""}`;
+      return `${run(k) >= 3 ? `<circle class="streak" cx="${x(k).toFixed(1)}" cy="${y(k).toFixed(1)}" r="11" fill="none" stroke-width="2.5"${c("--beacon", "stroke")}/>` : ""}<circle class="${cls}" cx="${x(k).toFixed(1)}" cy="${y(k).toFixed(1)}" r="${{ right: 7, wrong: 6, now: 8, next: 3.5 }[cls]}"${fill}${stroke}${cls === "wrong" ? ' stroke-width="2"' : ""}/>
+        ${r && (k % every === 0 || k === done - 1) ? `<text x="${x(k).toFixed(1)}" y="${(y(k) + 26).toFixed(1)}" text-anchor="middle" style="font-size:12px;font-weight:700"${c(r.ok ? "--ink" : "--ink-3", "fill")}>${escape(String(r.label))}</text>` : ""}`;
     }).join("")}</svg>`;
 }
 
@@ -2332,73 +2343,241 @@ function scorePlate(title, results, rounds, width = 640) {
     <text x="16" y="${H - 14}" style="font-size:12px;font-weight:700;fill:${css("--ink")}">Jejak Kata · zidan.dev/jejak-kata</text></svg></div>`);
 }
 
-/** Two games: name the year from its own words; name the person or institution from its verbs and adjectives. Each a
- *  board: the round on paper, and beside it the game's voyage so far; at the end, the score as a plate to save. */
+/** What this visit has dealt: a deck per kind, so that a game played again asks first what has not been asked. */
+const VISIT = {};
+/** What this viewer has played, and their best (localStorage; nothing where storage is refused): the hub shows it. */
+const playedLog = () => { try { return JSON.parse(kept("localStorage", "played") || "{}") || {}; } catch { return {}; } };
+function record(page, score) {
+  const all = playedLog(), was = all[page] || {};
+  if (score && (!was.best || score[0] / score[1] > was.best[0] / was.best[1])) was.best = score;
+  kept("localStorage", "played", JSON.stringify({ ...all, [page]: { ...was, at: Date.now() } }));
+}
+/** One of a list of lines, never the one said last time (the reactions after an answer). */
+const lastSaid = {};
+const sayOne = (key, ...args) => {
+  const list = t(key);
+  let i;
+  do i = Math.floor(Math.random() * list.length); while (list.length > 1 && i === lastSaid[key]);
+  lastSaid[key] = i;
+  return typeof list[i] === "function" ? list[i](...args) : list[i];
+};
+/** After a game, the toy that follows from it. */
+const NEXT_TOY = { kuis: "tebak", tebak: "menempel" };
+
+/** A game's board: the round on paper; beside it (under it on a phone, held at the screen's foot) the voyage so far,
+ *  the tally and the one control that goes on (lock, next, play again), always in the same place. */
+function gameBoard() {
+  const board = el(`<div class="quiz-board"><section class="quiz quiz-card"></section><aside class="quiz-log"><h3>${t("quiz_log")}</h3><div class="quiz-voyage"></div>
+    <div class="quiz-bar"><p class="quiz-tally"></p><button type="button" class="primary quiz-go"></button></div></aside></div>`);
+  return { board, box: board.querySelector(".quiz"), go: board.querySelector(".quiz-go"), log: board.querySelector(".quiz-voyage"), tally: board.querySelector(".quiz-tally") };
+}
+/** Keys on a game's page: 1-4 choose, Enter goes on; gone once the board has left the page. */
+function gameKeys(board, on) {
+  const press = (e) => {
+    if (!board.isConnected) return document.removeEventListener("keydown", press);
+    if (e.altKey || e.ctrlKey || e.metaKey || e.target.closest?.("input:not([type=range]), select, textarea")) return;
+    on(e);
+  };
+  document.addEventListener("keydown", press);
+}
+/** Where a game's end leads: one tap to play again (the control that went on), the plate saved, the link copied, and
+ *  the next toy. */
+function gameEnd(box, go, { page, plate, score, share, again }) {
+  const save = el(`<button type="button">${t("quiz_save")}</button>`), copy = el(`<button type="button">${t("copy_score")}</button>`);
+  save.addEventListener("click", async () => (await plating(), savePlate(box, `jejak-kata-${page}`)));
+  copy.addEventListener("click", async () => { try { await navigator.clipboard?.writeText(share); } catch {} copy.textContent = t("copied"); });
+  const row = el(`<p class="controls"></p>`), next = NEXT_TOY[page];
+  row.append(save, copy);
+  box.append(plate, row, el(`<p class="next-toy">${t("next_toy")}: <a href="${href(next)}">${t(`play_${next}`)}</a></p>`));
+  go.disabled = false;
+  go.textContent = t("again");
+  go.onclick = again;
+  go.focus({ preventScroll: true });
+  record(page, score);
+}
+/** Bring the round's card into view where the page was scrolled past its top (the reveal of the last round). */
+const toCard = (box) => {
+  const top = box.getBoundingClientRect().top - masthead.offsetHeight - 16;
+  if (top < 0) scrollTo({ top: scrollY + top, behavior: still() ? "auto" : "smooth" });
+};
+
+/** The evidence after an answer, small and drawn as the site draws: two or three shares as marks on one scale (a row
+ *  each), or a word's line over the years with the years asked about marked. */
+function reveal(ev, W, answer, periods) {
+  const px = (v) => v.toFixed(1);
+  if (ev.type === "marks") {
+    const n = ev.items.length, row = 30, L = Math.min(W * 0.42, 18 + 7.4 * Math.max(...ev.items.map((i) => i.label.length))), R = 52, H = n * row + 26;
+    const top = Math.max(...ev.items.map((i) => i.v)), step = [1, 2, 2.5, 5].map((m) => m * 10 ** Math.floor(Math.log10(top / 4))).find((s) => top / s <= 4) || top / 4;
+    const most = Math.ceil(top / step) * step, x = (v) => L + ((W - L - R) * v) / most;
+    const ticks = [...Array(Math.round(most / step) + 1)].map((_, k) => k * step);
+    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">${ticks.map((v) => `<path class="line" d="M${px(x(v))} 4V${n * row}"/>${svgText(x(v), H - 6, percent(v), "soft", "middle")}`).join("")}
+      ${ev.items.map((it, k) => {
+        const y = row * k + row / 2, cls = ev.outlets ? `c${k + 1}` : it.label === answer ? "on" : "mute";
+        return `<g class="in" style="--i:${k}">${svgText(L - 8, y + 4.5, it.label, it.label === answer ? "strong" : "", "end")}<path class="line dotted" d="M${L} ${y}H${W - R}"/><circle class="${cls}" cx="${px(x(it.v))}" cy="${y}" r="7"/>${svgText(W - R + 8, y + 4.5, percent(it.v), "soft")}</g>`;
+      }).join("")}</svg>`;
+  }
+  const H = 150, L = 8, R = 8, T = 22, B = 24, P = ev.series[0].share.length, x = (p) => L + ((W - L - R) * p) / (P - 1);
+  const top = Math.max(...ev.series.flatMap((s) => s.share)) || 1, y = (v) => T + (H - T - B) * (1 - v / top);
+  const years = [0, P - 1, ...ev.marks].filter((p, i, all) => all.indexOf(p) === i && (ev.marks.includes(p) || ev.marks.every((m) => Math.abs(m - p) > 2)));
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true"><path class="line" d="M${L} ${H - B}H${W - R}"/>
+    ${ev.marks.map((p) => `<path class="line dotted" d="M${px(x(p))} ${T - 6}V${H - B}"/>`).join("")}
+    ${ev.series.map((s, k) => `<path class="${k ? "alt-line" : "on-line"} draw" stroke-width="2.5" d="${s.share.map((v, p) => `${p ? "L" : "M"}${px(x(p))} ${px(y(v))}`).join("")}"/>`).join("")}
+    ${ev.series.map((s, k) => {
+      const at = ev.series.length > 1 ? ev.marks[k] : null, ps = at === null ? ev.marks : [at];
+      return ps.map((p) => `<circle class="${k ? "alt" : "on"} in" cx="${px(x(p))}" cy="${px(y(s.share[p]))}" r="5"/>`).join("") + (ev.series.length > 1 ? svgText(Math.min(Math.max(x(at), 40), W - 40), Math.max(14, y(s.share[at]) - 10), s.label, "strong halo", "middle") : "");
+    }).join("")}
+    ${years.map((p) => svgText(x(p), H - 6, periods[p], ev.marks.includes(p) ? "strong" : "soft", p === 0 ? "start" : p === P - 1 ? "end" : "middle")).join("")}</svg>`;
+}
+
+/** The quiz: ten rounds dealt from the visit's decks (site/deal.js), of kinds in a rhythm and harder as they go. After
+ *  each answer a line said, and the evidence drawn; at the end the score as a plate to save, and its rank. */
 async function quizPage() {
-  const lens = await lensNamed(MAIN), { peaks } = await highlights(lens), ROUNDS = 8;
-  const pick = (list, n) => [...list].sort(() => Math.random() - 0.5).slice(0, n);
-  const names = ["jokowi", "prabowo", "ahok", "anies baswedan", "megawati", "sby", "ganjar pranowo", "sri mulyani", "luhut", "ridwan kamil", "kpk", "polri", "dpr", "mahfud md", "erick thohir", "setya novanto"].filter((w) => lens.isEntry(lens.index.get(w)));
-  const games = {
-    year: async () => {
-      const p = pick(lens.periods.map((_, i) => i).filter((i) => peaks[i].length >= 8), 1)[0];
-      return { ask: t("quiz_year_ask"), clue: words(lens, peaks[p].slice(0, 10).map((w) => w), null, "").replace(/<a [^>]*>|<\/a>/g, ""),
-        answer: lens.periods[p], choices: pick([lens.periods[p], ...pick(lens.periods.filter((x, i) => Math.abs(i - p) > 1), 3)], 4).sort() };
-    },
-    who: async () => {
-      for (;;) {
-        const name = pick(names, 1)[0], verbs = await saidOf(lens, name, "verbs"), adjectives = await saidOf(lens, name, "adjectives");
-        const periods = (verbs || []).map((list, i) => (list.length >= 5 ? i : -1)).filter((i) => i >= 0);
-        if (!periods.length) continue;
-        const p = pick(periods, 1)[0], ids = [...verbs[p].slice(0, 7), ...(adjectives?.[p] || []).slice(0, 4)].map(([id]) => id);
-        return { ask: t("quiz_who_ask", lens.periods[p]), clue: words(lens, ids, null, "").replace(/<a [^>]*>|<\/a>/g, ""), answer: name, choices: pick([name, ...pick(names.filter((n) => n !== name), 3)], 4) };
-      }
-    },
+  const Q = await json("quiz.json"), periods = Q.periods;
+  VISIT.quiz ||= decks(pools(Q), Math.random);
+  view.replaceChildren(pageHead(t("nav_quiz"), { ...fromPlay(), lede: t("quiz_lede"), sea: { words: QUIZ_NAMES } }));
+  const { board, box, go, log, tally } = gameBoard();
+  view.append(board, el(`<p class="note keys-note">${t("quiz_keys")}</p>`));
+  const label = (q, c) => (q.kind === "trend" ? t(`trend_${c}`) : c);
+  let game = [], results = [], streak = 0, answer = null;
+  const sailed = () => {
+    log.innerHTML = voyageMark(results, game.length);
+    tally.textContent = t("quiz_tally", results.filter((r) => r.ok).length, results.length) + (streak >= 2 ? ` · ${t("quiz_streak", streak)}` : "");
   };
-  view.replaceChildren(pageHead(t("nav_quiz"), { ...fromPlay(), lede: t("quiz_lede"), sea: { words: names } }));
-  const play = (kind, label) => {
-    const board = el(`<div class="quiz-board"><div class="quiz quiz-card"></div><aside class="quiz-log"><h3>${t("quiz_log")}</h3><div class="quiz-voyage"></div><p class="quiz-tally"></p></aside></div>`);
-    const box = board.querySelector(".quiz"), log = board.querySelector(".quiz-voyage"), tally = board.querySelector(".quiz-tally");
-    let results = [];
-    const sailed = () => ((log.innerHTML = voyageMark(results, ROUNDS)), (tally.textContent = t("quiz_tally", results.filter((r) => r.ok).length, results.length)));
-    const next = async () => {
+  const evidence = (q) => {
+    const e = q.ev, it = e.items;
+    if (q.kind === "freq" || q.kind === "resmi") return t("ev_freq", e.period, it[0].label, percent(it[0].v), it[1].label, percent(it[1].v));
+    if (q.kind === "room") return t("ev_room", q.n, q.w, it.map((o) => `${o.label} ${number(o.v * 100, 1)}`).join(", "));
+    if (q.kind === "peak") return t("ev_peak", e.series[0].label, periods[e.marks[0]], e.series[1].label, periods[e.marks[1]]);
+    if (q.kind === "trend") return t("ev_trend", e.series[0].label, periods[e.marks[0]], percent(e.series[0].share[e.marks[0]]), periods[e.marks[1]], percent(e.series[0].share[e.marks[1]]));
+    return t(q.kind === "year" ? "ev_year" : "ev_who", e.series[0].label, periods[e.marks[0]]);
+  };
+  const round = (k) => {
+    sailed();
+    const q = game[k];
+    answer = null;
+    box.innerHTML = `<p class="step">${t("quiz_status", k + 1, game.length)}</p><p class="ask" tabindex="-1">${t(...q.ask)}</p>
+      ${q.kind === "room" ? `<p class="sub">${t("room_era")}</p>` : ""}${q.clue ? `<ul class="words clue">${q.clue.map((w) => `<li>${escape(w)}</li>`).join("")}</ul>` : ""}
+      <p class="choices">${q.choices.map((c, i) => `<button type="button" data-i="${i}"><span class="key" aria-hidden="true">${i + 1}</span>${escape(label(q, c))}</button>`).join("")}</p>
+      ${q.kind === "room" ? `<p class="note caveat">${t("caveat")}</p>` : ""}<p class="verdict" role="status"></p><div class="reveal" hidden></div>`;
+    go.disabled = true;
+    go.textContent = k + 1 === game.length ? t("guess_score") : t("quiz_next");
+    go.onclick = () => (answer === null ? null : k + 1 === game.length ? end() : (round(k + 1), toCard(box), box.querySelector(".ask").focus({ preventScroll: true })));
+    box.querySelectorAll(".choices button").forEach((b) => b.addEventListener("click", () => choose(q, b)));
+  };
+  const choose = (q, b) => {
+    if (answer !== null) return;
+    answer = q.choices[+b.dataset.i];
+    const ok = answer === q.answer;
+    streak = ok ? streak + 1 : 0;
+    hear(ok ? "right" : "wrong");
+    results.push({ ok, label: q.kind === "who" ? q.answer.split(" ")[0] : label(q, q.answer).split(" ")[0] });
+    sailed();
+    box.querySelectorAll(".choices button").forEach((x) => ((x.disabled = true), x.classList.toggle("right", q.choices[+x.dataset.i] === q.answer), x.classList.toggle("chosen", x === b && !ok)));
+    const said = ok ? (streak === 3 ? t("said_streak") : sayOne("said_right")) : sayOne("said_wrong", label(q, q.answer));
+    box.querySelector(".verdict").innerHTML = `<span><b>${escape(said)}</b> ${escape(evidence(q))}</span>`;
+    const shown = box.querySelector(".reveal"), W = Math.min(560, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft));
+    shown.hidden = false;
+    shown.innerHTML = reveal(q.ev, W, q.answer, periods);
+    shown.scrollIntoView({ block: "nearest", behavior: still() ? "auto" : "smooth" });  // the result where the hand was, clear of the bar
+    go.disabled = false;
+    go.focus({ preventScroll: true });
+  };
+  const end = () => {
+    const right = results.filter((r) => r.ok).length, n = game.length, rank = t("said_rank")[rankOf(right, n)];
+    sailed();
+    box.innerHTML = `<p class="score">${right} / ${n}</p><p class="rank" role="status">${rank}</p>`;
+    gameEnd(box, go, { page: "kuis", score: [right, n], share: `${t("quiz_share", right, n)} ${whole(href("kuis"))}`, again: start,
+      plate: scorePlate(t("quiz_plate_all", rank, right, n), results, n, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft)) });
+    toCard(box);
+  };
+  const start = (again = true) => {
+    game = deal(VISIT.quiz, Math.random, periods);
+    results = [];
+    streak = 0;
+    round(0);
+    if (again) (toCard(box), box.querySelector(".ask").focus({ preventScroll: true }));
+  };
+  gameKeys(board, (e) => {
+    const n = +e.key, buttons = [...box.querySelectorAll(".choices button")];
+    if (n >= 1 && n <= buttons.length && !buttons[n - 1].disabled) (e.preventDefault(), buttons[n - 1].click());
+    else if (e.key === "Enter" && !go.disabled && !e.target.closest?.("button, a")) (e.preventDefault(), go.click());
+  });
+  start(false);
+}
+
+/** Guess the number: of 100 pages naming someone, how many also hold a word. Six rounds dealt from the visit's decks
+ *  (site/deal.js: two each of a low, a middle and a high true value), then a score to share. */
+async function guessPage() {
+  const s = await stickOf(0);
+  VISIT.guess ||= guessDecks(guessPool(s), Math.random);
+  view.replaceChildren(pageHead(t("play_tebak"), { ...fromPlay(), lede: t("guess_lede"), sea: { words: GUESS_WORDS } }));
+  const { board, box, go, log, tally } = gameBoard();
+  view.append(board);
+  let rounds = [], results = [], score = 0, k = 0;
+  const sailed = () => ((log.innerHTML = voyageMark(results, rounds.length)), (tally.textContent = `${score} / ${rounds.length * 100}`));
+  const ask = () => {
+    sailed();
+    if (k === rounds.length) return end();
+    const q = rounds[k];
+    box.replaceChildren(el(`<p class="step">${t("quiz_status", k + 1, rounds.length)}</p>`), el(`<p class="ask" tabindex="-1">${t("guess_ask", escape(q.name), escape(q.w))}</p>`),
+      el(`<div class="gauge"><input type="range" min="0" max="100" step="1" value="50" aria-label="${t("guess_yours")}"><div class="scale"><i class="sail" hidden></i><i class="yours"></i><i class="truth" hidden></i></div><output aria-hidden="true">50</output></div>`),
+      el(`<p class="note caveat">${t("caveat")}</p>`), el(`<p class="verdict" role="status"></p>`));
+    const [slider, scale, output] = box.querySelector(".gauge").children, [sail, yours, truth] = scale.children, verdict = box.querySelector(".verdict");
+    const move = () => ((output.textContent = slider.value), (yours.style.transform = `translateX(${slider.value * (scale.clientWidth / 100)}px)`));
+    slider.addEventListener("input", move);
+    // A tap on the scale under the slider sets the guess there, as a tap on the slider's own track does.
+    scale.addEventListener("pointerdown", (e) => { if (slider.disabled) return; slider.value = Math.round((100 * (e.clientX - scale.getBoundingClientRect().left)) / scale.clientWidth); move(); });
+    requestAnimationFrame(move);
+    go.disabled = false;
+    go.textContent = t("guess_lock");
+    go.onclick = () => {
+      if (slider.disabled) return (k++, ask(), toCard(box), box.querySelector(".ask")?.focus({ preventScroll: true }));
+      slider.disabled = true;
+      const guess = +slider.value, won = points(guess, q.v);
+      score += won;
+      results.push({ ok: close(guess, q.v), label: `+${won}` });
+      hear(close(guess, q.v) ? "right" : "wrong");
       sailed();
-      if (results.length === ROUNDS) {
-        const right = results.filter((r) => r.ok).length, plate = scorePlate(t("quiz_plate", label, right, ROUNDS), results, ROUNDS, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft));
-        box.innerHTML = `<p class="score">${t("quiz_score", right, ROUNDS)}</p>`;
-        const again = el(`<button type="button" class="primary">${t("quiz_again")}</button>`), share = el(`<button type="button">${t("copy_link")}</button>`), row = el(`<p class="controls"></p>`);
-        const save = el(`<button type="button">${t("quiz_save")}</button>`);
-        again.addEventListener("click", () => ((results = []), next()));
-        share.addEventListener("click", async () => {
-          await navigator.clipboard?.writeText(`${t("quiz_share", right, ROUNDS)} ${whole(href("kuis"))}`);
-          share.textContent = t("copied");
-        });
-        save.addEventListener("click", async () => (await plating(), savePlate(box, "jejak-kata-kuis")));
-        row.append(again, save, share);
-        return box.append(plate, row);
-      }
-      const q = await games[kind]();
-      box.innerHTML = `<p class="step">${results.length + 1} / ${ROUNDS}</p><p class="ask">${q.ask}</p>${q.clue}<p class="choices">${q.choices.map((c) => `<button type="button">${c}</button>`).join("")}</p><p class="verdict" role="status"></p>`;
-      box.querySelectorAll(".choices button").forEach((b) =>
-        b.addEventListener("click", () => {
-          const ok = b.textContent === q.answer;
-          hear(ok ? "right" : "wrong");
-          results.push({ ok, label: kind === "year" ? q.answer : q.answer.split(" ")[0] });
-          sailed();
-          box.querySelectorAll(".choices button").forEach((x) => ((x.disabled = true), x.classList.toggle("right", x.textContent === q.answer), x.classList.toggle("chosen", x === b && !ok)));
-          box.querySelector(".verdict").innerHTML = `<span>${ok ? t("quiz_right") : t("quiz_wrong", q.answer)}</span> <button type="button" class="primary">${t("quiz_next")}</button>`;
-          box.querySelector(".verdict button").addEventListener("click", next);
-        }),
-      );
+      // The answer sails from the guess to the truth along the scale, its wake in the route: how far off is drawn.
+      const at = (v) => `translateX(${v * (scale.clientWidth / 100)}px)`, [lo, hi] = [Math.min(q.v, guess), Math.max(q.v, guess)];
+      truth.hidden = sail.hidden = false;
+      truth.style.transform = at(guess);
+      sail.style.clipPath = `inset(0 ${100 - guess}% 0 ${guess}%)`;
+      truth.getBoundingClientRect();  // (from the guess)
+      truth.style.transform = at(q.v);
+      sail.style.clipPath = `inset(0 ${100 - hi}% 0 ${lo}%)`;
+      const c = q.context;
+      verdict.innerHTML = `<span><b>${escape(t("said_near")[nearness(guess, q.v)])}</b> ${t("guess_truth", q.v, thousands(q.pages), escape(q.name), escape(q.w), won)}</span>
+        <span class="context">${escape(t("guess_context", q.w, c.of, c.hi[0], c.hi[1], c.lo[0], c.lo[1]))} <a href="${href("menempel", q.w, "0", "2", BODIES.includes(q.name) ? "o" : "p")}">${t("guess_more", escape(q.w))}</a></span>`;
+      go.textContent = k + 1 === rounds.length ? t("guess_score") : t("next");
+      verdict.scrollIntoView({ block: "nearest", behavior: still() ? "auto" : "smooth" });
+      go.focus({ preventScroll: true });
     };
-    next();
-    return board;
   };
-  view.append(switcher([t("quiz_year"), t("quiz_who")], (i) => play(i ? "who" : "year", t(i ? "quiz_who" : "quiz_year"))));
+  const end = () => {
+    const right = results.filter((r) => r.ok).length, rank = t("said_rank")[rankOf(right, rounds.length)], most = rounds.length * 100;
+    box.innerHTML = `<p class="score">${score} / ${most}</p><p class="rank" role="status">${rank}</p><p>${t("guess_done")}</p>`;
+    gameEnd(box, go, { page: "tebak", score: [score, most], share: t("guess_share", score, most, whole(href("tebak"))), again: start,
+      plate: scorePlate(`${t("play_tebak")}: ${score} / ${most} · ${rank}`, results, rounds.length, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft)) });
+    toCard(box);
+  };
+  const start = (again = true) => {
+    rounds = guessDeal(VISIT.guess, Math.random);
+    results = [];
+    score = 0;
+    k = 0;
+    ask();
+    if (again) (toCard(box), box.querySelector(".ask").focus({ preventScroll: true }));
+  };
+  gameKeys(board, (e) => e.key === "Enter" && !e.target.closest?.("button, a") && (e.preventDefault(), go.click()));
+  start(false);
 }
 
 /** How it works, and what the planted-change test found each lens can see. */
 /** A row of buttons of which one is pressed; pressing another goes to `to(i)`. */
 const choice = (labels, on, to) => `<ul class="chips">${labels.map((label, i) => `<li><a role="button" aria-pressed="${i === +on}" href="${to(i)}">${label}</a></li>`).join("")}</ul>`;
+/** A row of real choices to try at once ("Coba: …"), beside a field or a list: a toy never waits on an empty box. */
+const tryRow = (list, to) => `<p class="try"><span>${t("try_label")}</span>${list.map((x) => `<a class="chip" href="${to(x)}">${escape(x)}</a>`).join("")}</p>`;
 const stickOf = (k) => json(`${OUTLETS[+k] || OUTLETS[0]}/stick.json`);
 const STUCK_PAGES = 300; // a name is ranked in a period only with this many pages naming it
 
@@ -2416,6 +2595,7 @@ async function stuckPage(word = "tersangka", k = "0", era = "2", kind = "p") {
   const pick = el(`<p class="controls"><label>${t("stuck_word")} <select>${s.words.map((w) => `<option${w === word ? " selected" : ""}>${w}</option>`).join("")}</select></label></p>`);
   pick.querySelector("select").addEventListener("change", (e) => visit(to(e.target.value, k, era, kind)));
   view.replaceChildren(pageHead(t("play_menempel"), { ...fromPlay(), lede: t("stuck_lede"), sea: { words: [word, ...ranked.map((i) => s.names[i])] } }), pick,
+    el(tryRow(["tersangka", "viral", "kritik", "maaf", "janji", "survei"].filter((w) => w !== word && s.share[w]), (w) => to(w, k, era, kind))),
     el(choice(OUTLET, k, (i) => to(word, i, era, kind))), el(choice(ERAS_SHOWN, era, (i) => to(word, k, i, kind))), el(choice([t("people"), t("organisations")], kind === "p" ? 0 : 1, (i) => to(word, k, era, "po"[i]))),
     box, el(`<p class="note">${t("stuck_warning")}</p>`),
     el(`<div class="table" tabindex="0"><table><tr><th>${t("name")}</th><th class="n">${t("stuck_share", word)}</th><th class="n">${t("pages")}</th><th></th></tr>${ranked.slice(0, 40).map((i) =>
@@ -2429,7 +2609,8 @@ async function tidePage(k = "0", kind = "person") {
   const kinds = ["person", "organisation", "place"], level = (v, peak) => [0.08, 0.25, 0.45, 0.65, 0.85].filter((s) => v / peak >= s).length;
   const table = el(`<div class="tide" tabindex="0"><table><tr><th></th>${y.years.map((year) => `<th>${String(year).slice(2)}</th>`).join("")}</tr>${rows.map((r) =>
     `<tr><th><a href="${href("potret", r.word)}">${r.word}</a></th>${r.share.map((v, i) => `<td style="--i:${i}" class="t${v === null ? "x" : level(v, r.peak)}" data-tip="${r.word} ${y.years[i]}: ${v === null ? "–" : number(v * 1000) + "‰"} ${t("of_pages", thousands(y.pages[lens][i]))}"></td>`).join("")}</tr>`).join("")}</table></div>`);
-  table.addEventListener("pointermove", (e) => tip(e.target.dataset?.tip || null, e));
+  table.dataset.tipTap = "";  // a tap on a cell says what a hover does
+  for (const on of ["pointermove", "pointerdown"]) table.addEventListener(on, (e) => tip(e.target.dataset?.tip || null, e));
   table.addEventListener("pointerleave", () => tip(null));
   view.replaceChildren(pageHead(t("play_pasang"), { ...fromPlay(), lede: t("tide_lede"), sea: { words: rows.map((r) => r.word).reverse() } }),
     el(choice(OUTLET, k, (i) => href("pasang", String(i), kind))), el(choice([t("people"), t("organisations"), t("places")], kinds.indexOf(kind), (i) => href("pasang", k, kinds[i]))),
@@ -2449,9 +2630,10 @@ async function roomsPage(name = "pdip") {
   };
   const rows = words.filter((w) => spread(w) >= 0).sort((a, b) => spread(b) - spread(a)).slice(0, 12);
   const names = [...new Set(all.flatMap((s) => s.names))].sort();
-  const form = el(`<form class="controls"><input type="search" list="names" placeholder="${t("rooms_ask")}" aria-label="${t("rooms_ask")}"><datalist id="names">${names.map((n) => `<option>${n}</option>`).join("")}</datalist><button class="primary">${t("show")}</button></form>`);
+  const form = el(`<form class="controls"><input type="search" list="names" value="${escape(name)}" placeholder="${t("rooms_ask")}" aria-label="${t("rooms_ask")}"><datalist id="names">${names.map((n) => `<option>${n}</option>`).join("")}</datalist><button class="primary">${t("show")}</button></form>`);
   form.addEventListener("submit", (e) => (e.preventDefault(), names.includes(form.firstElementChild.value.trim().toLowerCase()) && visit(href("redaksi", form.firstElementChild.value.trim().toLowerCase()))));
-  view.replaceChildren(pageHead(t("play_redaksi"), { ...fromPlay(), lede: t("rooms_lede"), sea: { words: [name, ...rows] } }), form);
+  view.replaceChildren(pageHead(t("play_redaksi"), { ...fromPlay(), lede: t("rooms_lede"), sea: { words: [name, ...rows] } }), form,
+    el(tryRow(["golkar", "gerindra", "jokowi", "prabowo", "polri", "pdip"].filter((n) => n !== name && names.includes(n)), (n) => href("redaksi", n))));
   if (!rows.length) return view.append(el(`<p>${t("rooms_none", escape(name))}</p>`));
   const figure = strip({ title: t("rooms_plate", name), states: ERAS_SHOWN, series: OUTLET, rows: rows.map((w) => ({ label: w, values: ERAS_SHOWN.map((_, p) => OUTLETS.map((_, k) => value(w, k, p))) })),
     pages: (p) => t("pages_stuck", name, ERAS_SHOWN[p], OUTLET.map((o, k) => `${o} ${at[k] < 0 ? "–" : thousands(all[k].pages[at[k]][p])}`).join(", ")) }, Math.min(room(), 720), 440);
@@ -2463,73 +2645,14 @@ async function roomsPage(name = "pdip") {
 /** Who shares a page with a name: a circle that rearranges itself from period to period. */
 async function circlePage(name = "prabowo", k = "0") {
   const s = await stickOf(k), i = s.names.indexOf(name), names = s.names.filter((_, j) => s.kinds[j] === "p" && s.beside[j].some((list) => list.length));
-  const form = el(`<form class="controls"><input type="search" list="names" placeholder="${t("circle_ask")}" aria-label="${t("circle_ask")}"><datalist id="names">${names.map((n) => `<option>${n}</option>`).join("")}</datalist><button class="primary">${t("show")}</button></form>`);
+  const form = el(`<form class="controls"><input type="search" list="names" value="${escape(name)}" placeholder="${t("circle_ask")}" aria-label="${t("circle_ask")}"><datalist id="names">${names.map((n) => `<option>${n}</option>`).join("")}</datalist><button class="primary">${t("show")}</button></form>`);
   form.addEventListener("submit", (e) => (e.preventDefault(), s.names.includes(form.firstElementChild.value.trim().toLowerCase()) && visit(href("lingkaran", form.firstElementChild.value.trim().toLowerCase(), k))));
-  view.replaceChildren(pageHead(t("play_lingkaran"), { ...fromPlay(), lede: t("circle_lede"), sea: { words: [name, ...(i < 0 ? [] : s.beside[i].flat().map(([j]) => s.names[j]))] } }), form, el(choice(OUTLET, k, (j) => href("lingkaran", name, String(j)))));
+  view.replaceChildren(pageHead(t("play_lingkaran"), { ...fromPlay(), lede: t("circle_lede"), sea: { words: [name, ...(i < 0 ? [] : s.beside[i].flat().map(([j]) => s.names[j]))] } }), form,
+    el(tryRow(["prabowo", "jokowi", "megawati", "anies baswedan", "ganjar pranowo", "sri mulyani"].filter((n) => n !== name && names.includes(n)), (n) => href("lingkaran", n, k))), el(choice(OUTLET, k, (j) => href("lingkaran", name, String(j)))));
   if (i < 0) return view.append(el(`<p>${t("rooms_none", escape(name))}</p>`));
   const figure = circle(s, i);
   view.append(played(figure), el(`<p class="note">${t("circle_note", name, ERAS_SHOWN.map((era, p) => `${era}: ${thousands(s.pages[i][p])}`).join("; "))}</p>`),
     tools(href("lingkaran", name, k), { check: [name], data: `${OUTLETS[+k]}/stick.json` }));
-}
-
-/** Guess the number: of 100 pages naming someone, how many also hold a word. Six rounds, then a score to share. */
-async function guessPage() {
-  const s = await stickOf(0), pool = [], ROUNDS = 6;
-  s.names.forEach((name, i) => {
-    if (s.pages[i][2] < 1500 || s.kinds[i] !== "p") return;
-    for (const w of GUESS_WORDS) if (s.share[w]?.[i][2] >= 40) pool.push({ name, w, v: Math.round(s.share[w][i][2] / 10), pages: s.pages[i][2] });
-  });
-  const rounds = [];
-  while (rounds.length < ROUNDS && pool.length) {
-    const [q] = pool.splice(Math.floor(Math.random() * pool.length), 1);
-    if (!rounds.some((r) => r.name === q.name || r.w === q.w)) rounds.push(q);
-  }
-  // The round on paper; beside it the game's voyage: a port per round, filled where the guess came within ten.
-  const board = el(`<div class="quiz-board"><section class="quiz quiz-card"></section><aside class="quiz-log"><h3>${t("quiz_log")}</h3><div class="quiz-voyage"></div><p class="quiz-tally"></p></aside></div>`);
-  const box = board.querySelector(".quiz"), results = [], sailed = () => ((board.querySelector(".quiz-voyage").innerHTML = voyageMark(results, rounds.length)), (board.querySelector(".quiz-tally").textContent = `${score} / ${rounds.length * 100}`));
-  view.replaceChildren(pageHead(t("play_tebak"), { ...fromPlay(), lede: t("guess_lede"), sea: { words: GUESS_WORDS } }), board);
-  let score = 0;
-  const ask = (k) => {
-    sailed();
-    if (k === rounds.length) {
-      const said = t("guess_share", score, rounds.length * 100, whole(href("tebak")));
-      box.replaceChildren(el(`<p class="score">${score} / ${rounds.length * 100}</p>`), el(`<p>${t("guess_done")}</p>`), scorePlate(`${t("play_tebak")}: ${score} / ${rounds.length * 100}`, results, rounds.length, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft)),
-        el(`<p class="controls"><button type="button">${t("copy_score")}</button><button type="button">${t("quiz_save")}</button><a role="button" class="primary" href="${href("tebak")}">${t("again")}</a></p>`));
-      const [copy, save] = box.querySelectorAll(".controls button");
-      copy.addEventListener("click", async (e) => (await navigator.clipboard?.writeText(said), (e.target.textContent = t("copied"))));
-      save.addEventListener("click", async () => (await plating(), savePlate(box, "jejak-kata-tebak")));
-      box.querySelector("a").addEventListener("click", (e) => (e.preventDefault(), guessPage()));
-      return;
-    }
-    const q = rounds[k];
-    box.replaceChildren(el(`<p class="step">${k + 1} / ${rounds.length}</p>`), el(`<p class="ask">${t("guess_ask", q.name, q.w)}</p>`),
-      el(`<div class="gauge"><input type="range" min="0" max="100" value="50" aria-label="${t("guess_yours")}"><div class="scale"><i class="sail" hidden></i><i class="yours"></i><i class="truth" hidden></i></div><output>50</output></div>`),
-      el(`<p class="controls"><button type="button" class="primary">${t("guess_lock")}</button></p>`), el(`<p class="verdict" hidden></p>`));
-    const [slider, scale, output] = box.querySelector(".gauge").children, [sail, yours, truth] = scale.children, verdict = box.querySelector(".verdict"), button = box.querySelector(".controls button");
-    const move = () => ((output.textContent = slider.value), (yours.style.transform = `translateX(${slider.value * (scale.clientWidth / 100)}px)`));
-    slider.addEventListener("input", move);
-    requestAnimationFrame(move);
-    button.addEventListener("click", () => {
-      if (slider.disabled) return ask(k + 1);
-      slider.disabled = true;
-      const won = Math.max(0, 100 - 4 * Math.abs(q.v - slider.value));
-      score += won;
-      results.push({ ok: Math.abs(q.v - slider.value) <= 10, label: `+${won}` });
-      sailed();
-      // The answer sails from the guess to the truth along the scale, its wake in the route: how far off is drawn.
-      const at = (v) => `translateX(${v * (scale.clientWidth / 100)}px)`, [lo, hi] = [Math.min(q.v, +slider.value), Math.max(q.v, +slider.value)];
-      truth.hidden = sail.hidden = false;
-      truth.style.transform = at(slider.value);
-      sail.style.clipPath = `inset(0 ${100 - slider.value}% 0 ${slider.value}%)`;
-      truth.getBoundingClientRect();  // (from the guess)
-      truth.style.transform = at(q.v);
-      sail.style.clipPath = `inset(0 ${100 - hi}% 0 ${lo}%)`;
-      verdict.hidden = false;
-      verdict.innerHTML = t("guess_truth", q.v, thousands(q.pages), q.name, q.w, won) + ` <a href="${href("menempel", q.w, "0", "2", "p")}">${t("guess_more", q.w)}</a>`;
-      button.textContent = k + 1 === rounds.length ? t("guess_score") : t("next");
-    });
-  };
-  ask(0);
 }
 
 /** The things to play with, each led by a picture of its own figure: the first leads, on the deep, its picture large;
@@ -2703,6 +2826,7 @@ function route() {
     document.documentElement.classList.remove("voyaging", "embedded");
     masthead.style.removeProperty("--voyage");
     if (!place) scrollTo(0, 0);
+    if (PLAY.includes(page)) record(page);  // the hub marks the toys opened (and the games their best)
     // The page's skeleton while its data comes, and where it does not come, a line and "Try again" (awaited).
     return awaited(view, () => (page ? pages[page] || lostPage : homePage)(...args), { shape: "page", then: () => describe(page, args) })
       .then(() => {

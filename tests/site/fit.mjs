@@ -26,7 +26,7 @@ const ALL = [[320, 568], [344, 882], [360, 640], [360, 740], [375, 667], [390, 8
 // tablet upright and a laptop; the other pages at eight)
 const STORY_SIZES = every ? ALL : [[320, 568], [360, 740], [390, 844, 130], [844, 390], [1366, 768]];
 const PAGE_SIZES = every ? ALL : [...STORY_SIZES, [768, 1024], [1024, 768], [1920, 1080]];
-const OTHERS = ["#/", "#/peta", "#/kata/korupsi", "#/tahun", "#/temuan", "#/metode", "#/main", "#/tebak", "#/balap", "#/entitas", "#/potret/jokowi", "#/cerita", "#/tidak-ada"];
+const OTHERS = ["#/", "#/peta", "#/kata/korupsi", "#/tahun", "#/temuan", "#/metode", "#/main", "#/tebak", "#/kuis", "#/menempel", "#/redaksi", "#/balap", "#/entitas", "#/potret/jokowi", "#/cerita", "#/tidak-ada"];
 
 /** In the page: text and boxes standing past the screen's sides where nothing scrolls to them. */
 const sideways = () => {
