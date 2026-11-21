@@ -1,0 +1,1604 @@
+/* Jejak Kata: a sea chart of the language. Two surfaces carry everything: the deep (night sea, where things are
+   shown) and the chart (paper, where things are read). Magenta is the route; amber is the beacon.
+   Every size, gap, colour and duration below comes from a token in this first section (docs/DESIGN.md). */
+
+/* ==== 1. tokens ================================================================================================ */
+
+@font-face { font-family: "Bricolage"; src: url("bricolage.woff2") format("woff2"); font-weight: 200 800; font-stretch: 75% 100%; font-display: swap; }
+
+:root {
+  color-scheme: light;
+  /* colour roles */
+  --chart: #f3f5ef; --chart-2: #fbfcf8; --chart-3: #e7ece4;
+  --deep: #0a1f36; --deep-2: #13324f; --line-deep: #24476a; --line-deep-2: #5f83a6; --on-deep: #eef4f2; --on-deep-2: #a8bccb;
+  /* the islands at night, by how far a word moved: from dim to bright (chart.js, the home page's hero) */
+  --light-0: #5d7d99; --light-1: #79a0c4; --light-2: #96bfe4; --light-3: #b6d6f2; --light-4: #d6e8f8; --light-5: #fbfdff;
+  --ink: #0c1d2e; --ink-2: #3d4f60; --ink-3: #5a6b78;
+  --line: #cdd8d4; --line-2: #7d8e8f;  /* --line-2: control edges, 3:1 against the chart */
+  --route: #cf1b7e; --on-route: #ffffff; --route-on-deep: #ea5aa6; --route-soft: #f8dcea; --route-2: #cc6a00; --on-route-2: #0c1d2e;
+  --beacon: #f0ae2c; --link: #0f5c8c; --focus: var(--route);
+  --person: #2a78d6; --organisation: #0f8a73; --place: #b07a00; --other: #8a8f96;
+  --seq-0: #d3e0de; --seq-1: #b4cfe9; --seq-2: #86b3e6; --seq-3: #4f92dc; --seq-4: #2468b8; --seq-5: #0d366b;
+  --lift: 0 18px 40px -16px rgb(6 18 31 / .38), 0 2px 6px rgb(6 18 31 / .12);
+  /* a figure's series, up to eight, in this order (plate.js): checked for colour-blind separation on the paper of each mode;
+     each at least 3:1 on the paper (the aqua and the yellow as a deep teal and a dark gold by day) */
+  --cat-1: var(--route); --cat-2: var(--route-2); --cat-3: #0f9aa8; --cat-4: #7a6500; --cat-5: #2a4fd6; --cat-6: #0a5a10; --cat-7: #a070f0; --cat-8: #5a1050; --cat-9: var(--ink-2);
+  /* the same eight by night (the dark scheme and a story's stage, which is the deep in both): apart in lightness as
+     well as hue, so that neighbours stay apart for the colour-blind too (tests/site/stories.mjs measures them) */
+  --cat-1-night: #ea5aa6; --cat-2-night: #d98a2b; --cat-3-night: #5fd4c4; --cat-4-night: #f2e27a; --cat-5-night: #3d7fe0; --cat-6-night: #2f8a3e; --cat-7-night: #c3a6ff; --cat-8-night: #935e7c;
+  /* names the figures read (chart.js, plate.js), defined from the roles */
+  --sea: var(--chart); --shoal: var(--chart-3); --paper: var(--chart-2);
+
+  /* type */
+  --type: "Bricolage", "Helvetica Neue", Arial, sans-serif;
+  --t-meta: .8125rem;  --l-meta: 1.4;
+  --t-small: .9375rem; --l-small: 1.5;
+  --t-body: 1.0625rem; --l-body: 1.55;
+  --t-lede: 1.25rem;   --l-lede: 1.45;
+  --t-h3: 1.5rem;      --l-h3: 1.15;
+  --t-h2: clamp(1.75rem, 4vw, 2.5rem);  --l-h2: 1.08;
+  --t-h1: clamp(2.5rem, 7vw, 4.25rem);  --l-h1: .98;
+  --t-display: clamp(3.25rem, 12vw, 8rem); --l-display: .9;
+  --t-key: clamp(2.75rem, 21cqi, 5rem);  /* a story card's key number: as large as its card allows (the card is a container) */
+  --t-caption: clamp(1.375rem, 1rem + .9vw, 1.875rem);  /* a story's caption beside its figure, from 900px */
+  --t-nav: 1.0625rem;  /* header links: the body size, set as a control */
+
+  /* space */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 72px; --s9: 112px;
+  --gutter: var(--s4); --content: 1120px; --wide: 1600px; --measure: 38rem;
+  --tap: 44px; --chip: 36px; --control: 40px; --head-h: 56px; --hair: 1px; --rule: 2px; --mark: 3px;
+  --tide-h: clamp(14px, 2.2vw, 30px);  /* the tide line's height: where the deep gives way to the paper */
+
+  /* shape */
+  --r1: 6px; --r2: 14px; --pill: 999px;
+
+  /* motion: one curve, three durations */
+  --sail: cubic-bezier(.45, .05, .25, 1);
+  --d-press: 140ms; --d-turn: 320ms; --d-leg: 900ms;
+  --quick: var(--d-press); --leg: var(--d-leg);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --chart: #0a1622; --chart-2: #102030; --chart-3: #0d1c2b;
+    --deep: #06121f; --deep-2: #0e2338; --line-deep: #1d3853; --line-deep-2: #4f7090; --on-deep: #e8eff0; --on-deep-2: #93a8b8;
+    --ink: #e8eff0; --ink-2: #b3c3cc; --ink-3: #8497a3;
+    --line: #24394d; --line-2: #56718a;
+    --route: #ea5aa6; --on-route: #0a1622; --route-on-deep: #ea5aa6; --route-soft: #3d1a30; --route-2: #d98a2b; --on-route-2: #0a1622;
+    --beacon: #f2b84a; --link: #7fc0ea;
+    --person: #3987e5; --organisation: #199e70; --place: #c98500; --other: #8f96a0;
+    --seq-0: #1d3346; --seq-1: #104281; --seq-2: #1c5cab; --seq-3: #2a78d6; --seq-4: #6da7ec; --seq-5: #cde2fb;
+    --lift: 0 18px 40px -12px rgb(0 0 0 / .6), 0 2px 6px rgb(0 0 0 / .4);
+    --cat-3: var(--cat-3-night); --cat-4: var(--cat-4-night); --cat-5: var(--cat-5-night); --cat-6: var(--cat-6-night); --cat-7: var(--cat-7-night); --cat-8: var(--cat-8-night);
+  }
+}
+@media (min-width: 900px) { :root { --gutter: var(--s6); } }
+
+/* ==== 2. base ================================================================================================== */
+
+* { box-sizing: border-box; }
+html { scroll-padding-top: var(--head, var(--head-h)); -webkit-text-size-adjust: 100%; }
+html.locked { overflow: hidden; scroll-snap-type: none; }  /* the sheet is open: the page neither scrolls nor snaps to another step behind it */
+body { margin: 0; background: var(--chart); color: var(--ink); font: 400 var(--t-body)/var(--l-body) var(--type); font-optical-sizing: auto; }
+a { color: var(--link); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+::selection { background: var(--route-soft); }
+:focus-visible { outline: var(--rule) solid var(--focus); outline-offset: var(--rule); }
+:focus:not(:focus-visible) { outline: none; }
+.hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@keyframes draw { from { stroke-dashoffset: 1; } }
+.draw { stroke-dasharray: 1; animation: draw calc(var(--d-leg) * 1.5) var(--sail) both; }
+
+h1, h2, h3 { text-wrap: balance; color: var(--ink); }
+h1 { font: 800 var(--t-h1)/var(--l-h1) var(--type); font-stretch: 75%; letter-spacing: -.02em; margin: 0 0 var(--s3); }
+h2 { font: 700 var(--t-h2)/var(--l-h2) var(--type); font-stretch: 80%; letter-spacing: -.01em; margin: var(--s8) 0 var(--s3); }
+h3 { font: 700 var(--t-h3)/var(--l-h3) var(--type); font-stretch: 80%; margin: var(--s6) 0 var(--s2); }
+p { max-width: var(--measure); margin: 0 0 var(--s4); }
+ul, ol { margin: 0 0 var(--s4); }
+b, strong { font-weight: 700; }
+.lede { font-size: var(--t-lede); line-height: var(--l-lede); color: var(--ink-2); max-width: var(--measure); }
+.sub { font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); margin: 0 0 var(--s3); max-width: var(--measure); }
+.headline { font-size: var(--t-lede); line-height: var(--l-lede); margin: var(--s5) 0 var(--s2); }
+.holder:empty { min-height: 80svh; }  /* what follows a switcher stays where it will be, below the screen, while the content comes */
+.loading { color: var(--ink-3); min-height: 60vh; padding-top: var(--s7); }
+/* a part waiting for its data (app.js, awaited): quiet bars where its title and lines will be, and a block as tall as
+   its figure; on a story's stage, the figure's panel; a page, its head on the deep. They breathe slowly (not with
+   reduced motion). Where the data did not come: a line and "Try again", in the part's place. */
+.skeleton { display: grid; gap: var(--s3); align-content: start; min-height: 80svh; padding-top: var(--s5); }
+.skeleton > i, .skeleton .page-head > i { display: block; height: var(--s4); width: min(28rem, 70%); border-radius: var(--r1); background: var(--line); }
+.skeleton > i + i { width: min(38rem, 90%); height: var(--s3); }
+.skeleton > b { display: block; height: clamp(200px, 40vh, 340px); margin-top: var(--s3); border-radius: var(--r2); background: color-mix(in srgb, var(--line) 45%, transparent); }
+.skeleton.page { padding-top: 0; gap: var(--s3); }
+.skeleton .page-head { display: grid; gap: var(--s4); margin-bottom: var(--s5); }
+.skeleton .page-head::before { content: ""; position: absolute; z-index: -1; inset: 0 calc(50% - 50vw); background: var(--deep); }
+.skeleton .page-head > i { background: var(--line-deep); width: 8rem; }
+.skeleton .page-head > i:nth-child(2) { height: var(--s8); width: min(24rem, 70%); }
+.skeleton .page-head > i:nth-child(3) { width: min(36rem, 90%); }
+.skeleton.plate { min-height: 0; height: 100%; width: 100%; padding: 0; border-radius: var(--r2); background: color-mix(in srgb, var(--deep) 92%, transparent); }
+.skeleton.plate > * { display: none; }
+@keyframes breathe { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: no-preference) { .skeleton { animation: breathe 2.4s var(--sail) infinite; } }
+.failed { max-width: var(--measure); margin: var(--s6) 0; padding: var(--s5); background: var(--chart-2); border: var(--hair) solid var(--line-2); border-radius: var(--r2); }
+.failed p { margin: 0 0 var(--s4); }
+.stage-figure .failed { align-self: start; margin: 0; color: var(--on-deep); background: var(--deep-2); border-color: var(--line-deep); } /* at the figure's top: a phone's opening rises over its foot */
+details { margin: var(--s5) 0; }
+summary { min-height: var(--tap); display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--ink); }
+
+/* ==== 3. layout ================================================================================================ */
+
+main { display: block; min-height: 100vh; padding: 0 max(var(--gutter), (100% - var(--content)) / 2) var(--s9); overflow-x: clip; }  /* the page's width: its padding keeps the column, so a band on the deep can run edge to edge */
+main:focus { outline: none; }
+.skip { position: absolute; z-index: 20; left: var(--s2); top: var(--s2); padding: var(--s3) var(--s4); background: var(--chart-2); color: var(--ink); border-radius: var(--r1); transform: translateY(-200%); }
+.skip:focus { transform: none; }
+
+/* ==== 4. header and the menu sheet ============================================================================ */
+
+.masthead { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: var(--s2); height: var(--head-h); container: head / inline-size;
+  padding: 0 max(var(--gutter), (100% - var(--content)) / 2); background: var(--deep); color: var(--on-deep); box-shadow: inset 0 calc(-1 * var(--hair)) 0 var(--line-deep); --focus: var(--route-on-deep); }
+.brand { display: inline-flex; align-items: center; min-height: var(--tap); margin-right: auto; font: 800 1.5rem/1 var(--type); font-stretch: 75%; letter-spacing: -.01em; color: var(--on-deep); text-decoration: none; white-space: nowrap; }
+.masthead svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.head-button { min-width: var(--tap); padding: 0 var(--s3); gap: var(--s2); color: var(--on-deep); background: transparent; border-color: transparent; }
+.head-button:hover { background: var(--deep-2); border-color: transparent; }
+.head-button[aria-expanded="true"] { background: var(--deep-2); }
+/* a bar too narrow for its words in its own type (a small phone with large text) keeps the menu's mark and its name for
+   a screen reader only */
+@container head (width < 17em) { #menu-button span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } }
+#menu-button svg path { transition: transform var(--d-turn) var(--sail); transform-origin: 12px 12px; }
+#menu-button[aria-expanded="true"] .bar-1 { transform: translateY(4px) rotate(45deg); }
+#menu-button[aria-expanded="true"] .bar-2 { transform: translateY(-4px) rotate(-45deg); }
+
+/* the search field and its suggestions, on the deep */
+#search { position: relative; display: flex; align-items: center; }
+#search > svg { position: absolute; left: var(--s3); color: var(--on-deep-2); pointer-events: none; }
+#query { width: 100%; padding-left: calc(var(--s3) + 18px + var(--s2)); color: var(--on-deep); background: var(--deep-2); border-color: transparent; }
+#query::placeholder { color: var(--on-deep-2); opacity: 1; }
+#query::-webkit-search-cancel-button { -webkit-appearance: none; }
+#query:hover { border-color: var(--line-deep); }
+#suggestions { margin: 0; padding: var(--s1); list-style: none; }
+#suggestions a { display: flex; align-items: center; min-height: var(--tap); padding: 0 var(--s3); border-radius: var(--r1); text-decoration: none; }
+#language { color: var(--on-deep); background: transparent; border-color: var(--line-deep); white-space: nowrap; }
+#language:hover { background: var(--deep-2); border-color: var(--on-deep-2); }
+/* the sound toggle (sound.js): a speaker, with its waves while sound is on and a cross while it is off; its name is
+   written beside it in the phone's menu and an embed's foot, and only said on the bar */
+.sound-toggle { gap: var(--s2); white-space: nowrap; }
+.sound-toggle svg { flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sound-toggle[aria-pressed="true"] .hush, .sound-toggle[aria-pressed="false"] .wave { display: none; }
+#sound { color: var(--on-deep); background: transparent; border-color: var(--line-deep); }
+#sound:hover { background: var(--deep-2); border-color: var(--on-deep-2); }
+#sound[aria-pressed="true"] { background: var(--deep-2); border-color: var(--on-deep-2); }
+
+/* a narrow bar (phones, tablets, and larger text: the bar inside its padding in its own type, 52em: a 900px screen at 16px):
+   wordmark, search button, menu button; the menu is a full-screen sheet under the bar */
+@container head (width < 52em) {
+  .menu { display: none; }
+  .menu.open { position: fixed; inset: var(--head-h) 0 0; z-index: 9; display: flex; flex-direction: column; gap: var(--s6);
+    padding: var(--s5) var(--gutter) var(--s8); overflow-y: auto; overscroll-behavior: contain; background: var(--deep);
+    /* the sheet is the chart at night: its graticule, faint, fading towards the links */
+    background-image: linear-gradient(to bottom, var(--deep) 35%, transparent), linear-gradient(var(--line-deep) 0 1px, transparent 1px), linear-gradient(90deg, var(--line-deep) 0 1px, transparent 1px);
+    background-size: 100% 100%, 64px 64px, 64px 64px; background-position: 0 0, 0 -1px, -1px 0;
+    transition: opacity var(--d-turn) var(--sail), transform var(--d-turn) var(--sail); }
+  @starting-style { .menu.open { opacity: 0; transform: translateY(calc(-1 * var(--s3))); } }
+  .menu nav { display: flex; flex-direction: column; }
+  .menu nav a { display: flex; align-items: center; min-height: calc(var(--tap) + var(--s4)); border-bottom: var(--hair) solid var(--line-deep);
+    font: 800 var(--t-h2)/1 var(--type); font-stretch: 75%; color: var(--on-deep); text-decoration: none; }
+  .menu nav a[aria-current="page"] { color: var(--route-on-deep); }
+  .menu nav a[aria-current="page"]::after { content: ""; width: var(--s2); height: var(--s2); margin-left: var(--s3); border-radius: 50%; background: var(--route-on-deep); }
+  #suggestions { margin-top: var(--s2); position: absolute; top: 100%; left: 0; right: 0; background: var(--deep-2); border-radius: var(--r1); }
+  #search { flex-wrap: wrap; }
+  #suggestions a { color: var(--on-deep); }
+  #suggestions a:hover, #suggestions a:focus { background: var(--line-deep); }
+  #language, #sound { align-self: flex-start; }
+}
+/* a wide bar: everything on it */
+@container head (width >= 52em) {
+  .brand { margin-right: var(--s3); }
+  .head-button { display: none; }
+  .menu { display: flex; flex: 1; align-items: center; gap: var(--s4); height: 100%; }
+  .menu nav { display: flex; gap: var(--s1); height: 100%; margin-right: auto; }
+  .menu nav a { display: flex; align-items: center; height: 100%; padding: 0 var(--s3); font-size: var(--t-small); font-weight: 600; color: var(--on-deep-2); text-decoration: none;
+    box-shadow: inset 0 calc(-1 * var(--mark)) 0 transparent; transition: color var(--d-press) var(--sail), box-shadow var(--d-press) var(--sail); }
+  .menu nav a:hover { color: var(--on-deep); box-shadow: inset 0 calc(-1 * var(--mark)) 0 var(--line-deep); }
+  .menu nav a[aria-current="page"] { color: var(--on-deep); box-shadow: inset 0 calc(-1 * var(--mark)) 0 var(--route-on-deep); }
+  .menu nav a:focus-visible { outline-offset: calc(-1 * var(--rule) - var(--s1)); }
+  #search { flex: 0 1 17rem; min-width: 11rem; }
+  #sound { padding: 0 var(--s3); }
+  #sound span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  #suggestions { position: absolute; z-index: 11; top: calc(100% + var(--s1)); left: 0; right: 0; background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r1); box-shadow: var(--lift); --focus: var(--route); }
+  #suggestions a { color: var(--ink); }
+  #suggestions a:hover, #suggestions a:focus { background: var(--chart-3); }
+}
+
+/* ==== 5. footer ================================================================================================ */
+
+.site-foot { position: relative; overflow: clip; background: var(--deep); color: var(--on-deep-2); font-size: var(--t-small); line-height: var(--l-small); --focus: var(--route-on-deep);
+  padding: 0 max(var(--gutter), (100% - var(--content)) / 2) var(--s7); }
+/* the page closes with the sea: the tide line, then the night sea held still, fading into the deep of the footer */
+.foot-shore { position: relative; isolation: isolate; height: clamp(150px, 20vw, 280px); margin-bottom: var(--s5); }
+.foot-shore .shore-sea::after { background: linear-gradient(to bottom, transparent 40%, var(--deep)); }
+.foot { display: grid; gap: var(--s6); }
+.foot p, .foot ul { margin: 0 0 var(--s3); max-width: 30rem; }
+.foot ul { padding: 0; list-style: none; }
+.foot li { padding: var(--s1) 0; }
+.foot h2 { margin: 0 0 var(--s3); font: 600 var(--t-meta)/var(--l-meta) var(--type); color: var(--on-deep); letter-spacing: .02em; }
+.foot-brand { font: 800 var(--t-h2)/var(--l-h2) var(--type); font-stretch: 75%; color: var(--on-deep); }
+.foot a { color: var(--on-deep); }
+.foot-fold { margin: 0; border-top: var(--hair) solid var(--line-deep); }
+.foot-fold > summary { min-height: var(--tap); list-style: none; color: var(--on-deep); }
+.foot-fold > summary::-webkit-details-marker { display: none; }
+.foot-fold > summary::after { content: "+"; margin-left: auto; font-size: var(--t-lede); color: var(--on-deep-2); }
+.foot-fold[open] > summary::after { content: "−"; }
+.foot-fold > summary h2 { margin: 0; }
+@media (min-width: 900px) { .foot-fold { border: 0; } .foot-fold > summary { pointer-events: none; min-height: 0; margin-bottom: var(--s3); } .foot-fold > summary::after, .foot-fold[open] > summary::after { content: none; } }
+.foot-links li { padding: 0; }
+.foot-links a { display: inline-flex; align-items: center; min-height: var(--tap); }
+@media (min-width: 900px) { .foot { grid-template-columns: 1.3fr 1fr 1fr; gap: var(--s7); } }
+
+/* ==== 6. components ============================================================================================ */
+
+/* page head: kicker, h1, lede, the same on every page: a band of the deep, edge to edge, with the night sea held still
+   behind it (app.js, shore) and the tide line under it, where the paper begins */
+.page-head { position: relative; isolation: isolate; padding: var(--s7) 0 calc(var(--s7) + var(--tide-h)); margin-bottom: var(--s6); color: var(--on-deep);
+  background: var(--deep); box-shadow: 0 0 0 100vmax var(--deep); clip-path: inset(0 -100vmax -2px); --focus: var(--route-on-deep); }
+.page-head h1 { margin: 0; max-width: 18ch; color: var(--on-deep); }
+.page-head .lede { margin: var(--s4) 0 0; color: var(--on-deep-2); }
+.page-head .kicker, .page-head a.kicker::before { color: var(--on-deep-2); }
+.page-head a.kicker:hover { color: var(--on-deep); }
+.page-head.joined { margin-bottom: 0; padding-bottom: var(--s5); }  /* runs on into a band of the deep (the map) */
+.head-notes { max-width: var(--measure); margin-top: var(--s4); }
+.head-notes .note { margin: var(--s3) 0 0; padding: 0 0 0 var(--s4); background: none; border: 0; border-left: var(--rule) solid var(--line-deep-2); border-radius: 0; color: var(--on-deep-2); }
+.head-notes a { color: var(--on-deep); }
+.head-notes .gloss { margin: 0; font-size: var(--t-lede); line-height: var(--l-lede); color: var(--on-deep); }
+
+/* the shore: the night sea behind a head on the deep, darker where the text lies; the graticule until it is there */
+.shore-sea { position: absolute; z-index: -1; top: 0; bottom: 0; left: calc(50% - 50vw); width: 100vw; overflow: hidden; pointer-events: none; }
+/* a sea is pointed at, not read: a press and a drag on its water start no selection (the text over it is selected as
+   any text is, from the text) */
+:is(.shore, .shore-sea, .hero-sea, .story-sea) { -webkit-user-select: none; user-select: none; }
+.shore :is(h1, h2, p, li, dl) { -webkit-user-select: text; user-select: text; }
+.shore-sea > .chart { position: absolute; inset: 0; height: 100%; background: none; border: 0; border-radius: 0; pointer-events: auto; animation: fade calc(var(--d-leg) * 1.5) var(--sail) both; }
+.shore-sea .chart.gl :is(.when, .tally) { display: none; }
+.shore-sea::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, var(--deep) 30%, color-mix(in srgb, var(--deep) 80%, transparent) 55%, color-mix(in srgb, var(--deep) 58%, transparent)); }  /* on a phone the title lies over the sea: the lights stay dim behind it */
+@media (min-width: 900px) { .shore-sea::after { background: linear-gradient(to right, var(--deep) calc((100% - var(--content)) / 2 + 26rem), color-mix(in srgb, var(--deep) 55%, transparent) calc((100% - var(--content)) / 2 + 38rem), transparent 75%); } }
+
+/* the tide line: the curve of the home hero's dive, the paper on one side, a thread of foam along it */
+.tide-line { position: absolute; left: calc(50% - 50vw); bottom: -1px; width: 100vw; max-width: none; height: var(--tide-h); overflow: visible; pointer-events: none; }
+.tide-line.above { top: -1px; bottom: auto; }
+.tide-paper { fill: var(--chart); }
+.tide-foam { fill: none; stroke: color-mix(in srgb, var(--on-deep-2) 50%, transparent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+
+/* a title rises into place, word by word (letter by letter for a word's page), once, as the page turns (app.js, rise) */
+@keyframes rise { from { opacity: 0; transform: translateY(.3em); } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes surface { from { opacity: 0; transform: translateY(var(--s5)); } }
+@keyframes grow { from { transform: scaleX(0); } }
+.rising .part { display: inline-block; white-space: nowrap; }
+.rising .part > span { display: inline-block; animation: rise var(--d-leg) var(--sail) both; animation-delay: calc(var(--i) * 70ms + 60ms); }
+.word-title.rising .part > span { animation-delay: calc(var(--i) * 40ms + 60ms); }
+.page-head > :is(.kicker, .lede, .head-notes), .cover-text > :is(.cover-kicker, .cover-body) { animation: surface var(--d-leg) var(--sail) both; }
+.page-head > .lede, .page-head > .head-notes, .cover-text > .cover-body { animation-delay: calc(var(--d-turn) * .8); }
+.kicker { display: inline-flex; align-items: center; gap: var(--s2); margin: 0 0 var(--s3); font-size: var(--t-small); font-weight: 600; color: var(--ink-2); }
+a.kicker { min-height: var(--tap); margin: calc(-1 * var(--s3)) 0 0; text-decoration: none; }
+a.kicker::before { content: "←"; font-size: var(--t-lede); line-height: 1; color: var(--ink-3); transition: transform var(--d-press) var(--sail); }
+a.kicker:hover { color: var(--ink); }
+a.kicker:hover::before { transform: translateX(calc(-1 * var(--s1))); }
+.page-head + section > h2:first-child, .page-head + h2 { margin-top: 0; }
+h2:first-child { margin-top: var(--s6); }
+@media (min-width: 900px) { .page-head { padding: var(--s8) 0 calc(var(--s7) + var(--tide-h)); } .page-head:has(.word-title) { padding-top: var(--s6); } }
+@media (max-width: 899.98px) { .page-head:has(> .shore-sea):not(.joined, .lost) { padding-top: calc(var(--s9) + var(--s4)); } }  /* on a phone the sea is above the text: room for it */
+@media (min-width: 900px) {  /* a toy's head from 900px: short, so that the game and its panel fill the first screen */
+  .page-head.game:has(> .shore-sea):not(.joined, .lost) { padding: var(--s6) 0 calc(var(--s5) + var(--tide-h)); margin-bottom: var(--s5); }
+  .page-head.game > .lede { margin-top: var(--s2); }
+}
+@media (max-width: 899.98px) {  /* a toy's head on a phone: less sea above, a smaller lede, so that the toy itself begins on the first screen */
+  .page-head.game:has(> .shore-sea):not(.joined, .lost) { padding-top: calc(var(--s7) + var(--s2)); padding-bottom: calc(var(--s5) + var(--tide-h)); margin-bottom: var(--s4); }
+  .page-head.game > .lede { margin-top: var(--s2); font-size: var(--t-body); line-height: var(--l-body); }
+}
+
+/* buttons: secondary by default, .primary, .quiet */
+button, .button, a[role="button"] { display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); min-height: var(--tap); padding: 0 var(--s4);
+  font: 600 var(--t-small)/1.2 var(--type); color: var(--ink); text-decoration: none; background: transparent; border: var(--hair) solid var(--line-2); border-radius: var(--r1); cursor: pointer;
+  transition: background-color var(--d-press) var(--sail), border-color var(--d-press) var(--sail), color var(--d-press) var(--sail), transform var(--d-press) var(--sail); }
+button:active:not(:disabled), .button:active, a[role="button"]:active, .chip:active { transform: translateY(1px) scale(.985); }  /* one press for every control */
+button:hover, .button:hover, a[role="button"]:hover { border-color: var(--ink-2); background: var(--chart-2); }
+button:disabled { cursor: default; opacity: .6; }
+button:disabled:hover { border-color: var(--line-2); background: transparent; }
+.primary { color: var(--on-route); background: var(--route); border-color: var(--route); }
+.primary:hover { color: var(--on-route); background: var(--route); border-color: var(--ink); }
+.quiet { border-color: transparent; color: var(--link); padding: 0 var(--s2); }
+.quiet:hover { border-color: transparent; background: transparent; text-decoration: underline; }
+
+/* fields and selects */
+input[type="search"], input[type="text"], select { min-height: var(--tap); padding: 0 var(--s3); font: 400 var(--t-body)/1.2 var(--type); color: var(--ink);
+  background-color: var(--chart-2); border: var(--hair) solid var(--line-2); border-radius: var(--r1); transition: border-color var(--d-press) var(--sail); }
+input[type="search"]:hover, select:hover { border-color: var(--ink-2); }
+input::placeholder { color: var(--ink-3); opacity: 1; }
+input[type="search"]::-webkit-search-cancel-button { cursor: pointer; }
+select { appearance: none; padding-right: calc(var(--s6) + var(--s1)); cursor: pointer; max-width: 100%;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-2) 50%), linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
+  background-position: right calc(var(--s4) + 5px) center, right var(--s4) center; background-size: 5px 5px; background-repeat: no-repeat; }
+input[type="range"] { accent-color: var(--route); min-height: var(--tap); margin: 0; }
+
+/* a row of controls: fields, selects, buttons */
+.controls { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; margin: var(--s4) 0; color: var(--ink-2); font-size: var(--t-small); max-width: none; }
+.controls label { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
+.controls input[type="search"] { flex: 1 1 12rem; min-width: 0; }
+.suggest span { position: relative; display: flex; flex: 1 1 14rem; max-width: 26rem; }
+.suggest input[type="search"] { width: 100%; }
+.offers { position: absolute; z-index: 7; top: calc(100% + var(--s1)); left: 0; right: 0; margin: 0; padding: var(--s1); list-style: none; background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r1); box-shadow: var(--lift); }
+.offers button { width: 100%; justify-content: flex-start; border: 0; background: none; font-weight: 400; font-size: var(--t-body); }
+.offers button:hover, .offers button:focus { background: var(--chart-3); }
+
+/* links to go further: a row of plain links */
+.links { display: flex; flex-wrap: wrap; gap: 0 var(--s5); margin: var(--s5) 0; padding: 0; list-style: none; max-width: none; }
+.links a { display: inline-flex; align-items: center; gap: var(--s2); min-height: var(--tap); font-weight: 600; text-decoration: none; }
+.links a:hover { text-decoration: underline; text-decoration-thickness: var(--rule); }
+
+/* tabs: switch what a section shows; a row that scrolls sideways when it does not fit */
+.tabs { display: flex; gap: var(--s1); margin: var(--s5) calc(-1 * var(--gutter)) var(--s5); padding: 0 var(--gutter); list-style: none; overflow-x: auto; scrollbar-width: none;
+  box-shadow: inset 0 calc(-1 * var(--hair)) 0 var(--line); }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs li { flex: none; }
+.tabs button { padding: 0 var(--s3); border: 0; border-radius: 0; background: none; color: var(--ink-2); white-space: nowrap; box-shadow: inset 0 calc(-1 * var(--mark)) 0 transparent; }
+.tabs button:hover { color: var(--ink); background: none; box-shadow: inset 0 calc(-1 * var(--mark)) 0 var(--line-2); }
+.tabs button[aria-pressed="true"] { color: var(--ink); box-shadow: inset 0 calc(-1 * var(--mark)) 0 var(--route); }
+.tabs button:focus-visible { outline-offset: calc(-1 * var(--rule)); }
+@media (min-width: 900px) { .tabs { margin-inline: 0; padding: 0; } }
+
+/* chips: pills; a row of them chooses (a source, an outlet, a period) */
+.chips { display: flex; gap: var(--s2); margin: var(--s4) calc(-1 * var(--gutter)); padding: var(--s1) var(--gutter); list-style: none; overflow-x: auto; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chips li { flex: none; }
+.chips button, .chips a[role="button"], .chip { display: inline-flex; align-items: center; gap: var(--s2); min-height: var(--control); padding: 0 var(--s4);
+  border: var(--hair) solid var(--line-2); border-radius: var(--pill); background: var(--chart-2); color: var(--ink); font: 600 var(--t-small)/1.2 var(--type); white-space: nowrap; text-decoration: none; }
+.chips button:hover, .chips a[role="button"]:hover, .chip:hover { border-color: var(--ink-2); }
+.chips :is(button, a)[aria-pressed="true"], .chips :is(button, a)[aria-pressed="true"]:hover { background: var(--ink); border-color: var(--ink); color: var(--chart); }
+.chips b { font-weight: 800; font-variant-numeric: tabular-nums; }
+.chips + .chips { margin-top: calc(-1 * var(--s2)); }
+@media (min-width: 900px) { .chips { flex-wrap: wrap; margin-inline: 0; padding-inline: 0; overflow: visible; } }
+/* a row that scrolls sideways shows where it goes on: a shadow at the edge beyond which more chips lie (app.js, edged),
+   over the gap at the edge, not a fade over the text; the next chip peeks out under it */
+:is(.chips, .tabs)::before, :is(.chips, .tabs)::after { content: ""; position: sticky; z-index: 1; flex: none; align-self: stretch; width: 12px; pointer-events: none; opacity: 0;
+  transition: opacity var(--d-press) var(--sail); }
+:is(.chips, .tabs)::before { left: calc(-1 * var(--s1)); margin-right: calc(-12px - var(--s2)); background: linear-gradient(to right, color-mix(in srgb, var(--ink) 30%, transparent), transparent); }
+:is(.chips, .tabs)::after { right: calc(-1 * var(--s1)); margin-left: calc(-12px - var(--s2)); background: linear-gradient(to left, color-mix(in srgb, var(--ink) 30%, transparent), transparent); }
+.more-left::before, .more-right::after { opacity: 1; }
+.word .chips.wrap { flex-wrap: wrap; overflow: visible; }  /* (a word's page: its source chips in sight wrap; a toy keeps its one line, so its result begins on the first screen) */
+
+/* word lists: a chip per word */
+.words { display: flex; flex-wrap: wrap; gap: var(--s2); margin: var(--s2) 0 var(--s4); padding: 0; list-style: none; }
+.words li { display: inline-flex; align-items: center; min-height: var(--chip); padding: 0 var(--s3); border: var(--hair) solid var(--line); border-radius: var(--pill); background: var(--chart-2); font-size: var(--t-small); }
+.words a { display: inline-flex; align-items: center; align-self: stretch; margin: 0 calc(-1 * var(--s3)); padding: 0 var(--s3); border-radius: var(--pill); color: var(--ink); text-decoration: none; }
+.words a:hover { text-decoration: underline; }
+.words li:has(a:hover) { border-color: var(--ink-2); }
+.words .new { background: var(--route-soft); border-color: var(--route); font-weight: 600; }
+.words .gone { border-style: dashed; border-color: var(--line-2); }
+.words .gone, .words .gone a { color: var(--ink-3); }
+.new::before { content: "+"; color: var(--route); margin-right: var(--s1); }
+.gone::before { content: "−"; margin-right: var(--s1); }
+.words .new a, .words .gone a { margin-left: 0; padding-left: 0; }
+@media (pointer: coarse), (max-width: 599px) { .words li { min-height: var(--tap); } }
+/* On a touch screen every control is a thumb's 44px: the chips, the source tabs, the "Kata"/"Nama" switch, a race's ×
+   (`fit.mjs` holds it); a stage's 24px share mark keeps its size and takes a 44px target around it. */
+@media (pointer: coarse), (max-width: 599px) { :root { --control: var(--tap); --chip: var(--tap); } ul.switch { padding: 0; } .share.step > summary { position: relative; } .share.step > summary::before { content: ""; position: absolute; inset: -10px -6px; } }
+.turnover span { display: block; } .turnover .new { font-weight: 600; } .turnover .gone { color: var(--ink-3); }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--other); flex: none; }
+.person { background: var(--person) !important; } .organisation { background: var(--organisation) !important; } .place { background: var(--place) !important; }
+
+/* cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr)); gap: var(--s4); margin: var(--s5) 0; padding: 0; list-style: none; }
+.cards li { display: flex; }
+.card { display: flex; flex-direction: column; gap: var(--s2); width: 100%; padding: var(--s5); background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2);
+  color: var(--ink); text-decoration: none; transition: border-color var(--d-press) var(--sail); }
+a.card:hover { border-color: var(--ink-2); }
+.card-title { font: 700 var(--t-h3)/var(--l-h3) var(--type); font-stretch: 80%; text-wrap: balance; }
+.card-text { color: var(--ink-2); font-size: var(--t-small); line-height: var(--l-small); }
+
+/* notes: a quiet panel beside the reading */
+.note { max-width: var(--measure); margin: var(--s5) 0; padding: var(--s4) var(--s5); background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2);
+  color: var(--ink-2); font-size: var(--t-small); line-height: var(--l-small); }
+.note b { color: var(--ink); }
+
+/* tables */
+.table { max-width: 100%; margin: var(--s5) 0; overflow-x: auto; }
+table { border-collapse: collapse; font-size: var(--t-small); line-height: var(--l-small); font-variant-numeric: tabular-nums; }
+.table table { width: 100%; }
+th { text-align: left; vertical-align: bottom; font-size: var(--t-meta); font-weight: 600; color: var(--ink-2); padding: var(--s2) var(--s3); border-bottom: var(--hair) solid var(--line-2); }
+td { vertical-align: top; padding: var(--s2) var(--s3); border-bottom: var(--hair) solid var(--line); }
+th:first-child, td:first-child { padding-left: 0; }
+th:last-child, td:last-child { padding-right: 0; }
+.n { text-align: right; white-space: nowrap; }
+.table tbody tr:hover td { background: var(--chart-2); }
+
+/* the tools under a figure: save, copy, check */
+.tools { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); align-items: center; margin: var(--s4) 0 var(--s5); color: var(--ink-2); font-size: var(--t-small); max-width: none; }
+.tools span { flex-basis: 100%; }
+
+/* lists of words with a score */
+.list-key { max-width: var(--measure); margin: var(--s3) 0 0; font-size: var(--t-small); color: var(--ink-2); }  /* what a list's numbers and marks are, above it */
+.movers { columns: 15rem; column-gap: var(--s6); margin: var(--s2) 0 var(--s4); padding: 0; list-style: none; }
+.movers li { break-inside: avoid; border-bottom: var(--hair) solid var(--line); font-size: var(--t-small); }
+.movers .row-link { padding-block: var(--s1); }
+.movers.names .row-name { overflow-wrap: anywhere; }  /* (the names of one article run on as text) */
+.movers .score { color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.movers-group { margin: var(--s5) 0 0; font: 700 var(--t-small)/var(--l-small) var(--type); color: var(--ink-2); } .movers-group:first-child { margin-top: var(--s3); }  /* a group of the list: how many other sources flag it too (app.js, moversPage) */
+
+/* legends */
+.legend { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); align-items: center; margin: var(--s2) 0; font-size: var(--t-meta); line-height: var(--l-meta); color: var(--ink-2); max-width: none; }
+.legend span { display: inline-flex; align-items: center; }
+.tide-key .scale-key { gap: 3px; } .tide-key .scale-key i { margin: 0; } .tide-key .scale-key > span:first-child { margin-right: var(--s1); } .tide-key .scale-key > span:last-child { margin-left: var(--s1); }
+.legend i, .score i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: var(--s1); flex: none; }
+/* A fifth series and on: aqua, blue, violet, red (--cat-3, 5, 7, 8), after magenta, orange, ink and the dashed grey. */
+.legend i.k4, .picked li.k4 { background: var(--cat-3); } .legend i.k5, .picked li.k5 { background: var(--cat-5); } .legend i.k6, .picked li.k6 { background: var(--cat-7); } .legend i.k7, .picked li.k7 { background: var(--cat-8); }
+.line.k4 { stroke: var(--cat-3); } .pt.k4 { fill: var(--cat-3); } .line.k5 { stroke: var(--cat-5); } .pt.k5 { fill: var(--cat-5); } .line.k6 { stroke: var(--cat-7); } .pt.k6 { fill: var(--cat-7); } .line.k7 { stroke: var(--cat-8); } .pt.k7 { fill: var(--cat-8); }
+.legend i.k0 { background: var(--route); } .legend i.k1 { background: var(--route-2); } .legend i.k2 { background: var(--ink); } .legend i.k3 { background: var(--ink-3); }
+i.s0 { background: var(--seq-0); } i.s1 { background: var(--seq-1); } i.s2 { background: var(--seq-2); } i.s3 { background: var(--seq-3); } i.s4 { background: var(--seq-4); } i.s5 { background: var(--seq-5); }
+.legend i.rare { border: var(--hair) dashed var(--ink-3); } .legend i.early { border: var(--rule) solid var(--ink); background: var(--chart-2); border-radius: 50%; } .legend i.late { background: var(--ink); border-radius: 50%; }
+#tip { position: fixed; z-index: 12; pointer-events: none; background: var(--deep); color: var(--on-deep); font-size: var(--t-meta); padding: var(--s1) var(--s2); border-radius: var(--r1); white-space: nowrap; box-shadow: var(--lift); }
+
+/* ==== 7. figures =============================================================================================== */
+
+svg { display: block; max-width: 100%; height: auto; overflow: visible; }
+svg text { fill: var(--ink-2); font: 12px var(--type); }
+.grid { stroke: var(--line); stroke-width: 1; }
+.line { fill: none; stroke: var(--route); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.area { fill: var(--route); opacity: .1; }
+.pt { fill: var(--route); stroke: var(--chart); stroke-width: 2; }
+.line.k1 { stroke: var(--route-2); } .pt.k1 { fill: var(--route-2); } .area.k1 { fill: var(--route-2); }
+.line.k2 { stroke: var(--ink); } .pt.k2 { fill: var(--ink); } .line.k3 { stroke: var(--ink-3); stroke-dasharray: 5 4; } .pt.k3 { fill: var(--ink-3); }
+.cross { stroke: var(--ink-3); stroke-width: 1; } .mark { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 3; }
+.cell { stroke: var(--chart); stroke-width: 2; cursor: pointer; } .cell:hover { opacity: .75; }
+.cell.rare { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 3; cursor: default; }
+.cell.chosen { stroke: var(--ink); }
+.s0 { fill: var(--seq-0); } .s1 { fill: var(--seq-1); } .s2 { fill: var(--seq-2); } .s3 { fill: var(--seq-3); } .s4 { fill: var(--seq-4); } .s5 { fill: var(--seq-5); }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2) var(--s6); }
+.pair.three { grid-template-columns: 1fr 1fr 1fr; }
+@media (max-width: 599.98px) { .pair, .pair.three { grid-template-columns: 1fr; } }
+
+/* the player: play button, slider, the moment shown */
+.player { display: flex; align-items: center; gap: var(--s3); margin: var(--s3) 0 var(--s2); }
+.player button { width: var(--tap); height: var(--tap); padding: 0; border-radius: 50%; background: var(--ink); color: var(--chart); border-color: var(--ink); flex: none; }
+.player button:hover { background: var(--route); border-color: var(--route); color: var(--on-route); }
+.player input { flex: 1; min-width: 80px; }
+.player output { font: 800 var(--t-h3)/1 var(--type); font-stretch: 75%; min-width: 4.4em; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* the sea chart (chart.js) */
+.chart { position: relative; background: var(--chart-3); border: var(--hair) solid var(--line); border-radius: var(--r2); overflow: hidden; }
+.chart > canvas { position: relative; display: block; width: 100%; height: 100%; cursor: grab; }
+.chart > canvas:active { cursor: grabbing; }
+.chart > canvas:focus-visible { outline-offset: calc(-1 * var(--rule) * 2); }
+.chart .sea { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.chart .sea canvas { position: absolute; display: block; will-change: transform; }
+.chart .zoom { position: absolute; right: var(--s3); bottom: var(--s3); display: flex; flex-direction: column; gap: var(--s1); }
+.chart .zoom button { width: var(--tap); padding: 0; font-size: var(--t-lede); background: var(--chart-2); }
+.chart .when { position: absolute; left: var(--s4); bottom: var(--s2); font: 800 var(--t-display)/1 var(--type); font-stretch: 75%; color: var(--ink); opacity: .2; pointer-events: none; }
+
+/* the map: a band of the deep, edge to edge, holding the sea (sea.js, explore) and what steers it; on the deep the
+   fields, the player and the legend take the night's colours, and the legend the colours of what the sea shows */
+.map-deep { position: relative; isolation: isolate; padding: 0 0 calc(var(--s6) + var(--tide-h)); margin-bottom: var(--s6); color: var(--on-deep-2);
+  background: var(--deep); box-shadow: 0 0 0 100vmax var(--deep); clip-path: inset(0 -100vmax -2px); --focus: var(--route-on-deep); }
+.map-steer { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0 var(--s4); }
+.map-steer > * { min-width: 0; max-width: 100%; }
+.map-steer > .controls { margin: 0; }
+.page-head.joined > .lede { font-size: var(--t-body); line-height: var(--l-body); }
+.map-steer .picked { margin-top: 0; } .map-steer .picked:empty { display: none; }
+.map-steer .suggest { margin: 0; }
+@media (min-width: 900px) {
+  .page-head.joined { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--s8); align-items: last baseline; padding: var(--s5) 0 var(--s4); }
+  .page-head.joined > .kicker { grid-column: 1 / -1; }
+  .page-head.joined > .lede { margin: 0; max-width: 40rem; font-size: var(--t-body); line-height: var(--l-body); }
+  /* the sea owns the rest of the first screen; what steers it stands on the water, at its upper left */
+  .map-deep > .map-steer { position: absolute; z-index: 2; top: var(--s4); left: 0; max-width: min(36rem, 60%); padding: var(--s3) var(--s4);
+    border-radius: var(--r2); background: color-mix(in srgb, var(--deep) 84%, transparent); }
+  .map-deep .chart.gl.explore { margin-top: 0; height: max(30rem, calc(100svh - var(--head-h) - 10rem)); }
+}
+.map-deep .chart.gl { margin: var(--s4) calc(50% - 50vw) 0; height: min(74svh, 760px); background: radial-gradient(120% 80% at 60% 20%, var(--deep-2), var(--deep) 70%); border: 0; border-radius: 0; }
+.map-deep :is(input[type="search"], select) { color: var(--on-deep); background-color: var(--deep-2); border-color: var(--line-deep-2); }
+.map-deep :is(input[type="search"], select):hover { border-color: var(--on-deep-2); }
+.map-deep select { background-image: linear-gradient(45deg, transparent 50%, var(--on-deep-2) 50%), linear-gradient(135deg, var(--on-deep-2) 50%, transparent 50%); }
+.map-deep input::placeholder { color: var(--on-deep-2); }
+.map-deep .primary { color: var(--deep); background: var(--route-on-deep); border-color: var(--route-on-deep); }
+.map-deep .primary:hover { border-color: var(--on-deep); }
+.map-deep .picked li { background: var(--on-deep); color: var(--deep); } .map-deep .picked li.k3 { background: var(--on-deep-2); }
+.map-deep .picked li.k0 { background: var(--route-on-deep); color: var(--deep); }
+.map-deep .player button { background: var(--on-deep); color: var(--deep); border-color: var(--on-deep); }
+.map-deep .player button:hover { background: var(--route-on-deep); border-color: var(--route-on-deep); color: var(--deep); }
+.map-deep .player output { color: var(--on-deep); }
+.map-deep :is(.sub, .legend) { color: var(--on-deep-2); }
+.map-deep .about summary { color: var(--on-deep); }
+.map-deep .legend { gap: var(--s1) var(--s3); }
+.map-deep .legend i.s0 { background: var(--light-0); } .map-deep .legend i.s1 { background: var(--light-1); } .map-deep .legend i.s2 { background: var(--light-2); }
+.map-deep .legend i.s3 { background: var(--light-3); } .map-deep .legend i.s4 { background: var(--light-4); } .map-deep .legend i.s5 { background: var(--light-5); }
+.map-deep:has(.gl.above) .legend i.s0 { background: var(--ink-3); } .map-deep:has(.gl.above) .legend i.s1 { background: var(--seq-1); } .map-deep:has(.gl.above) .legend i.s2 { background: var(--seq-2); }
+.map-deep:has(.gl.above) .legend i.s3 { background: var(--seq-3); } .map-deep:has(.gl.above) .legend i.s4 { background: var(--seq-4); } .map-deep:has(.gl.above) .legend i.s5 { background: var(--seq-5); }
+.chart.explore > canvas:first-child { cursor: grab; }
+.chart.explore > canvas:focus-visible { outline-offset: calc(-1 * var(--s1)); }
+.chart.night.explore .zoom { display: flex; top: var(--s4); bottom: auto; right: max(var(--gutter), (100% - var(--content)) / 2); align-items: flex-end; }
+.chart.night.explore .zoom button { width: var(--tap); padding: 0; color: var(--on-deep); background: var(--deep-2); border-color: var(--line-deep-2); }
+.chart.night.explore .zoom button:hover { border-color: var(--on-deep); background: var(--deep-2); }
+.chart.night.explore .zoom [data-k="above"] { width: auto; padding: 0 var(--s3); margin-top: var(--s2); font-size: var(--t-meta); }
+.chart.night.explore .zoom [aria-pressed="true"], .chart.night.explore .zoom [aria-pressed="true"]:hover { color: var(--deep); background: var(--on-deep); border-color: var(--on-deep); }
+/* from above the sea is paper: the pressed control is the active thing on it, in the route */
+.chart.night.explore.above .zoom [aria-pressed="true"], .chart.night.explore.above .zoom [aria-pressed="true"]:hover { color: var(--on-route); background: var(--route); border-color: var(--route); }
+/* how to move over the sea, on it, until the reader does */
+.sea-hint { position: absolute; left: 50%; bottom: var(--s5); transform: translateX(-50%); max-width: calc(100% - 2 * var(--gutter)); margin: 0; padding: var(--s2) var(--s4);
+  border-radius: var(--pill); background: color-mix(in srgb, var(--deep) 82%, transparent); color: var(--on-deep); font-size: var(--t-small); line-height: var(--l-small); text-align: center;
+  pointer-events: none; transition: opacity var(--d-turn) var(--sail); }
+.sea-hint.gone { opacity: 0; }
+.map-demo { margin: var(--s2) 0 0; }
+@media (max-width: 899.98px) {
+  /* on a phone the sea is the first thing: a short head, the sea, then what steers it */
+  .page-head.joined { padding-top: var(--s5); }
+  .page-head.joined > .lede { display: none; }
+  .map-deep { display: flex; flex-direction: column; }
+  .map-deep > .map-steer { order: 2; margin-top: var(--s4); }
+  .map-deep > .legend { order: 3; }
+  .map-deep .chart.gl { margin-top: 0; }
+  .chart.night.explore .zoom { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; top: var(--s3); right: var(--gutter); }
+  .chart.night.explore .zoom [data-k="above"] { margin-top: 0; }
+  .chart.night.explore .when { bottom: var(--s3); }
+  .sea-hint { bottom: calc(var(--s7) + var(--s6)); }
+}
+.chart.night.explore .when { top: auto; bottom: var(--s4); left: max(var(--gutter), (100% - var(--content)) / 2); right: auto; justify-items: start; }
+.chart.night.explore.above .when, .chart.night.explore.above .when b { color: var(--ink-3); }
+
+/* orbit: a word and its company */
+.orbit { position: relative; width: min(100%, 560px); aspect-ratio: 1; margin: var(--s2) auto; }
+.orbit::before, .orbit::after { content: ""; position: absolute; inset: 20%; border: var(--hair) dashed var(--line-2); border-radius: 50%; }
+.orbit::after { inset: 4%; }
+.orbit .core { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font: 800 clamp(1.25rem, 4.4vw, 2rem)/1.05 var(--type); font-stretch: 75%; text-align: center; max-width: 34%; z-index: 2; }
+.orbit a { position: absolute; left: 50%; top: 50%; z-index: 1; width: max-content; max-width: 12em; text-align: center; padding: 1px var(--s2); border-radius: var(--pill);
+  font-size: clamp(.75rem, 2.1vw, .9375rem); background: var(--chart-2); border: var(--hair) solid var(--line-2); color: var(--ink); text-decoration: none; cursor: pointer;
+  transform: translate(-50%, -50%) translate(var(--x), var(--y)); transition: transform var(--d-leg) var(--sail), opacity var(--d-turn) var(--sail); }
+.orbit a:hover { border-color: var(--ink); z-index: 3; }
+@media (pointer: coarse), (max-width: 599px) { .orbit a::before { content: ""; position: absolute; inset: -11px -2px; } }  /* (a name in the circle: a target 44px tall for a thumb, the pill as drawn) */
+.orbit a.like { border-style: dashed; color: var(--ink-2); }
+.orbit a.new { background: var(--route-soft); border-color: var(--route); font-weight: 600; }
+.orbit a.out { opacity: 0; transform: translate(-50%, -50%) translate(calc(var(--x) * 1.5), calc(var(--y) * 1.5)); }
+.orbit a.in { opacity: 0; transform: translate(-50%, -50%); }
+.orbit.circle { aspect-ratio: 1 / 1.25; width: min(100%, 460px); } .orbit.circle a.out { opacity: 0; pointer-events: none; }
+
+/* race: bars that overtake each other */
+.race { position: relative; margin: var(--s2) 0; }
+.race .row { position: absolute; left: 0; right: 0; height: var(--race-row, 30px); transition: transform var(--d-leg) var(--sail), opacity var(--d-turn) var(--sail); }
+.race .row-link { height: 100%; min-height: 0; justify-content: flex-start; gap: var(--s2); }
+.race .row-name { flex: 0 0 9.5em; text-align: right; font-size: var(--t-small); line-height: 1.1; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }  /* (a long name on two lines, broken between its words) */
+.race .track { flex: 1; display: flex; align-items: center; gap: var(--s2); min-width: 0; }
+.race .bar { height: 20px; background: var(--ink); border-radius: 0 2px 2px 0; transition: width var(--d-leg) var(--sail); min-width: 2px; }
+.race .row.focus .bar, .race .row:hover .bar { background: var(--route); }
+.race .row.focus .row-name { font-weight: 700; }
+.race .value { font-size: var(--t-meta); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.race .year { position: absolute; right: var(--s1); bottom: 0; font: 800 var(--t-display)/1 var(--type); font-stretch: 75%; color: var(--ink); opacity: .12; pointer-events: none; }
+
+/* path: a word among its own neighbours */
+.casing { fill: none; stroke: var(--chart); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+.route-line { fill: none; stroke: var(--route); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+.route-step { fill: var(--chart); stroke: var(--route); stroke-width: 2; cursor: pointer; }
+.ship { fill: var(--route); stroke: var(--chart); stroke-width: 3; transition: cx var(--d-leg) var(--sail), cy var(--d-leg) var(--sail); }
+.island { fill: var(--chart); stroke: var(--ink); stroke-width: 2; } .island.late { fill: var(--ink); }
+.leader { stroke: var(--ink-3); stroke-width: 1; }
+text.island-label { font-size: 13px; fill: var(--ink); paint-order: stroke; stroke: var(--chart); stroke-width: 4px; stroke-linejoin: round; cursor: pointer; }
+text.island-label:hover { fill: var(--route); }
+text.when-label { font: 800 13px var(--type); fill: var(--route); paint-order: stroke; stroke: var(--chart-2); stroke-width: 4px; }
+text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: stroke; stroke: var(--chart-2); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+/* a word's voyage among its neighbours, on paper like a story's plate, the neighbours listed beside it */
+.path-plate { padding: var(--s4) var(--s5) var(--s5); background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); --chart: var(--chart-2); }
+.path-plate > .legend { margin: 0 0 var(--s3); }
+.path-body { display: grid; gap: var(--s5); align-items: start; }
+@media (min-width: 900px) { .path-body { grid-template-columns: minmax(0, 1fr) minmax(0, 17.5rem); gap: var(--s6); } }  /* the plate takes the band; the column beside it (app.js, pathFigure: COLUMN) */
+.path-year { margin: 0 0 var(--s3); font: 800 var(--t-h1)/var(--l-h1) var(--type); font-stretch: 75%; color: var(--route); font-variant-numeric: tabular-nums; }
+.path-near .path-now { font: 600 var(--t-small)/var(--l-small) var(--type); color: var(--ink-2); }
+.path-company { margin: 0 0 var(--s5); padding-bottom: var(--s5); border-bottom: var(--hair) solid var(--line); font-size: var(--t-body); line-height: var(--l-body); }
+@media (max-width: 899.98px) { .path-year { display: none; } }  /* on a phone the column lies under the plate, and the player says the year */
+@media (min-width: 900px) { .path-near { padding-left: var(--s5); border-left: var(--hair) solid var(--line); } }
+.path-near { font-size: var(--t-small); line-height: var(--l-small); }
+.path-near h3 { display: flex; align-items: center; gap: var(--s2); margin: 0 0 var(--s1); font-size: var(--t-h3); }
+.path-near h3 i { width: 12px; height: 12px; border-radius: 50%; } .path-near i.early { border: var(--rule) solid var(--ink); } .path-near i.late { background: var(--ink); }
+.path-near h3:not(:first-child) { margin-top: var(--s5); }
+.path-near a { color: var(--ink); }
+.legend i.route-key { width: 18px; height: var(--mark); border-radius: var(--pill); background: var(--route); }
+.spur { fill: none; stroke: var(--ink-3); stroke-width: 1.5; stroke-dasharray: 2 4; stroke-linecap: round; }  /* the far islands, hung from the route's end */
+/* a word's route as a stage of its own: a band of the deep, edge to edge, between two tide lines, drawn in the
+   night's inks; the years under it a rail to scrub the route through */
+.deep-band { position: relative; margin: var(--s5) calc(50% - 50vw) 0; padding: calc(var(--tide-h) + var(--s5)) max(var(--gutter), (100vw - var(--content)) / 2) calc(var(--tide-h) + var(--s5));
+  background: var(--deep); color: var(--on-deep); }
+.deep-band > :not(.tide-line) { --chart: var(--deep); --chart-2: var(--deep); --ink: var(--on-deep); --ink-2: var(--on-deep-2); --ink-3: var(--on-deep-2);
+  --line: var(--line-deep); --route: var(--route-on-deep); --link: #7fc0ea; --focus: var(--route-on-deep); }
+.deep-band .path-plate { padding: 0; background: none; border: 0; }
+.deep-band .path-near { border-color: var(--line-deep); }
+.deep-band .path-near a { color: var(--on-deep); }
+.deep-band .player button { background: var(--on-deep); color: var(--deep); border-color: var(--on-deep); }
+.deep-band .player button:hover { background: var(--route-on-deep); border-color: var(--route-on-deep); }
+.deep-band .about summary, .deep-band .sub { color: var(--on-deep-2); }
+/* a word's page is one stage on its first screen: its head runs on into the deep under the source chips and the
+   figure tabs, and on into the route's band; where the figure chosen is on paper, the tide line comes under the tabs */
+.word > .page-head { margin-bottom: 0; padding-bottom: calc(var(--s4) + var(--tide-h)); }
+/* (its sea ends on the tide line as every head's does; the water under the wave is the deep that runs on) */
+.word > .page-head > .tide-line .tide-paper { fill: var(--deep); }
+.word > div > :is(.chips, .chips-note, .options), .word .lens-section > div > .tabs, .word .ashore { background: var(--deep); box-shadow: 0 0 0 100vmax var(--deep); clip-path: inset(-1px -100vmax);  /* (each 1px over the next: no seam between them) */
+  --chart: var(--deep); --chart-2: var(--deep); --ink: var(--on-deep); --ink-2: var(--on-deep-2); --ink-3: var(--on-deep-2); --line: var(--line-deep); --line-2: var(--line-deep-2); --route: var(--route-on-deep); --focus: var(--route-on-deep); }
+.word > div > .chips { margin-block: 0; padding-block: var(--s2) var(--s4); }
+.word > div > .chips-note { margin-block: 0; padding-bottom: var(--s2); }
+.word > div > .options { margin-block: 0; padding-bottom: var(--s3); }
+.word > div > .options > summary { background: var(--deep-2); border-color: var(--line-deep-2); color: var(--on-deep); }
+.word .chips.wrap li { flex: 0 1 auto; min-width: 0; max-width: 100%; }
+.word .chips button { flex-wrap: wrap; justify-content: flex-start; align-items: baseline; padding-top: calc(var(--s1) + 5px); row-gap: 0; padding-block: var(--s1); white-space: normal; text-align: left; }  /* (a long source's name, its shift and its word go onto a second line inside the chip, never past the screen) */
+.word .chips small { font-size: var(--t-meta); font-weight: 600; color: var(--ink-3); }
+.word .chips [aria-pressed="true"] small { color: inherit; opacity: .8; }
+/* what happened to the word, said first: a lede in plain words */
+.head-notes .word-told { margin: var(--s3) 0 0; font-size: var(--t-lede); line-height: var(--l-lede); color: var(--on-deep); }
+.chips-note > .sub { margin: 0; } .chips-note .about { margin: 0; } .word .chips-note .about summary { color: var(--on-deep); }
+.word .lens-section > div > .tabs { margin-block: 0; padding-block: var(--s2) 0; }
+.word .lens-section .deep-band { margin-top: 0; padding-top: var(--s5); }
+.word .lens-section .deep-band > .tide-line:first-child { display: none; }
+.ashore { position: relative; height: var(--tide-h); margin-bottom: var(--s5); }
+.deep-band > .tide-line:first-child { top: -1px; bottom: auto; }
+.rail { display: flex; justify-content: space-between; margin: calc(-1 * var(--s1)) 0 var(--s3) calc(var(--tap) + var(--s3)); margin-right: calc(4.4em * 1.5 + var(--s3)); padding: 0; list-style: none;
+  font: 600 var(--t-meta)/1 var(--type); color: var(--ink-3); font-variant-numeric: tabular-nums; touch-action: none; cursor: ew-resize; user-select: none; }
+.rail li { min-width: 0; padding: var(--s2) 0; }
+.rail li.on { color: var(--route); font-weight: 800; }
+.rail li.quiet:not(.on) { color: transparent; }  /* still a stop; named where there is room */
+/* what to do next with a word: three cards */
+.actions { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); margin-top: var(--s7); }
+.card.action { color: var(--ink); text-decoration: none; border-color: var(--line-2); transition: border-color var(--d-press) var(--sail); }
+.card.action .card-title { color: var(--link); font-size: var(--t-lede); line-height: var(--l-lede); }
+.card.action .card-title::after { content: " →"; }
+.card.action:hover { border-color: var(--route); } .card.action:hover .card-title { color: var(--route); }
+
+/* duel and bars: adjectives and verbs */
+.duel { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--s1) var(--s3); align-items: center; font-size: var(--t-small); }
+.duel .left { justify-self: end; } .duel .bar { height: 14px; background: var(--route); transition: width var(--d-leg) var(--sail); }
+.duel .right .bar, .duel .bar.k1 { background: var(--route-2); }
+.duel .side { display: flex; align-items: center; gap: var(--s2); } .duel .left.side { flex-direction: row-reverse; }
+.duel .head { font: 800 var(--t-lede) var(--type); font-stretch: 75%; }
+.bars { display: grid; grid-template-columns: auto 1fr; gap: var(--s1) var(--s3); align-items: center; font-size: var(--t-small); }
+.bars .bar { height: 14px; background: var(--route); transition: width var(--d-leg) var(--sail); }
+
+/* sparks and swaps: a small chart per word, as cards */
+.sparks { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s3); margin: var(--s4) 0; padding: 0; list-style: none; }
+.sparks a { display: flex; flex-direction: column; gap: var(--s2); height: 100%; color: var(--ink); text-decoration: none; padding: var(--s3) var(--s4); background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); transition: border-color var(--d-press) var(--sail); }
+.sparks a:hover { border-color: var(--ink-2); }
+.sparks b { font: 700 var(--t-body)/1.2 var(--type); }
+.sparks small { color: var(--ink-2); font-size: var(--t-meta); line-height: var(--l-meta); }
+.spark-line { fill: none; stroke: var(--route); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.spark-line.k1 { stroke: var(--ink-3); } .spark-area { fill: var(--route); opacity: .12; }
+
+/* findings: the lead pairs as figures, each word named where its line is; the rest folded under them */
+/* from 900px what the pairs are and the rule that picked them stand side by side, so that the lead pair begins on the
+   first screen */
+@media (min-width: 900px) { .told { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s6); align-items: start; } .told > * { margin-top: 0; } }
+.rule { max-width: var(--measure); margin: 0 0 var(--s4); padding-left: var(--s4); border-left: var(--rule) solid var(--beacon); font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
+.duets { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--s4); margin: var(--s4) 0; padding: 0; list-style: none; }
+.duets a { display: flex; flex-direction: column; gap: var(--s1); height: 100%; padding: var(--s4) var(--s5) var(--s3); color: var(--ink); text-decoration: none; background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); transition: border-color var(--d-press) var(--sail); }
+.duets a:hover { border-color: var(--ink-2); }
+/* the first pair, the counting's top, leads: two columns and two rows from 900px, drawn larger */
+.duets > li:first-child { grid-column: 1 / -1; }  /* the lead pair across the page, the rest under it */
+.duets > li:first-child .duet-figure :is(.duet-rose, .duet-fell) { font-size: 15px; }
+@media (min-width: 900px) {
+  .duets > li:first-child a { padding: var(--s5) var(--s6) var(--s4); justify-content: space-between; } .duets > li:first-child .duet-word { font-size: var(--t-h1); line-height: var(--l-h1); } }
+.duet-word { font: 800 var(--t-h2)/var(--l-h2) var(--type); font-stretch: 75%; color: var(--route); }
+.duet-was { font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
+.duet-figure { margin-top: var(--s2); }
+.duet-figure text { font-size: 12px; fill: var(--ink-3); }
+.duet-figure .duet-rose, .duet-figure .duet-fell { font-size: 13px; font-weight: 700; paint-order: stroke; stroke: var(--chart-2); stroke-width: 4px; stroke-linejoin: round; }
+.duet-figure .duet-rose { fill: var(--route); } .duet-figure .duet-fell { fill: var(--ink-2); } .duet-figure .duet-year { font-weight: 700; fill: var(--ink); }
+/* the two lines draw together; where they cross is marked as they reach it (--at: how far along), then named */
+.duet-figure .crossing circle { fill: var(--chart-2); stroke: var(--ink); stroke-width: 2; }
+.duet-figure .crossing { animation: fade var(--d-turn) var(--sail) calc(var(--at, 0) * var(--d-leg) * 1.5) both; }
+.duets > li:first-child .duet-figure .crossing circle { stroke: var(--route); stroke-width: 2.5; }
+.more-finds > summary { color: var(--link); font-size: var(--t-small); }
+.more-finds[open] > summary { margin-bottom: var(--s2); }
+
+/* posters: a year in its own words */
+.wall { display: flex; gap: var(--s3); min-height: 420px; overflow-x: auto; scroll-snap-type: x mandatory; padding: var(--s1) var(--gutter) var(--s4); margin: 0 calc(-1 * var(--gutter)); }
+.poster { flex: 0 0 min(78vw, 300px); scroll-snap-align: center; aspect-ratio: 3 / 4; padding: var(--s4); border-radius: var(--r2); background: var(--deep); color: var(--on-deep); display: flex; flex-direction: column; }
+.poster:nth-child(3n + 2) { background: var(--route); color: var(--on-route); } .poster:nth-child(3n) { background: var(--chart-2); color: var(--ink); border: var(--hair) solid var(--line-2); }
+.poster .year { font: 800 var(--t-lede) var(--type); opacity: .8; }
+.poster .top { font: 800 clamp(2rem, 9vw, 2.875rem)/.92 var(--type); font-stretch: 75%; margin: auto 0 var(--s3); overflow-wrap: anywhere; }
+.poster a { color: inherit; text-decoration: none; } .poster a:hover { text-decoration: underline; }
+.poster ol { margin: 0; padding: 0; list-style: none; font-size: var(--t-small); line-height: 1.35; }
+.poster a.row-link, .poster a.row-link:is(:hover, :focus-visible) .row-name { color: inherit; }
+.poster a.row-link { min-height: 0; }
+@media (pointer: coarse), (max-width: 599px) { .poster { aspect-ratio: auto; min-height: 420px; } .poster a.row-link { min-height: var(--tap); } }  /* (each word a row a thumb finds: the poster as tall as they need) */
+
+/* plates (plate.js): a figure on paper that can stand alone as an image */
+.plate svg { display: block; max-width: 100%; height: auto; overflow: hidden; border: var(--hair) solid var(--line); border-radius: var(--r2); }
+.plates { display: grid; } .plates > * { grid-area: 1 / 1; transition: opacity var(--d-turn) var(--sail); } .plates > .off { opacity: 0; visibility: hidden; }
+
+/* tide table */
+.tide { overflow-x: auto; margin: var(--s4) 0; } .tide table { border-collapse: separate; border-spacing: 2px; width: auto; }
+.tide th { font-weight: 400; font-size: var(--t-meta); color: var(--ink-2); padding: 0 var(--s1) 0 0; text-align: right; white-space: nowrap; border: 0; vertical-align: middle; }
+.tide tr:first-child th { text-align: center; padding: 0; } .tide th .row-link { min-height: 0; justify-content: flex-end; }
+.tide td { width: 26px; min-width: 18px; height: 18px; padding: 0; border: 0; border-radius: 2px; }
+@media (max-width: 639.98px) {  /* on a phone the table fits its width: each name on a line of its own over its row, the years sharing the whole width */
+  .tide { overflow-x: visible; } .tide :is(table, tbody) { display: block; width: 100%; }
+  .tide tr { display: grid; grid-template-columns: repeat(var(--cols, 14), minmax(0, 1fr)); gap: 2px; margin-bottom: 2px; }
+  .tide tr > th:first-child { grid-column: 1 / -1; padding: var(--s1) 0 0; text-align: left; }
+  .tide th .row-link { justify-content: flex-start; }  /* (the name's line, across the width: on a touch screen 44px tall) */
+  .tide tr:first-child > th:first-child { display: none; }
+  .tide tr:first-child th { font-size: 12px; } .tide td { width: auto; min-width: 0; height: 18px; }
+}
+.t0 { background: var(--seq-0); opacity: .45; } .t1 { background: var(--seq-1); } .t2 { background: var(--seq-2); } .t3 { background: var(--seq-3); } .t4 { background: var(--seq-4); } .t5 { background: var(--seq-5); }
+.tx { background: none; outline: var(--hair) dashed var(--line); outline-offset: -1px; }
+.legend i.t0, .legend i.t1, .legend i.t2, .legend i.t3, .legend i.t4, .legend i.t5 { width: 18px; height: 12px; border-radius: 2px; }
+
+/* games: the quiz and guess the number. A round on paper; beside it, from 900px, the game's voyage so far */
+.quiz { margin: var(--s5) 0; }
+.quiz-board { display: grid; gap: var(--s5); margin: var(--s5) 0; align-items: start; }
+.quiz-card { margin: 0; padding: var(--s5) var(--s5) var(--s4); background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); }
+.quiz-log { padding: var(--s4) var(--s5); border: var(--hair) solid var(--line); border-radius: var(--r2); }
+.quiz-log h3 { margin: 0 0 var(--s2); font-size: var(--t-small); font-stretch: 100%; font-weight: 600; color: var(--ink-2); }
+.quiz-tally { margin: var(--s2) 0 0; font: 800 var(--t-h3)/1 var(--type); font-stretch: 75%; font-variant-numeric: tabular-nums; }
+.voyage-mark { width: 100%; height: auto; overflow: visible; }
+.voyage-mark .sea-line { stroke: var(--line-2); } .voyage-mark .sailed { stroke: var(--route); }
+.voyage-mark .right { fill: var(--route); } .voyage-mark .wrong { fill: var(--chart-2); stroke: var(--ink); stroke-width: 2; }
+.voyage-mark .now { fill: var(--ink); } .voyage-mark .next { fill: var(--line-2); } .voyage-mark text { fill: var(--ink-2); }
+@keyframes hop { 40% { transform: translateY(-3px); } }
+@media (prefers-reduced-motion: no-preference) { .voyage-mark .now { animation: hop var(--d-leg) var(--sail) infinite alternate; transform-box: fill-box; transform-origin: center; } }
+.quiz-card .plate svg { width: 100%; margin: var(--s4) 0 var(--s2); }
+/* the bar: the tally and the one control that goes on (lock, next, play again), always in the same place: beside the
+   round from 900px, held at the screen's foot on a phone, where the thumb is */
+.quiz-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s3); margin-top: var(--s2); }
+.quiz-bar .quiz-tally { margin: 0; }
+.quiz-go { min-width: 9rem; }
+@media (max-width: 899.98px) {
+  .quiz-board { gap: 0; }
+  .quiz-log { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; margin: 0; padding: var(--s2) var(--gutter) calc(var(--s2) + env(safe-area-inset-bottom));
+    border: 0; border-top: var(--hair) solid var(--line); border-radius: 0; background: var(--chart);
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "voyage go" "tally go"; column-gap: var(--s4); align-items: center; }
+  .quiz-log h3 { display: none; }
+  .quiz-board { margin-bottom: 110px; }  /* room for the bar at the foot, so that nothing is left under it */
+  body:has(.quiz-board) .site-foot { padding-bottom: 90px; }
+  .quiz-voyage { grid-area: voyage; } .quiz-log .voyage-mark { display: block; width: 100%; height: 40px; } .quiz-log .voyage-mark text { display: none; }  /* (the answers under the ports: on the plate) */
+  .quiz-bar { display: contents; } .quiz-bar .quiz-tally { grid-area: tally; font-size: var(--t-small); font-stretch: 100%; font-weight: 600; } .quiz-go { grid-area: go; min-width: 8rem; }
+  .quiz .ask { font-size: 1.25rem; } .quiz .clue li { font-size: var(--t-small); }
+  /* (a round and its answer, evidence included, on one screen of a phone, above the bar) */
+  .quiz-card { padding: var(--s4); } .quiz .verdict b { font-size: var(--t-body); }
+  .quiz .ask, .quiz .verdict { margin-block: 0 var(--s2); } .quiz .clue { margin-top: var(--s2); }
+  .quiz .choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: var(--s3) 0; } .quiz .choices button { min-width: 0; padding-inline: var(--s3); font-size: var(--t-small); white-space: normal; text-wrap: balance; }
+}
+@media (min-width: 900px) { .quiz-board { grid-template-columns: minmax(0, 1fr) 20rem; gap: var(--s6); } .quiz-log { position: sticky; top: calc(var(--head-h) + var(--s5)); } }
+.voyage-mark .streak { stroke: var(--beacon); }
+.quiz .choices .key { display: inline-grid; place-items: center; min-width: 1.4em; height: 1.4em; border-radius: var(--r1); font-size: var(--t-meta); font-weight: 700; color: var(--ink-3); border: var(--hair) solid var(--line); }
+@media (pointer: coarse) { .quiz .choices .key, .keys-note { display: none; } }
+/* (the mark's room kept in every choice from the start, so that marking an answer never makes a row of choices wrap) */
+.quiz .choices button::after { content: "✓"; font-weight: 800; visibility: hidden; }
+.quiz .choices .right::after { content: "✓"; visibility: visible; } .quiz .choices .chosen::after { content: "✗"; visibility: visible; }
+.quiz .choices .right .key { color: inherit; border-color: currentColor; }
+/* a year's or a name's words: a line of words, not chips (they are read, not pressed) */
+.quiz .clue { display: flex; flex-wrap: wrap; gap: 0 var(--s3); margin: var(--s3) 0 0; padding: 0; list-style: none; }
+.quiz .clue li { padding: 0; border: 0; background: none; min-height: 0; font: 600 var(--t-lede)/1.4 var(--type); color: var(--ink); }
+.quiz .clue li + li::before { content: "·"; margin-right: var(--s3); color: var(--ink-3); }
+.quiz .rank { font: 700 var(--t-h3)/var(--l-h3, 1.15) var(--type); font-stretch: 80%; margin: 0 0 var(--s4); color: var(--route); }
+/* where the browser refuses to copy, the text beside the button, selected, to copy by hand (app.js, copier) */
+.copy-field { display: block; flex: 1 1 100%; width: 100%; min-height: var(--tap); margin-top: var(--s2); padding: 0 var(--s3); font: inherit; font-size: var(--t-small); color: var(--ink); background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r1); }
+/* how this game stands against the best so far (app.js, gameEnd) */
+.quiz .best { margin: calc(-1 * var(--s2)) 0 var(--s4); font-size: var(--t-body); font-weight: 600; color: var(--ink-2); }
+.quiz .caveat { margin: var(--s2) 0; padding: 0 0 0 var(--s3); font-size: var(--t-small); background: none; border: 0; border-left: var(--rule) solid var(--line); border-radius: 0; }  /* (in sight, quietly: a rule, not a box) */
+.quiz-card > :last-child { margin-bottom: 0; }
+.quiz .verdict { flex-direction: column; align-items: flex-start; gap: var(--s2); font-size: var(--t-body); line-height: var(--l-body); }
+.quiz .verdict b { font-size: var(--t-lede); }
+.quiz .verdict .context { color: var(--ink-2); }
+.reveal { display: block; height: auto; margin: var(--s3) 0 0; scroll-margin: calc(var(--head-h) + var(--s4)) 0 170px; }  /* (170px: the bar held at a phone's foot) */
+/* the answer's room is kept from the start (the line said and the evidence come into it in place: the card does not
+   grow, nothing under it moves, and the page does not scroll) */
+.quiz .answer { min-height: 14.5rem; }
+.quiz .answer .verdict { margin: 0; }
+@media (max-width: 899.98px) { .quiz .answer { min-height: 15.5rem; } }
+.quiz-log .keys-note { margin: var(--s3) 0 0; font-size: var(--t-meta); color: var(--ink-3); }
+.quiz .verdict { scroll-margin: calc(var(--head-h) + var(--s4)) 0 170px; }
+.reveal svg { display: block; max-width: 100%; height: auto; overflow: visible; font-family: var(--type); }
+.reveal .alt { fill: var(--route-2); } .reveal .alt-line { stroke: var(--route-2); fill: none; } .reveal .on-line { stroke-linejoin: round; stroke-linecap: round; }
+@media (prefers-reduced-motion: no-preference) {
+  .reveal .draw { stroke-dasharray: 2000; animation: reveal-draw var(--d-leg) var(--sail) both; } .reveal .in { animation: fade var(--d-turn) var(--sail) calc(var(--i, 0) * 45ms + 200ms) both; }
+}
+@keyframes reveal-draw { from { stroke-dashoffset: 2000; } to { stroke-dashoffset: 0; } }
+.game-rule { max-width: var(--measure); margin: 0 0 var(--s3); font-size: var(--t-small); color: var(--ink-2); }
+.next-toy { margin: var(--s4) 0 0; font-weight: 600; }
+.quiz .choices button { box-shadow: inset 0 calc(-1 * var(--mark)) 0 transparent; }
+.quiz .choices button:hover:not(:disabled) { box-shadow: inset 0 calc(-1 * var(--mark)) 0 var(--route); }  /* the route drawn along the answer one is about to give */
+.quiz .choices .chosen, .quiz .choices .chosen:disabled { border-style: dashed; opacity: 1; }
+.quiz .words li { font-size: var(--t-body); }
+.quiz .score { font: 800 var(--t-display)/var(--l-display) var(--type); font-stretch: 75%; margin: var(--s5) 0; }
+.quiz .choices { display: flex; flex-wrap: wrap; gap: var(--s2); margin: var(--s5) 0; }
+.quiz .choices button { font-size: var(--t-body); min-width: 6rem; }
+.quiz .choices .right, .quiz .choices .right:disabled { background: var(--ink); color: var(--chart); border-color: var(--ink); opacity: 1; }
+.quiz .ask { font: 700 clamp(1.375rem, 4.6vw, 2rem)/1.2 var(--type); font-stretch: 85%; max-width: 24em; text-wrap: balance; }
+.quiz .step { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s3); font-size: var(--t-meta); font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; margin: 0 0 var(--s2); }
+/* how hard the round is: three marks, as many filled as its tier, and its word (app.js, quizPage; deal.js, DIFFICULTY) */
+.quiz .tier { display: inline-flex; align-items: center; gap: var(--s1); }
+.quiz .tier i { width: var(--s2); height: var(--s2); border-radius: 50%; box-shadow: inset 0 0 0 var(--rule) var(--ink-3); }
+.quiz .tier i:last-of-type { margin-right: var(--s1); }
+.quiz .tier[data-tier="0"] i:nth-of-type(-n + 1), .quiz .tier[data-tier="1"] i:nth-of-type(-n + 2), .quiz .tier[data-tier="2"] i { background: var(--ink-3); }
+.verdict { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); max-width: var(--measure); font-size: var(--t-lede); line-height: var(--l-lede); }
+.verdict:empty, .verdict[hidden] { display: none; }
+/* guess the number: a track of stops (deal.js, STOPS): 0-20 a step each over two thirds of it, 25-100 in fives over the
+   rest, its ticks where they fall; the guess a knob on it (none until set), set by a press or drag, the keys, − and + */
+.gauge { position: relative; max-width: 560px; padding: var(--s2) 0 0; }
+.gauge .track { position: relative; padding: var(--s3) 0 0; cursor: pointer; touch-action: none; border-radius: var(--r1); }
+.gauge.locked .track { cursor: default; }
+/* the track has a body a thumb finds: a 12px bar, the part up to the guess filled in the route, a 28px thumb; its 20-100
+   stretch (by fives) hatched, so that the change of scale reads */
+.gauge .scale { position: relative; height: 28px; }
+.gauge .bar { position: absolute; top: 8px; height: 12px; background: var(--line); }
+.gauge .bar.low { left: 0; width: calc(66.667% - 3px); border-radius: 6px 2px 2px 6px; }
+.gauge .bar.high { left: calc(66.667% + 3px); right: 0; border-radius: 2px 6px 6px 2px;
+  background: repeating-linear-gradient(135deg, var(--ink-3) 0 2px, color-mix(in srgb, var(--line) 50%, transparent) 2px 6px); }
+/* the change of scale at 20: a gap with a notch across it, and over the second stretch what it steps by (where it fits) */
+.gauge .notch { position: absolute; left: 66.667%; top: 2px; width: 2px; height: 24px; margin-left: -1px; border-radius: 1px; background: var(--ink-3); }
+.gauge .break { position: absolute; left: calc(66.667% + var(--s2)); top: calc(-1 * var(--s3) - 2px); font-size: var(--t-meta); line-height: 1; font-weight: 600; color: var(--ink-2); white-space: nowrap; pointer-events: none; }
+.gauge .break[hidden] { display: none; }
+.gauge .minor { position: absolute; top: calc(100% + 2px); height: var(--s2); }
+.gauge .minor.low { left: 0; width: 66.667%; background: repeating-linear-gradient(90deg, var(--ink-3) 0 var(--hair), transparent var(--hair) 5%); }
+.gauge .minor.high { left: 66.667%; right: 0; background: repeating-linear-gradient(90deg, var(--ink-3) 0 var(--hair), transparent var(--hair) 6.25%); }
+.gauge .scale i { position: absolute; }
+.gauge .fill { left: 0; top: 8px; height: 12px; width: 0; border-radius: 6px 0 0 6px; background: var(--route); transition: width var(--d-press) var(--sail); }
+.gauge.unset .fill, .gauge.locked .fill { display: none; }
+.gauge .yours { top: 0; width: 28px; height: 28px; margin-left: -14px; border-radius: 50%; background: var(--route); box-shadow: 0 0 0 3px var(--chart-2), 0 0 0 4px var(--route); transition: left var(--d-press) var(--sail); }
+.gauge.unset .yours { display: none; }
+.gauge .truth { top: -6px; width: var(--mark); height: 40px; margin-left: calc(-1 * var(--mark) / 2); background: var(--ink); transition: left var(--d-leg) var(--sail); }
+.gauge .sail { left: 0; top: 8px; width: 100%; height: 12px; background: var(--route); transition: clip-path var(--d-leg) var(--sail); }
+.gauge .ticks { position: relative; height: calc(var(--t-meta) * 1.4 + var(--s4)); }
+.gauge .ticks span { position: absolute; top: var(--s4); transform: translateX(-50%); font-size: var(--t-meta); line-height: 1.4; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.gauge .set { display: flex; align-items: center; gap: var(--s4); margin-top: var(--s2); }
+.gauge .set button { width: var(--tap); min-width: var(--tap); height: var(--tap); padding: 0; font-size: var(--t-h3); font-weight: 700; }
+.gauge output { display: block; min-width: 5ch; text-align: center; font: 800 var(--t-h1)/1.1 var(--type); font-stretch: 75%; font-variant-numeric: tabular-nums; }
+.gauge:not(.unset) output::after { content: " dari 100"; font-size: var(--t-body); font-weight: 400; color: var(--ink-2); }
+:lang(en) .gauge:not(.unset) output::after { content: " of 100"; }
+/* before the first touch the readout's place holds the invitation; once a guess is set, the number */
+.gauge .unset-note { flex: 0 1 18rem; min-height: calc(var(--t-h1) * 1.1); display: flex; align-items: center; margin: 0; font-size: var(--t-small); line-height: 1.35; color: var(--ink-2); text-align: center; justify-content: center; }
+.gauge:not(.unset) .unset-note, .gauge.unset output { display: none; }
+
+/* "Coba: …": real choices to try at once, beside a field or a list */
+.try { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin: var(--s3) 0 var(--s4); }
+.try > span { font-size: var(--t-small); color: var(--ink-2); margin-right: var(--s1); }
+.try .chip { min-height: var(--tap); flex: none; }
+/* on a phone the row is one line that scrolls sideways under a fade at its right edge, as the first page's chips do */
+@media (max-width: 899.98px) {
+  .try { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * var(--gutter)); padding: var(--s1) var(--s7) var(--s1) var(--gutter);
+    mask-image: linear-gradient(90deg, #000 calc(100% - var(--s7)), transparent); }
+  .try::-webkit-scrollbar { display: none; }
+  .try > span { flex: none; }
+  .try { margin-block: var(--s2) var(--s3); } .options { margin-block: var(--s2); }
+  /* the race's chosen words: one line that scrolls sideways, so that the race begins on the first screen */
+  .race-pick .picked { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * var(--gutter)); padding: var(--s1) var(--s7) var(--s1) var(--gutter);
+    mask-image: linear-gradient(90deg, #000 calc(100% - var(--s7)), transparent); }
+  .race-pick .picked li { flex: none; }
+}
+
+
+/* chips chosen in a picker */
+.picked { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; margin: var(--s2) 0; padding: 0; list-style: none; }
+.picked li { display: inline-flex; align-items: center; min-height: var(--control); padding: 0 0 0 var(--s4); border-radius: var(--pill); background: var(--ink); color: var(--chart); font-weight: 600; font-size: var(--t-small); }
+.picked li.k0 { background: var(--route); color: var(--on-route); } .picked li.k1 { background: var(--route-2); color: var(--on-route-2); }
+.picked button { min-height: var(--control); min-width: var(--tap); border: 0; border-radius: var(--pill); background: none; color: inherit; padding: 0; font-size: var(--t-lede); }
+.picked button:hover { background: color-mix(in srgb, currentColor 18%, transparent); }
+
+/* ==== 8. stories: a voyage in three parts (docs/DESIGN.md, "The story") ======================================= */
+
+/* the page: a story runs the full width, snaps to its steps, and the header's lower edge shows how far one is */
+main.voyage { max-width: none; padding: 0; }
+html.voyaging { scroll-snap-type: y proximity; }
+html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: var(--rule); background: var(--route-on-deep);
+  transform-origin: 0 50%; transform: scaleX(var(--voyage, 0)); }
+.voyage { --stage-h: calc(100svh - var(--head, var(--head-h))); --beat: calc(var(--stage-h) * .7); --side: clamp(min(20rem, 40vw), 30vw, 26rem); }
+
+/* 1. the cover, on the deep, with the chart's graticule faintly behind */
+.cover { position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: center; min-height: var(--stage-h); overflow: hidden;
+  padding: var(--s6) max(var(--gutter), (100% - var(--content)) / 2) var(--s7); background: var(--deep); color: var(--on-deep); scroll-snap-align: start; --focus: var(--route-on-deep); }
+.graticule { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; max-width: none; fill: none; stroke: var(--line-deep); stroke-width: 1; vector-effect: non-scaling-stroke;
+  mask-image: radial-gradient(ellipse 80% 90% at 70% 40%, #000 30%, transparent 85%); }
+.graticule path { vector-effect: non-scaling-stroke; }
+.cover a.kicker { align-self: flex-start; color: var(--on-deep-2); }
+.cover a.kicker::before { color: var(--on-deep-2); }
+.cover a.kicker:hover { color: var(--on-deep); }
+.cover-kicker { display: flex; align-items: center; gap: var(--s3); margin: var(--s5) 0 var(--s4); font-size: var(--t-small); font-weight: 600; color: var(--on-deep-2); }
+.cover-kicker::before { content: ""; width: var(--s6); height: var(--rule); background: var(--route-on-deep); }
+.cover h1 { max-width: 13ch; margin: 0 0 var(--s6); font: 800 min(var(--t-display), 12.5svh)/var(--l-display) var(--type); font-stretch: 75%; letter-spacing: 0; color: var(--on-deep); }
+.cover h1.long { max-width: 16ch; font-size: min(calc((var(--t-h1) + var(--t-display)) / 2), 11svh); }  /* the cover keeps to one screen: "Mulai" is on it */
+.cover .deck { margin: 0 0 var(--s5); font-size: var(--t-lede); line-height: var(--l-lede); color: var(--on-deep); }
+.cover-intro { color: var(--on-deep-2); }
+/* the story's key number, a beacon over the water, beside the deck from 900px (a phone's cover keeps its title) */
+.cover-key { display: none; margin: 0 0 var(--s5); }
+.cover-key .key-number { display: block; font: 800 var(--t-h1)/var(--l-display) var(--type); font-stretch: 75%; color: var(--beacon); font-variant-numeric: tabular-nums; }
+.cover-key .key-label { display: block; max-width: 24rem; margin-top: var(--s2); font-size: var(--t-small); line-height: var(--l-small); color: var(--on-deep-2); }
+@media (min-width: 900px) { .cover-key { display: block; animation: surface var(--d-leg) var(--sail) calc(var(--d-turn) * 1.6) both; } }
+.cover-intro { display: none; }  /* one paragraph on the cover, the deck: the intro opens the first scene's caption */
+@media (max-width: 899.98px) { .cover { justify-content: flex-end; } }  /* on a phone the sea lies above the title */
+.cover .shore-sea { left: 0; width: 100%; }
+@media (max-width: 899.98px) { .cover .shore-sea::after { background: linear-gradient(to top, var(--deep) 55%, color-mix(in srgb, var(--deep) 60%, transparent) 68%, transparent 82%); } }
+.cover-text { position: relative; }
+.begin { min-height: calc(var(--tap) + var(--s2)); margin-top: var(--s2); padding: 0 var(--s5); font-size: var(--t-body); }
+.begin svg, .stage-nav svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+@media (min-width: 900px) {
+  .cover-body { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s7); align-items: start; }
+  .cover .deck { font-size: var(--t-h3); line-height: var(--l-lede); }
+}
+@media (min-width: 900px) and (max-height: 940px) {  /* a laptop's screen: the cover still holds "Mulai" */
+  .cover { padding-top: var(--s4); }
+  .cover-kicker { margin: var(--s3) 0; }
+  .cover h1 { margin-bottom: var(--s5); }
+  .cover .deck { font-size: var(--t-lede); }
+}
+
+/* 2. a stage per scene: the figure holds the screen, the caption turns in one place beside it (below 900px: under it).
+   Under the sticky stage lies a run of beats, one per step, that the scroll snaps to; each holds its caption, hidden. */
+.scene { position: relative; background: var(--deep); }
+.stage { position: sticky; top: var(--head, var(--head-h)); z-index: 1; display: grid; grid-template: "figure" auto "side" minmax(0, 1fr) / minmax(0, 1fr); gap: var(--s3);
+  height: var(--stage-h); padding: var(--s3) var(--gutter); background: var(--deep); color: var(--on-deep); --focus: var(--route-on-deep); }
+.stage:focus { outline: none; }
+.stage-figure { grid-area: figure; display: grid; place-items: center; height: var(--fig, calc(var(--stage-h) / 2)); min-width: 0; }
+/* behind the plate, the chart's graticule, faint: the figure is a chart laid on the deep */
+.stage::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .55;
+  background: linear-gradient(var(--line-deep) 0 1px, transparent 1px) 0 0 / 100% 96px, linear-gradient(90deg, var(--line-deep) 0 1px, transparent 1px) 0 0 / 96px 100%;
+  mask-image: radial-gradient(ellipse 60% 70% at 38% 50%, #000 20%, transparent 75%); }
+.stage { isolation: isolate; }  /* --fig: the figure's share on a phone, by need (app.js, share) */
+.stage-figure > * { grid-area: 1 / 1; max-width: 100%; }
+.pinned { display: none; }
+/* the stage is the deep in both schemes: its figure is drawn on it, in the night's inks (the dark scheme's own values;
+   plate.js reads them here, and saves the image on paper), on a panel of the deep that the sea under the stages
+   (below) shows through only faintly: its text keeps 4.5:1 over the brightest frame of the sea */
+.stage-figure { --paper: color-mix(in srgb, var(--deep) 92%, transparent); --line: var(--line-deep); --ink: #e8eff0; --ink-2: #b3c3cc; --ink-3: #8497a3;
+  --cat-1: var(--cat-1-night); --cat-2: var(--cat-2-night); --cat-3: var(--cat-3-night); --cat-4: var(--cat-4-night); --cat-5: var(--cat-5-night); --cat-6: var(--cat-6-night); --cat-7: var(--cat-7-night); --cat-8: var(--cat-8-night); --cat-9: #b3c3cc; }
+.stage-figure .plate svg { max-height: var(--fig, calc(var(--stage-h) / 2)); border-color: transparent; border-radius: var(--r2); }
+/* the sea under the stages (app.js, storySea): held under them while they pass, seen around each figure's panel; the
+   stages are then clear, and the graticule is the sea's own */
+.scenes { position: relative; }
+.story-sea { position: sticky; top: var(--head, var(--head-h)); height: var(--stage-h); margin-bottom: calc(-1 * var(--stage-h)); pointer-events: none; background: var(--deep); }
+.story-sea > .chart { position: absolute; inset: 0; height: 100%; background: none; border: 0; border-radius: 0; animation: fade calc(var(--d-leg) * 1.5) var(--sail) both; }
+.story-sea .chart.gl :is(.when, .tally) { display: none; }
+.sea-on .scene, .sea-on .stage { background: transparent; }
+.sea-on .stage::before { content: none; }
+/* over the sea a caption and the step's controls keep a shade of the deep under them, as the figure has its panel */
+.sea-on .caption { padding-inline: var(--gutter); margin-inline: calc(-1 * var(--gutter)); margin-bottom: calc(-1 * (var(--t-meta) * var(--l-meta) + var(--gap))); }  /* room for the shade; the key's line is the caption's too, and goes to its text where it needs it (app.js, stage: clamp) */
+.sea-on .turn { border-radius: var(--r2); background: color-mix(in srgb, var(--deep) 88%, transparent); box-shadow: 0 0 var(--s4) var(--s3) color-mix(in srgb, var(--deep) 88%, transparent); }
+/* at a new scene the sea takes the whole stage for a leg (app.js, storySea): the figure, the caption and its meta give
+   way, then come back over it */
+.sea-on :is(.stage-figure, .caption, .stage-meta) { transition: opacity var(--d-turn) var(--sail), transform var(--d-turn) var(--sail); }  /* (the meta also glides as a phone's opening rises) */
+.sea-on .stage.sea-full :is(.stage-figure, .caption, .stage-meta) { opacity: 0; transition-duration: var(--d-press); }
+/* the key: what the sea shows, in a line above the controls (as many words named as fit it, app.js); its room is kept from the start (a phone's stage
+   shares its height with it, app.js share), so nothing moves when it is written */
+.sea-key { display: none; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); color: var(--on-deep-2); }
+.sea-on .sea-key { position: relative; z-index: 1; display: block; height: calc(1em * var(--l-meta)); overflow: hidden; white-space: nowrap; color: var(--on-deep);
+  background: color-mix(in srgb, var(--deep) 88%, transparent); box-shadow: 0 0 var(--s3) var(--s2) color-mix(in srgb, var(--deep) 88%, transparent); }  /* (the caption's shade) */
+/* the scene's name and the step's count over the sea stand on the caption's shade too: on-deep-2 over it keeps 4.5:1
+   (5.9) over the brightest the sea can be, as the caption's text does */
+.sea-on .stage-meta { position: relative; z-index: 1; border-radius: var(--r1); background: color-mix(in srgb, var(--deep) 88%, transparent); box-shadow: 0 0 var(--s3) var(--s2) color-mix(in srgb, var(--deep) 88%, transparent); }
+/* where the sea names nothing on a step (app.js, storySea: a phone's long caption), the caption's shade covers its band */
+.sea-on .stage.mute .caption { background: color-mix(in srgb, var(--deep) 88%, transparent); border-radius: var(--r2); }
+.sea-on .stage:is(.mute, .yields) .sea-key { visibility: hidden; }
+.sea-on .stage-nav .step { background: var(--deep); }
+.sea-on .stage-nav .step:hover { background: var(--deep-2); }
+.stage-figure .sub { color: var(--on-deep-2); }
+/* a strip of more rows than its room keeps apart (a phone; held sideways, one whose names would be drawn smaller) is
+   drawn at its own height in a window of that room and slides through it as the page scrolls (app.js, share, fit and
+   slide); the window ends at its last whole row (--cut) */
+.stage.tall .stage-figure { overflow: hidden; place-items: start center; mask-image: linear-gradient(#000 var(--cut, 100%), transparent var(--cut, 100%)); }
+.stage.tall .stage-figure > :not(.pinned, .elided) { transform: translateY(calc(-1 * var(--slide, 0px))); }
+/* its title and legend stand pinned over it (app.js, stage: pinned), on the deep; where the rows a step names lie
+   further apart than the window holds, the rows between are elided: a row of three dots, then the rest (elided) */
+.stage.tall .pinned { display: block; overflow: hidden; z-index: 1; align-self: start; background: var(--deep); }
+.elided { display: none; }
+.rem-probe { position: absolute; width: 10rem; height: 0; visibility: hidden; pointer-events: none; }  /* (app.js, storyPage: text made larger on an open page lays the story out again) */
+.stage.tall .elided { display: block; z-index: 1; align-self: start; background: var(--deep); }
+.elided svg { display: block; max-width: none; overflow: hidden; }
+.elided .gap { display: block; width: 24px; margin-inline: auto; background: radial-gradient(circle at 4px 50%, var(--on-deep-2) 1.6px, transparent 2.2px) 0 0 / 8px 100% repeat-x; }
+.stage.tall .stage-figure .plate svg { max-height: none; }
+.stage-side { --gap: var(--s2); grid-area: side; display: flex; flex-direction: column; gap: var(--gap); min-height: 0; }
+.stage-meta { display: flex; justify-content: space-between; gap: var(--s3); max-width: none; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); font-weight: 600; color: var(--on-deep-2); font-variant-numeric: tabular-nums; }
+/* the caption: its text whole in its band, or (app.js, stage: clamp) up to its last whole line with "Baca selengkapnya"
+   at the band's foot, which opens it as a sheet of the deep over the stage above the controls, opaque; the text scrolls
+   in the sheet only where it is taller than the stage */
+.caption { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.turns { display: grid; align-content: start; min-height: 0; }
+/* (a turn reaches a few pixels past its text, so that its clip never touches a glyph standing past its line) */
+.turn { grid-area: 1 / 1; align-self: start; overflow: clip; padding-block: var(--s1); margin-block: calc(-1 * var(--s1)); transition: opacity var(--d-turn) var(--sail), transform var(--d-turn) var(--sail); }
+.more-button { flex: none; align-self: start; max-width: 100%; margin-top: auto; min-height: var(--tap); padding: 0 var(--s4); white-space: normal; text-align: start; color: var(--on-deep); background: var(--deep); border: var(--hair) solid var(--line-deep-2); font-weight: 600; }
+.more-button:hover { background: var(--deep-2); }
+.more-button[hidden] { display: none; }
+/* (the sheet is as tall as its text, standing on the controls, at most the stage above them: a short text leaves the
+   figure in sight) */
+.scenes .stage.reading .caption { position: absolute; z-index: 3; inset: auto var(--sheet-right) var(--sheet-bottom) var(--sheet-left); max-height: calc(100% - var(--sheet-top) - var(--sheet-bottom)); margin: 0; padding: var(--s4); gap: var(--s3);
+  background: var(--deep); border: var(--hair) solid var(--line-deep-2); border-radius: var(--r2); }
+.stage.reading .turns { flex: 0 1 auto; padding-block: var(--s1); overflow-y: auto; overscroll-behavior: contain; scrollbar-color: var(--on-deep-2) transparent; }
+.stage.reading .turn { height: auto !important; }
+/* a sheet whose text still scrolls says so: a shadow under the text's box, outside it, and a line under it, until the
+   end is reached (app.js, read) */
+.read-cue { margin: 0; font-size: var(--t-meta); font-weight: 600; color: var(--on-deep-2); }
+.read-cue[hidden], .stage:not(.reading) .read-cue { display: none; }
+.caption:has(> .more-button) > .read-cue { display: none; }  /* (side by side, its control under the text: the shadow alone, the room for text kept) */
+.read-cue.done { visibility: hidden; }
+.stage.reading .caption:has(.read-cue:not([hidden], .done)) .turns { box-shadow: 0 10px 10px -8px rgb(0 0 0 / .55); }
+.scenes .stage.reading .turn .title { font-size: var(--t-h3); line-height: var(--l-h3); }  /* (a sheet is for reading: its title in a heading's size) */
+.stage.reading .more-button { margin-top: 0; }
+.stage.reading .sea-key { visibility: hidden; }
+.stage.reading .stage-nav { margin-top: auto; }  /* (the controls stay where they were) */
+@starting-style { .turn { opacity: 0; transform: translateY(var(--s2)); } .turn.back { transform: translateY(calc(-1 * var(--s2))); } }
+.turn.out { opacity: 0; transform: translateY(calc(-1 * var(--s2))); pointer-events: none; }
+.turn.out.back { transform: translateY(var(--s2)); }
+.turn p { max-width: var(--measure); margin: 0 0 var(--s3); font-size: var(--turn, var(--t-body)); line-height: var(--l-body); color: var(--on-deep); }  /* --turn: a size smaller where a phone's stage needs it (app.js, share) */
+.turn .head, .turn .title { margin: 0 0 var(--s2); font: 800 var(--t-h3)/var(--l-h3) var(--type); font-stretch: 75%; text-wrap: balance; }
+.turn .title { font-size: var(--t-h2); line-height: var(--l-h2); }
+.turn .hint { display: none; font-size: var(--t-small); color: var(--on-deep-2); }
+.turn .intro { color: var(--on-deep-2); }
+/* stacked, a caption longer than its band runs its head (an opening's title) into its text, in bold at the text's size,
+   so that the band holds lines of text (app.js, stage: clamp; share measures the
+   same, .caption.runin); the sheet, opened, sets them as they were */
+:is(.stage.runin:not(.reading), .caption.runin) .turn :is(.head, .title) { display: inline; margin: 0; font: 800 var(--turn, var(--t-body))/var(--l-body) var(--type); font-stretch: 100%; }
+:is(.stage.runin:not(.reading), .caption.runin) .turn :is(.head, .title)::after { content: ". "; }
+:is(.stage.runin:not(.reading), .caption.runin) .turn :is(.head, .title).stop::after { content: " "; }
+:is(.stage.runin:not(.reading), .caption.runin) .turn .head.echo { display: none; }  /* (a head that only repeats its text's first words) */
+:is(.stage.runin:not(.reading), .caption.runin) .turn :is(.head, .title) + p { display: inline; }
+:is(.stage.runin:not(.reading), .caption.runin) .turn :is(.head, .title) + p::after { content: ""; display: block; margin-bottom: var(--s3); }
+.stage-nav { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s2); }
+/* where the ticks are only a picture (app.js, glance), a caption that reads on puts its control in their place */
+.stage-nav .more-button { grid-column: 2; justify-self: center; margin: 0; }
+.stage:is(.clamped, .reading) .stage-nav:has(> .more-button) .ticks { display: none; }
+.stage-nav .step { min-width: var(--tap); padding: 0 var(--s3); color: var(--on-deep); border-color: var(--line-deep); }
+.stage-nav .step:hover { background: var(--deep-2); border-color: var(--on-deep-2); }
+.stage-nav .step span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ticks { display: flex; gap: var(--s1); margin: 0; padding: 0; list-style: none; }
+.ticks li { display: flex; flex: 1; }
+.ticks button { flex: 1; min-width: 0; min-height: var(--tap); padding: 0; border: 0; border-radius: var(--r1); }
+.ticks button:hover { background: var(--deep-2); }
+.ticks button::before { content: ""; width: 100%; height: var(--mark); border-radius: var(--pill); background: var(--line-deep); transition: background-color var(--d-turn) var(--sail); }
+.ticks li:first-child { flex: 0 0 auto; }
+.ticks li:first-child button { min-width: var(--tap); }
+.ticks.glance { pointer-events: none; }  /* too narrow to be targets (app.js, glance): a picture of how far one is */
+.ticks li:first-child button::before { width: var(--s3); height: var(--s3); border-radius: 50%; background: none; box-shadow: inset 0 0 0 var(--rule) var(--line-deep); }
+.ticks .past::before { background: var(--on-deep-2); }
+.ticks li:first-child .past::before { background: var(--on-deep-2); box-shadow: none; }
+.ticks [aria-current]::before { background: var(--route-on-deep); }
+.ticks li:first-child [aria-current]::before { background: var(--route-on-deep); box-shadow: none; }
+.beats { margin: calc(-1 * var(--stage-h)) 0 0; padding: 0; list-style: none; pointer-events: none; }
+.beat { position: relative; height: var(--beat); height: round(down, var(--beat), 1px); scroll-snap-align: start; }  /* (a whole number of pixels: the steps' places, a beat apart, never drift from the stage's) */
+.beat:last-child { height: calc(var(--stage-h) + var(--s1)); }  /* a little slack, so that rounded beats never unstick the last step */
+.beat > .hidden { top: 50%; }
+@media ((width >= 900px) or ((orientation: landscape) and (width >= 560px))) {
+  .stage { grid-template: "figure side" minmax(0, 1fr) / minmax(0, 1fr) var(--side); gap: var(--s7); padding: var(--s5) max(var(--gutter), (100% - var(--content)) / 2); }
+  .stage-figure { height: auto; min-height: 0; }
+  .stage-figure .plate svg { max-height: calc(var(--stage-h) - 2 * var(--s5)); }
+  .stage-side { --gap: var(--s4); padding: var(--s2) 0; }
+  .caption { padding-top: clamp(0px, 12vh - var(--s6), 96px); }  /* a short caption sits a little below the top, a fixed amount: nothing moves as captions turn */
+  .turn p { font-size: var(--caption, var(--t-caption)); line-height: 1.38; }  /* --caption: a size smaller where a long step needs it (app.js, fit) */
+  .turn .head { font-size: var(--t-h2); line-height: var(--l-h2); }
+  .turn .title { font-size: var(--caption-title, var(--t-h1)); line-height: var(--l-h1); }
+  .turn .hint { display: block; margin-top: var(--s5); }
+}
+/* on a tall enough screen side by side, the controls take two rows: the ticks, then the steps with their names */
+@media (width >= 900px) and (height >= 640px) {
+  .stage-nav { grid-template: "ticks ticks" auto "back on" auto / auto auto; justify-content: space-between; row-gap: var(--s3); }
+  .stage-nav .ticks { grid-area: ticks; }
+  .stage-nav .back { grid-area: back; } .stage-nav .on { grid-area: on; }
+  .stage-nav .step span { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  .stage-nav .back { padding-right: var(--s4); } .stage-nav .on { padding-left: var(--s4); }
+}
+/* from 1100px the figure owns the stage: the stage takes the wide grid (--wide, centred, the gutters at its edges) and
+   the plate is drawn larger (app.js, figureSize); the caption keeps a reading column of 26 to 30rem at its right */
+@media (min-width: 1100px) {
+  .voyage { --side: clamp(26rem, 18rem + 12vw, 30rem); }
+  .stage { padding-inline: max(var(--gutter), (100% - var(--wide)) / 2); }
+  .stage::before { mask-image: radial-gradient(ellipse 55% 75% at 33% 50%, #000 25%, transparent 80%); }
+}
+
+/* 3. the landing, on the chart: what the data cannot say, the tools, the next story */
+.landing { position: relative; z-index: 2; max-width: calc(var(--content) + 2 * var(--gutter)); margin: 0 auto; padding: var(--s8) var(--gutter) var(--s9); scroll-snap-align: start; }
+.landing > .tide-line { top: calc(1px - var(--tide-h)); bottom: auto; transform-origin: 50% 100%; }  /* the voyage comes ashore: the deep gives way to the paper along the tide line */
+/* the paper of the landing covers the sea under the stages, which ends at the tide line above it */
+.landing::before { content: ""; position: absolute; z-index: -1; inset: 0 calc(50% - 50vw); background: var(--chart); }
+.limits { max-width: calc(var(--measure) + 2 * var(--s6)); padding: var(--s5) var(--s6) var(--s4); background: var(--chart-2); border: var(--hair) solid var(--line-2); border-radius: var(--r2); }
+.limits h2 { margin: 0; }
+.limits-count { margin: var(--s1) 0 var(--s4); font-size: var(--t-meta); line-height: var(--l-meta); color: var(--ink-3); }
+/* what the data cannot say: a list, a paragraph of the story's own an item, led by its own first words in bold */
+/* (each point numbered, so that a reader knows where they are in "9 batasan"; a tight rhythm, every word in sight) */
+.limits-list { margin: 0; padding: 0; list-style: none; counter-reset: limit; }
+.limits-list li { counter-increment: limit; padding: var(--s3) 0 var(--s3) var(--s6); border-top: var(--hair) solid var(--line); line-height: var(--l-body); position: relative; break-inside: avoid; }
+.limits-list li::before { content: counter(limit); position: absolute; left: 0; top: var(--s3); min-width: var(--s5); font: 800 var(--t-small)/var(--l-body) var(--type); font-stretch: 80%; color: var(--route); font-variant-numeric: tabular-nums; }
+.limits-list li > b:first-child { display: block; color: var(--ink); line-height: var(--l-body); }
+.limits-list li > .rest { display: block; margin-top: var(--s1); font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }  /* (the rest of a point under its lead: quieter, never folded) */
+.limits-list li { overflow-wrap: anywhere; }
+@media (max-width: 599px) { .limits { padding: var(--s4) var(--s4) var(--s3); } .limits-list li { padding-left: var(--s5); } }  /* (a phone gives the text the width) */  /* (a long word in large type breaks rather than run past the screen) */
+.next-story { max-width: calc(var(--measure) + 2 * var(--s6)); margin-top: var(--s7); padding: var(--s5) var(--s6) var(--s6); gap: var(--s3); }
+@media (min-width: 900px) {
+  .landing { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); column-gap: var(--s7); align-items: start; }
+  .landing > :not(.next-story) { grid-column: 1; }
+  /* the panel across the page, its points in two columns (each whole in one); the next story beside what follows it */
+  .landing > .limits { grid-column: 1 / -1; max-width: none; }
+  .limits-list { columns: 2; column-gap: var(--s7); }
+  .landing .next-story { grid-column: 2; grid-row: 2 / span 3; margin-top: var(--s6); position: sticky; top: calc(var(--head, var(--head-h)) + var(--s5)); }
+}
+.next-story .kicker { margin: 0; }
+.next-story .card-title { font-size: var(--t-h2); line-height: var(--l-h2); font-weight: 800; font-stretch: 75%; }
+.next-story .card-text { font-size: var(--t-body); line-height: var(--l-body); }
+
+/* ==== 9. home: the night chart as hero, then stories, play, and how it is measured ============================ */
+
+main.home { max-width: none; padding: 0 0 var(--s9); }
+.home > section:not(.hero) { max-width: calc(var(--content) + 2 * var(--gutter)); margin: 0 auto; padding: var(--s8) var(--gutter) 0; }
+.home > section > h2 { margin: 0 0 var(--s5); max-width: 20ch; }
+.home > section > .kicker { margin-bottom: var(--s2); }
+.home .more { margin: var(--s5) 0 0; }
+
+/* the hero: the sea fills it; the text lies over the sea's lower part on a phone, at its left from 900px. Where the
+   sea is 3D (sea.js, html.dives), the hero runs on for three quarters of a screen past its text: the sea is held on
+   screen (sticky) while the camera dives (--dive, 0..1, set as the page scrolls) and the text gives way; then the page
+   comes up over it. */
+.hero { position: relative; isolation: isolate; overflow: clip; background: var(--deep); color: var(--on-deep); --focus: var(--route-on-deep);
+  --stage: calc(100svh - var(--head, var(--head-h))); --away: clamp(0, (var(--dive, 0) - .04) / .26, 1); --open: clamp(0, (var(--dive, 0) - .3) / .3, 1); }
+.dives .hero { padding-bottom: calc(var(--stage) * 1.75); margin-bottom: calc(-1 * var(--stage)); }  /* the page below comes up over the sea, now paper */
+.dives .home > section:not(.hero) { position: relative; background: var(--chart); box-shadow: 0 0 0 100vmax var(--chart); clip-path: inset(0 -100vmax); }
+/* where the page comes up over the sea (now paper), the sea fades into it instead of ending on a straight edge */
+.dives .home > section.featured { box-shadow: 0 100vmax 0 100vmax var(--chart); clip-path: inset(calc(-1 * var(--s9)) -100vmax 0); }
+.dives .home > section.featured::before { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 100%; width: 100vw; height: var(--s9); pointer-events: none;
+  background: linear-gradient(transparent, var(--chart)); }
+.hero-track { position: absolute; inset: 0; z-index: -1; }
+.hero-sea { position: sticky; top: var(--head, var(--head-h)); height: var(--stage); contain: strict; background: radial-gradient(120% 80% at 60% 20%, var(--deep-2), var(--deep) 70%); }
+/* as the dive ends on paper, the chart comes out of the paper under the header rather than being cut by it */
+.hero-sea::before { content: ""; position: absolute; z-index: 1; inset: 0 0 auto; height: var(--s7); pointer-events: none; background: linear-gradient(var(--chart), transparent); opacity: calc(var(--dive, 0) * var(--dive, 0)); }
+.hero-sea .chart { position: absolute; inset: 0; height: 100%; background: none; border: 0; border-radius: 0; }
+.hero-sea::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: calc(1 - var(--open));
+  background: linear-gradient(to top, var(--deep) 0, var(--deep) 30%, color-mix(in srgb, var(--deep) 70%, transparent) 48%, transparent 66%); }
+@media (max-width: 899.98px) { .hero-sea::after { background: linear-gradient(to top, var(--deep) 0, var(--deep) 44%, color-mix(in srgb, var(--deep) 78%, transparent) 60%, transparent 76%); }
+  /* (and the headline, which on a short phone reaches into the lit sky, stands on the caption's shade: 3:1 and more over
+     the brightest the sea can be; hero.mjs measures it) */
+  .hero h1 { width: fit-content; border-radius: var(--r2); background: color-mix(in srgb, var(--deep) 88%, transparent); box-shadow: 0 0 var(--s4) var(--s3) color-mix(in srgb, var(--deep) 88%, transparent); } }  /* on a phone the text lies over the chart: the sea darkens under it */
+.hero-sea.failed::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, var(--line-deep) 0 1px, transparent 1px 25%), repeating-linear-gradient(0deg, var(--line-deep) 0 1px, transparent 1px 25%); opacity: .5; }
+.chart.night .when { top: var(--s4); right: var(--gutter); left: auto; bottom: auto; color: var(--on-deep-2); opacity: calc(1 - var(--away)); }
+/* the year the ships are at, counting as they sail, over a line from the first year to the last filled as far as they are */
+.chart.gl .when { display: grid; justify-items: end; gap: var(--s1); width: 8.5rem; font: 600 var(--t-meta)/var(--l-meta) var(--type); opacity: 1; font-variant-numeric: tabular-nums; }
+.chart.gl .when[hidden] { display: none; }
+.chart.gl .when b { font: 800 var(--t-h2)/1 var(--type); font-stretch: 75%; color: var(--on-deep); }
+.hero .chart.gl .when { opacity: calc(1 - var(--open)); }  /* drawn for the night: it gives way as the paper comes in, never a ghost on it */
+.when-bar { position: relative; width: 100%; height: var(--rule); background: var(--line-deep-2); border-radius: var(--pill); }
+.when-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--at, 1) * 100%); background: var(--route-on-deep); border-radius: inherit; }
+.when-bar i::after { content: ""; position: absolute; right: -4px; top: -3px; width: var(--s2); height: var(--s2); border-radius: 50%; background: var(--on-deep); }
+.when-ends { display: flex; justify-content: space-between; width: 100%; color: var(--on-deep-2); }
+.chart.night .zoom { display: none; }
+.chart.night > canvas:focus-visible { outline-offset: calc(-1 * var(--s1)); }
+.chart.gl > canvas { position: absolute; inset: 0; cursor: default; }
+.chart.gl .tally { position: absolute; top: calc(var(--s4) + var(--t-h2) + var(--s7)); right: var(--gutter); margin: 0; font-size: var(--t-meta); line-height: var(--l-meta); font-weight: 600;
+  color: var(--on-deep-2); font-variant-numeric: tabular-nums; transition: opacity var(--d-turn) var(--sail) var(--d-leg); }  /* the arrival's count of words lit, under the year */
+.chart.gl .tally.done { opacity: 0; }
+.chart.gl > canvas + canvas { pointer-events: none; }
+.hero-text { position: relative; display: flex; flex-direction: column; justify-content: flex-end; min-height: var(--stage); padding: var(--s6) var(--gutter) var(--s4);
+  pointer-events: none; opacity: calc(1 - var(--away)); will-change: transform, opacity; }  /* its own layer: the sea moving under it never repaints the text */
+.hero-text:focus-within { opacity: 1; }
+.hero.away .hero-text > * { pointer-events: none; }
+.hero-text > * { pointer-events: auto; }
+.hero h1 { max-width: 11ch; margin: 0 0 var(--s4); font: 800 var(--t-display)/var(--l-display) var(--type); font-stretch: 75%; letter-spacing: 0; color: var(--on-deep); text-wrap: balance; }
+.hero-lede { max-width: 30rem; margin: 0 0 var(--s5); color: var(--on-deep-2); }
+.hero .suggest { margin: 0; flex-wrap: nowrap; gap: var(--s2); max-width: 32rem; }
+.hero .suggest span { flex: 1 1 auto; max-width: none; }
+.hero .suggest input { min-height: calc(var(--tap) + var(--s2)); color: var(--on-deep); background: var(--deep-2); border-color: var(--line-deep-2); }
+.hero .suggest input:hover, .hero .suggest input:focus { border-color: var(--on-deep-2); }
+.hero .suggest input::placeholder { color: var(--on-deep-2); }
+.hero .suggest > button { min-height: calc(var(--tap) + var(--s2)); padding: 0 var(--s4); flex: none; background: var(--route-on-deep); border-color: var(--route-on-deep); color: var(--deep); }
+.hero .suggest > button:hover { border-color: var(--on-deep); }
+.hero .offers { bottom: calc(100% + var(--s1)); top: auto; }  /* above the field: below it lies the bottom of the screen */
+.hero-try { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s3); font-size: var(--t-small); color: var(--on-deep-2); }
+.hero-try > span { flex: none; font-size: var(--t-meta); font-weight: 600; }
+.hero-try .chips { flex: 1; min-width: 0; margin: 0 calc(-1 * var(--gutter)) 0 0; padding: var(--s1) var(--s7) var(--s1) var(--s1);
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--s6)), transparent); }  /* a row that scrolls on a phone: it fades where it goes on (app.js sets its gap so the next chip peeks out) */
+.hero-try .chips button { min-height: var(--chip); padding: 0 var(--s3); color: var(--on-deep); background: transparent; border-color: var(--line-deep-2); }
+.hero-try .chips button:hover { border-color: var(--on-deep); background: var(--deep-2); }
+.hero-try .chips button[aria-pressed="true"] { color: var(--deep); background: var(--on-deep); border-color: var(--on-deep); }
+.hero-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s1) var(--s3); min-height: var(--tap); margin-top: var(--s2); }
+.hero-foot > .hero-now { flex: 1 1 100%; }
+.hero-now { margin: 0; font-size: var(--t-small); line-height: var(--l-small); color: var(--on-deep-2); }
+.hero-now a { color: var(--on-deep); font-weight: 600; }
+.hero-now .gloss { display: block; font-size: var(--t-meta); line-height: var(--l-meta); }
+/* what a light and a route are, beside the sea, until the dive turns it to paper */
+.hero-key { position: absolute; top: var(--s4); left: var(--gutter); display: grid; gap: var(--s1); max-width: 17rem; margin: 0; font-size: var(--t-meta); line-height: var(--l-meta);
+  color: var(--on-deep-2); opacity: calc(1 - var(--away)); pointer-events: none; }
+.hero .no-room { visibility: hidden; }  /* the key or the year, where the sky has no room for it above the headline (app.js, homePage) */
+.hero-key p { display: flex; align-items: center; gap: var(--s2); margin: 0; }
+.hero-key svg { flex: none; fill: none; stroke: var(--on-deep-2); stroke-width: 1.5; stroke-linecap: round; }
+.hero-key .light { fill: var(--light-5); stroke: none; } .hero-key .route { stroke: var(--route-on-deep); stroke-width: 2.5; } .hero-key .port { fill: var(--route-on-deep); stroke: none; }
+.hero-key .ship { fill: var(--on-deep); }
+.hero-key .ring { stroke: var(--on-deep); stroke-width: 2; }
+/* the keys are said once the sea has the keyboard; until then only to a screen reader (the sea is described by this line) */
+.hero-key .keys { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.hero:has(canvas:focus-visible) .hero-key .keys { position: static; display: block; width: auto; height: auto; clip-path: none; white-space: normal; color: var(--on-deep); }
+.dives .hero-down .no-dive, html:not(.dives) .hero-down .dive-cue { display: none; }
+.tide-mark { flex: none; fill: none; stroke: var(--route-on-deep); stroke-width: 2; stroke-linecap: round; }
+.hero-down { flex: none; padding: 0 var(--s3); color: var(--on-deep); font-size: var(--t-small); white-space: nowrap; border-color: var(--line-deep-2); border-radius: var(--pill); }
+@media (max-width: 899.98px) {
+  .hero h1 { font-size: clamp(2.75rem, 13.4vw, 4.5rem); margin-bottom: var(--s3); }
+  .hero-lede { margin-bottom: var(--s4); font-size: var(--t-small); line-height: var(--l-small); }
+  .hero-now .gloss { display: inline; } .hero-now .gloss::before { content: " · "; }
+  .hero-key { right: calc(8.5rem + 2 * var(--gutter)); }
+  /* two lines is all the sky above the text holds: the route is named by its own note on the sea, so here the second
+     line says that a light is tapped */
+  .hero-key .route-key { display: none; }
+}
+.hero-down:hover { color: var(--on-deep); text-decoration: none; background: var(--deep-2); }
+/* while the sound waits for the reader's first gesture (on by default; a browser lets it start only then), a note under
+   the status line says so, with the toggle that turns it off; it goes once the sea is heard or turned off. Its waves
+   call a few times, never with reduced motion */
+.sound-ask { flex: 1 1 100%; display: flex; align-items: center; gap: var(--s2); margin: 0; max-width: none; font-size: var(--t-meta); line-height: var(--l-meta); color: var(--on-deep-2); }
+.sound-ask .sound-toggle { flex: none; min-width: var(--tap); padding: 0; color: var(--on-deep); border-color: var(--line-deep-2); border-radius: var(--pill); }
+.sound-ask .sound-toggle:hover { background: var(--deep-2); border-color: var(--on-deep); }
+.sound-ask.gone { visibility: hidden; opacity: 0; transition: opacity var(--d-turn) var(--sail), visibility 0s var(--d-turn); }
+@keyframes call { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: no-preference) { .sound-ask .wave { animation: call calc(var(--d-leg) * 2) var(--sail) 4; } }
+.hero-down svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--d-press) var(--sail); }
+.hero-down:hover svg { transform: translateY(var(--s1)); }
+@media (min-width: 900px) {
+  .hero-text { justify-content: center; }
+  .hero-sea::after { background: linear-gradient(to right, var(--deep) 0, var(--deep) calc((100% - var(--content)) / 2 + 30rem), color-mix(in srgb, var(--deep) 60%, transparent) calc((100% - var(--content)) / 2 + 40rem), transparent calc((100% - var(--content)) / 2 + 50rem)); }
+  .hero-text { --inset: max(var(--gutter), (100% - var(--content)) / 2); width: calc(var(--inset) + min(36rem, 58% - var(--inset))); padding: var(--s8) 0 var(--s7) var(--inset); }  /* (less below: room for the sound note under the status line, the hero one screen) */
+  .hero h1 { margin-bottom: var(--s5); font-size: clamp(4rem, 7.4vw, 7rem); }
+  /* (from 1600px the text column is measured from the content's edge, not from the screen's, and the headline takes a
+     wider measure: two lines beside the sea, not four words stacked in a narrow column) */
+  @media (min-width: 1600px) { .hero-text { width: calc(var(--inset) + 46rem); } .hero h1 { max-width: 15ch; } }
+  .hero-lede { font-size: var(--t-lede); line-height: var(--l-lede); margin-bottom: var(--s6); }
+  .hero .offers { top: calc(100% + var(--s1)); bottom: auto; }
+  .hero-try { flex-direction: column; align-items: flex-start; gap: var(--s1); margin-top: var(--s4); }  /* the label above the chips: no hanging indent */
+  .hero-try .chips { margin: 0; padding: var(--s1) 0; mask-image: none; }
+  .hero-foot { max-width: 32rem; margin-top: var(--s4); }
+  /* the dive is signposted at the foot of the first screen, in the middle */
+  .hero-down { position: absolute; left: 50vw; bottom: var(--s5); transform: translateX(-50%); background: color-mix(in srgb, var(--deep) 70%, transparent); }
+  .hero-down:hover { transform: translateX(-50%); }
+  .hero-key { top: var(--s5); left: auto; right: max(var(--gutter), (100% - var(--content)) / 2); }
+  .chart.night .when { top: auto; bottom: var(--s5); right: max(var(--gutter), (100% - var(--content)) / 2); }
+  .chart.night .when b { font-size: var(--t-h1); }
+  .chart.gl .tally { top: auto; bottom: calc(var(--s5) + var(--t-h1) + var(--s6)); right: max(var(--gutter), (100% - var(--content)) / 2); }
+}
+
+/* cards led by a number: stories (the key number) and play (a mark) */
+.story-cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); }
+.story-card { position: relative; overflow: hidden; gap: var(--s3); container-type: inline-size; }
+.story-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: var(--mark); background: var(--route); transform: scaleX(0); transform-origin: 0 50%; transition: transform var(--d-turn) var(--sail); }
+.story-card:hover::before, .story-card:focus-visible::before { transform: scaleX(1); }
+.key { display: flex; flex-direction: column; gap: var(--s2); padding-bottom: var(--s4); border-bottom: var(--hair) solid var(--line); }
+.key-number { font: 800 var(--t-h2)/var(--l-display) var(--type); font-stretch: 75%; letter-spacing: -.01em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.key-label { font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
+.story-cards.large { gap: var(--s4); }
+.story-card.large { padding: var(--s6) var(--s5) var(--s5); background: var(--deep); border-color: var(--line-deep); color: var(--on-deep); --focus: var(--route-on-deep); }
+.story-card.large::before { background: var(--route-on-deep); }
+.story-card.large:hover { border-color: var(--on-deep-2); }
+.story-card.large .key { border-color: var(--line-deep); }
+.story-card.large .key-number { font-size: var(--t-key); color: var(--beacon); }
+/* A large card leans a little towards a mouse (app.js sets --rx, --ry) and a glint crosses its number (--gx). */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .story-card.large { transform: perspective(60rem) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform var(--d-turn) var(--sail), border-color var(--d-press) var(--sail); }
+  .story-card.large.leaning { transition: transform var(--d-press) linear, border-color var(--d-press) var(--sail); }
+  .story-card.large.leaning .key-number { background: linear-gradient(100deg, var(--beacon) calc(var(--gx) - 14%), color-mix(in srgb, var(--beacon) 45%, var(--on-deep)) var(--gx), var(--beacon) calc(var(--gx) + 14%));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+}
+/* Key numbers settle into place once, when they first come into view (app.js adds .settle, then .in). */
+.settle { opacity: 0; transform: translateY(.18em); }
+.settle.in { opacity: 1; transform: none; transition: opacity var(--d-leg) var(--sail), transform var(--d-leg) var(--sail); }
+.story-card.large .key-label { color: var(--on-deep-2); }
+.story-card.large .card-title { color: var(--on-deep); }
+.story-card.large .card-text { color: var(--on-deep-2); }
+.cards-head { margin-top: var(--s7); }
+/* the other stories as an index: a row each under a rule of ink, the number beside the title from 900px */
+.story-cards.index { grid-template-columns: minmax(0, 1fr); gap: 0 var(--s7); }
+.story-cards.index .story-card { padding: var(--s5) 0 var(--s6); background: none; border: 0; border-top: var(--rule) solid var(--ink); border-radius: 0; }
+.story-cards.index .key { padding: 0; border: 0; }
+.story-cards.index .key-number { font-size: min(var(--t-h1), 3rem); }
+.story-cards.index .story-card:hover .card-title { color: var(--route); }
+@media (min-width: 900px) {
+  .story-cards.index { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .story-cards.index .story-card { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); grid-template-rows: auto 1fr; gap: var(--s2) var(--s5); align-content: start; }
+  .story-cards.index .key { grid-row: span 2; }
+}
+/* the newest story leads: a wider card, its number larger */
+@media (min-width: 900px) { .story-cards.large { grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(0, 1fr)); } .story-card.large { padding: var(--s6); }
+  .story-cards.large li:first-child .key-number { font-size: calc(var(--t-key) * 1.25); } .story-cards.large li:first-child .card-title { font-size: var(--t-h2); line-height: var(--l-h2); } }
+
+/* a play card leads with a small picture of its own figure, drawn from its data (app.js, PICTURES) in the plate's inks,
+   with a note of what it shows; the route's colour marks what the game asks about */
+.play-card { position: relative; overflow: hidden; gap: var(--s2); }
+.play-pic, .reveal { --p-ink: var(--ink); --p-soft: var(--ink-3); --p-line: var(--line); --p-dot: var(--ink-3); --p-on: var(--route); --p-on-ink: var(--on-route); --p-ground: var(--chart-2);
+  display: block; height: 136px; margin-bottom: var(--s1); }
+:is(.play-pic, .reveal) svg { display: block; overflow: visible; font-family: var(--type); }
+:is(.play-pic, .reveal) text { font-size: 13px; font-weight: 600; fill: var(--p-ink); }
+:is(.play-pic, .reveal) .strong { font-weight: 800; } :is(.play-pic, .reveal) .soft { font-size: 12px; font-weight: 400; fill: var(--p-soft); }
+:is(.play-pic, .reveal) .word { font-size: 16px; font-weight: 800; font-stretch: 80%; }
+.play-pic .ask { font-size: 20px; font-weight: 800; font-stretch: 80%; fill: var(--p-ink); }  /* the quiz's question, in its picture */
+:is(.play-pic, .reveal) .big { font-weight: 800; font-stretch: 75%; fill: var(--p-ink); } :is(.play-pic, .reveal) .faint { opacity: .25; }
+:is(.play-pic, .reveal) .halo { paint-order: stroke; stroke: var(--p-ground); stroke-width: 4px; stroke-linejoin: round; }
+:is(.play-pic, .reveal) .line { fill: none; stroke: var(--p-line); stroke-width: 1.5; } :is(.play-pic, .reveal) .dotted { stroke-dasharray: 1 3; stroke-linecap: round; }
+:is(.play-pic, .reveal) .mute { fill: var(--p-dot); } :is(.play-pic, .reveal) .on { fill: var(--p-on); } :is(.play-pic, .reveal) .on-line { stroke: var(--p-on); fill: none; }
+:is(.play-pic, .reveal) .on-text { fill: var(--p-on-ink); }
+:is(.play-pic, .reveal) .c1 { fill: var(--cat-1); } :is(.play-pic, .reveal) .c2 { fill: var(--cat-2); } :is(.play-pic, .reveal) .c3 { fill: var(--cat-3); }
+:is(.play-pic, .reveal) .person { fill: var(--person); } :is(.play-pic, .reveal) .organisation { fill: var(--organisation); } :is(.play-pic, .reveal) .place { fill: var(--place); }
+:is(.play-pic, .reveal) .s0 { fill: var(--seq-0); opacity: .45; } :is(.play-pic, .reveal) .s1 { fill: var(--seq-1); } :is(.play-pic, .reveal) .s2 { fill: var(--seq-2); } :is(.play-pic, .reveal) .s3 { fill: var(--seq-3); } :is(.play-pic, .reveal) .s4 { fill: var(--seq-4); } :is(.play-pic, .reveal) .s5 { fill: var(--seq-5); }
+.play-note { min-height: calc(var(--t-meta) * var(--l-meta)); margin-bottom: var(--s2); font-size: var(--t-meta); line-height: var(--l-meta); color: var(--ink-3); }
+.play-note i { display: inline-block; width: 8px; height: 8px; margin: 0 var(--s1) 0 var(--s2); border-radius: 50%; } .play-note i:first-child { margin-left: 0; }
+.play-note .c1 { background: var(--cat-1); } .play-note .c2 { background: var(--cat-2); } .play-note .c3 { background: var(--cat-3); }
+.play-card .played { display: block; margin-top: var(--s2); font-size: var(--t-meta); font-weight: 600; color: var(--ink-3); }
+.play-card .played::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: var(--s2); border-radius: 50%; background: var(--route); }
+.play-top .lead .played { color: var(--on-deep-2); }
+/* a game's card ends on what pressing it does, drawn as the primary button (the whole card is the link) */
+.play-go { display: inline-flex; align-items: center; align-self: start; min-height: var(--tap); margin-top: var(--s3); padding: 0 var(--s5); border-radius: var(--r1); background: var(--route); color: var(--on-route); font-weight: 700; }
+.play-go::after { content: "→"; margin-left: var(--s2); transition: transform var(--d-press) var(--sail); }
+.play-card:is(:hover, :focus-visible) .play-go::after { transform: translateX(var(--s1)); }
+.play-top .lead .play-go { background: var(--route-on-deep); color: var(--deep); }
+.play-pic .word.on { fill: var(--p-on); } .play-pic .word.off { fill: var(--p-soft); }
+/* the hub's two groups, "Main" and "Jelajah", each under its heading */
+.play-head { margin: var(--s6) 0 0; } .play-head + .cards { margin-top: var(--s4); }
+@media (max-width: 899.98px) {  /* on a phone the first game's card and its button are whole on the first screen */
+  .play-top.play-games .play-card.lead { padding: var(--s4) var(--s5); }
+  .play-top.play-games .lead .play-pic { height: clamp(112px, 29vw, 230px); }
+  .page-head.game + .play-head { margin-top: 0; } .play-head + .play-games { margin-top: var(--s3); }
+}
+/* A row or a label of an explorer that stands for a word or a name is a link to its page, the same everywhere (app.js,
+   toWord): its text in the row's ink, the site's link underline on hover and focus, and where there is no hover a
+   chevron after it; in a plate's SVG the same on its text */
+a.to-word { color: inherit; text-decoration: none; text-underline-offset: 3px; }
+a.to-word:hover, a.to-word:focus-visible { color: var(--link); text-decoration: underline; text-decoration-thickness: 2px; }
+.poster a.to-word:hover, .poster a.to-word:focus-visible { color: inherit; }
+a.to-word:hover .row-name, a.to-word:focus-visible .row-name { text-decoration: underline; fill: var(--link); }
+.to-word .chev { display: none; }
+/* ... and where it stands for a whole row (a list, a race, a table of names), the link is the row: one target across its
+   width, its value inside it; 44px tall on a touch screen, every row of a list as tall */
+a.row-link { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); width: 100%; min-height: var(--chip); color: var(--ink); }
+a.row-link:hover, a.row-link:focus-visible { color: var(--ink); text-decoration: none; }
+a.row-link:hover .row-name, a.row-link:focus-visible .row-name { color: var(--link); text-decoration: underline; text-decoration-thickness: 2px; }
+a.row-link .row-name { min-width: 0; }
+@media (pointer: coarse), (max-width: 599px) { a.row-link { min-height: var(--tap); } }
+/* (in a table, the row's name a link whose target covers the row: its numbers too) */
+tr.row-tr { position: relative; }
+tr.row-tr a.to-word::before { content: ""; position: absolute; inset: 0; }
+tr.row-tr:is(:hover, :focus-within) a.to-word { color: var(--link); text-decoration: underline; text-decoration-thickness: 2px; }
+@media (pointer: coarse), (max-width: 599px) { tr.row-tr > td { height: var(--tap); padding-block: 0; } .tide th .row-link { min-height: var(--tap); } }
+@media (hover: none) {
+  a.to-word:not(svg a, .row-link)::after, a.row-link .row-name::after { content: "\203A" / ""; margin-left: .3em; font-weight: 700; color: var(--ink-3); }
+  .poster a.to-word::after { color: inherit; opacity: .7; }
+  .to-word .chev { display: inline; }
+}
+/* What moved: words or names, two halves of one control beside "Atur" (app.js, moversPage) */
+.toy-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s3); margin: var(--s3) 0; }
+.toy-row > .options { margin: 0; } .toy-row > .options[open] { flex-basis: 100%; }
+.switch { display: inline-flex; margin: 0; padding: 2px; list-style: none; border: var(--hair) solid var(--line-2); border-radius: var(--pill); background: var(--chart-2); }
+.switch a { display: inline-flex; align-items: center; min-height: var(--control); padding: 0 var(--s4); border-radius: var(--pill); font: 600 var(--t-small)/1 var(--type); color: var(--ink-2); text-decoration: none; }
+.switch a[aria-pressed="true"] { background: var(--ink); color: var(--chart-2); }
+.switch a:hover { color: var(--ink); } .switch a[aria-pressed="true"]:hover { color: var(--chart-2); }
+@media (min-width: 900px) { .toy-row > .options[open] { flex: 1 1 auto; flex-basis: auto; } }
+/* "Atur": a toy's other choices, folded on a phone (app.js, options) */
+.options { margin: var(--s3) 0; }
+.options > summary { display: inline-flex; align-items: center; gap: var(--s2); min-height: var(--tap); padding: 0 var(--s4); border: var(--hair) solid var(--line); border-radius: var(--r1); background: var(--chart-2); font-size: var(--t-small); font-weight: 600; cursor: pointer; list-style: none; }
+.options > summary::-webkit-details-marker { display: none; }
+.options > summary::after { content: "+"; font-weight: 800; color: var(--ink-3); } .options[open] > summary::after { content: "−"; }
+.options-body > :first-child { margin-top: var(--s2); } .options-body .controls { margin: var(--s2) 0; }
+/* "Atur" beside a toy's first choice; opened, it takes the row under it. From 900px it stands open with no control of
+   its own (app.js, options), its choices in a row that wraps */
+.controls > .options { margin: 0; } .controls > .options[open] { flex-basis: 100%; }
+@media (min-width: 900px) {
+  .options[open] > summary { display: none; }  /* (closed, as a phone left it before turning, it keeps its control) */
+  .options-body { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s5); } .options-body > :first-child { margin-top: 0; }
+  .options-body .chips { margin-inline: 0; padding-inline: 0; } .options-body .chips + .chips { margin-top: var(--s4); }
+  .controls > .options[open] { flex: 1 1 auto; }
+}
+/* a play card answers the pointer as a story card does: the route drawn across its top */
+.play-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: var(--mark); background: var(--route); transform: scaleX(0); transform-origin: 0 50%; transition: transform var(--d-turn) var(--sail); }
+.play-card:is(:hover, :focus-visible)::before { transform: scaleX(1); }
+
+/* how it is measured: three short columns, each led by a number read from the data */
+.measure-cols { display: grid; gap: var(--s6); margin-top: var(--s5); }
+.measure-col { padding-top: var(--s4); border-top: var(--rule) solid var(--ink); }
+.measure-col h3 { margin: 0 0 var(--s4); font: 600 var(--t-small)/var(--l-small) var(--type); font-stretch: 100%; color: var(--ink-2); }
+.measure-number { margin: 0; font: 800 var(--t-h1)/1 var(--type); font-stretch: 75%; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.measure-label { margin: var(--s2) 0 var(--s4); font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
+.measure-more { min-height: calc(6 * var(--chip)); font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
+.measure-list { margin: 0; padding: 0; list-style: none; }
+.measure-list li { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); min-height: var(--chip); border-bottom: var(--hair) solid var(--line); }
+.measure-list b { font-weight: 600; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+@media (min-width: 900px) { .measure-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s7); } }
+
+/* states: nothing found, nothing loaded, an address that leads nowhere */
+.empty { max-width: calc(var(--measure) + 2 * var(--s6)); margin: var(--s6) 0; padding: var(--s5) var(--s6); background: var(--chart-2); border: var(--hair) solid var(--line-2); border-radius: var(--r2); }
+.empty h1 { font-size: var(--t-h2); line-height: var(--l-h2); margin: var(--s2) 0 var(--s3); }
+.empty .words { margin-bottom: 0; } .empty .words + p { margin-top: var(--s5); } .empty .suggest { margin-block: var(--s3); }
+.offers .none, #suggestions .none { padding: var(--s3); font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
+@media (max-width: 899.98px) { #suggestions .none { color: var(--on-deep-2); } }
+/* an address that leads nowhere: a head of the deep like every other page's, as tall as the screen allows, the night
+   sea held still beside its text (under it on a phone), no route on it */
+.page-head.lost { display: flex; flex-direction: column; justify-content: flex-end; min-height: calc(100svh - var(--head-h) - var(--s7)); margin-bottom: 0; }
+.lost h1 { max-width: 11ch; margin: 0 0 var(--s5); font: 800 clamp(3rem, 6.4vw, 6rem)/var(--l-display) var(--type); font-stretch: 75%; letter-spacing: 0; color: var(--on-deep); }
+.lost .deck { max-width: 32rem; margin: 0 0 var(--s6); font-size: var(--t-lede); line-height: var(--l-lede); color: var(--on-deep-2); }
+.lost .cover-kicker { margin-top: 0; }
+.lost-ways { display: flex; flex-wrap: wrap; gap: var(--s3); max-width: none; margin: 0; }
+.lost-ways .button:not(.primary) { color: var(--on-deep); background: var(--deep); border-color: var(--line-deep-2); }
+.lost-ways .button:not(.primary):hover { background: var(--deep-2); border-color: var(--on-deep); }
+.lost-ways .primary { color: var(--deep); background: var(--route-on-deep); border-color: var(--route-on-deep); }
+.lost-ways .primary:hover { border-color: var(--on-deep); }
+@media (min-width: 900px) { .page-head.lost { justify-content: center; } }
+
+/* a word's own pages: the word is the subject, set in display type; its notes quiet, beside a rule */
+.page-head h1.word-title { letter-spacing: 0; font-size: var(--t-display); line-height: var(--l-display); max-width: none; overflow-wrap: anywhere; }
+.lens-section > .lens-about { margin: var(--s6) 0 var(--s1); }
+.lens-section > .about { margin-top: 0; }
+/* the play page (and the first page's three): the first thing to play leads, on the deep, its picture large; two beside
+   it; the rest under "more", two of them wide */
+.play-top .play-card.lead { padding: var(--s6); background: var(--deep); border-color: var(--line-deep); color: var(--on-deep); --focus: var(--route-on-deep); }
+.play-top .lead .kicker { margin: 0; color: var(--beacon); }
+.play-top .lead .play-pic { --p-ink: var(--on-deep); --p-soft: var(--on-deep-2); --p-line: var(--line-deep); --p-dot: var(--on-deep-2); --p-on: var(--route-on-deep); --p-on-ink: var(--deep); --p-ground: var(--deep);
+  height: clamp(150px, 42vw, 230px); margin: var(--s3) 0 0; }
+.play-top .lead .play-note { color: var(--on-deep-2); }
+.play-top .lead::before { background: var(--route-on-deep); }
+.play-top .lead .card-title { font-size: var(--t-h2); line-height: var(--l-h2); font-weight: 800; font-stretch: 75%; }
+.play-top .lead .card-text { max-width: 30rem; color: var(--on-deep-2); font-size: var(--t-body); line-height: var(--l-body); }
+.play-more .card { padding: var(--s4) var(--s5) var(--s5); } .play-more .card-title { font-size: var(--t-body); line-height: 1.25; font-stretch: 85%; }
+@media (min-width: 640px) and (max-width: 899.98px) { .play-more { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 900px) {
+  .play-top { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); grid-template-rows: auto auto; }
+  .play-top li:first-child { grid-row: span 2; }
+  .play-games { grid-template-rows: auto; } .play-games li:first-child { grid-row: auto; }
+  .play-top .lead { justify-content: flex-end; } .play-top .lead .play-pic { height: 250px; margin-bottom: var(--s2); }
+  .play-top .play-card:not(.lead) { display: grid; grid-template: "title pic" auto "text pic" 1fr "text note" auto / minmax(0, 1fr) minmax(0, 1.1fr); column-gap: var(--s5); }
+  .play-top .play-card:not(.lead) .play-pic { grid-area: pic; height: auto; min-height: 136px; }  /* the picture fills the card's height: no empty band over the note */ .play-top .play-card:not(.lead) .play-note { grid-area: note; margin: 0; }
+  .play-top .play-card:not(.lead) .card-title { grid-area: title; } .play-top .play-card:not(.lead) .card-text { grid-area: text; }
+  /* (on the hub the two games stand side by side as two of a kind: each its picture over its text, as tall as the
+     other, so no band of either is empty) */
+  .play-games .play-card:not(.lead) { display: flex; flex-direction: column; justify-content: flex-end; }
+  .play-games .play-card:not(.lead) .play-pic { flex: 1; height: auto; min-height: 250px; margin-bottom: var(--s2); }
+  .play-more { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: dense; }
+  .play-more .wide { grid-column: span 2; } .play-more .wide.right { grid-column: 2 / span 2; }
+}
+
+/* a figure's long note, folded */
+.about { margin: var(--s2) 0 var(--s4); max-width: var(--measure); }
+.about summary { min-height: var(--tap); font-size: var(--t-small); color: var(--link); }
+.about summary:hover { text-decoration: underline; }
+.about .sub { margin-top: var(--s1); }
+.caveats { margin-top: var(--s6); padding: var(--s2) var(--s5) var(--s4); background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
+.caveats h2 { margin: var(--s4) 0 var(--s3); font-size: var(--t-h3); line-height: var(--l-h3); }
+.caveats b { color: var(--ink); }
+/* the method on one word (app.js, methodDemo): a page, its words counted, the word's port on the chart, a year on */
+.method-demo { margin: var(--s6) 0 var(--s7); padding: var(--s5); background: var(--chart-2); border: var(--hair) solid var(--line); border-radius: var(--r2); }
+.demo-title { margin: 0 0 var(--s4); font: 700 var(--t-h3)/var(--l-h3) var(--type); font-stretch: 80%; }
+.demo-figure { display: block; max-width: 100%; height: auto; overflow: visible; }
+.demo-figure [data-from] { opacity: 0; transition: opacity var(--d-turn) var(--sail); } .demo-figure .shown { opacity: 1; }
+.demo-page { fill: var(--chart); stroke: var(--line); } .demo-line { stroke: var(--line); stroke-width: 4; stroke-linecap: round; } .demo-line.on { stroke: var(--beacon); }
+.demo-big { font: 800 34px var(--type); font-stretch: 75%; fill: var(--ink); } .demo-big.on { fill: var(--route); }
+.demo-small, .demo-near { font-size: 13px; fill: var(--ink-2); } .demo-near { font-weight: 600; } .demo-word { font: 800 13px var(--type); fill: var(--route); }
+.demo-tie { fill: none; stroke: var(--ink-3); } .demo-grid { stroke: var(--line); } .demo-dot { fill: var(--ink-3); }
+.demo-ship { fill: var(--route); stroke: var(--chart-2); stroke-width: 2; transition: transform var(--d-leg) var(--sail), opacity var(--d-turn) var(--sail); }
+.demo-figure .demo-goes { transition: transform var(--d-leg) var(--sail), opacity var(--d-turn) var(--sail); } .demo-goes.moved { transform: translate(var(--dx), var(--dy)); }
+.demo-trail { fill: none; stroke: var(--route); stroke-width: 2; stroke-dasharray: 4 4; }
+.demo-said { max-width: var(--measure); margin: var(--s3) 0; }
+.demo-room { display: grid; } .demo-room > * { grid-area: 1 / 1; } .demo-room > [aria-hidden] { visibility: hidden; }  /* as tall as the longest step: the controls never move */
+.demo-controls, .demo-steps { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+.demo-steps { margin: 0; padding: 0; list-style: none; }
+.demo-steps button[aria-pressed="true"] { color: var(--route); border-color: var(--route); }
+.tests-verdict { max-width: var(--measure); margin: var(--s4) 0; padding-left: var(--s3); border-left: var(--rule) solid var(--beacon); font-weight: 600; }
+.demo-source { margin: var(--s3) 0 0; font-size: var(--t-meta); line-height: var(--l-meta); color: var(--ink-3); }
+@media (min-width: 900px) { .method-body { display: grid; grid-template-columns: minmax(0, 38rem) minmax(0, 1fr); gap: var(--s8); align-items: start; } .caveats { margin-top: 0; position: sticky; top: calc(var(--head-h) + var(--s5)); } }
+.caveats ul { padding-left: var(--s5); max-width: var(--measure); margin: 0; }
+.caveats li { margin-bottom: var(--s2); }
+
+/* ==== 10. figures that draw in, the passages, page turns, and reduced motion ================================== */
+
+/* A figure draws itself in once, as it first comes near the screen (app.js holds it .unseen until then): lines are
+   drawn along their length, areas and points follow, bars grow from their axis, cells come up column by column (by
+   the period they stand for), cards and small charts surface one after another. Only what is already there moves. */
+.unseen, .unseen *, .turning #view * { animation-play-state: paused !important; }
+.arrived, .arrived * { animation: none !important; }  /* reached by a jump: simply there (app.js, sweep) */  /* held: below the screen, or while the page turns */
+.area, .spark-area { animation: fade var(--d-leg) var(--sail) calc(var(--d-turn) * .6) both; }
+.pt { animation: fade var(--d-turn) var(--sail) var(--d-leg) both; }
+.plate .series .draw { animation-delay: calc(var(--k) * 120ms); } .plate .band { animation: fade var(--d-leg) var(--sail) both; }
+.plate .row { animation: surface var(--d-turn) var(--sail) calc(var(--k) * 35ms) both; }
+/* a count read by hand (plate.js, units): its marks come in one after another each time its plate is shown */
+.plates > .off .tally { opacity: 0; transition: none; }
+@media (prefers-reduced-motion: no-preference) { .plate .tally { transition: opacity var(--d-turn) var(--sail) calc(var(--k) * 4ms); } }
+:is(.race, .bars, .duel) .bar { transform-origin: 0 50%; animation: grow var(--d-leg) var(--sail) both; }
+.duel .left .bar { transform-origin: 100% 50%; }
+.cell, .play-pic .in { animation: fade var(--d-turn) var(--sail) calc(var(--i, 0) * 45ms) both; }
+.tide td { animation: fade var(--d-turn) var(--sail) calc(var(--i, 0) * 40ms) both; }
+:is(.cards, .sparks) > li, .wall > .poster { animation: surface var(--d-leg) var(--sail) calc(var(--i, 0) * 50ms) both; }
+
+/* The passages of a story, tied to the scroll and nothing else (where the browser can): leaving the cover, its words
+   drift up and fade while the sea behind sinks away; the first stage's figure surfaces as its stage comes up; at the
+   landing the tide line swells and settles as the paper comes in. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes ebb { to { transform: translateY(-12vh); opacity: .1; } }
+    @keyframes sink { to { transform: translateY(8vh) scale(1.1); opacity: .3; } }
+    @keyframes swell { from { transform: scaleY(3.2); } }
+    .cover > .cover-text { animation: ebb linear both; animation-timeline: view(); animation-range: exit 0% exit 90%; }
+    .cover > .shore-sea { animation: sink linear both; animation-timeline: view(); animation-range: exit 0% exit 100%; }
+    .voyage .scene:first-of-type { view-timeline: --first block; }
+    .voyage .scene:first-of-type .stage-figure { animation: surface linear both; animation-timeline: --first; animation-range: entry 5% entry 70%; }
+    .landing > .tide-line { animation: swell linear both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
+    .page-head > .shore-sea { animation: sink linear both; animation-timeline: view(); animation-range: exit 0% exit 100%; }
+  }
+}
+
+/* A page turn is a tide: the header stays, and the new page comes in over the old one from the foot of the screen up,
+   behind a wave's edge (the tide line's), in one --d-turn; the title is carried over from the old page's title, or
+   from the card that was chosen (app.js names it), in the same time. Only where View Transitions are; else the page is
+   simply there. */
+.masthead { view-transition-name: masthead; }
+.page-head h1, .cover h1 { view-transition-name: title; }
+@keyframes tide { from { mask-position: 0 0; } to { mask-position: 0 100%; } }
+::view-transition-old(root) { animation: none; }
+::view-transition-new(root) { animation: tide var(--d-turn) var(--sail) both;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 300' preserveAspectRatio='none'%3E%3Cpath d='M0 150Q12.5 141 25 150T50 150T75 150T100 150V300H0Z'/%3E%3C/svg%3E") 0 0 / 100% 300% no-repeat; }
+::view-transition-group(title) { animation-duration: var(--d-turn); animation-timing-function: var(--sail); }
+@media (prefers-reduced-motion: reduce) {
+  /* transitions are cut (0s, not a hair above it: with transition-property's default of `all` that would make every
+     change on every element a transition, and a size read just after a change would see the old one) */
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: 0s !important; scroll-behavior: auto !important; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  html.voyaging { scroll-snap-type: none; }
+}
+
+/* One figure framed for another site (app.js, embedPage): no header or footer, the plate, its caption, the steps and
+   the way to the story, filling the frame. */
+html.embedded .masthead, html.embedded .site-foot, html.embedded #skip { display: none; }
+main.embed { min-height: 0; padding: var(--s4) var(--gutter); }
+.embed-box { display: grid; gap: var(--s3); max-width: 760px; margin: 0 auto; }
+.embed-title { margin: 0; font: 700 var(--t-h3)/var(--l-h3) var(--type); font-stretch: 80%; }
+.embed-title a { color: var(--ink); text-decoration: none; } .embed-title a:hover { text-decoration: underline; }
+.embed-figure .plate svg { width: 100%; }
+.embed-caption { max-height: 7.5em; overflow-y: auto; font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
+.embed-caption p { margin: 0; } .embed-caption b { color: var(--ink); }
+.embed-foot { display: flex; align-items: center; gap: var(--s2); max-width: none; margin: 0; font-size: var(--t-small); }
+.embed-foot .count { min-width: 4.5em; text-align: center; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.embed-foot .step { min-width: var(--tap); padding: 0; font-size: var(--t-lede); }
+.embed-open { margin-left: auto; font-weight: 600; }
+
+/* ==== 11. print: a story as its figures, each followed by its captions, on white ================================ */
+
+@media print {
+  :root { color-scheme: light; --chart: #fff; --chart-2: #fff; --deep: #fff; --deep-2: #fff; --on-deep: #0c1d2e; --on-deep-2: #3d4f60; --line-deep: #cdd8d4; --ink: #0c1d2e; --ink-2: #3d4f60; }
+  body { background: #fff; color: #0c1d2e; font-size: 11pt; }
+  .masthead, .site-foot, .skip, #tip, .zoom, .tools, .begin, .stage-nav, .stage-meta, .caption, .graticule, .hero-down, .hero-try, .hero-ask, a.kicker { display: none !important; }
+  main, main.voyage { max-width: none; padding: 0; min-height: 0; }
+  html.voyaging { scroll-snap-type: none; }
+  .cover { min-height: 0; padding: 0 0 12pt; background: none; color: #0c1d2e; }
+  .cover h1, .cover .deck { color: #0c1d2e; }
+  .cover-intro { display: block !important; }
+  .scene, .stage { background: none; color: #0c1d2e; }
+  .stage { position: static; display: block; height: auto; padding: 0; }
+  .stage-figure { height: auto; break-inside: avoid; }
+  .stage-figure .plate svg { max-height: none; background: #0a1f36; print-color-adjust: exact; -webkit-print-color-adjust: exact; }  /* drawn in the night's inks */
+  .beats { margin: 8pt 0 18pt; pointer-events: auto; }
+  .beat { height: auto; break-inside: avoid; }
+  .beat > .hidden { position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal; }
+  .beat h2 { font-size: 14pt; margin: 6pt 0 4pt; }
+  .beat p { margin: 0 0 4pt; }
+  .landing { display: block; padding: 0; }
+  .next-story { display: none; }
+  .hero { min-height: 0; background: none; color: #0c1d2e; }
+  .hero h1 { color: #0c1d2e; }
+  a { color: #0c1d2e; }
+}
+
+/* Sharing (app.js, sharer): a control that opens the device's share sheet, or where there is none a short list of
+   places under it, on paper and lifted (--lift); a story's cover has it beside "Mulai", each stage beside its count.
+   How to cite a story, folded, on its landing. */
+.share { position: relative; display: inline-block; margin: 0; }
+.share > summary { list-style: none; cursor: pointer; }
+.share > summary::-webkit-details-marker { display: none; }
+.share-to { position: absolute; z-index: 5; top: calc(100% + var(--s2)); left: 0; width: max-content; min-width: 16rem; padding: var(--s3); border: var(--hair) solid var(--line); border-radius: var(--r2);
+  background: var(--chart-2); box-shadow: var(--lift); color: var(--ink); font-size: var(--t-small); font-weight: 400; text-align: left; }
+.share-to p { margin: 0 0 var(--s2); font-size: var(--t-meta); color: var(--ink-3); }
+.share-to ul { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s1); margin: 0; padding: 0; list-style: none; }
+.share-to a { display: flex; align-items: center; gap: var(--s3); min-height: var(--tap); padding: 0 var(--s3); border-radius: var(--r1); color: var(--ink); text-decoration: none; }
+.share-to a:hover { background: var(--chart); }
+.share-to .share-mark { flex: none; color: var(--ink-3); }
+.share-to .copy { display: grid; gap: var(--s2); grid-column: 1 / -1; margin-top: var(--s2); padding-top: var(--s3); border-top: var(--hair) solid var(--line); }
+.share-to button { width: 100%; gap: var(--s2); }
+.share-mark { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cover .share { margin: var(--s2) 0 0 var(--s3); vertical-align: top; }
+.cover .share .share-to { top: auto; bottom: calc(100% + var(--s2)); }  /* opens upward, over the deck: below lies the cover's edge */
+.cover .share > summary { min-height: calc(var(--tap) + var(--s2)); color: var(--on-deep); background: var(--deep); border-color: var(--line-deep-2); }
+.cover .share > summary:hover { background: var(--deep-2); border-color: var(--on-deep); }
+.stage-meta .count { margin-left: auto; white-space: nowrap; text-align: right; }
+.stage-part { min-width: 0; text-wrap: balance; }  /* the scene, named whole (on a narrow phone on two lines, never cut): the one count is the step's */
+.share.step > summary { width: var(--s6); height: var(--s5); min-height: 0; margin: calc(-1 * var(--s1)) calc(-1 * var(--s2)) calc(-1 * var(--s1)) 0; padding: 0; border: 0; background: none; color: inherit; }
+.share.step > summary:hover { color: var(--on-deep); background: none; }
+.share.step .share-to { top: auto; bottom: calc(100% + var(--s2)); left: auto; right: 0; }  /* opens over the figure, not past the screen */
+/* on a phone the list is a sheet from the screen's foot, over a veil of the deep */
+@media (max-width: 899.98px) {
+  .share[open] > .share-to { position: fixed; z-index: 30; top: auto; right: 0; bottom: 0; left: 0; width: auto; min-width: 0; padding: var(--s5) var(--gutter) calc(var(--s5) + env(safe-area-inset-bottom));
+    border-width: var(--hair) 0 0; border-radius: var(--r2) var(--r2) 0 0; box-shadow: var(--lift), 0 0 0 100vmax rgb(6 18 31 / .5); }
+}
+.cite { margin: 0 0 var(--s5); color: var(--ink-2); font-size: var(--t-small); }
+.cite > summary { cursor: pointer; color: var(--link); }
+.cite pre { overflow-x: auto; padding: var(--s3); border: var(--hair) solid var(--line); border-radius: var(--r1); background: var(--chart-2); font-size: var(--t-meta); white-space: pre; }
+@media print { .share { display: none !important; } }

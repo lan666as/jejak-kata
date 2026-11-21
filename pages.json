@@ -1,0 +1,620 @@
+[
+ {
+  "name": "oknum",
+  "publishers": [
+   "kompas.com",
+   "tempo.co",
+   "tribunnews.com",
+   "bisnis.com",
+   "okezone.com",
+   "detik.com",
+   "liputan6.com"
+  ],
+  "by": "year",
+  "first": "2011-01",
+  "last": "2024-12",
+  "patterns": {
+   "oknum": "\\boknum\\b",
+   "salah": "\\b(pungli|pungutan liar|memeras|pemerasan|menganiaya|penganiayaan|memukul|pemukulan|mencabuli|pencabulan|memperkosa|pemerkosaan|menipu|penipuan|suap|menyuap|korupsi|narkoba|sabu|menembak|penembakan|melecehkan|pelecehan)\\b",
+   "polisi": "\\b(polisi|polri|polda|polres|polsek)\\b",
+   "tni": "\\b(tni|tentara|prajurit|kodam|kodim)\\b",
+   "jaksa": "\\b(jaksa|kejaksaan|kejari|kejati)\\b",
+   "pns": "\\b(pns|asn|pegawai negeri|aparatur sipil negara)\\b",
+   "guru": "\\bguru\\b",
+   "dewan": "\\b(anggota dprd?|anggota dewan|legislator)\\b",
+   "hakim": "\\bhakim\\b",
+   "dokter": "\\bdokter\\b",
+   "kades": "\\b(kepala desa|kades|lurah)\\b"
+  },
+  "shares": [
+   [
+    "*",
+    "oknum"
+   ],
+   [
+    "salah",
+    "oknum"
+   ],
+   [
+    "polisi",
+    "oknum"
+   ],
+   [
+    "tni",
+    "oknum"
+   ],
+   [
+    "jaksa",
+    "oknum"
+   ],
+   [
+    "pns",
+    "oknum"
+   ],
+   [
+    "guru",
+    "oknum"
+   ],
+   [
+    "dewan",
+    "oknum"
+   ],
+   [
+    "hakim",
+    "oknum"
+   ],
+   [
+    "dokter",
+    "oknum"
+   ],
+   [
+    "kades",
+    "oknum"
+   ],
+   [
+    "polisi+salah",
+    "oknum"
+   ],
+   [
+    "tni+salah",
+    "oknum"
+   ],
+   [
+    "jaksa+salah",
+    "oknum"
+   ],
+   [
+    "pns+salah",
+    "oknum"
+   ],
+   [
+    "guru+salah",
+    "oknum"
+   ],
+   [
+    "dewan+salah",
+    "oknum"
+   ],
+   [
+    "hakim+salah",
+    "oknum"
+   ],
+   [
+    "dokter+salah",
+    "oknum"
+   ],
+   [
+    "kades+salah",
+    "oknum"
+   ]
+  ]
+ },
+ {
+  "name": "tangkap",
+  "publishers": [
+   "kompas.com",
+   "tempo.co",
+   "tribunnews.com",
+   "bisnis.com",
+   "okezone.com",
+   "detik.com",
+   "liputan6.com",
+   "polri.go.id"
+  ],
+  "by": "year",
+  "first": "2011-01",
+  "last": "2024-12",
+  "patterns": {
+   "diamankan": "\\bdiamankan\\b",
+   "ditangkap": "\\b(ditangkap|menangkap|penangkapan)\\b",
+   "polisi": "\\b(polisi|polri|polda|polres|polsek)\\b",
+   "pelaku": "\\b(pelaku|tersangka|terduga)\\b"
+  },
+  "shares": [
+   [
+    "polisi+pelaku",
+    "diamankan"
+   ],
+   [
+    "polisi+pelaku",
+    "ditangkap"
+   ],
+   [
+    "*",
+    "diamankan"
+   ],
+   [
+    "*",
+    "ditangkap"
+   ]
+  ]
+ },
+ {
+  "name": "harga",
+  "publishers": [
+   "kompas.com",
+   "tempo.co",
+   "tribunnews.com",
+   "bisnis.com",
+   "okezone.com",
+   "detik.com",
+   "liputan6.com"
+  ],
+  "by": "year",
+  "first": "2011-01",
+  "last": "2024-12",
+  "patterns": {
+   "penyesuaian": "\\bpenyesuaian (harga|tarif)\\b",
+   "kenaikan": "\\b(kenaikan|naiknya|menaikkan) (harga|tarif)\\b",
+   "negara": "\\b(bbm|pertamax|pertalite|solar|tarif listrik|bpjs|tarif tol|elpiji|lpg)\\b",
+   "pasar": "\\b(cabai|bawang|beras|telur|daging|minyak goreng|gula)\\b"
+  },
+  "shares": [
+   [
+    "negara",
+    "penyesuaian"
+   ],
+   [
+    "negara",
+    "kenaikan"
+   ],
+   [
+    "pasar",
+    "penyesuaian"
+   ],
+   [
+    "pasar",
+    "kenaikan"
+   ]
+  ]
+ },
+ {
+  "name": "makan",
+  "publishers": [
+   "kompas.com",
+   "tempo.co",
+   "tribunnews.com",
+   "bisnis.com",
+   "okezone.com",
+   "detik.com",
+   "liputan6.com"
+  ],
+  "by": "month",
+  "first": "2023-06",
+  "last": "2024-12",
+  "patterns": {
+   "siang": "\\bmakan siang gratis\\b",
+   "bergizi": "\\bmakan bergizi gratis\\b"
+  },
+  "shares": [
+   [
+    "*",
+    "siang"
+   ],
+   [
+    "*",
+    "bergizi"
+   ]
+  ]
+ },
+ {
+  "name": "papua",
+  "publishers": [
+   "kompas.com",
+   "tempo.co",
+   "tribunnews.com",
+   "bisnis.com",
+   "okezone.com",
+   "detik.com",
+   "liputan6.com",
+   "polri.go.id",
+   "mil.id"
+  ],
+  "by": "month",
+  "first": "2020-01",
+  "last": "2024-12",
+  "patterns": {
+   "papua": "\\bpapua\\b",
+   "kkb": "\\bkkb\\b|kelompok kriminal bersenjata",
+   "opm": "\\bopm\\b|organisasi papua merdeka",
+   "kst": "\\bkst\\b|kelompok separatis teroris",
+   "tpnpb": "\\btpnpb\\b",
+   "teroris": "\\bteroris\\b"
+  },
+  "shares": [
+   [
+    "papua",
+    "kkb"
+   ],
+   [
+    "papua",
+    "opm"
+   ],
+   [
+    "papua",
+    "kst"
+   ],
+   [
+    "papua",
+    "tpnpb"
+   ],
+   [
+    "papua",
+    "teroris"
+   ]
+  ]
+ },
+ {
+  "name": "oknum-masa",
+  "publishers": [
+   "kompas.com",
+   "tempo.co",
+   "tribunnews.com",
+   "bisnis.com",
+   "okezone.com",
+   "detik.com",
+   "liputan6.com"
+  ],
+  "by": "span",
+  "first": "2020-01",
+  "last": "2024-12",
+  "patterns": {
+   "oknum": "\\boknum\\b",
+   "salah": "\\b(pungli|pungutan liar|memeras|pemerasan|menganiaya|penganiayaan|memukul|pemukulan|mencabuli|pencabulan|memperkosa|pemerkosaan|menipu|penipuan|suap|menyuap|korupsi|narkoba|sabu|menembak|penembakan|melecehkan|pelecehan)\\b",
+   "polisi": "\\b(polisi|polri|polda|polres|polsek)\\b",
+   "tni": "\\b(tni|tentara|prajurit|kodam|kodim)\\b",
+   "jaksa": "\\b(jaksa|kejaksaan|kejari|kejati)\\b",
+   "pns": "\\b(pns|asn|pegawai negeri|aparatur sipil negara)\\b",
+   "guru": "\\bguru\\b",
+   "dewan": "\\b(anggota dprd?|anggota dewan|legislator)\\b",
+   "hakim": "\\bhakim\\b",
+   "dokter": "\\bdokter\\b",
+   "kades": "\\b(kepala desa|kades|lurah)\\b"
+  },
+  "shares": [
+   [
+    "*",
+    "oknum"
+   ],
+   [
+    "salah",
+    "oknum"
+   ],
+   [
+    "polisi",
+    "oknum"
+   ],
+   [
+    "tni",
+    "oknum"
+   ],
+   [
+    "jaksa",
+    "oknum"
+   ],
+   [
+    "pns",
+    "oknum"
+   ],
+   [
+    "guru",
+    "oknum"
+   ],
+   [
+    "dewan",
+    "oknum"
+   ],
+   [
+    "hakim",
+    "oknum"
+   ],
+   [
+    "dokter",
+    "oknum"
+   ],
+   [
+    "kades",
+    "oknum"
+   ],
+   [
+    "polisi+salah",
+    "oknum"
+   ],
+   [
+    "tni+salah",
+    "oknum"
+   ],
+   [
+    "jaksa+salah",
+    "oknum"
+   ],
+   [
+    "pns+salah",
+    "oknum"
+   ],
+   [
+    "guru+salah",
+    "oknum"
+   ],
+   [
+    "dewan+salah",
+    "oknum"
+   ],
+   [
+    "hakim+salah",
+    "oknum"
+   ],
+   [
+    "dokter+salah",
+    "oknum"
+   ],
+   [
+    "kades+salah",
+    "oknum"
+   ]
+  ]
+ },
+ {
+  "name": "papua-tahun",
+  "publishers": [
+   "kompas.com",
+   "tempo.co",
+   "tribunnews.com",
+   "bisnis.com",
+   "okezone.com",
+   "detik.com",
+   "liputan6.com",
+   "polri.go.id",
+   "mil.id"
+  ],
+  "by": "year",
+  "first": "2011-01",
+  "last": "2024-12",
+  "patterns": {
+   "papua": "\\bpapua\\b",
+   "kkb": "\\bkkb\\b|kelompok kriminal bersenjata",
+   "opm": "\\bopm\\b|organisasi papua merdeka",
+   "kst": "\\bkst\\b|kelompok separatis teroris",
+   "tpnpb": "\\btpnpb\\b"
+  },
+  "shares": [
+   [
+    "papua",
+    "kkb"
+   ],
+   [
+    "papua",
+    "opm"
+   ],
+   [
+    "papua",
+    "kst"
+   ],
+   [
+    "papua",
+    "tpnpb"
+   ]
+  ]
+ },
+ {
+  "name": "oknum-kata",
+  "publishers": [
+   "kompas.com",
+   "tempo.co",
+   "tribunnews.com",
+   "bisnis.com",
+   "okezone.com",
+   "detik.com",
+   "liputan6.com"
+  ],
+  "by": "span",
+  "first": "2011-01",
+  "last": "2024-12",
+  "patterns": {
+   "oknum": "\\boknum\\b",
+   "polisi": "\\boknum (anggota )?(polisi|polri|kepolisian|brimob|polantas|polwan|polsek|polres|polda)\\b",
+   "tni": "\\boknum (anggota |prajurit )?(tni|tentara|prajurit)\\b",
+   "pns": "\\boknum (pns|asn|pegawai|aparatur)\\b",
+   "guru": "\\boknum (guru|kepsek|kepala sekolah)\\b",
+   "aparat": "\\boknum (aparat|petugas)\\b",
+   "pejabat": "\\boknum pejabat\\b",
+   "desa": "\\boknum (kades|kepala desa|lurah|perangkat desa)\\b",
+   "suporter": "\\boknum (suporter|bobotoh|aremania|bonek|pendukung)\\b",
+   "dewan": "\\boknum (anggota )?(dprd?|dewan|caleg|legislator)\\b",
+   "satpol": "\\boknum satpol\\b",
+   "dosen": "\\boknum (dosen|mahasiswa|pelajar)\\b",
+   "jaksa": "\\boknum (jaksa|kejaksaan|hakim|penyidik|pengacara)\\b",
+   "warga": "\\boknum (warga|masyarakat)\\b",
+   "dokter": "\\boknum (dokter|perawat|bidan|tenaga kesehatan|nakes)\\b",
+   "pers": "\\boknum (wartawan|jurnalis|ormas|lsm)\\b",
+   "kerja": "\\boknum (karyawan|sopir|driver|pedagang|pengusaha|satpam)\\b",
+   "tanpa": "\\boknum (yang|tersebut|tertentu|itu|ini|tak|tidak|nakal|lain)\\b"
+  },
+  "shares": [
+   [
+    "oknum",
+    "polisi"
+   ],
+   [
+    "oknum",
+    "tni"
+   ],
+   [
+    "oknum",
+    "pns"
+   ],
+   [
+    "oknum",
+    "guru"
+   ],
+   [
+    "oknum",
+    "aparat"
+   ],
+   [
+    "oknum",
+    "pejabat"
+   ],
+   [
+    "oknum",
+    "desa"
+   ],
+   [
+    "oknum",
+    "suporter"
+   ],
+   [
+    "oknum",
+    "dewan"
+   ],
+   [
+    "oknum",
+    "satpol"
+   ],
+   [
+    "oknum",
+    "dosen"
+   ],
+   [
+    "oknum",
+    "jaksa"
+   ],
+   [
+    "oknum",
+    "warga"
+   ],
+   [
+    "oknum",
+    "dokter"
+   ],
+   [
+    "oknum",
+    "pers"
+   ],
+   [
+    "oknum",
+    "kerja"
+   ],
+   [
+    "oknum",
+    "tanpa"
+   ]
+  ]
+ },
+ {
+  "name": "nama-ganda-1",
+  "publishers": [
+   "kompas.com",
+   "tempo.co",
+   "tribunnews.com"
+  ],
+  "by": "span",
+  "first": "2010-01",
+  "last": "2014-12",
+  "patterns": {
+   "demokrat": "\\bdemokrat\\b",
+   "as": "\\b(amerika serikat|trump|biden|obama|hillary|kamala|partai republik|senat as|kongres as|gedung putih)\\b",
+   "korupsi": "\\bkorupsi\\b",
+   "pan": "\\bpan\\b",
+   "panrb": "\\bpan[- ]?rb\\b|\\bmenpan\\b|pendayagunaan aparatur"
+  },
+  "shares": [
+   [
+    "demokrat",
+    "as"
+   ],
+   [
+    "demokrat+as",
+    "korupsi"
+   ],
+   [
+    "pan",
+    "panrb"
+   ]
+  ]
+ },
+ {
+  "name": "nama-ganda-2",
+  "publishers": [
+   "kompas.com",
+   "tempo.co",
+   "tribunnews.com"
+  ],
+  "by": "span",
+  "first": "2015-01",
+  "last": "2019-12",
+  "patterns": {
+   "demokrat": "\\bdemokrat\\b",
+   "as": "\\b(amerika serikat|trump|biden|obama|hillary|kamala|partai republik|senat as|kongres as|gedung putih)\\b",
+   "korupsi": "\\bkorupsi\\b",
+   "pan": "\\bpan\\b",
+   "panrb": "\\bpan[- ]?rb\\b|\\bmenpan\\b|pendayagunaan aparatur"
+  },
+  "shares": [
+   [
+    "demokrat",
+    "as"
+   ],
+   [
+    "demokrat+as",
+    "korupsi"
+   ],
+   [
+    "pan",
+    "panrb"
+   ]
+  ]
+ },
+ {
+  "name": "nama-ganda-3",
+  "publishers": [
+   "kompas.com",
+   "tempo.co",
+   "tribunnews.com"
+  ],
+  "by": "span",
+  "first": "2020-01",
+  "last": "2024-12",
+  "patterns": {
+   "demokrat": "\\bdemokrat\\b",
+   "as": "\\b(amerika serikat|trump|biden|obama|hillary|kamala|partai republik|senat as|kongres as|gedung putih)\\b",
+   "korupsi": "\\bkorupsi\\b",
+   "pan": "\\bpan\\b",
+   "panrb": "\\bpan[- ]?rb\\b|\\bmenpan\\b|pendayagunaan aparatur"
+  },
+  "shares": [
+   [
+    "demokrat",
+    "as"
+   ],
+   [
+    "demokrat+as",
+    "korupsi"
+   ],
+   [
+    "pan",
+    "panrb"
+   ]
+  ]
+ }
+]

@@ -1,0 +1,137 @@
+{
+ "version": "https://jsonfeed.org/version/1.1",
+ "title": "Jejak Kata: Cerita",
+ "description": "Tiap cerita berangkat dari pertanyaan yang biasa bikin ribut, berbelok pada sesuatu yang ditemukan hitungan, dan berhenti di batasnya: apa yang tidak bisa dikatakan data. Semua angka adalah hitungan halaman, dan semuanya bisa diperiksa.",
+ "home_page_url": "https://zidan.dev/jejak-kata/cerita/",
+ "feed_url": "https://zidan.dev/jejak-kata/feed.json",
+ "language": "id",
+ "authors": [
+  {
+   "name": "lan666as",
+   "url": "https://github.com/lan666as"
+  }
+ ],
+ "items": [
+  {
+   "id": "https://zidan.dev/jejak-kata/cerita/penyesuaian/",
+   "url": "https://zidan.dev/jejak-kata/cerita/penyesuaian/",
+   "title": "Harga naik, atau “disesuaikan”?",
+   "summary": "“Penyesuaian harga” hampir hanya dipakai untuk harga yang ditetapkan negara: BBM, listrik, tol, BPJS. Dari 200 yang kami baca, 139 berarti naik, dan 120 diucapkan pemerintah atau perusahaan negara.",
+   "content_text": "“Penyesuaian harga” hampir hanya dipakai untuk harga yang ditetapkan negara: BBM, listrik, tol, BPJS. Dari 200 yang kami baca, 139 berarti naik, dan 120 diucapkan pemerintah atau perusahaan negara. Cabai naik. Beras naik. Bensin? “Disesuaikan”. Kata itu sudah lama dicurigai sebagai penghalus. Kecurigaan bisa diuji: untuk harga macam apa kata itu dipakai, dan siapa yang mengucapkannya?",
+   "image": "https://zidan.dev/jejak-kata/cerita/penyesuaian/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-20T00:00:00Z",
+   "language": "id"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/cerita/oknum/",
+   "url": "https://zidan.dev/jejak-kata/cerita/oknum/",
+   "title": "Siapa yang disebut “oknum”?",
+   "summary": "Di halaman tentang pelanggaran, kata “oknum” menempel pada guru, pegawai negeri, tentara, dan kepala desa lebih sering daripada pada anggota dewan atau hakim: dua sampai lima kali di Kompas dan Detik. Dari 200 “oknum” yang kami baca, 150 tidak disebut namanya.",
+   "content_text": "Di halaman tentang pelanggaran, kata “oknum” menempel pada guru, pegawai negeri, tentara, dan kepala desa lebih sering daripada pada anggota dewan atau hakim: dua sampai lima kali di Kompas dan Detik. Dari 200 “oknum” yang kami baca, 150 tidak disebut namanya. Yang memeras bukan polisi, melainkan “oknum polisi”. Yang memukul bukan guru, melainkan “oknum guru”. Satu kata kecil yang sering dituduh menyelamatkan nama lembaga. Mari lihat di samping siapa kata itu paling sering berdiri, dalam berita pelanggaran.",
+   "image": "https://zidan.dev/jejak-kata/cerita/oknum/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-20T00:00:00Z",
+   "language": "id"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/cerita/diamankan/",
+   "url": "https://zidan.dev/jejak-kata/cerita/diamankan/",
+   "title": "Ditangkap, atau “diamankan”?",
+   "summary": "Di situs berita Polri, sepertiga halaman tentang seorang tersangka memakai kata “diamankan”. Di Tribunnews seperempat. Di Kompas naik dari 5% (2011) menjadi 15% (2024). Di Tempo: 2–8%.",
+   "content_text": "Di situs berita Polri, sepertiga halaman tentang seorang tersangka memakai kata “diamankan”. Di Tribunnews seperempat. Di Kompas naik dari 5% (2011) menjadi 15% (2024). Di Tempo: 2–8%. Dalam berita kriminal, orang tidak selalu ditangkap. Sebagian “diamankan”. KUHAP mengatur penangkapan dan penahanan, dan kata “diamankan” tidak ada di dalamnya; kata yang lebih empuk itu lazim di rilis dan konferensi pers polisi. Tiap redaksi memakainya dengan takaran yang berbeda-beda.",
+   "image": "https://zidan.dev/jejak-kata/cerita/diamankan/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-20T00:00:00Z",
+   "language": "id"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/cerita/viral-polisi/",
+   "url": "https://zidan.dev/jejak-kata/cerita/viral-polisi/",
+   "title": "Tidak viral, tidak ada polisi?",
+   "summary": "Pada 2010–2014 kata “viral” tidak ada di berita tentang polisi. Sekarang ada di 6–12% halamannya, dua sampai tiga kali rata-rata semua berita. Kepala desa dan kepala sekolah menyusul: 2–10%. Di halaman KPK, DPR, menteri, dan gubernur: di bawah rata-rata.",
+   "content_text": "Pada 2010–2014 kata “viral” tidak ada di berita tentang polisi. Sekarang ada di 6–12% halamannya, dua sampai tiga kali rata-rata semua berita. Kepala desa dan kepala sekolah menyusul: 2–10%. Di halaman KPK, DPR, menteri, dan gubernur: di bawah rata-rata. “No viral, no justice.” Banyak yang yakin polisi baru bergerak kalau perkaranya sudah ramai di media sosial. Keyakinan itu tak bisa dibuktikan dengan menghitung kata. Yang bisa dihitung: seberapa sering berita tentang polisi sekaligus berita tentang sesuatu yang viral?",
+   "image": "https://zidan.dev/jejak-kata/cerita/viral-polisi/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-21T00:00:00Z",
+   "language": "id"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/cerita/berhenti-dibicarakan/",
+   "url": "https://zidan.dev/jejak-kata/cerita/berhenti-dibicarakan/",
+   "title": "Yang berhenti dibicarakan tiap ganti masa jabatan",
+   "summary": "Sesudah SBY: harga BBM, buruh, bentrok, dan kata “didesak”. Sesudah periode pertama Jokowi: kabut asap, radikalisme, operasi tangkap tangan. Daftarnya dibuat aturan, dan hanya memuat kata yang susut di tiga media sekaligus.",
+   "content_text": "Sesudah SBY: harga BBM, buruh, bentrok, dan kata “didesak”. Sesudah periode pertama Jokowi: kabut asap, radikalisme, operasi tangkap tangan. Daftarnya dibuat aturan, dan hanya memuat kata yang susut di tiga media sekaligus. Kita sering ribut soal apa yang diberitakan. Jarang ada yang bertanya: apa yang berhenti diberitakan? Di sini satu aturan yang menjawab. Tak ada kata yang kami pilih dengan tangan.",
+   "image": "https://zidan.dev/jejak-kata/cerita/berhenti-dibicarakan/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-21T00:00:00Z",
+   "language": "id"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/cerita/dilupakan/",
+   "url": "https://zidan.dev/jejak-kata/cerita/dilupakan/",
+   "title": "Setahun sesudah turun, tinggal seperlima",
+   "summary": "Setahun sesudah turun, SBY tinggal 19% dari tahun terakhirnya di Kompas, 6% di Tempo, 16% di Tribunnews. Dari 25 orang yang meninggalkan tujuh jabatan tertinggi pada 2012–2023, 23 cukup halamannya untuk dihitung; nilai tengahnya 16–25%. Yang tidak dilupakan: yang pindah jabatan, maju pemilu, atau diadili.",
+   "content_text": "Setahun sesudah turun, SBY tinggal 19% dari tahun terakhirnya di Kompas, 6% di Tempo, 16% di Tribunnews. Dari 25 orang yang meninggalkan tujuh jabatan tertinggi pada 2012–2023, 23 cukup halamannya untuk dihitung; nilai tengahnya 16–25%. Yang tidak dilupakan: yang pindah jabatan, maju pemilu, atau diadili. Pers mengikuti kekuasaan, atau mengikuti orangnya? Ada cara mengukurnya: hitung seberapa sering sebuah nama ditulis pada tahun terakhir ia menjabat, lalu tengok lagi setahun kemudian. Berapa yang tersisa?",
+   "image": "https://zidan.dev/jejak-kata/cerita/dilupakan/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-20T00:00:00Z",
+   "language": "id"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/cerita/kata-korupsi/",
+   "url": "https://zidan.dev/jejak-kata/cerita/kata-korupsi/",
+   "title": "Partai mana yang ditulis bersama kata “korupsi”",
+   "summary": "Ketika Demokrat berkuasa, “korupsi” ada di 17–25% halaman yang menyebutnya. Ketika PDI Perjuangan berkuasa: paling tinggi 11%. Pada 2020–2024 kesepuluh partai yang pernah duduk di DPR sejak 2009 berkumpul di 2–10%.",
+   "content_text": "Ketika Demokrat berkuasa, “korupsi” ada di 17–25% halaman yang menyebutnya. Ketika PDI Perjuangan berkuasa: paling tinggi 11%. Pada 2020–2024 kesepuluh partai yang pernah duduk di DPR sejak 2009 berkumpul di 2–10%. Partai mana yang paling korup? Maaf, data ini tidak bisa menjawabnya. Yang bisa dihitung lebih sederhana: di berita yang menyebut sebuah partai atau lembaga, seberapa sering kata korupsi dan tersangka ikut tertulis? Dan apa yang terjadi pada angka itu ketika kekuasaan berpindah tangan?",
+   "image": "https://zidan.dev/jejak-kata/cerita/kata-korupsi/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-21T00:00:00Z",
+   "language": "id"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/cerita/yang-hilang/",
+   "url": "https://zidan.dev/jejak-kata/cerita/yang-hilang/",
+   "title": "KPK menyusut dari berita. Kata “tersangka” tidak",
+   "summary": "Dari 2012 ke 2023, kata “kpk” susut lebih dari separuh di tiga media. Tetapi pada 2024 Tempo berbalik, kata kerja di samping KPK tidak pernah melunak, dan berita tentang tersangka sebanyak dulu.",
+   "content_text": "Dari 2012 ke 2023, kata “kpk” susut lebih dari separuh di tiga media. Tetapi pada 2024 Tempo berbalik, kata kerja di samping KPK tidak pernah melunak, dan berita tentang tersangka sebanyak dulu. Apakah media melunak terhadap korupsi sesudah Undang-Undang KPK direvisi pada 2019? Orang berdebat panjang soal itu. Jawabannya ternyata bukan ya, bukan juga tidak.",
+   "image": "https://zidan.dev/jejak-kata/cerita/yang-hilang/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-21T00:00:00Z",
+   "language": "id"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/cerita/prabowo/",
+   "url": "https://zidan.dev/jejak-kata/cerita/prabowo/",
+   "title": "Dari capres menjadi menteri pertahanan, dalam satu tahun",
+   "summary": "Dua kali kalah, lalu masuk kabinet. Dalam satu tahun kata di samping nama Prabowo berganti dari “capres” menjadi “menteri pertahanan”. Kata “oposisi” jarang di sampingnya, tetapi juga jarang di samping siapa pun.",
+   "content_text": "Dua kali kalah, lalu masuk kabinet. Dalam satu tahun kata di samping nama Prabowo berganti dari “capres” menjadi “menteri pertahanan”. Kata “oposisi” jarang di sampingnya, tetapi juga jarang di samping siapa pun. Sejak kapan berita berhenti menulis Prabowo sebagai lawan? Lebih mendadak daripada yang kita ingat. Dan satu dugaan soal kata “oposisi” ternyata gugur begitu dibandingkan.",
+   "image": "https://zidan.dev/jejak-kata/cerita/prabowo/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-20T00:00:00Z",
+   "language": "id"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/cerita/kata-resmi/",
+   "url": "https://zidan.dev/jejak-kata/cerita/kata-resmi/",
+   "title": "Negara memilih kata. Redaksi tidak selalu menurut",
+   "summary": "Keputusan presiden mengganti “Cina” dengan “Tiongkok”: Kompas ikut pada 2014–2015 lalu berbalik, Tempo tidak pernah. Tetapi istilah polisi untuk kelompok bersenjata di Papua, “KKB”, unggul di ketiganya sampai 2023.",
+   "content_text": "Keputusan presiden mengganti “Cina” dengan “Tiongkok”: Kompas ikut pada 2014–2015 lalu berbalik, Tempo tidak pernah. Tetapi istilah polisi untuk kelompok bersenjata di Papua, “KKB”, unggul di ketiganya sampai 2023. Siapa yang berhak menamai sesuatu: negara, atau yang menulis berita? Tiga pertandingan antara kata resmi dan kata redaksi. Skornya tidak sama.",
+   "image": "https://zidan.dev/jejak-kata/cerita/kata-resmi/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-21T00:00:00Z",
+   "language": "id"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/cerita/umur-slogan/",
+   "url": "https://zidan.dev/jejak-kata/cerita/umur-slogan/",
+   "title": "Umur sebuah slogan",
+   "summary": "BLSM, revolusi mental, nawacita, tol laut, tax amnesty, PSBB, new normal, PPKM. Berapa lama kata-kata dari pemerintah bertahan di berita sebelum hilang? Sebuah catatan ringan.",
+   "content_text": "BLSM, revolusi mental, nawacita, tol laut, tax amnesty, PSBB, new normal, PPKM. Berapa lama kata-kata dari pemerintah bertahan di berita sebelum hilang? Sebuah catatan ringan. Setiap pemerintahan datang membawa kata-katanya sendiri. Berapa lama kata-kata itu bertahan setelah pidatonya selesai dan spanduknya diturunkan?",
+   "image": "https://zidan.dev/jejak-kata/cerita/umur-slogan/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-20T00:00:00Z",
+   "language": "id"
+  }
+ ]
+}

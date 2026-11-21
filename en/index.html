@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="/jejak-kata/">
+<title>Jejak Kata: how Indonesian words changed over time</title>
+<meta name="description" content="A chart of 20,000 words from Kompas, an Indonesian daily, 2011–2024, and each word's route year by year; books, web news, blogs and abstracts are counted too.">
+<link rel="canonical" href="https://zidan.dev/jejak-kata/en/">
+<link rel="alternate" hreflang="id" href="https://zidan.dev/jejak-kata/">
+<link rel="alternate" hreflang="en" href="https://zidan.dev/jejak-kata/en/">
+<link rel="alternate" hreflang="x-default" href="https://zidan.dev/jejak-kata/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Jejak Kata">
+<meta property="og:title" content="Jejak Kata: every word has its voyage">
+<meta property="og:description" content="A chart of 20,000 words from Kompas, an Indonesian daily, 2011–2024, and each word's route year by year; books, web news, blogs and abstracts are counted too.">
+<meta property="og:url" content="https://zidan.dev/jejak-kata/en/">
+<meta property="og:locale" content="en_GB">
+<meta property="og:locale:alternate" content="id_ID">
+<meta property="og:image" content="https://zidan.dev/jejak-kata/en/og.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The chart of words as a night sea: points of light on the water, and the magenta route of the word “jokowi”.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Jejak Kata: every word has its voyage">
+<meta name="twitter:description" content="A chart of 20,000 words from Kompas, an Indonesian daily, 2011–2024, and each word's route year by year; books, web news, blogs and abstracts are counted too.">
+<meta name="twitter:image" content="https://zidan.dev/jejak-kata/en/og.jpg">
+<meta name="twitter:image:alt" content="The chart of words as a night sea: points of light on the water, and the magenta route of the word “jokowi”.">
+<link rel="alternate" type="application/atom+xml" href="https://zidan.dev/jejak-kata/en/feed.xml" title="Jejak Kata: Stories">
+<link rel="alternate" type="application/feed+json" href="https://zidan.dev/jejak-kata/en/feed.json" title="Jejak Kata: Stories">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://zidan.dev/jejak-kata/#website","url":"https://zidan.dev/jejak-kata/","name":"Jejak Kata","description":"Peta 20 ribu kata dari harian Kompas, 2011–2024, dan rute tiap kata dari tahun ke tahun. Juga dihitung di sini: buku, berita web, blog, dan abstrak ilmiah.","inLanguage":["id","en"]}]}</script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>.prerender { display: none; }</style><noscript><style>.prerender { display: block; }</style></noscript>
+<meta name="theme-color" content="#0a1f36" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#06121f" media="(prefers-color-scheme: dark)">
+<link rel="preload" href="bricolage.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+<link rel="modulepreload" href="app.js">
+<link rel="modulepreload" href="chart.js">
+<link rel="modulepreload" href="text.js">
+<link rel="modulepreload" href="address.js">
+<link rel="modulepreload" href="scenes.js">
+<link rel="preload" href="data/id-web-news-kompas/first.json" as="fetch" crossorigin>
+</head>
+<body>
+<header class="masthead">
+  <a class="skip" id="skip" href="#/" data-t="skip">Skip to content</a>
+  <a class="brand" href="/jejak-kata/en/" data-to="">Jejak Kata</a>
+  <button class="head-button" id="search-button" type="button" aria-controls="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+    <span class="hidden" data-t="search_open">Search</span>
+  </button>
+  <button class="head-button" id="menu-button" type="button" aria-controls="menu" aria-expanded="false">
+    <span data-t="menu">Menu</span>
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path class="bar-1" d="M4 8h16"/><path class="bar-2" d="M4 16h16"/></svg>
+  </button>
+  <div class="menu" id="menu">
+    <nav aria-label="Jejak Kata">
+      <a href="/jejak-kata/en/cerita/" data-to="cerita" data-t="nav_stories">Stories</a>
+      <a href="/jejak-kata/en/main/" data-to="main" data-t="nav_play">Games</a>
+      <a href="/jejak-kata/en/peta/" data-to="peta" data-t="nav_chart">Chart</a>
+      <a href="/jejak-kata/en/temuan/" data-to="temuan" data-t="nav_findings">Findings</a>
+      <a href="/jejak-kata/en/metode/" data-to="metode" data-t="nav_method">Method</a>
+    </nav>
+    <form id="search" role="search" autocomplete="off">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+      <input id="query" type="search" aria-controls="suggestions" enterkeyhint="search">
+      <ul id="suggestions" hidden></ul>
+    </form>
+    <button id="sound" class="sound-toggle" type="button" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9.5h3l5-4v13l-5-4H4z"/><path class="wave" d="M15.5 9.5a3.5 3.5 0 0 1 0 5M18 7a7 7 0 0 1 0 10"/><path class="hush" d="M16 10l4 4M20 10l-4 4"/></svg>
+      <span data-t="sound">Sound</span>
+    </button>
+    <button id="language" type="button" lang="id">Bahasa Indonesia</button>
+  </div>
+</header>
+<main id="view" tabindex="-1"><script>/* the first page and a story are laid out full width from the start, so nothing moves when it arrives; where the sea can be 3D, the first page's hero is as tall as its dive, and the sea is fetched beside the rest */ { const main = document.currentScript.parentNode; const gl = !!window.WebGL2RenderingContext; if (gl && !matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("dives"); const route = /^#\/[a-z]/.test(location.hash) ? location.hash.slice(2) : location.pathname.slice(new URL(document.baseURI).pathname.length).replace(/^en(\/|$)/, ""); if (!route) { main.className = "home"; if (gl) document.head.append(Object.assign(document.createElement("link"), { rel: "modulepreload", href: "sea.js" })); } else if (/^cerita\/[^/]+\/embed\//.test(route)) { main.className = "embed"; document.documentElement.classList.add("embedded"); } else if (/^cerita\/[^/]/.test(route)) { main.className = "voyage"; for (const href of ["story.js", "plate.js"]) document.head.append(Object.assign(document.createElement("link"), { rel: "modulepreload", href })); } }</script><p class="loading">Loading…</p><div class="prerender"><h1>Every word has a voyage.</h1><p>A chart of 20,000 words from Kompas, a national Indonesian daily, 2011–2024, where words that keep the same company lie close together.</p><h2>Stories</h2><ul><li><a href="/jejak-kata/en/cerita/penyesuaian/">Did the price rise, or was it “adjusted”?</a>: 139 / 200 “price adjustments” we read mean a rise. “Penyesuaian harga” (price adjustment) is used almost only for prices the state sets: fuel, electricity, tolls, health insurance. Of 200 we read, 139 mean a rise, and 120 are spoken by the government or a state company.</li><li><a href="/jejak-kata/en/cerita/oknum/">Who gets called “oknum”?</a>: 150 / 200 “oknum” we read are not named. On pages about wrongdoing, the word “oknum” (a rogue individual) sits beside teachers, civil servants, soldiers and village heads more often than beside legislators or judges: two to five times in Kompas and Detik. Of 200 “oknum” we read, 150 are not named.</li><li><a href="/jejak-kata/en/cerita/diamankan/">Arrested, or “secured”?</a>: 5% → 15% of Kompas pages about a suspect use “diamankan”, 2011 → 2024. On the police's own news site, a third of the pages about a suspect use the word “diamankan” (secured). In Tribunnews a quarter. In Kompas it rose from 5% (2011) to 15% (2024). In Tempo: 2–8%.</li><li><a href="/jejak-kata/en/cerita/viral-polisi/">No viral, no police?</a>: 6–12% of pages about the police carry the word “viral”. In 2010–2014 the word “viral” is absent from news about the police. Now it is on 6–12% of those pages, two to three times the rate of all news. Village heads and school heads follow: 2–10%. On pages about the KPK, parliament, ministers and governors: below average.</li><li><a href="/jejak-kata/en/cerita/berhenti-dibicarakan/">What the news stopped talking about at each change of term</a>: 4.3× the fall of “harga bahan bakar” after 2014, in every outlet. After SBY: fuel prices, labour, clashes, and the word “didesak” (was urged). After Jokowi's first term: haze, radicalism, sting operations. The list is made by a rule, and holds only words that shrank in three outlets at once.</li><li><a href="/jejak-kata/en/cerita/dilupakan/">A year after leaving, a fifth is left</a>: 19% SBY in 2015, of his last year in office, in Kompas. A year out of office, SBY is down to 19% of his last year in Kompas, 6% in Tempo, 16% in Tribunnews. Of the 25 people who left seven top offices in 2012–2023, 23 have enough pages to count; their median is 16–25%. Those not forgotten: the ones who took another post, ran for office, or stood trial.</li><li><a href="/jejak-kata/en/cerita/kata-korupsi/">Which parties get written with the word “korupsi”</a>: 17–25% of Demokrat's pages carried “korupsi” while it governed. While Demokrat governed, “korupsi” was on 17–25% of the pages naming it. While PDI Perjuangan governed: 11% at most. In 2020–2024 all ten parties that have sat in parliament since 2009 are at 2–10%.</li><li><a href="/jejak-kata/en/cerita/yang-hilang/">The KPK shrank from the news. The word “suspect” did not</a>: KPK shrank by more than half in three outlets, from 2012 to 2023. From 2012 to 2023 the word “kpk” shrank by more than half in three outlets. But in 2024 Tempo turned back, the verbs beside the KPK never softened, and there is as much news about suspects as ever.</li><li><a href="/jejak-kata/en/cerita/prabowo/">From candidate to defence minister, in one year</a>: 4% → 38% “menteri pertahanan” beside his name, 2019 to 2020. Two defeats, then a seat in the cabinet. Within one year the word beside Prabowo's name went from “capres” to “menteri pertahanan”. The word “oposisi” is rare beside his name, but it is rare beside everyone's.</li><li><a href="/jejak-kata/en/cerita/kata-resmi/">The state picks a word. Newsrooms do not always follow</a>: The state replaced “Cina” with “Tiongkok”: Kompas went along in 2014–2015 and then turned back, Tempo never did. A presidential decree replaced “Cina” with “Tiongkok”: Kompas went along in 2014–2015 and then turned back, Tempo never did. But the police's term for the armed groups in Papua, “KKB”, led in all three until 2023.</li><li><a href="/jejak-kata/en/cerita/umur-slogan/">The lifespan of a slogan</a>: Slogan how long a government's words last in the news. BLSM, revolusi mental, nawacita, tol laut, tax amnesty, PSBB, new normal, PPKM. How long do a government's words last in the news before they vanish? A lighter note.</li></ul><h2>Games</h2><ul><li><a href="/jejak-kata/en/kuis/">Quiz</a>: Answer ten questions from the news: which year, who, which word won.</li><li><a href="/jejak-kata/en/tebak/">Guess the number</a>: Of 100 stories naming someone, how many hold a given word? Slide, lock, see how far off you were.</li><li><a href="/jejak-kata/en/menempel/">Who does this word stick to?</a>: Pick a word: tersangka, viral, kritik, maaf. See the names that share a page with it most.</li><li><a href="/jejak-kata/en/lingkaran/">Circles</a>: Pick a name: see who shares its pages most, and how that circle changes every five years.</li><li><a href="/jejak-kata/en/redaksi/">Three newsrooms, one name</a>: Compare the words Kompas, Tempo and Tribunnews set beside the same name.</li><li><a href="/jejak-kata/en/pasang/">Tide table</a>: Sixty names, each against its own best year: one table to scan for whose tide came when.</li><li><a href="/jejak-kata/en/balap/">Race</a>: A race you set up yourself: pick names or words and watch who is talked about most, year by year.</li><li><a href="/jejak-kata/en/tahun/">Each year in its words</a>: Read each year in the words most its own.</li><li><a href="/jejak-kata/en/bergeser/">Words and names that moved</a>: Find the words and names that changed company most, in one ranking.</li><li><a href="/jejak-kata/en/entitas/">Names that moved</a>: Find the people, bodies and places whose company changed most.</li></ul><h2>Other words</h2><ul><li><a href="/jejak-kata/en/kata/jokowi/">Jokowi</a></li><li><a href="/jejak-kata/en/kata/kpk/">KPK</a></li><li><a href="/jejak-kata/en/kata/prabowo/">Prabowo</a></li><li><a href="/jejak-kata/en/kata/ahok/">Ahok</a></li><li><a href="/jejak-kata/en/kata/ibu%20kota/">ibu kota</a></li><li><a href="/jejak-kata/en/kata/nusantara/">nusantara</a></li><li><a href="/jejak-kata/en/kata/konten/">konten</a></li><li><a href="/jejak-kata/en/kata/gibran/">Gibran</a></li><li><a href="/jejak-kata/en/kata/transparan/">transparan</a></li><li><a href="/jejak-kata/en/kata/mantan/">mantan</a></li><li><a href="/jejak-kata/en/kata/situs/">situs</a></li><li><a href="/jejak-kata/en/kata/lengser/">lengser</a></li><li><a href="/jejak-kata/en/kata/positif/">positif</a></li><li><a href="/jejak-kata/en/kata/daring/">daring</a></li><li><a href="/jejak-kata/en/kata/goreng/">goreng</a></li><li><a href="/jejak-kata/en/kata/rumah/">rumah</a></li></ul><nav><ul><li><a href="/jejak-kata/en/cerita/">Stories</a></li><li><a href="/jejak-kata/en/main/">Games</a></li><li><a href="/jejak-kata/en/peta/">Chart</a></li><li><a href="/jejak-kata/en/temuan/">Findings</a></li><li><a href="/jejak-kata/en/metode/">Method</a></li></ul></nav><p><a href="/jejak-kata/" hreflang="id" lang="id">Bahasa Indonesia</a></p><div class="foot">
+      <div class="foot-about"><p class="foot-brand">Jejak Kata</p><p>How Indonesian words changed the company they keep, counted in books, news, blogs and scholarly abstracts. The numbers here are statistics over text, not a dictionary.</p></div>
+      <details class="foot-fold"><summary><h2>Data</h2></summary><ul>
+        <li>HathiTrust Extracted Features (CC BY 4.0)</li>
+        <li>HPLT 3.0, from Common Crawl and the Internet Archive (packaging CC0; the text is the publishers')</li>
+        <li>OpenAlex (CC0)</li>
+        <li>Article titles of Indonesian Wikipedia (CC BY-SA 4.0) and Wikidata (CC0)</li></ul>
+        <p>Only counts are published; no page text.</p></details>
+      <details class="foot-fold"><summary><h2>Licence and code</h2></summary><p>Code: MIT. The counts, measures and data of this site: CC BY 4.0, with the attributions above.</p>
+        <ul class="foot-links"><li><a href="https://github.com/lan666as/jejak-kata">Source code</a></li><li><a href="https://github.com/lan666as/jejak-kata/tree/gh-pages/data">Site data (JSON)</a></li><li><a href="/jejak-kata/en/metode/">How it works, and its tests</a></li></ul></details>
+    </div></div></main>
+<footer class="site-foot"><div data-t="footer"></div></footer>
+<div id="tip" role="status" hidden></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

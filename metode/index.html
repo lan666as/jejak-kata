@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="/jejak-kata/">
+<title>Cara kerja: sumber, ukuran, dan uji tiap angka | Jejak Kata</title>
+<meta name="description" content="Sumber, ukuran, dan uji di balik Jejak Kata: dari mana teksnya, bagaimana pergeseran kata dihitung, dan seberapa peka tiap sumber menurut ujinya.">
+<link rel="canonical" href="https://zidan.dev/jejak-kata/metode/">
+<link rel="alternate" hreflang="id" href="https://zidan.dev/jejak-kata/metode/">
+<link rel="alternate" hreflang="en" href="https://zidan.dev/jejak-kata/en/metode/">
+<link rel="alternate" hreflang="x-default" href="https://zidan.dev/jejak-kata/metode/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Jejak Kata">
+<meta property="og:title" content="Cara kerja: sumber, ukuran, dan uji tiap angka">
+<meta property="og:description" content="Sumber, ukuran, dan uji di balik Jejak Kata: dari mana teksnya, bagaimana pergeseran kata dihitung, dan seberapa peka tiap sumber menurut ujinya.">
+<meta property="og:url" content="https://zidan.dev/jejak-kata/metode/">
+<meta property="og:locale" content="id_ID">
+<meta property="og:locale:alternate" content="en_GB">
+<meta property="og:image" content="https://zidan.dev/jejak-kata/metode/og.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Jejak Kata. Cara kerja. Sumber, ukuran, dan uji di balik Jejak Kata: dari mana teksnya, bagaimana pergeseran kata dihitung, dan seberapa peka tiap sumber menurut ujinya.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Cara kerja: sumber, ukuran, dan uji tiap angka">
+<meta name="twitter:description" content="Sumber, ukuran, dan uji di balik Jejak Kata: dari mana teksnya, bagaimana pergeseran kata dihitung, dan seberapa peka tiap sumber menurut ujinya.">
+<meta name="twitter:image" content="https://zidan.dev/jejak-kata/metode/og.jpg">
+<meta name="twitter:image:alt" content="Jejak Kata. Cara kerja. Sumber, ukuran, dan uji di balik Jejak Kata: dari mana teksnya, bagaimana pergeseran kata dihitung, dan seberapa peka tiap sumber menurut ujinya.">
+<link rel="alternate" type="application/atom+xml" href="https://zidan.dev/jejak-kata/feed.xml" title="Jejak Kata: Cerita">
+<link rel="alternate" type="application/feed+json" href="https://zidan.dev/jejak-kata/feed.json" title="Jejak Kata: Cerita">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://zidan.dev/jejak-kata/#website","url":"https://zidan.dev/jejak-kata/","name":"Jejak Kata","description":"Peta 20 ribu kata dari harian Kompas, 2011–2024, dan rute tiap kata dari tahun ke tahun. Juga dihitung di sini: buku, berita web, blog, dan abstrak ilmiah.","inLanguage":["id","en"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Jejak Kata","item":"https://zidan.dev/jejak-kata/"},{"@type":"ListItem","position":2,"name":"Cara kerja","item":"https://zidan.dev/jejak-kata/metode/"}]},{"@type":"Dataset","name":"Jejak Kata: hitungan dan ukuran kata bahasa Indonesia","description":"Peta 20 ribu kata dari harian Kompas, 2011–2024, dan rute tiap kata dari tahun ke tahun. Juga dihitung di sini: buku, berita web, blog, dan abstrak ilmiah. Hitungan dan ukuran pergeseran kata dari buku (HathiTrust), berita dan blog di web (HPLT), dan abstrak ilmiah (OpenAlex). Yang diterbitkan hanya hitungan; tidak ada teks halaman.","url":"https://zidan.dev/jejak-kata/metode/","sameAs":"https://huggingface.co/datasets/lan666as/jejak-kata","license":"https://creativecommons.org/licenses/by/4.0/","isAccessibleForFree":true,"creator":{"@type":"Person","name":"lan666as","url":"https://github.com/lan666as"},"inLanguage":["id","jv","su"],"temporalCoverage":"1910/2026","keywords":["bahasa Indonesia","perubahan makna","linguistik korpus","berita","kookurensi kata"],"distribution":[{"@type":"DataDownload","encodingFormat":"application/json","contentUrl":"https://zidan.dev/jejak-kata/data/lenses.json"}]}]}</script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>.prerender { display: none; }</style><noscript><style>.prerender { display: block; }</style></noscript>
+<meta name="theme-color" content="#0a1f36" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#06121f" media="(prefers-color-scheme: dark)">
+<link rel="preload" href="bricolage.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+<link rel="modulepreload" href="app.js">
+<link rel="modulepreload" href="chart.js">
+<link rel="modulepreload" href="text.js">
+<link rel="modulepreload" href="address.js">
+<link rel="modulepreload" href="scenes.js">
+<link rel="preload" href="data/id-web-news-kompas/first.json" as="fetch" crossorigin>
+</head>
+<body>
+<header class="masthead">
+  <a class="skip" id="skip" href="#/" data-t="skip">Langsung ke isi</a>
+  <a class="brand" href="/jejak-kata/" data-to="">Jejak Kata</a>
+  <button class="head-button" id="search-button" type="button" aria-controls="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+    <span class="hidden" data-t="search_open">Cari</span>
+  </button>
+  <button class="head-button" id="menu-button" type="button" aria-controls="menu" aria-expanded="false">
+    <span data-t="menu">Menu</span>
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path class="bar-1" d="M4 8h16"/><path class="bar-2" d="M4 16h16"/></svg>
+  </button>
+  <div class="menu" id="menu">
+    <nav aria-label="Jejak Kata">
+      <a href="/jejak-kata/cerita/" data-to="cerita" data-t="nav_stories">Cerita</a>
+      <a href="/jejak-kata/main/" data-to="main" data-t="nav_play">Mainan</a>
+      <a href="/jejak-kata/peta/" data-to="peta" data-t="nav_chart">Peta</a>
+      <a href="/jejak-kata/temuan/" data-to="temuan" data-t="nav_findings">Temuan</a>
+      <a href="/jejak-kata/metode/" data-to="metode" data-t="nav_method">Cara</a>
+    </nav>
+    <form id="search" role="search" autocomplete="off">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+      <input id="query" type="search" aria-controls="suggestions" enterkeyhint="search">
+      <ul id="suggestions" hidden></ul>
+    </form>
+    <button id="sound" class="sound-toggle" type="button" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9.5h3l5-4v13l-5-4H4z"/><path class="wave" d="M15.5 9.5a3.5 3.5 0 0 1 0 5M18 7a7 7 0 0 1 0 10"/><path class="hush" d="M16 10l4 4M20 10l-4 4"/></svg>
+      <span data-t="sound">Suara</span>
+    </button>
+    <button id="language" type="button">English</button>
+  </div>
+</header>
+<main id="view" tabindex="-1"><script>/* the first page and a story are laid out full width from the start, so nothing moves when it arrives; where the sea can be 3D, the first page's hero is as tall as its dive, and the sea is fetched beside the rest */ { const main = document.currentScript.parentNode; const gl = !!window.WebGL2RenderingContext; if (gl && !matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("dives"); const route = /^#\/[a-z]/.test(location.hash) ? location.hash.slice(2) : location.pathname.slice(new URL(document.baseURI).pathname.length).replace(/^en(\/|$)/, ""); if (!route) { main.className = "home"; if (gl) document.head.append(Object.assign(document.createElement("link"), { rel: "modulepreload", href: "sea.js" })); } else if (/^cerita\/[^/]+\/embed\//.test(route)) { main.className = "embed"; document.documentElement.classList.add("embedded"); } else if (/^cerita\/[^/]/.test(route)) { main.className = "voyage"; for (const href of ["story.js", "plate.js"]) document.head.append(Object.assign(document.createElement("link"), { rel: "modulepreload", href })); } }</script><p class="loading">Memuat peta kata…</p><div class="prerender"><h1>Cara kerja</h1><p>Sumber, ukuran, dan uji</p>
+      <p>Untuk tiap masa, setiap kata diberi <b>profil</b>: daftar teman-temannya. Tepatnya, untuk tiap kata lain dicatat apakah keduanya muncul sehalaman atau seartikel lebih sering atau lebih jarang daripada kebetulan. Profil dari dua masa bisa langsung dibandingkan, karena keduanya memakai daftar kata konteks yang sama.</p>
+      <p>Masalahnya, jarak antara dua profil tidak pernah nol, bahkan untuk dua contoh acak dari masa yang sama, dan makin besar untuk kata yang makin jarang. Jadi tiap masa dibelah dua secara acak, berulang kali: jarak antara belahan masa A dan belahan masa B dikurangi jarak antara dua belahan dari masa yang sama. Sisanya lalu dibandingkan dengan 500 kata lain yang paling dekat kekerapannya. Hasilnya angka <b>pergeseran</b>.</p>
+      <p>Dengan kata lain: seberapa jauh sebuah kata berpindah dari satu masa ke masa lain, dikurangi seberapa jauh ia tampak berpindah hanya karena untung-untungan contoh, lalu dibandingkan dengan kata-kata yang sama seringnya.</p>
+      <p>Ejaan lama (<i>tj, dj, j, oe</i>) diubah ke ejaan sekarang untuk tiap buku yang masih memakainya. Kata tidak dipotong menjadi kata dasar.</p>
+      <p>Halaman web diberi tahun menurut tanggal pada alamatnya atau pada baris pembukanya, bukan menurut kapan halaman itu dirayapi; halaman tanpa tanggal dan halaman terjemahan mesin dibuang. Di teks web, kata-kata yang bersama-sama menjadi judul artikel Wikipedia dihitung sebagai satu (<i>ibu kota</i>, <i>tol laut</i>, <i>joko widodo</i>). Nama ditampilkan hanya bila punya artikel Wikipedia.</p>
+      <p>Cara ini diuji dengan menanam perubahan buatan pada data nyata, dan dengan daftar kata yang perubahannya sudah dituliskan sebelum hasilnya dilihat. Rincian, kode, dan hasil ujinya ada di repositori.</p><h2>Sebelum membaca angkanya</h2><ul>
+      <li><b>Yang diukur adalah pemakaian dalam teks tertentu</b>, yaitu buku di perpustakaan, berita dan blog di web, serta abstrak ilmiah; bukan bahasa lisan dan bukan makna kamus.</li>
+      <li><b>Sumber-sumber tidak digabung.</b> Tiap sumber diukur sendiri; perubahan yang tampak di lebih dari satu sumber lebih layak dipercaya.</li>
+      <li><b>Susunan sumber ikut berubah.</b> Bila media yang terkumpul berbeda dari masa ke masa, semua kata tampak bergeser. Karena itu ada sumber yang berisi satu penerbit saja.</li>
+      <li><b>Angka pergeseran selalu dibandingkan dengan kata lain yang sama seringnya.</b> Kata yang jarang tidak diberi angka.</li>
+      <li><b>Peristiwa juga menggeser kata.</b> <i>tsunami</i> setelah 2004 punya teman baru tanpa berganti makna.</li></ul><nav><ul><li><a href="/jejak-kata/cerita/">Cerita</a></li><li><a href="/jejak-kata/main/">Mainan</a></li><li><a href="/jejak-kata/peta/">Peta</a></li><li><a href="/jejak-kata/temuan/">Temuan</a></li><li><a href="/jejak-kata/metode/">Cara</a></li></ul></nav><p><a href="/jejak-kata/en/metode/" hreflang="en" lang="en">English</a></p><div class="foot">
+      <div class="foot-about"><p class="foot-brand">Jejak Kata</p><p>Bagaimana kata-kata bahasa Indonesia berganti teman dari masa ke masa, dihitung dari buku, berita, blog, dan abstrak ilmiah. Angka-angka di sini adalah ukuran statistik atas teks, bukan kamus.</p></div>
+      <details class="foot-fold"><summary><h2>Data</h2></summary><ul>
+        <li>HathiTrust Extracted Features (CC BY 4.0)</li>
+        <li>HPLT 3.0, dari Common Crawl dan Internet Archive (kemasan CC0; teksnya milik penerbit)</li>
+        <li>OpenAlex (CC0)</li>
+        <li>Judul artikel Wikipedia bahasa Indonesia (CC BY-SA 4.0) dan Wikidata (CC0)</li></ul>
+        <p>Yang diterbitkan hanya hitungan; tidak ada teks halaman.</p></details>
+      <details class="foot-fold"><summary><h2>Lisensi dan kode</h2></summary><p>Kode: MIT. Hitungan, ukuran, dan data situs ini: CC BY 4.0, dengan atribusi sumber di atas.</p>
+        <ul class="foot-links"><li><a href="https://github.com/lan666as/jejak-kata">Kode sumber</a></li><li><a href="https://github.com/lan666as/jejak-kata/tree/gh-pages/data">Data situs (JSON)</a></li><li><a href="/jejak-kata/metode/">Cara kerja dan ujinya</a></li></ul></details>
+    </div></div></main>
+<footer class="site-foot"><div data-t="footer"></div></footer>
+<div id="tip" role="status" hidden></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

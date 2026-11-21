@@ -1,0 +1,137 @@
+{
+ "version": "https://jsonfeed.org/version/1.1",
+ "title": "Jejak Kata: Stories",
+ "description": "Each story sets out from a question people fight about, turns on something the counting found, and stops at the edge: what the data cannot say. Every number is a count of pages, and every one can be checked.",
+ "home_page_url": "https://zidan.dev/jejak-kata/en/cerita/",
+ "feed_url": "https://zidan.dev/jejak-kata/en/feed.json",
+ "language": "en",
+ "authors": [
+  {
+   "name": "lan666as",
+   "url": "https://github.com/lan666as"
+  }
+ ],
+ "items": [
+  {
+   "id": "https://zidan.dev/jejak-kata/en/cerita/penyesuaian/",
+   "url": "https://zidan.dev/jejak-kata/en/cerita/penyesuaian/",
+   "title": "Did the price rise, or was it “adjusted”?",
+   "summary": "“Penyesuaian harga” (price adjustment) is used almost only for prices the state sets: fuel, electricity, tolls, health insurance. Of 200 we read, 139 mean a rise, and 120 are spoken by the government or a state company.",
+   "content_text": "“Penyesuaian harga” (price adjustment) is used almost only for prices the state sets: fuel, electricity, tolls, health insurance. Of 200 we read, 139 mean a rise, and 120 are spoken by the government or a state company. Chili goes up. Rice goes up. Petrol? It is “adjusted”. The word has long been suspected of being a euphemism. A suspicion can be tested: for what kind of price is the word used, and who is saying it?",
+   "image": "https://zidan.dev/jejak-kata/en/cerita/penyesuaian/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-20T00:00:00Z",
+   "language": "en"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/en/cerita/oknum/",
+   "url": "https://zidan.dev/jejak-kata/en/cerita/oknum/",
+   "title": "Who gets called “oknum”?",
+   "summary": "On pages about wrongdoing, the word “oknum” (a rogue individual) sits beside teachers, civil servants, soldiers and village heads more often than beside legislators or judges: two to five times in Kompas and Detik. Of 200 “oknum” we read, 150 are not named.",
+   "content_text": "On pages about wrongdoing, the word “oknum” (a rogue individual) sits beside teachers, civil servants, soldiers and village heads more often than beside legislators or judges: two to five times in Kompas and Detik. Of 200 “oknum” we read, 150 are not named. It is not the police who extort: it is an “oknum” of the police, a rogue individual. Not a teacher who hits a pupil: an “oknum” teacher. One small word, often accused of saving an institution's good name. So look at whom it stands beside most often, in stories about wrongdoing.",
+   "image": "https://zidan.dev/jejak-kata/en/cerita/oknum/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-20T00:00:00Z",
+   "language": "en"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/en/cerita/diamankan/",
+   "url": "https://zidan.dev/jejak-kata/en/cerita/diamankan/",
+   "title": "Arrested, or “secured”?",
+   "summary": "On the police's own news site, a third of the pages about a suspect use the word “diamankan” (secured). In Tribunnews a quarter. In Kompas it rose from 5% (2011) to 15% (2024). In Tempo: 2–8%.",
+   "content_text": "On the police's own news site, a third of the pages about a suspect use the word “diamankan” (secured). In Tribunnews a quarter. In Kompas it rose from 5% (2011) to 15% (2024). In Tempo: 2–8%. In Indonesian crime news, people are not always arrested. Some are “diamankan”: secured. The criminal procedure code regulates arrest and detention, and the word “diamankan” is not in it; the softer word is common in police press releases and press conferences. Each newsroom takes it up in a different measure.",
+   "image": "https://zidan.dev/jejak-kata/en/cerita/diamankan/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-20T00:00:00Z",
+   "language": "en"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/en/cerita/viral-polisi/",
+   "url": "https://zidan.dev/jejak-kata/en/cerita/viral-polisi/",
+   "title": "No viral, no police?",
+   "summary": "In 2010–2014 the word “viral” is absent from news about the police. Now it is on 6–12% of those pages, two to three times the rate of all news. Village heads and school heads follow: 2–10%. On pages about the KPK, parliament, ministers and governors: below average.",
+   "content_text": "In 2010–2014 the word “viral” is absent from news about the police. Now it is on 6–12% of those pages, two to three times the rate of all news. Village heads and school heads follow: 2–10%. On pages about the KPK, parliament, ministers and governors: below average. “No viral, no justice.” Many Indonesians are sure the police only move once a case is loud on social media. Counting words cannot prove that. What can be counted: how often is news about the police also news about something viral?",
+   "image": "https://zidan.dev/jejak-kata/en/cerita/viral-polisi/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-21T00:00:00Z",
+   "language": "en"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/en/cerita/berhenti-dibicarakan/",
+   "url": "https://zidan.dev/jejak-kata/en/cerita/berhenti-dibicarakan/",
+   "title": "What the news stopped talking about at each change of term",
+   "summary": "After SBY: fuel prices, labour, clashes, and the word “didesak” (was urged). After Jokowi's first term: haze, radicalism, sting operations. The list is made by a rule, and holds only words that shrank in three outlets at once.",
+   "content_text": "After SBY: fuel prices, labour, clashes, and the word “didesak” (was urged). After Jokowi's first term: haze, radicalism, sting operations. The list is made by a rule, and holds only words that shrank in three outlets at once. We argue a great deal about what gets reported. We seldom ask what stopped being reported. Here a single rule answers. No word was picked by hand.",
+   "image": "https://zidan.dev/jejak-kata/en/cerita/berhenti-dibicarakan/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-21T00:00:00Z",
+   "language": "en"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/en/cerita/dilupakan/",
+   "url": "https://zidan.dev/jejak-kata/en/cerita/dilupakan/",
+   "title": "A year after leaving, a fifth is left",
+   "summary": "A year out of office, SBY is down to 19% of his last year in Kompas, 6% in Tempo, 16% in Tribunnews. Of the 25 people who left seven top offices in 2012–2023, 23 have enough pages to count; their median is 16–25%. Those not forgotten: the ones who took another post, ran for office, or stood trial.",
+   "content_text": "A year out of office, SBY is down to 19% of his last year in Kompas, 6% in Tempo, 16% in Tribunnews. Of the 25 people who left seven top offices in 2012–2023, 23 have enough pages to count; their median is 16–25%. Those not forgotten: the ones who took another post, ran for office, or stood trial. Does the press follow power, or the person? There is a way to measure it: count how often a name is written in its last year in office, then look again a year later. How much is left?",
+   "image": "https://zidan.dev/jejak-kata/en/cerita/dilupakan/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-20T00:00:00Z",
+   "language": "en"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/en/cerita/kata-korupsi/",
+   "url": "https://zidan.dev/jejak-kata/en/cerita/kata-korupsi/",
+   "title": "Which parties get written with the word “korupsi”",
+   "summary": "While Demokrat governed, “korupsi” was on 17–25% of the pages naming it. While PDI Perjuangan governed: 11% at most. In 2020–2024 all ten parties that have sat in parliament since 2009 are at 2–10%.",
+   "content_text": "While Demokrat governed, “korupsi” was on 17–25% of the pages naming it. While PDI Perjuangan governed: 11% at most. In 2020–2024 all ten parties that have sat in parliament since 2009 are at 2–10%. Which party is the most corrupt? Sorry: this data cannot answer that. What can be counted is simpler: in stories naming a party or an institution, how often are the words korupsi and tersangka (suspect) written too? And what happens to that number when power changes hands?",
+   "image": "https://zidan.dev/jejak-kata/en/cerita/kata-korupsi/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-21T00:00:00Z",
+   "language": "en"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/en/cerita/yang-hilang/",
+   "url": "https://zidan.dev/jejak-kata/en/cerita/yang-hilang/",
+   "title": "The KPK shrank from the news. The word “suspect” did not",
+   "summary": "From 2012 to 2023 the word “kpk” shrank by more than half in three outlets. But in 2024 Tempo turned back, the verbs beside the KPK never softened, and there is as much news about suspects as ever.",
+   "content_text": "From 2012 to 2023 the word “kpk” shrank by more than half in three outlets. But in 2024 Tempo turned back, the verbs beside the KPK never softened, and there is as much news about suspects as ever. Did the press go soft on corruption after the KPK law was revised in 2019? People have argued about it at length. The answer turns out to be neither yes nor no.",
+   "image": "https://zidan.dev/jejak-kata/en/cerita/yang-hilang/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-21T00:00:00Z",
+   "language": "en"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/en/cerita/prabowo/",
+   "url": "https://zidan.dev/jejak-kata/en/cerita/prabowo/",
+   "title": "From candidate to defence minister, in one year",
+   "summary": "Two defeats, then a seat in the cabinet. Within one year the word beside Prabowo's name went from “capres” to “menteri pertahanan”. The word “oposisi” is rare beside his name, but it is rare beside everyone's.",
+   "content_text": "Two defeats, then a seat in the cabinet. Within one year the word beside Prabowo's name went from “capres” to “menteri pertahanan”. The word “oposisi” is rare beside his name, but it is rare beside everyone's. When did the news stop writing Prabowo as the rival? More suddenly than we remember. And one hunch about the word “oposisi” does not survive the comparison.",
+   "image": "https://zidan.dev/jejak-kata/en/cerita/prabowo/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-20T00:00:00Z",
+   "language": "en"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/en/cerita/kata-resmi/",
+   "url": "https://zidan.dev/jejak-kata/en/cerita/kata-resmi/",
+   "title": "The state picks a word. Newsrooms do not always follow",
+   "summary": "A presidential decree replaced “Cina” with “Tiongkok”: Kompas went along in 2014–2015 and then turned back, Tempo never did. But the police's term for the armed groups in Papua, “KKB”, led in all three until 2023.",
+   "content_text": "A presidential decree replaced “Cina” with “Tiongkok”: Kompas went along in 2014–2015 and then turned back, Tempo never did. But the police's term for the armed groups in Papua, “KKB”, led in all three until 2023. Who gets to name a thing: the state, or the people who write the news? Three contests between the official word and the newsroom's, with three different results.",
+   "image": "https://zidan.dev/jejak-kata/en/cerita/kata-resmi/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-21T00:00:00Z",
+   "language": "en"
+  },
+  {
+   "id": "https://zidan.dev/jejak-kata/en/cerita/umur-slogan/",
+   "url": "https://zidan.dev/jejak-kata/en/cerita/umur-slogan/",
+   "title": "The lifespan of a slogan",
+   "summary": "BLSM, revolusi mental, nawacita, tol laut, tax amnesty, PSBB, new normal, PPKM. How long do a government's words last in the news before they vanish? A lighter note.",
+   "content_text": "BLSM, revolusi mental, nawacita, tol laut, tax amnesty, PSBB, new normal, PPKM. How long do a government's words last in the news before they vanish? A lighter note. Every government arrives with words of its own. How long do they last once the speech is over and the banners come down?",
+   "image": "https://zidan.dev/jejak-kata/en/cerita/umur-slogan/og.jpg",
+   "date_published": "2026-11-17T00:00:00Z",
+   "date_modified": "2026-11-20T00:00:00Z",
+   "language": "en"
+  }
+ ]
+}
