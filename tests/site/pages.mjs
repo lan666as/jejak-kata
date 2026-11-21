@@ -1,7 +1,8 @@
 // node tests/site/pages.mjs   Uses the site like a reader: language switch, back button, shared link, slow line, chart, games, saved image.
 import { base, browser, done } from "./serve.mjs";
 import { PAGED } from "../../site/words.js";
-import { along, PEOPLE, BODIES } from "../../site/deal.js";
+import { along, PEOPLE, BODIES, shown } from "../../site/deal.js";
+import { STORIES } from "../../site/story.js";
 import { content, company, wordsNamed } from "./publish.mjs";
 let failures = 0;
 const log = (name, ok, detail) => { failures += !ok; console.log(`${ok ? "ok  " : "FAIL"} ${name}: ${detail}`); };
@@ -93,7 +94,7 @@ for (const [width, height] of [[360, 740], [768, 1000], [1440, 900]]) { // the m
   const p = await fresh({ viewport: { width: 360, height: 740 } }); await p.goto(base + "#/"); await p.waitForSelector(".hero .chart > canvas"); await p.waitForTimeout(2500);
   const first = await p.evaluate(() => document.querySelector(".hero .chart")?.dataset.route);
   await p.fill(".hero .suggest input", "prabowo"); await p.waitForTimeout(300); await p.keyboard.press("Enter"); await p.waitForTimeout(2500);
-  const sailed = await p.evaluate(() => ({ route: document.querySelector(".hero .chart").dataset.route, pressed: document.querySelector(".hero-try [aria-pressed='true']")?.textContent, at: location.pathname + location.hash }));
+  const sailed = await p.evaluate(() => ({ route: document.querySelector(".hero .chart").dataset.route, pressed: document.querySelector(".hero-try [aria-pressed='true']")?.dataset.word, at: location.pathname + location.hash }));
   log("hero field sails a route", first && sailed.route === "prabowo" && sailed.pressed === "prabowo" && sailed.at === "/", `first route ${first}; after typing: ${JSON.stringify(sailed)}; errors ${p.errors.length}`);
   const card = p.locator(".featured .story-card").first(), to = await card.getAttribute("href"); await card.click(); await p.waitForSelector(".cover h1"); await p.waitForTimeout(500);
   log("a featured story card opens its story", (await p.evaluate(() => location.pathname + location.hash)) === to && (await p.locator(".stage").count()) > 0, `${to} -> ${await p.evaluate(() => location.pathname + location.hash)}: ${await p.locator(".cover h1").innerText()}`);
@@ -169,7 +170,7 @@ for (const [width, height] of [[360, 740], [768, 1000], [1440, 900]]) { // the m
 { // names as names: a known name never stands in lower case where a page shows it (the findings' pairs, the method's
   // demo, a story's "Periksa sendiri", the generated page of a word), except a token in quotes (“jokowi”, the word counted);
   // and a reader-facing link never shows a file's path (“angka mentahnya: …”, not “(pages/oknum-masa.json)”).
-  const NAMES = [...PEOPLE, ...BODIES, "joko widodo", "gubernur dki jakarta", "chatgpt", "nokia", "htc", "biden", "obama"];
+  const NAMES = [...PEOPLE, ...BODIES, "joko widodo", "gubernur dki jakarta", "chatgpt", "nokia", "htc", "biden", "obama", "pdi perjuangan", "partai solidaritas indonesia", "kementerian agama", "mahkamah agung", "iphone"];
   const lower = (text) => NAMES.filter((n) => new RegExp(`(^|[^“\\p{L}])${n}(?![\\p{L}”])`, "u").test(text));
   const bad = [], p = await fresh({ viewport: { width: 1280, height: 900 } });
   for (const [path, sel] of [["#/temuan", ".duets, .sparks"], ["#/metode", ".method-demo"], ["#/cerita/oknum", ".landing .tools"], ["#/cerita/prabowo", ".landing .tools"]]) {
@@ -184,4 +185,20 @@ for (const [width, height] of [[360, 740], [768, 1000], [1440, 900]]) { // the m
   const facts = { named: await wordsNamed(), company: { jokowi: await company("jokowi"), korupsi: await company("korupsi") } };
   for (const w of ["jokowi", "korupsi"]) for (const lang of ["id", "en"]) lower(content(["kata", w], lang, facts).replace(/<[^>]*>/g, " ")).forEach((n) => bad.push(`page of “${w}” (${lang}): “${n}”`));
   log("names as names on the findings, the method, a story's checks and a word's own page; no file path as a link's text", !bad.length, bad.slice(0, 6).join("; ") || "none in lower case"); }
+{ // ... and one rule everywhere a word stands alone (a list's item or link, a chip, a figure's row, line or legend, a
+  // table's cell, a game's choice): no word that deal.js `shown` writes otherwise (a name, the data's article: words.js
+  // NAMES; an abbreviation; a brand) stands as counted, in lower case, on any page or any story's figures.
+  const pages = ["#/", "#/temuan", "#/kata/gerindra", "#/kata/smartphone", "#/kata/tersangka", "#/potret/prabowo", "#/peta", "#/main", "#/metode", "#/tebak", "#/kuis", "#/menempel",
+    "#/lingkaran", "#/redaksi", "#/pasang", "#/balap", "#/tahun", "#/bergeser", "#/entitas", "#/kata/anies-baswedan", ...STORIES.map((s) => `#/cerita/${s.slug}`)];
+  const p = await fresh({ viewport: { width: 1440, height: 900 } }), bad = [];
+  for (const hash of pages) {
+    await p.goto(base + hash); await p.waitForTimeout(2500);
+    for (let y = 0, h = await p.evaluate(() => document.documentElement.scrollHeight); y < h; y += 900) { await p.evaluate((y) => scrollTo(0, y), y); await p.waitForTimeout(80); }
+    await p.waitForTimeout(600);
+    const texts = await p.evaluate(() => [...new Set([...document.querySelectorAll("main :is(a, li, button, td, th, .chip), main svg text")].map((n) => n.textContent.replace(/\s+/g, " ").replace(/›$/, "").trim()))]);
+    const low = texts.filter((x) => x && /^[a-z][a-z -]*$/.test(x) && shown(x) !== x);
+    if (low.length) bad.push(`${hash}: ${low.slice(0, 5).join(", ")}`);
+  }
+  await p.close();
+  log("no name, abbreviation or brand shown as counted, in lower case, where a word stands alone", !bad.length, bad.slice(0, 6).join("; ") || `${pages.length} pages, none`); }
 await done(failures);

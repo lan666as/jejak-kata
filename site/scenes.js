@@ -21,6 +21,20 @@ export const lensFrom = (meta) => {
   return { ...meta, index: new Map(meta.words.map((w, i) => [w, i])), isEntry: (i) => i !== undefined && !hidden.has(i) };
 };
 
+/**
+ * What happened to a word in one lens, as its page tells it first (app.js) and its generated page does (publish.mjs):
+ * the first and the last period it has company in (`a`, `b`); the words it kept company with in each that it did not in
+ * the other, the first `n` (where the two lists are the same, the first of each); its share of pages in each. null where
+ * it has company in fewer than two periods (then `only`: the one period, or none).
+ */
+export const told = (e, n = 3) => {
+  const known = e.with.map((w, p) => (w.length ? p : -1)).filter((p) => p >= 0);
+  if (known.length < 2) return { only: known[0] ?? null };
+  const [a, b] = [known[0], known.at(-1)], only = (p, q) => e.with[p].filter((i) => !e.with[q].includes(i));
+  const [early, late] = [only(a, b), only(b, a)];
+  return { a, b, early: (early.length ? early : e.with[a]).slice(0, n), late: (late.length ? late : e.with[b]).slice(0, n), same: !late.length, from: e.share[a], to: e.share[b] };
+};
+
 const one = (values) => values.map((v) => [v ?? null]);  // a line's values as a strip's: one series per state
 const lines = (states, rows) => ({ states, series: [""], rows: rows.map((r) => ({ ...r, values: one(r.values), off: r.off && one(r.off) })) });
 

@@ -1,4 +1,6 @@
 import { AS_NAME } from "./glossary.js";
+import { NAMES } from "./words.js";
+const NAMED_WORDS = new Set(NAMES);
 
 // The games' questions: which may be asked, how they are dealt, and when an answer is clear enough to ask. No DOM
 // here: the quiz page (app.js) and tests/site/games.mjs deal from the same code and the same data, site/data/quiz.json
@@ -168,19 +170,26 @@ export const OUTLET_NAMES = ["Kompas", "Tempo", "Tribunnews"];
  *  lower case: this is how it is shown, not what is counted. */
 export const ABBR = new Set(["kpk", "dpr", "sby", "pdip", "tni", "kpu", "pks", "pkb", "mui", "fpi", "pbb", "ojk", "bmkg", "pln", "asean", "fifa", "isis", "nato", "mpr", "dpd", "unesco", "bpjs",
   "pt", "kai", "md", "ham", "pp", "ri", "dki", "ppp", "psi", "kpai", "bnn", "bnpb", "bpk", "lps", "ui", "itb", "ugm", "ikn", "ott", "bbm", "blt", "ktp", "uu", "ite", "apbn", "apbd",
-  "umkm", "bumn", "ihsg", "tki", "opm", "esg", "jis", "rkuhp", "kuhp", "asn", "pns", "ppkm", "psbb", "kkb", "blsm", "wni", "wna", "pmi", "nik"]);
+  "umkm", "bumn", "ihsg", "tki", "opm", "esg", "jis", "rkuhp", "kuhp", "asn", "pns", "ppkm", "psbb", "kkb", "blsm", "wni", "wna", "pmi", "nik", "pdi", "pkpi"]);
+/** An abbreviation that is also a common word ("pan"): in capitals only where the word is shown as a name (the data
+ *  gives it a Wikipedia article: in the news it is PAN, Partai Amanat Nasional). */
+const NAME_ABBR = new Set(["pan"]);
+/** A person the news names by a first name that is not the name they go by (their article's title begins with it):
+ *  shown whole, as the article names them, never a bare first name ("Firli Bahuri"). games.mjs holds each to the
+ *  first page's article. */
+export const FULL = { firli: "Firli Bahuri", khofifah: "Khofifah Indar Parawansa", puan: "Puan Maharani", luhut: "Luhut Binsar Pandjaitan" };
 const CONSONANTS = /^[bcdfghjklmnpqrstvwxz]{2,}$/;
 export const isAbbr = (part) => ABBR.has(part) || CONSONANTS.test(part);
 /** A roman numeral of two letters or more ("ii", "iii", "xiv"), shown in upper case: a part of a name, not a name. */
 export const ROMAN = /^(?=[ivx]{2})x{0,3}(ix|iv|v?i{0,3})$/;
 const SPELT = { tiktok: "TikTok", youtube: "YouTube", whatsapp: "WhatsApp", nasdem: "NasDem", polri: "Polri", chatgpt: "ChatGPT", openai: "OpenAI", iphone: "iPhone", ipad: "iPad", ios: "iOS", linkedin: "LinkedIn", playstation: "PlayStation", blackberry: "BlackBerry", gopay: "GoPay", gojek: "Gojek", ebay: "eBay" };
 /** (`kind` as the data gives it, or "name" where the page knows it shows a name: a list of names, a table of people) */
-export const isName = (word, kind) => PEOPLE.includes(word) || BODIES.includes(word) || ["person", "organisation", "place", "name"].includes(kind) || word in AS_NAME;
+export const isName = (word, kind) => PEOPLE.includes(word) || BODIES.includes(word) || ["person", "organisation", "place", "name"].includes(kind) || word in AS_NAME || NAMED_WORDS.has(word);
 export const shown = (word, kind) => {
   word = String(word);
-  if (AS_NAME[word]) return AS_NAME[word];
+  if (AS_NAME[word] || FULL[word]) return AS_NAME[word] || FULL[word];
   const name = isName(word, kind);
-  return word.split(" ").map((p) => p.split("-").map((q) => SPELT[q] || (isAbbr(q) || (name && ROMAN.test(q)) ? q.toUpperCase() : name ? q.charAt(0).toUpperCase() + q.slice(1) : q)).join("-")).join(" ");
+  return word.split(" ").map((p) => p.split("-").map((q) => SPELT[q] || (isAbbr(q) || (name && (ROMAN.test(q) || NAME_ABBR.has(q))) ? q.toUpperCase() : name ? q.charAt(0).toUpperCase() + q.slice(1) : q)).join("-")).join(" ");
 };
 
 /** The quiz: ten rounds, three easy, four middling, three hard; the kinds in a rhythm, never the same twice running,

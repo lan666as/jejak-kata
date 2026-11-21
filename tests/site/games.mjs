@@ -256,7 +256,7 @@ const reload = (st, seed) => kept(decks(pool, seeded(seed)), st && JSON.parse(JS
   log("what was kept is read with care (unknown keys and bad values let go)", d.year.dealt.length === 0 && d.year.fresh.length === pool.year.length && deal(d, rng, P).length === ROUNDS, `${d.year.fresh.length} of ${pool.year.length} years fresh`); }
 
 // Shown as the games show it: abbreviations in upper case whether or not names, names with capitals, words as counted.
-{ const cases = [["ikn", "IKN"], ["kkb", "KKB"], ["ppkm", "PPKM"], ["psbb", "PSBB"], ["ott", "OTT"], ["kpk", "KPK"], ["mahfud md", "Mahfud MD"], ["erick thohir", "Erick Thohir"], ["korupsi", "korupsi"], ["ppkm darurat", "PPKM darurat"], ["whatsapp", "WhatsApp"], ["tribunnews", "tribunnews"]];
+{ const cases = [["ikn", "IKN"], ["kkb", "KKB"], ["ppkm", "PPKM"], ["psbb", "PSBB"], ["ott", "OTT"], ["kpk", "KPK"], ["mahfud md", "Mahfud MD"], ["erick thohir", "Erick Thohir"], ["korupsi", "korupsi"], ["ppkm darurat", "PPKM darurat"], ["whatsapp", "WhatsApp"], ["tribunnews", "Tribunnews"], ["pan", "PAN"], ["pdi perjuangan", "PDI Perjuangan"], ["firli", "Firli Bahuri"], ["iphone", "iPhone"], ["wali kota surakarta", "Wali Kota Surakarta"], ["goreng", "goreng"]];
   const bad = cases.filter(([w, want]) => shown(w, W[w]?.kind) !== want);
   log("shown(): abbreviations upper case, names capitalised, common words lower case", !bad.length, bad.map(([w, want]) => `${w} → ${shown(w, W[w]?.kind)} (not ${want})`).join(", ")); }
 // In English every Indonesian word a quiz can show as a clue, a choice or an answer has its gloss (text.js GLOSS,

@@ -150,28 +150,33 @@ const href = (...parts) => ROOT.pathname + address(parts, language);
 const whole = (to) => new URL(to, ROOT).href;
 /** Going to an address of the site: a new entry in the browser's history, and its page. */
 const visit = (to) => (whole(to) !== location.href && history.pushState(null, "", to), moved());
-const link = (word) => `<a href="${href("kata", word)}">${escape(shown(word))}</a>`;  // (a name the games know as a name: "Prabowo", "TNI")
+const link = (word, kind = "") => `<a href="${href("kata", word)}">${escape(shown(word, kind))}</a>`;  // (kind: kindOf, what the data says it is)
 /** A row or a label of an explorer that stands for a word or a name: a link to its page (a person's portrait, else the
  *  word's page), the same everywhere: the word itself its text and its name, the site's link on hover and focus, a
  *  chevron where there is no hover (style.css, .to-word). `kind`: "person", "name" (any other name), or none for a
  *  word; a name is shown as one (deal.js `shown`: "Fauzi Bowo", "DKI", "WNI"), a word as counted. With `more` (what
  *  the row says of it: a value, its marks, a bar) the link is the whole row, one target across its width (44px tall on
  *  a touch screen), the value inside it and not in its name. */
-const toWord = (word, kind = "", more = null, text = escape(kind ? shown(word, "name") : word)) => {
+const toWord = (word, kind = "", more = null, text = escape(shown(word, kind))) => {
   const to = href(kind === "person" ? "potret" : "kata", word);
   return more === null ? `<a class="to-word" href="${to}">${text}</a>` : `<a class="to-word row-link" href="${to}" aria-label="${text}"><span class="row-name">${text}</span>${more}</a>`;
 };
-/** On a touch screen a row that is a link is 44px tall (a plate's strip: its rows that far apart). */
-const TOUCH = () => (matchMedia("(pointer: coarse)").matches ? 44 : undefined);
+/** On a touch screen, and on any screen a phone's width (style.css: the same query), a row that is a link is 44px
+ *  tall (a plate's strip: its rows that far apart), as is every control. */
+const TOUCH = () => (matchMedia("(pointer: coarse), (max-width: 599px)").matches ? 44 : undefined);
 /** What a lens's entry is, as toWord takes it: a person, another name (it has an article), or a word. */
 const kindIn = (lens, i) => (!lens.articles?.has(i) ? "" : lens.kind(i) === "person" ? "person" : "name");
-/** How an entry of a lens is written wherever it is shown: a name as a name, a word as counted (one rule: toWord's). */
-const sayIn = (lens, i) => (kindIn(lens, i) ? shown(lens.words[i], "name") : lens.words[i]);
+/** How an entry of a lens is written wherever it is shown (one rule: toWord's): through deal.js `shown`, a name (the data
+ *  gives it a Wikipedia article) as a name, an abbreviation in capitals, a brand as it writes itself, a word as counted. */
+const sayIn = (lens, i) => shown(lens.words[i], kindIn(lens, i));
+/** ... and a word of another lens (`lens` may be none: then as deal.js `shown` knows it, site/words.js NAMES). */
+const kindOf = (lens, word) => (lens ? kindIn(lens, lens.index.get(word)) : "");
 /** An entry of a lens in a list of its company: a link to its page where it has one, written by that one rule. */
 const linkIn = (lens, i) => (lens.isEntry(i) ? `<a href="${href("kata", lens.words[i])}">${escape(sayIn(lens, i))}</a>` : escape(sayIn(lens, i)));
 /** ... and a name of stick.json (a person, "p", or a body). */
 const stuckKind = (s, i) => (s.kinds[i] === "p" ? "person" : "name");
-const number = (x, digits = 1) => x.toLocaleString(language, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+/** A number as the site writes it (the one formatter): the reader's language, a minus sign, not a hyphen, below zero. */
+const number = (x, digits = 1) => x.toLocaleString(language, { minimumFractionDigits: digits, maximumFractionDigits: digits }).replace(/^-/, "−");
 const percent = (share) => (share * 100).toLocaleString(language, { maximumSignificantDigits: 2 }) + "%";
 const step = (shift) => STEPS.filter((s) => shift >= s).length;
 const pairIndex = (lens, a, b) => lens.pairs.findIndex(([x, y]) => x === a && y === b);
@@ -1573,8 +1578,10 @@ PLATE_NOTES.left = PLATE_NOTES.forget;
 const ROOMY = 72;  // beside the caption a strip's rows stand at most this far apart: a strip of few rows is not stretched to the stage's height
 async function sceneFigure(scene, w, h, on) {
   const f = await figureOf(scene, { json, lens: lensNamed, entry: entryOf }, language, { wide: innerWidth > 760 });
+  // Every name it writes (a row, a line, a legend) as a name (deal.js `shown`): its label stays the key a step names it by.
+  const say = (label) => shown(label);
   const make = (p, k) => {
-    const spec = { title: plateTitle(scene, p, k), pages: p.read ? null : PLATE_NOTES[scene.type](f, scene, k, p), base: ["forget", "left"].includes(scene.type) ? 1 : undefined };
+    const spec = { title: plateTitle(scene, p, k), say, pages: p.read ? null : PLATE_NOTES[scene.type](f, scene, k, p), base: ["forget", "left"].includes(scene.type) ? 1 : undefined };
     // (a hand count is seen whole in the figure's room, where a strip beside it may be drawn taller to slide)
     const made = p.read ? units({ ...spec, note: scene.read[language].note, rows: p.rows, fills: p.fills, rest: p.rest }, w, on ? Math.min(h, figureSize(on)[1]) : h) : f.draw === "plate"
       ? plate({ ...spec, periods: p.states, series: p.rows.map((r) => ({ label: r.label, values: r.values.map((v) => v[0]), off: r.off?.map((v) => v[0]) })) }, w, h)
@@ -1833,7 +1840,8 @@ function tools(address, { image, table, check = [], data, share } = {}) {
   row.append(share ? sharer(t("share"), share) : copier(t("copy_link"), () => whole(typeof address === "function" ? address() : address)));
   // (a file is named by what it holds, never by its path: "angka mentahnya: Di samping siapa?"; its path stays in its address)
   const list = [].concat(data || []).map((d) => [].concat(d)), files = list.map(([file, label]) => `<a href="${DATA}/${file}" title="${file}">${t("check_data")}${list.length > 1 && label ? `: ${escape(label)}` : ""}</a>`);
-  if (check.length || files.length) row.append(el(`<span>${t("check")} ${[...check.map(link), ...files].join(", ")}</span>`));
+  // (each word as the site shows it, a name as a name: deal.js `shown`)
+  if (check.length || files.length) row.append(el(`<span>${t("check")} ${[...check.map((w) => link(w)), ...files].join(", ")}</span>`));
   return row;
 }
 
@@ -2402,7 +2410,7 @@ async function homePage() {
   const glossed = (w) => (gloss(w) ? ` title="${escape(gloss(w))}" aria-label="${escape(`${w}: ${gloss(w)}`)}"` : "");
   const hero = el(`<section class="hero" aria-labelledby="hero-title"><div class="hero-track"><div class="hero-sea"><div class="chart night"></div>${key}</div></div>
     <div class="hero-text"><h1 id="hero-title">${t("title")}</h1><p class="hero-lede">${t("hero_lede")}</p><div class="hero-ask"></div>
-      <div class="hero-try"><span id="hero-try">${t("hero_try")}</span><ul class="chips" aria-labelledby="hero-try">${SHOWCASE.map((w) => `<li><button type="button" aria-pressed="false"${glossed(w)}>${w}</button></li>`).join("")}</ul></div>
+      <div class="hero-try"><span id="hero-try">${t("hero_try")}</span><ul class="chips" aria-labelledby="hero-try">${SHOWCASE.map((w) => `<li><button type="button" aria-pressed="false" data-word="${escape(w)}"${glossed(w)}>${escape(shown(w))}</button></li>`).join("")}</ul></div>
       <div class="hero-foot"><p class="hero-now" role="status"></p>${waiting() ? soundAsk() : ""}<button type="button" class="hero-down quiet">${TIDE_MARK}<span class="dive-cue">${t("hero_dive")}</span><span class="no-dive">${t("hero_down")}</span>${down}</button></div></div></section>`);
   const featured = el(`<section class="featured" aria-labelledby="featured-title"><p class="kicker">${t("featured_kicker")}</p><h2 id="featured-title">${t("featured_title")}</h2>
     ${storyCards(STORIES.slice(0, 3), true)}<p class="more"><a class="button" href="${href("cerita")}">${t("all_stories_n", STORIES.length)}</a></p></section>`);
@@ -2428,7 +2436,7 @@ async function homePage() {
     if (!figure?.node.isConnected) return void (pending = word);
     sailing = word;
     figure.chart.notes?.(null);  // the reader has moved on: the notes give way
-    chips.forEach((b) => b.setAttribute("aria-pressed", b.textContent === word));
+    chips.forEach((b) => b.setAttribute("aria-pressed", b.dataset.word === word));
     if ((await figure.set([word], { most: 9 })) && sailing === word) (moor(word), go(word));
   };
   // The ship at its first port, and the word named under the field, with what it is where a reader may not know.
@@ -2476,7 +2484,7 @@ async function homePage() {
   document.fonts.ready.then(() => (peek(), sky()));
   addEventListener("resize", peek);
   addEventListener("resize", sky);
-  hero.querySelector(".hero-try").addEventListener("click", (e) => e.target.matches("button") && (wanted(), sail(e.target.textContent)));
+  hero.querySelector(".hero-try").addEventListener("click", (e) => e.target.matches("button") && (wanted(), sail(e.target.dataset.word)));
 
   // The 3D sea is fetched beside the data, and made only once the hero's text has been painted.
   const sea = (await Promise.all([gl, painted()]))[0]?.nightSea;
@@ -2498,7 +2506,7 @@ async function homePage() {
   // on the route; the ship sets out a frame after they are on screen.
   const first = pending || SHOWCASE[0];
   sailing = first;
-  chips.forEach((b) => b.setAttribute("aria-pressed", b.textContent === first));
+  chips.forEach((b) => b.setAttribute("aria-pressed", b.dataset.word === first));
   const drawn = await figure.set([first], { ms: 0, most: 9 });
   if (!hero.isConnected) return;
   if (drawn) moor(first);

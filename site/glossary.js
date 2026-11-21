@@ -32,6 +32,7 @@ export const AS_NAME = {
   "tol laut": "Tol Laut",
   "tragedi kanjuruhan": "Tragedi Kanjuruhan",
   "uno": "Uno",
+  "wali kota surakarta": "Wali Kota Surakarta",
 };
 
 // (names of programmes, coalitions and events, shown as names and, in English, with what they are)

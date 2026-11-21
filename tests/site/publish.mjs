@@ -24,8 +24,8 @@ import { dirname, join } from "node:path";
 import { TEXT, SITE, SHOWCASE } from "../../site/text.js";
 import { STORIES } from "../../site/story.js";
 import { address, named, cut, EMBED, PLAY, WORDS, ALIASES, QUIZ_NAMES, GUESS_WORDS } from "../../site/address.js";
-import { PAGED } from "../../site/words.js";
-import { lensFrom, sceneWords } from "../../site/scenes.js";
+import { PAGED, NAMES } from "../../site/words.js";
+import { lensFrom, sceneWords, told } from "../../site/scenes.js";
 import { shown } from "../../site/deal.js";
 
 const REPO = new URL("../../", import.meta.url).pathname, SRC = join(REPO, "site");
@@ -98,14 +98,19 @@ export async function wordsNamed() {
   const hop = only((await Promise.all(seeds.map(company))).flatMap((c) => (c ? [...c.early, ...c.late] : [])));
   const main = lenses.find((l) => l.lens === MAIN), frequent = main.words.filter((w, i) => main.isEntry(i)).slice(0, FREQUENT);
   const all = [...new Set([...seeds, ...hop, ...frequent])].sort((a, b) => a.localeCompare(b, "id"));
-  // (the words that are names in some source: a page shows them as names, deal.js `shown`, as the site does)
-  const names = new Set(all.filter((w) => lenses.some((l) => l.entities?.[l.index.get(w)] !== undefined)));
+  // (the words that are names: those the first page's source gives a Wikipedia article, and of the words it does not
+  // count, those another source does: "partai gelora"; never "presiden", which the first page's source counts as a word.
+  // site/words.js NAMES, which deal.js `shown` reads: every page shows them as names)
+  const named = (w) => (main.index.has(w) ? main.entities[main.index.get(w)] !== undefined : lenses.some((l) => l.entities?.[l.index.get(w)] !== undefined));
+  const names = new Set(all.filter(named));
   return { shown: WORDS, story, games, findings, frequent, all, names };
 }
 /** site/words.js as it should be. */
-export const wordsModule = (all) => `// The words with a page of their own (address.js), from the data: written by \`node tests/site/publish.mjs words\`
+export const wordsModule = (all, names) => `// The words with a page of their own (address.js), from the data: written by \`node tests/site/publish.mjs words\`
 // (wordsNamed there says which), checked by tests/site/meta.mjs. Not to be edited by hand.
 export const PAGED = ${JSON.stringify(all)};
+// Of those, the names (the data gives them a Wikipedia article): deal.js \`shown\` writes them as names wherever they are shown.
+export const NAMES = ${JSON.stringify([...names])};
 `;
 /** The years the data covers, from every lens's periods. */
 async function covered() {
@@ -120,7 +125,7 @@ export function content(parts, lang, facts) {
   const twin = `<p><a href="${path(parts, other)}" hreflang="${other}" lang="${other}">${other === "en" ? "English" : "Bahasa Indonesia"}</a></p>`;
   const storyList = (list) => `<ul>${list.map((s) => `<li>${a(["cerita", s.slug], lang, s[lang].title)}: ${s.key.number[lang] || s.key.number} ${s.key[lang]}. ${s[lang].teaser}</li>`).join("")}</ul>`;
   const games = `<ul>${PLAY.map((p) => `<li>${a([p], lang, T[`play_${p}`])}: ${T[`play_${p}_about`]}</li>`).join("")}</ul>`;
-  const named = facts.named, say = (w) => esc(named.names.has(w) ? shown(w, "name") : w), words = (list) => `<ul>${list.map((w) => `<li>${a(["kata", w], lang, say(w))}</li>`).join("")}</ul>`;
+  const named = facts.named, say = (w) => esc(shown(w)), words = (list) => `<ul>${list.map((w) => `<li>${a(["kata", w], lang, say(w))}</li>`).join("")}</ul>`;
   const nav = `<nav><ul><li>${a(["cerita"], lang, T.nav_stories)}</li><li>${a(["main"], lang, T.nav_play)}</li><li>${a(["peta"], lang, T.nav_chart)}</li><li>${a(["temuan"], lang, T.nav_findings)}</li><li>${a(["metode"], lang, T.nav_method)}</li></ul></nav>`;
   let body;
   if (story) {
@@ -161,7 +166,7 @@ function card(parts, lang, facts) {
   if (!page) return { home: true, alt: T.card_alt_home };
   if (story) return { kicker: T.story, key: story.key.number[lang] || story.key.number, label: story.key[lang], title: story[lang].title };
   if (page === "kata" && !WORDS.includes(arg)) return { kicker: T.word, title: T.title, line: T.hero_lede, shared: true };
-  if (page === "kata") return { kicker: T.word, title: facts.named.names.has(arg) ? shown(arg, "name") : arg, line: c ? T.word_company(arg, c.first, list(lang, c.early), c.last, list(lang, c.late)) : T.desc_word(arg) };
+  if (page === "kata") return { kicker: T.word, title: shown(arg), line: c ? T.word_company(arg, c.first, list(lang, c.early), c.last, list(lang, c.late)) : T.desc_word(arg) };
   const title = { cerita: T.nav_stories, main: T.nav_play, peta: T.nav_chart, temuan: T.nav_findings, metode: T.method_title }[page] || T[`play_${page}`];
   return { kicker: PLAY.includes(page) ? T.nav_play : SITE.name, title, line: named(parts, lang).description };
 }
@@ -346,7 +351,7 @@ async function icons() {
 export async function publish(out, { drawn = true } = {}) {
   const template = await readFile(join(SRC, "index.html"), "utf8");
   const facts = { modified: Object.fromEntries(STORIES.map((s) => [s.slug, modified(s)])), company: {}, years: await covered(), named: await wordsNamed() };
-  if (facts.named.all.join("\n") !== PAGED.join("\n")) throw new Error("site/words.js is not what the data says: node tests/site/publish.mjs words");
+  if (facts.named.all.join("\n") !== PAGED.join("\n") || [...facts.named.names].join("\n") !== NAMES.join("\n")) throw new Error("site/words.js is not what the data says: node tests/site/publish.mjs words");
   for (const w of PAGED) facts.company[w] = await company(w);
   const write = async (to, text) => (await mkdir(dirname(to), { recursive: true }), writeFile(to, text));
   for (const parts of ROUTES) for (const lang of LANGUAGES) await write(file(out, parts, lang), page(template, parts, lang, facts));
@@ -367,8 +372,8 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
   const [out, flag] = process.argv.slice(2);
   if (out === "icons") await icons();
   else if (out === "words") {
-    const { all } = await wordsNamed();
-    await writeFile(join(SRC, "words.js"), wordsModule(all));
+    const { all, names } = await wordsNamed();
+    await writeFile(join(SRC, "words.js"), wordsModule(all, names));
     console.log(`${all.length} words with a page of their own in site/words.js`);
   }
   else if (!out) (console.error("node tests/site/publish.mjs <out> [--no-images] | icons"), process.exit(2));

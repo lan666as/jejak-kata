@@ -17,7 +17,7 @@ import { tmpdir } from "node:os";
 import { chromium } from "playwright-core";
 import { SITE, TEXT } from "../../site/text.js";
 import { address, named, TITLE, DESCRIPTION, WORDS } from "../../site/address.js";
-import { PAGED } from "../../site/words.js";
+import { PAGED, NAMES } from "../../site/words.js";
 import { publish, ROUTES, wordsNamed } from "./publish.mjs";
 
 const SRC = new URL("../../site/", import.meta.url).pathname, ROOT = new URL(SITE.url).pathname, LANGUAGES = ["id", "en"];
@@ -122,7 +122,7 @@ while (queue.length) for (const href of (pages.get(queue.shift()) || "").match(/
 check(reached.size === pages.size, `${pages.size - reached.size} pages not reached by links: ${[...pages.keys()].filter((u) => !reached.has(u)).slice(0, 5)}`);
 
 // The words with a page are the words the data says (site/words.js is written from it, not by hand).
-check((await wordsNamed()).all.join("\n") === PAGED.join("\n"), "site/words.js is not what the data says: node tests/site/publish.mjs words");
+check((await wordsNamed()).all.join("\n") === PAGED.join("\n") && [...(await wordsNamed()).names].join("\n") === NAMES.join("\n"), "site/words.js is not what the data says: node tests/site/publish.mjs words");
 
 // Every address inside the site that a generated page links to is there: a file, or a folder with its index.html.
 const walk = async (dir) => (await readdir(dir, { withFileTypes: true })).flatMap((d) => (d.isDirectory() ? [] : d.name.endsWith(".html") ? [join(dir, d.name)] : []))

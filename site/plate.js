@@ -109,7 +109,8 @@ function sheet(spec, width, height, body, least = 0) {
 }
 
 /**
- * Lines. `spec`: {title, note, periods: [labels], series: [{label, values: [share | null], off}], pages: (i) => text,
+ * Lines. `spec`: {title, note, periods: [labels], series: [{label, values: [share | null], off}], pages: (i) => text, say:
+ * (label) => how a series' name is written (deal.js `shown`: a name as a name; its label stays its key),
  * base: where the values are a part of a base, the base (1), whose line is drawn stronger};
  * `off[i]` is how far value i may be off either way: drawn as a band, and written after the value.
  * Returns {node, labels, show(i, focus)}: the marker travels to period i; series not named in `focus` fade.
@@ -118,10 +119,11 @@ export function plate(spec, width, height) {
   const n = spec.periods.length, B = 84, L = 40;
   const tick = ticks(Math.max(...spec.series.flatMap((s) => s.values.map((v, i) => (v || 0) + (s.off?.[i] || 0)))) || 1), most = tick.at(-1);
   let x, y, R, T, tag;
+  const say = (label) => spec.say?.(label) ?? label;
   const made = sheet(spec, width, height, ({ W, H, narrow, top, ink, soft, paper, line, beacon }) => {
     // The names at the right are as wide as the longest name with its value needs: on a phone up to half the plate;
     // a name and value longer than that go on two lines (show), never smaller than 12px.
-    const long = Math.max(...spec.series.map((s) => s.label.length + (s.off ? 12 : 8)));
+    const long = Math.max(...spec.series.map((s) => say(s.label).length + (s.off ? 12 : 8)));
     [R, T] = [narrow ? Math.min(W * 0.5, Math.max(W * 0.36, 20 + 6.6 * long)) : Math.min(260, Math.max(190, 22 + 7.2 * long)), top + 22];
     tag = narrow ? 12 : 14;
     x = (i) => L + ((W - L - R) * i) / Math.max(1, n - 1);
@@ -163,7 +165,7 @@ export function plate(spec, width, height) {
     const rows = spec.series.map((s, k) => ({ k, v: s.values[i], named: !!focus?.includes(s.label) })).map((r) => ({ ...r, known: r.v !== null && r.v !== undefined }));
     const B = board([W - R, T - tag - 10, W, y(0) + 21]), box = (r, a) => [W - R + 2, a + 1 - tag, W - R + 4 + r.wide, a + 1 - tag + r.tall];  // (a pill and 2px)
     for (const r of rows) {
-      name(r.k, r.known ? `${spec.series[r.k].label} ${percent(r.v)}${spec.series[r.k].off?.[i] ? " ±" + points(spec.series[r.k].off[i]) : ""}` : spec.series[r.k].label);
+      name(r.k, r.known ? `${say(spec.series[r.k].label)} ${percent(r.v)}${spec.series[r.k].off?.[i] ? " ±" + points(spec.series[r.k].off[i]) : ""}` : say(spec.series[r.k].label));
       const pill = groups[r.k].querySelector(".beacon");
       [r.wide, r.tall] = [+pill.getAttribute("width"), +pill.getAttribute("height") + 2];
     }
@@ -190,7 +192,7 @@ export function plate(spec, width, height) {
   };
   show(n - 1);
   // The numbers behind it, a row per period: what "download the data" writes (app.js, tools).
-  const table = () => [["period", ...spec.series.flatMap((x) => (x.off ? [x.label, `${x.label} ±`] : [x.label]))],
+  const table = () => [["period", ...spec.series.flatMap((x) => (x.off ? [say(x.label), `${say(x.label)} ±`] : [say(x.label)]))],
     ...spec.periods.map((p, i) => [p, ...spec.series.flatMap((x) => (x.off ? [x.values[i], x.off[i]] : [x.values[i]]))])];
   return { node: made.node, labels: spec.periods, show, table };
 }
