@@ -72,7 +72,9 @@ export function quizData() {
   const words = {};
   for (const w of [...new Set([...named, ...clues.flatMap((y) => y.clue)])].filter(isEntry).sort()) {
     const i = index.get(w), e = of("words", i);
-    if (e) words[w] = { kind: meta.kinds[i] || "word", share: e.share.map(round), ...(named.includes(w) ? {} : { clueOnly: 1 }) };
+    // (a word that in its highest year mostly stands inside one longer term, MARGIN.partOf: the term it is a part of)
+    const top = e?.share.indexOf(Math.max(...e.share)), inside = e && !w.includes(" ") && (wholes.get(w) || []).map((x) => [x, share(x, top)]).sort((a, b) => b[1] - a[1])[0];
+    if (e) words[w] = { kind: meta.kinds[i] || "word", share: e.share.map(round), ...(named.includes(w) ? {} : { clueOnly: 1 }), ...(inside && inside[1] >= MARGIN.partOf * e.share[top] ? { part: inside[0] } : {}) };
   }
   // Two common words with something in common, the only ones "which was on more pages" sets side by side (deal.js): one
   // among the other's eleven nearest on the first page's chart (`near`), or three of those shared ("capres" and

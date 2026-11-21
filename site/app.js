@@ -3018,7 +3018,7 @@ async function guessPage() {
       if (least) lows.add(c.lo[0]);
       // (the comparison, by its rank: deal.js `compared`, so that one name is not leaned on)
       const cmp = compared(q, VISIT.guess, gameNames);
-      const context = [t("guess_counted", thousands(q.pages), shown(q.name)), ...(c.ranks[0][0] === q.name ? [t("guess_top", word(q.w))] : []), t("guess_rank", word(q.w), c.of, cmp.rank, shown(cmp.n), cmp.v),
+      const context = [t("guess_counted", thousands(q.pages), shown(q.name)), ...(c.ranks[0][0] === q.name ? [t("guess_top", word(q.w), shown(q.name))] : []), t("guess_rank", word(q.w), c.of, cmp.rank, shown(cmp.n), cmp.v),
         ...(least ? [t("guess_least", shown(c.lo[0]), c.lo[1])] : [])].join(" ");
       verdict.innerHTML = `<b>${escape(line)}</b><span class="numbers">${escape(t("guess_numbers", guess, q.v, won))}</span>
         <span class="context">${escape(context)}</span>

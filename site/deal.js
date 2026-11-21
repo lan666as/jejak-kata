@@ -35,6 +35,8 @@ export const MARGIN = {
   guessHits: 30,   // ... and at least this many of them hold the word (a count of 3 is not a share)
   spreadTop: 8,   // ... and the word is asked only where names differ on it: the name with the most of it has at least 8 in 100 ...
   compareShare: 0.08,  // guess the number: one name is the round's comparison in at most 8% of a visit's rounds (and once a game)
+  partOf: 1.5,     // a word of one part that, in its highest year, stands inside one longer term on this many times its own pages ("goreng" in
+                   // "minyak goreng", 2022) is a fragment of that term: no question asks about it (quiz.json `part`, quiz-data.mjs)
   spreadRatio: 3,  // ... and at least three times the share of the name with the least ("janji", 1 to 5 in 100 for every name, is not a game on a 0-100 scale)
 };
 
@@ -297,7 +299,7 @@ const median = (v) => { const s = [...v].sort((a, b) => a - b); return s[Math.fl
 export function pools(Q) {
   const P = Q.periods, units = Q.units, W = Q.words, pages = (w, p) => W[w].share[p] * units[p];
   // (a common word is a word the data counts as a word: not a place, nor a name it counts as a word, AS_NAME)
-  const group = (w) => (W[w].clueOnly ? null : PEOPLE.includes(w) ? "person" : BODIES.includes(w) ? "body" : W[w].kind === "word" && !(w in AS_NAME) ? "word" : null);
+  const group = (w) => (W[w].clueOnly || W[w].part ? null : PEOPLE.includes(w) ? "person" : BODIES.includes(w) ? "body" : W[w].kind === "word" && !(w in AS_NAME) ? "word" : null);
   // Fame: the Kompas pages a year that name a person or body, 2011-2024 on average (DIFFICULTY.rated); a word's, the
   // same count for the word.
   const fame = (w) => (W[w] ? P.reduce((s, _, p) => s + pages(w, p), 0) / P.length : 0), named = (w) => PEOPLE.includes(w) || BODIES.includes(w) || ["person", "organisation"].includes(W[w]?.kind);
@@ -333,7 +335,8 @@ export function pools(Q) {
       .map(({ p, said }) => {
         const shared = (m) => (Q.who[m].said[p] || []).filter((x) => said.includes(x)).length;
         const news = who.filter((m) => m !== n && Q.who[m].said[p] && W[m] && pages(m, p) >= MARGIN.whoPages && shared(m) <= Math.floor(MARGIN.whoShared * said.length + 1e-9) && shared(m) >= MARGIN.whoLeast && !said.some((w) => inName(w, m)));
-        const same = news.filter((m) => sortOf(m) === sortOf(n)), others = same.length >= 3 || PEOPLE.includes(n) ? same : news.filter((m) => BODIES.includes(m));
+        // (only names of its own sort: a party among parties, never ASEAN beside Demokrat; where there are not three, not asked)
+        const others = news.filter((m) => sortOf(m) === sortOf(n));
         // (its difficulty is rated again when its choices are drawn, by the least known of them: finish)
         return at(DIFFICULTY.rated(DIFFICULTY.who(pages(n, p)), fames([n])), { p, said, others, near: others.filter((m) => shared(m) >= 2), answer: n, m: DIFFICULTY.who(pages(n, p)), fame: Object.fromEntries([n, ...others].map((m) => [m, fame(m)])),
           counts: Object.fromEntries([n, ...others].map((m) => [m, m === n ? said.length : shared(m)])) });
@@ -411,7 +414,11 @@ export function pools(Q) {
     }
     if (variants.length) out.trend.push({ key: `trend:${w}`, topics: [w], variants });
   }
-  for (const k of KINDS) for (const g of out[k]) g.tiers = [...new Set(g.variants.map((v) => v.tier))];
+  // A question's cluster: the words its own are one with (`kin`, near on the chart), and, for an official word or a
+  // loanword of `resmi`, all the loanwords ("selfie" and "gadget"): a game asks one question of a kind of a cluster (`deal`).
+  const kinOf = new Map();
+  for (const [a, b] of [...(Q.kin || []), ...Q.resmi.flatMap(([a]) => Q.resmi.map(([b]) => [a, b]))]) for (const [x, y] of [[a, b], [b, a]]) (kinOf.get(x) || kinOf.set(x, new Set()).get(x)).add(y);
+  for (const k of KINDS) for (const g of out[k]) (g.tiers = [...new Set(g.variants.map((v) => v.tier))]), (g.near = [...new Set(g.topics.flatMap((w) => [...(kinOf.get(w) || [])]))]);
   return out;
 }
 
@@ -420,7 +427,7 @@ export function pools(Q) {
  *  says how welcome a name is as a choice drawn here (0 not at all; higher, more: see `deal`). */
 export function finish(kind, g, tier, rng, P, fresh = () => 1) {
   const fit = g.variants.filter((v) => v.tier === tier), from = fit.length ? fit : g.variants, v = from[Math.floor(rng() * from.length)];
-  const base = { kind, key: g.key, topics: g.topics, tier: v.tier, d: v.d, answer: v.answer, ev: v.ev };
+  const base = { kind, key: g.key, topics: g.topics, near: g.near || [], tier: v.tier, d: v.d, answer: v.answer, ev: v.ev };
   // (of a list, the n most welcome, at random among equals)
   const pick = (list, n) => shuffle(list, rng).map((x) => [x, fresh(x)]).filter(([, f]) => f > 0).sort((a, b) => b[1] - a[1]).slice(0, n).map(([x]) => x);
   if (kind === "year") {
@@ -560,7 +567,7 @@ export function deal(d, rng, P) {
   const open = all.filter((k) => d[k].fresh.length), room = (list) => list.reduce((s, k) => s + Math.min(capOf(k), d[k].fresh.length), 0);
   // (where the kinds left cannot fill a game, the kind resting longest comes back)
   for (const k of all.filter((x) => !open.includes(x)).sort((a, b) => d[a].rest - d[b].rest)) if (room(open) < ROUNDS) (d[k].refill(), open.push(k));
-  const kinds = open, order = rhythm(kinds, rng), used = new Set(), game = [], count = {};
+  const kinds = open, order = rhythm(kinds, rng), used = new Set(), game = [], count = {}, cluster = {};
   const age = (w) => (d.seen.has(w) ? n - d.seen.get(w) : Infinity);  // games since a name or word was last shown
   const LEVELS = [Infinity, 4, 2, 1];
   // (in a visit's first game, a kind with fewer than four questions of a mark, as "which year" has two hard ones, is not
@@ -580,8 +587,8 @@ export function deal(d, rng, P) {
       // twice running)
       for (const off of [0, 1, 2]) for (const level of LEVELS) for (const kind of which) for (const at of [tier - off, tier + off].filter((x, i, l) => x >= 0 && x <= 2 && l.indexOf(x) === i)) {
         if (q || (n === 1 && !spent && level === Infinity && thin(kind, at)) || !ordered([...game, { kind, tier: at, d: 0 }])) continue;
-        const welcome = (w) => !used.has(w) && age(w) >= level;
-        const g = spent === "early" ? d[kind].early((g) => g.topics.every(welcome)) : d[kind].take((g) => g.topics.every(welcome), at, true);
+        const welcome = (w) => !used.has(w) && age(w) >= level, apart = (g) => !g.topics.some((w) => cluster[kind]?.has(w));  // (one question of a kind per cluster)
+        const g = spent === "early" ? d[kind].early((g) => g.topics.every(welcome) && apart(g)) : d[kind].take((g) => g.topics.every(welcome) && apart(g), at, true);
         if (!g) continue;
         q = finish(kind, g, at, rng, P, (w) => (welcome(w) ? Math.min(age(w), 99) : 0));
         if (q && !ordered([...game, q])) q = null;
@@ -593,6 +600,7 @@ export function deal(d, rng, P) {
     q.turn = game.length;  // (the order it was dealt in, before `ordered`: the checks follow the decks in it)
     shownIn(q).forEach((w) => used.add(w));
     q.topics.forEach((t) => used.add(t));
+    [...q.topics, ...q.near].forEach((w) => (cluster[q.kind] ||= new Set()).add(w));
     count[q.kind] = (count[q.kind] || 0) + 1;
     game.push(q);
   }
@@ -720,8 +728,11 @@ export const nearness = (won) => (won >= 90 ? 0 : won >= 60 ? 1 : won >= 25 ? 2 
 export const close = (won) => won >= 60;
 /** The rank at the end of the quiz, by the share of rounds right: all, three quarters, half, less. */
 export const rank = (right, total) => (right === total ? 0 : right >= 0.75 * total ? 1 : right >= 0.5 * total ? 2 : 3);
-/** ... and of "guess the number", by its share of the points: 80% and more, 55%, 30%, less. */
-export const guessRank = (score, most) => (score >= 0.8 * most ? 0 : score >= 0.55 * most ? 1 : score >= 0.3 * most ? 2 : 3);
+/** ... and of "guess the number", by its share of the points: 90% and more, 80%, 70%, less. No fixed guess reaches the
+ *  third (a game of one number guessed six times scores at most 67% in 900 dealt games, whichever number: games.mjs), so
+ *  "Pembaca judul" is earned, not guessed. */
+export const GUESS_RANKS = [0.9, 0.8, 0.7];
+export const guessRank = (score, most) => { const k = GUESS_RANKS.findIndex((r) => score >= r * most); return k < 0 ? 3 : k; };
 /** The words beside which a game says that sharing a page is not being accused: the words of the law and of accusation.
  *  Beside any other word ("viral", "survei") it would read as an accusation nobody made. */
 export const CAVEAT = ["tersangka", "korupsi", "suap", "terdakwa", "ditangkap", "diperiksa", "divonis", "dilaporkan", "saksi", "sidang", "etik"];
