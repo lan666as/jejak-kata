@@ -374,5 +374,19 @@ async function others(size) {
 // Two pages at a time, no more (a shared machine).
 const jobs = [...STORY_SIZES.map((size) => () => stories(size)), ...LONG_SIZES.map((size) => () => stories(size, true)), ...PAGE_SIZES.map((size) => () => others(size))];
 await Promise.all([0, 1].map(async () => { while (jobs.length) await jobs.shift()(); }));
+// On a touch phone every control is 44px tall, or has a 44px target around it (a ::before): the chips, the source tabs,
+// the "Kata"/"Nama" switch, a race's ×, the circle's names, a stage's share mark. A link inside running text is exempt.
+{ const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, reducedMotion: "reduce" }), page = await ctx.newPage();
+  for (const path of ["", "bergeser", "balap", "lingkaran", "menempel", "pasang", "tahun", "kata/korupsi", "kuis", "tebak", "temuan", "cerita/oknum"]) {
+    await page.goto(`${base}#/${path}`); await page.waitForTimeout(2000);
+    await page.evaluate(() => document.querySelectorAll("details.options").forEach((d) => (d.open = true)));
+    looks++;
+    report(`touch targets on /${path} at 390`, await page.evaluate(() => [...document.querySelectorAll("button, a[role=button], summary, select, input:not([type=hidden]), .chips a, .switch a, .orbit a")].filter((n) => {
+      const r = n.getBoundingClientRect(), b = getComputedStyle(n, "::before");
+      if (!r.width || !r.height || getComputedStyle(n).visibility === "hidden" || (n.tagName === "A" && !n.matches("[role=button]") && n.closest("p"))) return false;
+      return Math.max(r.height, b.content !== "none" && b.position === "absolute" ? r.height - parseFloat(b.top) - parseFloat(b.bottom) : 0) < 43.5;
+    }).map((n) => `“${(n.textContent || n.value || n.getAttribute("aria-label") || "").trim().slice(0, 16)}” ${Math.round(n.getBoundingClientRect().height)}px`)));
+  }
+  await ctx.close(); }
 console.log(`${failures ? `${failures} PROBLEMS` : "every page holds"}: ${looks} looks at ${STORY_SIZES.length + LONG_SIZES.length} story sizes and ${PAGE_SIZES.length} page sizes (${((Date.now() - started) / 1000).toFixed(0)} s)`);
 await done(failures);

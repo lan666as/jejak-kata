@@ -1,7 +1,8 @@
 // node tests/site/pages.mjs   Uses the site like a reader: language switch, back button, shared link, slow line, chart, games, saved image.
 import { base, browser, done } from "./serve.mjs";
 import { PAGED } from "../../site/words.js";
-import { along } from "../../site/deal.js";
+import { along, PEOPLE, BODIES } from "../../site/deal.js";
+import { content, company, wordsNamed } from "./publish.mjs";
 let failures = 0;
 const log = (name, ok, detail) => { failures += !ok; console.log(`${ok ? "ok  " : "FAIL"} ${name}: ${detail}`); };
 const fresh = async (opts = {}) => { const p = await browser.newPage({ viewport: { width: 390, height: 780 }, ...opts }); p.errors = []; p.on("pageerror", (e) => p.errors.push(e.message)); return p; };
@@ -165,4 +166,22 @@ for (const [width, height] of [[360, 740], [768, 1000], [1440, 900]]) { // the m
   const p = await fresh({ viewport: { width: 1200, height: 800 }, acceptDownloads: true }); await p.goto(base + "#/cerita/prabowo"); await p.waitForSelector(".tools button");
   const [d] = await Promise.all([p.waitForEvent("download", { timeout: 15000 }).catch(() => null), p.locator(".tools button").first().click()]);
   log("save image", !!d, d ? "an image is offered" : "no download"); await p.close(); }
+{ // names as names: a known name never stands in lower case where a page shows it (the findings' pairs, the method's
+  // demo, a story's "Periksa sendiri", the generated page of a word), except a token in quotes (“jokowi”, the word counted);
+  // and a reader-facing link never shows a file's path (“angka mentahnya: …”, not “(pages/oknum-masa.json)”).
+  const NAMES = [...PEOPLE, ...BODIES, "joko widodo", "gubernur dki jakarta", "chatgpt", "nokia", "htc", "biden", "obama"];
+  const lower = (text) => NAMES.filter((n) => new RegExp(`(^|[^“\\p{L}])${n}(?![\\p{L}”])`, "u").test(text));
+  const bad = [], p = await fresh({ viewport: { width: 1280, height: 900 } });
+  for (const [path, sel] of [["#/temuan", ".duets, .sparks"], ["#/metode", ".method-demo"], ["#/cerita/oknum", ".landing .tools"], ["#/cerita/prabowo", ".landing .tools"]]) {
+    await p.goto(base + path); await p.waitForTimeout(3500);
+    const text = await p.evaluate((sel) => [...document.querySelectorAll(sel)].map((n) => n.textContent).join(" "), sel);
+    if (!text.trim()) bad.push(`${path}: nothing to read in ${sel}`);
+    lower(text).forEach((n) => bad.push(`${path}: “${n}”`));
+    const files = await p.evaluate((sel) => [...document.querySelectorAll(`${sel} a`)].map((a) => a.textContent).filter((t) => /\.json|\(words\)|\(paths\)/.test(t)), sel);
+    files.forEach((f) => bad.push(`${path}: a link reads “${f}”`));
+  }
+  await p.close();
+  const facts = { named: await wordsNamed(), company: { jokowi: await company("jokowi"), korupsi: await company("korupsi") } };
+  for (const w of ["jokowi", "korupsi"]) for (const lang of ["id", "en"]) lower(content(["kata", w], lang, facts).replace(/<[^>]*>/g, " ")).forEach((n) => bad.push(`page of “${w}” (${lang}): “${n}”`));
+  log("names as names on the findings, the method, a story's checks and a word's own page; no file path as a link's text", !bad.length, bad.slice(0, 6).join("; ") || "none in lower case"); }
 await done(failures);

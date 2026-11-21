@@ -49,3 +49,6 @@ export const measure = (text, font) => {
   ruler.font = font;
   return ruler.measureText(text).width;
 };
+/** A text broken into lines keeps its spaces: each line but the last ends on one (unseen at a line's end), so that its
+ *  text, copied or read aloud, is "how many" and not "howmany". */
+export const spaced = (lines, k) => (k < lines.length - 1 ? `${lines[k]} ` : lines[k]);

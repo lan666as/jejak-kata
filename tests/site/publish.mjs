@@ -26,6 +26,7 @@ import { STORIES } from "../../site/story.js";
 import { address, named, cut, EMBED, PLAY, WORDS, ALIASES, QUIZ_NAMES, GUESS_WORDS } from "../../site/address.js";
 import { PAGED } from "../../site/words.js";
 import { lensFrom, sceneWords } from "../../site/scenes.js";
+import { shown } from "../../site/deal.js";
 
 const REPO = new URL("../../", import.meta.url).pathname, SRC = join(REPO, "site");
 const ROOT = new URL(SITE.url).pathname, LANGUAGES = ["id", "en"], LOCALE = { id: "id_ID", en: "en_GB" };
@@ -58,7 +59,7 @@ const read = new Map();
 const json = (p) => read.get(p) || read.set(p, readFile(join(SRC, "data", p), "utf8").then(JSON.parse)).get(p);
 /** What the data says of a word on the first page's lens: its company in the first and last period it has, and its
  *  largest shift. Nothing where the word is not an entry there. */
-async function company(word) {
+export async function company(word) {
   const meta = await json(`${MAIN}/meta.json`), i = meta.words.indexOf(word);
   if (i < 0 || meta.names.includes(i)) return null;
   const e = (await json(`${MAIN}/words/${Math.floor(i / meta.bucket)}.json`)).find((x) => x.word === i);
@@ -97,7 +98,9 @@ export async function wordsNamed() {
   const hop = only((await Promise.all(seeds.map(company))).flatMap((c) => (c ? [...c.early, ...c.late] : [])));
   const main = lenses.find((l) => l.lens === MAIN), frequent = main.words.filter((w, i) => main.isEntry(i)).slice(0, FREQUENT);
   const all = [...new Set([...seeds, ...hop, ...frequent])].sort((a, b) => a.localeCompare(b, "id"));
-  return { shown: WORDS, story, games, findings, frequent, all };
+  // (the words that are names in some source: a page shows them as names, deal.js `shown`, as the site does)
+  const names = new Set(all.filter((w) => lenses.some((l) => l.entities?.[l.index.get(w)] !== undefined)));
+  return { shown: WORDS, story, games, findings, frequent, all, names };
 }
 /** site/words.js as it should be. */
 export const wordsModule = (all) => `// The words with a page of their own (address.js), from the data: written by \`node tests/site/publish.mjs words\`
@@ -112,12 +115,12 @@ async function covered() {
 
 // ---- what a page says without a script ---------------------------------------------------------------------------
 
-function content(parts, lang, facts) {
+export function content(parts, lang, facts) {
   const T = TEXT[lang], [page, arg] = parts, story = storyOf(parts), other = lang === "id" ? "en" : "id";
   const twin = `<p><a href="${path(parts, other)}" hreflang="${other}" lang="${other}">${other === "en" ? "English" : "Bahasa Indonesia"}</a></p>`;
   const storyList = (list) => `<ul>${list.map((s) => `<li>${a(["cerita", s.slug], lang, s[lang].title)}: ${s.key.number[lang] || s.key.number} ${s.key[lang]}. ${s[lang].teaser}</li>`).join("")}</ul>`;
   const games = `<ul>${PLAY.map((p) => `<li>${a([p], lang, T[`play_${p}`])}: ${T[`play_${p}_about`]}</li>`).join("")}</ul>`;
-  const words = (list) => `<ul>${list.map((w) => `<li>${a(["kata", w], lang, w)}</li>`).join("")}</ul>`, named = facts.named;
+  const named = facts.named, say = (w) => esc(named.names.has(w) ? shown(w, "name") : w), words = (list) => `<ul>${list.map((w) => `<li>${a(["kata", w], lang, say(w))}</li>`).join("")}</ul>`;
   const nav = `<nav><ul><li>${a(["cerita"], lang, T.nav_stories)}</li><li>${a(["main"], lang, T.nav_play)}</li><li>${a(["peta"], lang, T.nav_chart)}</li><li>${a(["temuan"], lang, T.nav_findings)}</li><li>${a(["metode"], lang, T.nav_method)}</li></ul></nav>`;
   let body;
   if (story) {
@@ -135,8 +138,9 @@ function content(parts, lang, facts) {
       <p>${T.next_story}: ${a(["cerita", next.slug], lang, next[lang].title)}</p></article>`;
   } else if (page === "kata") {
     const c = facts.company[arg];
-    const linked = (list_) => list(lang, list_, (w) => `“${a(["kata", w], lang, esc(w))}”`);
-    body = `<article><h1>${esc(arg)}</h1><p>${T.desc_word(arg)}</p>${c ? `<p>${T.word_company(arg, c.first, linked(c.early), c.last, linked(c.late))}</p>` : ""}
+    // (a name as a name; a word, the token counted, in quotes)
+    const linked = (list_) => list(lang, list_, (w) => (named.names.has(w) ? a(["kata", w], lang, say(w)) : `“${a(["kata", w], lang, say(w))}”`));
+    body = `<article><h1>${say(arg)}</h1><p>${T.desc_word(arg)}</p>${c ? `<p>${T.word_company(arg, c.first, linked(c.early), c.last, linked(c.late))}</p>` : ""}
       ${c?.shift != null ? `<p>${T.word_shift(c.shift.toLocaleString(lang, { maximumFractionDigits: 1 }), c.shift >= c.flag)}</p>` : ""}
       <h2>${T.word_more}</h2>${words(SHOWCASE.filter((w) => w !== arg))}</article>`;
   } else if (page === "cerita") body = `<h1>${T.nav_stories}</h1><p>${T.stories_lede}</p>${storyList(STORIES)}`;
@@ -157,7 +161,7 @@ function card(parts, lang, facts) {
   if (!page) return { home: true, alt: T.card_alt_home };
   if (story) return { kicker: T.story, key: story.key.number[lang] || story.key.number, label: story.key[lang], title: story[lang].title };
   if (page === "kata" && !WORDS.includes(arg)) return { kicker: T.word, title: T.title, line: T.hero_lede, shared: true };
-  if (page === "kata") return { kicker: T.word, title: arg, line: c ? T.word_company(arg, c.first, list(lang, c.early), c.last, list(lang, c.late)) : T.desc_word(arg) };
+  if (page === "kata") return { kicker: T.word, title: facts.named.names.has(arg) ? shown(arg, "name") : arg, line: c ? T.word_company(arg, c.first, list(lang, c.early), c.last, list(lang, c.late)) : T.desc_word(arg) };
   const title = { cerita: T.nav_stories, main: T.nav_play, peta: T.nav_chart, temuan: T.nav_findings, metode: T.method_title }[page] || T[`play_${page}`];
   return { kicker: PLAY.includes(page) ? T.nav_play : SITE.name, title, line: named(parts, lang).description };
 }

@@ -74,4 +74,25 @@ for (const [name, options, init, expect] of [
   });
   log("hero @320x568", !r.on.length && r.need <= r.room, `${r.on.length ? `on the headline: ${r.on.join(", ")}` : "nothing on the headline"}; the placeholder ${r.need}px in its field's ${r.room}px`);
   await page.close(); }
+// The headline keeps 3:1 (large text) against the brightest of what is behind it, at a short phone, a phone and a
+// laptop: measured from a screenshot of its box with its letters made transparent, once the arrival has lit the sea.
+for (const [width, height, phone] of [[320, 568, true], [390, 844, true], [1440, 900, false], [1920, 1080, false]]) {
+  const page = await browser.newPage({ viewport: { width, height }, hasTouch: phone, isMobile: phone });
+  await page.goto(base + "#/");
+  await page.waitForFunction(() => document.querySelector(".hero .chart[data-route]"), null, { timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(3500);
+  const box = await page.evaluate(() => { const h = document.querySelector(".hero h1"), r = h.getBoundingClientRect(); h.style.color = "transparent"; return { x: r.left, y: r.top, width: r.width, height: r.height, ink: getComputedStyle(document.documentElement).getPropertyValue("--on-deep").trim() }; });
+  const shot = (await page.screenshot({ clip: { x: box.x, y: box.y, width: box.width, height: box.height } })).toString("base64");
+  const worst = await page.evaluate(async ({ shot, ink }) => {
+    const img = new Image(); img.src = `data:image/png;base64,${shot}`; await img.decode();
+    const c = Object.assign(document.createElement("canvas"), { width: img.width, height: img.height }).getContext("2d"); c.drawImage(img, 0, 0);
+    const lin = (v) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4), lum = (r, g, b) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    const d = c.getImageData(0, 0, img.width, img.height).data, all = [];
+    for (let i = 0; i < d.length; i += 4) all.push(lum(d[i], d[i + 1], d[i + 2]));
+    all.sort((a, b) => a - b);
+    const bg = all[Math.floor(all.length * 0.99)], hex = ink.replace("#", ""), text = lum(...[0, 2, 4].map((k) => parseInt(hex.slice(k, k + 2), 16)));
+    return (text + 0.05) / (bg + 0.05);
+  }, { shot, ink: box.ink });
+  log(`headline contrast @${width}x${height}`, worst >= 3, `${worst.toFixed(1)}:1 against the brightest 1% behind it`);
+  await page.close(); }
 await done(failures);

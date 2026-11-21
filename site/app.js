@@ -9,8 +9,8 @@
 import { seaChart } from "./chart.js";
 import { TEXT, LENS_TEXT, NOTES, GLOSS, FEATURED, SHOWCASE, STORIES, SITE } from "./text.js";
 import { address, routeOf, named, canonical, EMBED, PAGES, PLAY, CARDS, QUIZ_NAMES, GUESS_WORDS } from "./address.js";
-import { board, measure } from "./labels.js";
-import { MARGIN, bareSet, fragment, pools, decks, deal, guessPool, guessDecks, guessDeal, points, close, nearness, rank as rankOf, guessRank, shown, isAbbr, marker, ROMAN, isName as nameLike, keep, kept as keptDecks, version, BODIES, PEOPLE, STOPS, along, stopAt, CAVEAT } from "./deal.js";
+import { board, measure, spaced } from "./labels.js";
+import { MARGIN, bareSet, fragment, pools, decks, deal, guessPool, guessDecks, guessDeal, compared, points, close, nearness, rank as rankOf, guessRank, shown, isAbbr, marker, ROMAN, isName as nameLike, keep, kept as keptDecks, version, BODIES, PEOPLE, STOPS, along, stopAt, CAVEAT, FURNITURE } from "./deal.js";
 import { GAME_GLOSS, NAME_GLOSS } from "./glossary.js";
 import { figureOf, focused, lensFrom, sceneWords, seaWords, stepAt, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
 
@@ -150,7 +150,7 @@ const href = (...parts) => ROOT.pathname + address(parts, language);
 const whole = (to) => new URL(to, ROOT).href;
 /** Going to an address of the site: a new entry in the browser's history, and its page. */
 const visit = (to) => (whole(to) !== location.href && history.pushState(null, "", to), moved());
-const link = (word) => `<a href="${href("kata", word)}">${word}</a>`;
+const link = (word) => `<a href="${href("kata", word)}">${escape(shown(word))}</a>`;  // (a name the games know as a name: "Prabowo", "TNI")
 /** A row or a label of an explorer that stands for a word or a name: a link to its page (a person's portrait, else the
  *  word's page), the same everywhere: the word itself its text and its name, the site's link on hover and focus, a
  *  chevron where there is no hover (style.css, .to-word). `kind`: "person", "name" (any other name), or none for a
@@ -734,7 +734,7 @@ const legend = () => `<div class="legend">${[0, 1, 2, 3, 4, 5]
  */
 function orbit(lens, e) {
   const periods = known(e);
-  const node = el(`<div class="orbit"><div class="core">${lens.words[e.word]}</div></div>`);
+  const node = el(`<div class="orbit"><div class="core">${escape(sayIn(lens, e.word))}</div></div>`);
   new ResizeObserver(() => node.style.setProperty("--r", node.clientWidth / 2 + "px")).observe(node);
   const rings = { with: { size: 10, radius: [0.5, 0.64], cls: "" }, like: { size: 8, radius: [0.9, 0.9], cls: "like" } };
   const placed = { with: new Map(), like: new Map() }; // word id -> its chip and slot
@@ -755,8 +755,8 @@ function orbit(lens, e) {
         if (here.has(id)) continue;
         const slot = free.shift();
         const angle = (2 * Math.PI * (slot + (name === "like" ? 0.5 : 0))) / size - Math.PI / 2;
-        const word = lens.words[id];
-        const chip = el(lens.isEntry(id) ? `<a class="${cls} in" href="${href("kata", word)}">${word}</a>` : `<a class="${cls} in">${word}</a>`);
+        const word = lens.words[id], said = escape(sayIn(lens, id));
+        const chip = el(lens.isEntry(id) ? `<a class="${cls} in" href="${href("kata", word)}">${said}</a>` : `<a class="${cls} in">${said}</a>`);
         chip.style.setProperty("--x", `calc(var(--r) * ${(radius[slot % 2] * Math.cos(angle)).toFixed(3)})`);
         chip.style.setProperty("--y", `calc(var(--r) * ${(radius[slot % 2] * Math.sin(angle)).toFixed(3)})`);
         if (last >= 0) chip.classList.add("new");
@@ -780,6 +780,7 @@ function orbit(lens, e) {
  * its island on the side away from the route where it can, else a line or more above or below (a leader ties it to its
  * island); a name with no clear spot is left out (the column and the lists name them all).
  */
+const FEW_PAGES = 500;  // (a word on fewer pages than this in a year has neighbours that may be chance: pathFigure says so)
 function pathFigure(lens, path, e) {
   const beside = room() >= 900, COLUMN = 280;
   const W = Math.max(300, Math.round(room() - (beside ? COLUMN + 40 : 0))), H = Math.round(Math.max(300, Math.min(W * (beside ? 0.62 : 0.9), beside ? innerHeight - 250 : 560))), P = 34, SIDE = Math.round(Math.min(170, W * 0.2));
@@ -838,6 +839,8 @@ function pathFigure(lens, path, e) {
     if (box) Object.assign(m, { lx: box[0], ly: box[1] + 11, tie: Math.max(box[0], Math.min(box[2], m.x)) });
   }
   const near = (late) => marks.filter((m) => m.late === late).map((m) => linkIn(lens, m.id));
+  // (what "nearest" means, and, where a ringed year has few pages, that an odd neighbour may be chance)
+  const fewest = Math.round(Math.min(...[steps[0].p, steps.at(-1).p].map((p) => (e?.share[p] || 0) * lens.units[p])));
   const company = (p) => (e?.like[p] || []).map((i) => linkIn(lens, i)).join(", ");
   const node = el(`<div class="path-plate"><div class="legend"><span><i class="early"></i>${t("near_early", lens.periods[steps[0].p])}</span>
     <span><i class="late"></i>${t("near_late", lens.periods[steps.at(-1).p])}</span><span><i class="route-key"></i>${t("path_key")}</span></div>
@@ -850,7 +853,8 @@ function pathFigure(lens, path, e) {
     ${marks.filter((m) => m.lx !== undefined).map((m) => `<text class="island-label" data-word="${escape(lens.words[m.id])}" x="${m.lx + 2}" y="${m.ly}">${escape(sayIn(lens, m.id))}</text>`).join("")}
     <circle class="ship" r="9" cx="${steps[0].x}" cy="${steps[0].y}"/><text class="when-label" text-anchor="middle"></text>
   </svg>${`<aside class="path-near"><p class="path-year" aria-hidden="true"></p><h3 class="path-now"></h3><p class="path-company"></p>
-    <h3><i class="early"></i>${lens.periods[steps[0].p]}</h3><p>${near(false).join(", ")}</p><h3><i class="late"></i>${lens.periods[steps.at(-1).p]}</h3><p>${near(true).join(", ")}</p></aside>`}</div></div>`);
+    <h3><i class="early"></i>${lens.periods[steps[0].p]}</h3><p>${near(false).join(", ")}</p><h3><i class="late"></i>${lens.periods[steps.at(-1).p]}</h3><p>${near(true).join(", ")}</p>
+    <p class="sub near-about">${t("near_about")}${fewest < FEW_PAGES ? ` ${t("near_few", thousands(fewest))}` : ""}</p></aside>`}</div></div>`);
   const ship = node.querySelector(".ship"), label = node.querySelector(".when-label");
   const figure = { node, labels: steps.map((s) => lens.periods[s.p]), rail: true };
   figure.show = (k) => {
@@ -1007,11 +1011,11 @@ function sparks(lens, entries, rivals = []) {
   const line = (e, top) => e.share.map((v, i) => `${(W * i) / (e.share.length - 1)},${H - 4 - ((H - 8) * v) / top}`).join(" ");
   return el(`<ul class="sparks">${entries.map((e, k) => {
     const top = Math.max(...e.share, ...(rivals[k]?.share || [])), peak = e.share.indexOf(Math.max(...e.share));
-    return `<li><a href="${href("kata", lens.words[e.word])}"><b>${lens.words[e.word]}</b>
+    return `<li><a href="${href("kata", lens.words[e.word])}"><b>${escape(sayIn(lens, e.word))}</b>
       <svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="none" aria-hidden="true">
         ${rivals[k] ? `<polyline class="spark-line k1 draw" pathLength="1" points="${line(rivals[k], top)}"/>` : `<polygon class="spark-area" points="0,${H} ${line(e, top)} ${W},${H}"/>`}
         <polyline class="spark-line draw" pathLength="1" points="${line(e, top)}"/></svg>
-      <small>${rivals[k] ? escape(t("in_company", lens.words[rivals[k].word])) : t("peak", lens.periods[peak], percent(e.share[peak]))}</small></a></li>`;
+      <small>${rivals[k] ? escape(t("in_company", sayIn(lens, rivals[k].word))) : t("peak", lens.periods[peak], percent(e.share[peak]))}</small></a></li>`;
   }).join("")}</ul>`);
 }
 
@@ -1088,7 +1092,7 @@ function numbers(lens, e) {
       el(`<details><summary>${t("all_periods")}</summary><div class="table" tabindex="0"><table>
         <tr><th>${t("period")}</th><th class="n">${t("share")}</th><th>${t("with")}</th><th>${t("like")}</th></tr>
         ${lens.periods.map((p, i) => `<tr><td>${p}</td><td class="n">${percent(e.share[i])}</td>
-          <td>${e.with[i].map((w) => lens.words[w]).join(", ")}</td><td>${e.like[i].map((w) => lens.words[w]).join(", ")}</td></tr>`).join("")}
+          <td>${e.with[i].map((w) => escape(sayIn(lens, w))).join(", ")}</td><td>${e.like[i].map((w) => escape(sayIn(lens, w))).join(", ")}</td></tr>`).join("")}
       </table></div></details>`),
       download(`${lens.words[e.word]}.${lens.lens}`, readable(lens, e)),
     );
@@ -1351,7 +1355,7 @@ function duet(lens, rose, fell, W = 340, H = 150, lead = false) {
   const x = (i) => L + ((W - L - R) * i) / (n - 1), y = (v) => H - B - ((H - T - B) * v) / top;
   const points = (e) => e.share.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
   const cross = rose.share.findIndex((v, i) => i > 0 && v > fell.share[i] && rose.share[i - 1] <= fell.share[i - 1]);
-  const [a, b] = [lens.words[rose.word], lens.words[fell.word]];
+  const [a, b] = [sayIn(lens, rose.word), sayIn(lens, fell.word)];
   // Where the two lines meet, between the period before the crossing and the crossing: marked as the lines reach it
   // (they draw from left to right together; --at, how far along), named with its year on the lead pair.
   const f = cross > 0 ? (fell.share[cross - 1] - rose.share[cross - 1]) / (rose.share[cross] - rose.share[cross - 1] - fell.share[cross] + fell.share[cross - 1]) : 0;
@@ -1404,7 +1408,10 @@ async function findingsPage() {
   const section = async (name) => {
     const lens = await lensNamed(name), { swaps, arrivals } = await highlights(lens);
     const box = el("<div></div>");
-    const pairs = (await Promise.all(swaps.map(([fell, rose]) => Promise.all([entry(lens, rose), entry(lens, fell)])))).filter(([r, f]) => r && f && crosses(r, f));
+    // (and only a pair of one sort, two names or two words, each a word a reader recognises: "HTC" and "suksesor" are
+    // not one thing taking another's place; nor is a page's furniture or a word of English)
+    const sort = (e) => lens.articles.has(e.word), plain = (e) => sort(e) || (!FURNITURE.includes(lens.words[e.word]) && !FOREIGN.test(lens.words[e.word]));
+    const pairs = (await Promise.all(swaps.map(([fell, rose]) => Promise.all([entry(lens, rose), entry(lens, fell)])))).filter(([r, f]) => r && f && crosses(r, f) && sort(r) === sort(f) && plain(r) && plain(f));
     // The first pair leads, across the page; the next under it, by how many times as common the rising word ends.
     const effect = ([r, f]) => third(r, true) / third(f, true), shown = [pairs[0], ...pairs.slice(1, LEAD).sort((a, b) => effect(b) - effect(a))].filter(Boolean);
     // The small ones in rows of `cols` on a grid of six tracks; a last row of fewer takes the whole width between them,
@@ -1412,7 +1419,7 @@ async function findingsPage() {
     const w = room(), wide = innerWidth >= 900, cols = wide ? 3 : Math.max(1, Math.floor((w + 16) / 320)), small = shown.length - 1, last = small % cols || cols;
     const span = (k) => 6 / (k > small - last ? last : cols), col = (k) => Math.floor(((w - 16 * 5) / 6) * span(k) + 16 * (span(k) - 1) - 50);
     box.append(el(`<h2>${t("swaps_title")}</h2>`), el(`<div class="told"><p class="sub">${t("swaps_about")}</p><p class="rule">${t("swaps_rule", pairs.length, swaps.length, Math.min(LEAD, pairs.length))}</p></div>`),
-      folded(pairs, LEAD, () => el(`<ul class="duets">${shown.map(([r, f], k) => `<li${k ? ` style="grid-column:span ${span(k)}"` : ""}><a href="${href("kata", lens.words[r.word])}"><b class="duet-word">${lens.words[r.word]}</b><span class="duet-was">${escape(t("in_company", lens.words[f.word]))}</span>${k ? duet(lens, r, f, col(k), Math.round(col(1) * 0.45)) : duet(lens, r, f, w - (wide ? 66 : 50), wide ? 300 : 200, true)}</a></li>`).join("")}</ul>`),
+      folded(pairs, LEAD, () => el(`<ul class="duets">${shown.map(([r, f], k) => `<li${k ? ` style="grid-column:span ${span(k)}"` : ""}><a href="${href("kata", lens.words[r.word])}"><b class="duet-word">${escape(sayIn(lens, r.word))}</b><span class="duet-was">${escape(t("in_company", sayIn(lens, f.word)))}</span>${k ? duet(lens, r, f, col(k), Math.round(col(1) * 0.45)) : duet(lens, r, f, w - (wide ? 66 : 50), wide ? 300 : 200, true)}</a></li>`).join("")}</ul>`),
         (list) => sparks(lens, list.map((p) => p[0]), list.map((p) => p[1]))));
     // The words that came and went or stayed lie below the first screen: the pairs are shown as soon as theirs have
     // come, and only then are these asked for, each list in its own place (a skeleton until it comes).
@@ -1431,8 +1438,9 @@ async function findingsPage() {
 }
 
 /** Lists per lens; a word also flagged between the same periods in another lens is marked. */
-/** Letters a word of English ends in and an Indonesian word does not ("product", "gross", "domestic", "food", "trade"). */
-const FOREIGN = /(ct|ss|ck|oo|th|sh|ph|ght|tion|ic|[^aeiou]y|[a-z]{3}[^aeiou]e)$/;
+/** Letters a word of English ends in and an Indonesian word does not ("product", "gross", "domestic", "food", "trade"),
+ *  and the common English words whose ending does not tell ("market", "retail", "open"). */
+const FOREIGN = /(ct|ss|ck|oo|th|sh|ph|ght|tion|ic|[^aeiou]y|[a-z]{3}[^aeiouy]e)$|^(any|food|market|retail|open|out|art|news|disease|tower|sky|the|of|and|for)$/;
 /** What moved: one ranking, by how far each changed its company between two periods, of the words ("Kata") or of the
  *  names ("Nama": what has an article on Indonesian Wikipedia, the names of one article on one line), switched at the
  *  top in place (the source, the pair of periods and the scroll stay; the address follows: "bergeser" the words,
@@ -1458,7 +1466,7 @@ async function moversPage(mode = "kata") {
     const title = a.toLowerCase().replace(/\s*\(.*\)$/, "");
     return title === w || (["place", "organisation"].includes(lens.kind(i)) && title.split(/[\s-]+/).includes(w));
   };
-  const known = (lens, i) => { const w = lens.words[i]; return !fragment(w, BARE) && named(lens, i) && (!lens.lens.startsWith("id-") || !main || w.split(" ").every((p) => main.index.has(p) && !FOREIGN.test(p))); };
+  const known = (lens, i) => { const w = lens.words[i]; return !fragment(w, BARE) && named(lens, i) && !FURNITURE.includes(w) && (!lens.lens.startsWith("id-") || !main || w.split(" ").every((p) => main.index.has(p) && !FOREIGN.test(p))); };
   view.replaceChildren(pageHead(t("nav_movers"), { ...fromPlay(), lede: t("movers_lede"), sea: { words: MOVED } }));
   // (the switch, words or names: two halves of one control, beside "Atur", so that the list still begins on a phone's
   // first screen; pressed, it lists the other in place)
@@ -1475,12 +1483,16 @@ async function moversPage(mode = "kata") {
     rewrite(names ? "entitas" : "bergeser");
     drawn.forEach((draw) => draw.isConnected?.() !== false && draw());
   });
+  // (it opens on the source, of the three in sight, whose latest pair of periods has the most words a reader recognises
+  // that other sources flag too: agreement is what holds up, and a list that leads with it reads as news, not as a
+  // source's furniture; one under "Atur" would put a fourth chip in sight and push the list down a phone's screen)
+  const agreed = all.map(({ lens, movers }) => { const m = movers.at(-1); return !MAIN_LENSES.includes(lens.lens) ? -1 : m.words.filter(([w]) => !lens.articles.has(w) && known(lens, w) && elsewhere(lens, m, lens.words[w]).length).length; });
   await perLens(all.map((o) => o.lens), (lens) => lensText(lens).short || lensText(lens).title, (lens, more) => {
     const { movers } = all.find((o) => o.lens === lens);
     // (above the list, one line on what its number and its dots are: matrix_about's measure, the source's flag)
     const section = el(`<section><p class="list-key"></p><div class="movers-list"></div><p class="sub flagged"></p><p class="sub names-note">${t("movers_names_note")}</p><p class="sub">${lensText(lens).about}</p></section>`);
     const controls = el(`<div class="controls"><label>${t("between")} <select name="pair">${movers
-        .map((m, i) => `<option value="${i}">${lens.periods[m.a]} → ${lens.periods[m.b]}</option>`)
+        .map((m, i) => `<option value="${i}">${dash(lens.periods[m.a])} → ${dash(lens.periods[m.b])}</option>`)
         .join("")}</select></label></div>`);
     more.querySelector(":scope > .controls")?.remove();
     more.append(controls);
@@ -1515,7 +1527,7 @@ async function moversPage(mode = "kata") {
     draw();
     drawn.add(draw);
     return section;
-  });
+  }, agreed.indexOf(Math.max(...agreed)));
   const fold = view.querySelector(".options"), row = el(`<div class="toy-row"></div>`);
   fold?.before(row);
   row.append(flip, ...(fold ? [fold] : []));
@@ -1819,7 +1831,8 @@ function tools(address, { image, table, check = [], data, share } = {}) {
   }
   // Shared, the address is copied from the list of places to share; else by a button of its own: one way to copy it.
   row.append(share ? sharer(t("share"), share) : copier(t("copy_link"), () => whole(typeof address === "function" ? address() : address)));
-  const list = [].concat(data || []), files = list.map((file) => `<a href="${DATA}/${file}">${t("check_data")}${list.length > 1 ? ` (${file})` : ""}</a>`);
+  // (a file is named by what it holds, never by its path: "angka mentahnya: Di samping siapa?"; its path stays in its address)
+  const list = [].concat(data || []).map((d) => [].concat(d)), files = list.map(([file, label]) => `<a href="${DATA}/${file}" title="${file}">${t("check_data")}${list.length > 1 && label ? `: ${escape(label)}` : ""}</a>`);
   if (check.length || files.length) row.append(el(`<span>${t("check")} ${[...check.map(link), ...files].join(", ")}</span>`));
   return row;
 }
@@ -1873,7 +1886,7 @@ const PICTURES = {
     const size = 19, per = Math.floor(W / (size * 0.5)), lines = [""];
     for (const w of t("guess_ask", shown(s.names[i], "name"), word).replace(/<[^>]+>/g, "").split(" ")) (lines.at(-1) + " " + w).trim().length > per ? lines.push(w) : (lines[lines.length - 1] = (lines.at(-1) + " " + w).trim());
     const top = H >= 220 ? Math.ceil(lines.length * size * 1.25 + 18) : 0, c = Math.min(H - top, W * 0.5) / 10;
-    const asked = top ? `<text class="ask" style="font-size:${size}px">${lines.map((l, k) => `<tspan x="0" y="${(size * (1 + 1.25 * k)).toFixed(1)}">${escape(l)}</tspan>`).join("")}</text>` : "";
+    const asked = top ? `<text class="ask" style="font-size:${size}px">${lines.map((l, k) => `<tspan x="0" y="${(size * (1 + 1.25 * k)).toFixed(1)}">${escape(spaced(lines, k))}</tspan>`).join("")}</text>` : "";
     const cells = [...Array(100)].map((_, k) => `<rect class="in ${k < n ? "on" : "mute faint"}" style="--i:${Math.floor(k / 10)}" x="${((k % 10) * c).toFixed(1)}" y="${(top + Math.floor(k / 10) * c).toFixed(1)}" width="${(c * 0.82).toFixed(1)}" height="${(c * 0.82).toFixed(1)}" rx="${(c * 0.16).toFixed(1)}"/>`).join("");
     const big = Math.min(H * 0.5, (W - 10 * c) * 0.42);
     return { svg: `${asked}${cells}<text class="big" x="${(10 * c + 18).toFixed(1)}" y="${(top + 10 * c * 0.62).toFixed(1)}" style="font-size:${big.toFixed(0)}px">${n}</text>${svgText(10 * c + 20, top + 10 * c * 0.62 + 22, "/ 100", "soft")}`,
@@ -1894,7 +1907,7 @@ const PICTURES = {
       return out;
     };
     const size = [24, 21, 18, 16].find((z) => wrap(z).length * z * 1.4 <= room) || 16, lines = wrap(size).slice(0, Math.max(1, Math.floor(room / (size * 1.4))));
-    const said = lines.map((l, k) => `<text class="in word" style="--i:${k};font-size:${size}px" x="0" y="${(size * (1 + 1.4 * k)).toFixed(1)}">${l.map((w, j) => `${j ? `<tspan class="soft" style="font-size:${size}px"> · </tspan>` : ""}${escape(w)}`).join("")}</text>`).join("");
+    const said = lines.map((l, k) => `<text class="in word" style="--i:${k};font-size:${size}px" x="0" y="${(size * (1 + 1.4 * k)).toFixed(1)}">${l.map((w, j) => `${j ? `<tspan class="soft" style="font-size:${size}px"> · </tspan>` : ""}${escape(w)}`).join("")}${k < lines.length - 1 ? " " : ""}</text>`).join("");
     const askAt = Math.round((size * 1.4 * lines.length + base) / 2 + 2);
     const ask = t("quiz_year_ask").split(/(?<=\.)\s+/).at(-1), gap = Math.min(96, W / 4);
     return { svg: said + `<text class="ask" x="0" y="${askAt}">${escape(ask)}</text>` + choices.map((c, k) => {
@@ -2023,11 +2036,19 @@ function cite(story, url) {
 /** What a story's data cannot say (story.js, `limits`: its own paragraphs, word for word) as a list, a paragraph an
  *  item; each led in bold by its own first words: the lead it already has (<b>), else its first sentence where that is
  *  short (12 words at most). Only the markup is the site's: the text is not changed. */
-const limitsList = (html) => `<ul class="limits-list">${[...el(`<div>${html}</div>`).children].map((p) => {
-  const text = p.firstChild, end = text?.nodeType === 3 ? text.data.search(/[.?!](\s|$)/) : -1, lead = end > 0 ? text.data.slice(0, end + 1) : "";
-  if (lead && lead.split(/\s+/).length <= 12) (text.data = text.data.slice(end + 1)), p.prepend(Object.assign(document.createElement("b"), { textContent: lead }));  // (a paragraph led by its own <b> starts with that, not with text)
-  return `<li>${p.innerHTML}</li>`;
-}).join("")}</ul>`;
+/** "What this data cannot say", every point whole and in sight (nothing folded, nothing hidden from a screen reader): led
+ *  in bold by its own lead (a <b> it begins with) else its first sentence, the rest of it under that in a quieter size,
+ *  and how many points there are beside the heading ("9 hal"). */
+const limitsList = (html) => {
+  const points = [...el(`<div>${html}</div>`).children].map((p) => {
+    const inner = p.innerHTML.trim(), own = inner.match(/^<b>(.*?)<\/b>/);
+    // (the first sentence's end, outside any tag still open: "“oknum”." inside <i> is not an end)
+    const end = own ? own[0].length : [...inner.matchAll(/[.?!](?=\s|$)/g)].map((m) => m.index + 1).find((k) => (inner.slice(0, k).match(/<[a-z]/gi) || []).length === (inner.slice(0, k).match(/<\//g) || []).length);
+    const [lead, rest] = end ? [own ? own[1] : inner.slice(0, end), inner.slice(end).trim()] : [inner, ""];
+    return `<li><b>${lead}</b>${rest ? ` <span class="rest">${rest}</span>` : ""}</li>`;
+  });
+  return `<p class="limits-count">${t("limits_count", points.length)}</p><ul class="limits-list">${points.join("")}</ul>`;
+};
 
 /** Every story, led by its key number; the newest three large, on the deep. */
 function storiesPage() {
@@ -2214,7 +2235,8 @@ async function storyPage(slug, scene, step, more) {
   const landing = el(`<section class="landing">${tideLine()}<div class="limits"><h2>${t("limits_title")}</h2>${limitsList(words.limits)}</div></section>`);
   landing.append(tools(() => href("cerita", slug, String(last)), { image: () => stages[last].room, table: () => stages[last].figure()?.table?.(),
     share: () => ({ ...shared(), embed: whole(href("cerita", slug, "embed", String(last), String(stages[last].on()))) }), check: [...new Set(parts.flatMap((part) => part.check || []))],
-    data: [...new Set(parts.flatMap((part) => (part.type === "asked" ? [`pages/${part.name}.json`, part.read && `pages/${part.read.name}-read.json`] : [SCENE_DATA[part.type]])).filter(Boolean))] }),
+    data: parts.flatMap((part) => { const title = (part[language]?.title || "").replace(/<[^>]*>/g, ""); return part.type === "asked" ? [[`pages/${part.name}.json`, title], part.read && [`pages/${part.read.name}-read.json`, t("data_read")]] : [[SCENE_DATA[part.type], title]]; })
+      .filter((d, i, l) => d && d[0] && l.findIndex((x) => x && x[0] === d[0]) === i) }),
     cite(story, whole(href("cerita", slug))),
     el(`<a class="card next-story" href="${href("cerita", next.slug)}"><span class="kicker">${t("next_story")}</span><b class="card-title">${next[language].title}</b><span class="card-text">${next[language].teaser}</span></a>`),
     el(`<ul class="links"><li><a href="${href("cerita")}">${t("all_stories")}</a></li></ul>`));
@@ -2592,9 +2614,9 @@ async function portraitPage(word) {
  *  now (the ship) and those to come (small dots); under each answered port, its answer; a run of three or more right
  *  ringed in the beacon (the streak). With `inline`, its colours are written into it, so that it can be saved as an
  *  image (plate.js reads no stylesheet). */
-function voyageMark(results, rounds, { inline = false, width = 300 } = {}) {
+function voyageMark(results, rounds, { width = 300 } = {}) {
   const W = width, H = 92, x = (k) => 16 + ((W - 32) * k) / Math.max(1, rounds - 1), y = (k) => 38 + 10 * Math.sin(k * 1.3);
-  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(), c = (name, attr) => (inline ? ` ${attr}="${css(name)}"` : "");
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const path = [...Array(rounds)].map((_, k) => `${k ? "L" : "M"}${x(k).toFixed(1)},${y(k).toFixed(1)}`).join("");
   const done = results.length, sailed = [...Array(Math.max(1, done))].map((_, k) => `${k ? "L" : "M"}${x(k).toFixed(1)},${y(k).toFixed(1)}`).join("");
   const run = (k) => { let a = k, b = k; while (results[a - 1]?.ok) a--; while (results[b + 1]?.ok) b++; return results[k]?.ok ? b - a + 1 : 0; };
@@ -2608,27 +2630,48 @@ function voyageMark(results, rounds, { inline = false, width = 300 } = {}) {
     if (at) (room.push(at), (says[k] = full));
   }
   return `<svg class="voyage-mark" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">
-    <path class="sea-line" d="${path}" fill="none" stroke-dasharray="2 4"${c("--line-2", "stroke")}/>${done > 1 ? `<path class="sailed" d="${sailed}" fill="none" stroke-width="3" stroke-linecap="round"${c("--route", "stroke")}/>` : ""}
+    <path class="sea-line" d="${path}" fill="none" stroke-dasharray="2 4"/>${done > 1 ? `<path class="sailed" d="${sailed}" fill="none" stroke-width="3" stroke-linecap="round"/>` : ""}
     ${[...Array(rounds)].map((_, k) => {
       const r = results[k], cls = !r ? (k === done ? "now" : "next") : r.ok ? "right" : "wrong";
-      const fill = { right: c("--route", "fill"), wrong: c("--chart-2", "fill"), now: c("--ink", "fill"), next: c("--line-2", "fill") }[cls], stroke = cls === "wrong" ? c("--ink", "stroke") : "";
-      return `${run(k) >= 3 ? `<circle class="streak" cx="${x(k).toFixed(1)}" cy="${y(k).toFixed(1)}" r="11" fill="none" stroke-width="2.5"${c("--beacon", "stroke")}/>` : ""}<circle class="${cls}" cx="${x(k).toFixed(1)}" cy="${y(k).toFixed(1)}" r="${{ right: 7, wrong: 6, now: 8, next: 3.5 }[cls]}"${fill}${stroke}${cls === "wrong" ? ' stroke-width="2"' : ""}/>
-        ${r && says[k] ? `<text x="${x(k).toFixed(1)}" y="${(y(k) + 26).toFixed(1)}" text-anchor="middle" style="font-size:12px;font-weight:700"${c(r.ok ? "--ink" : "--ink-3", "fill")}>${escape(says[k])}</text>` : ""}`;
+      
+      return `${run(k) >= 3 ? `<circle class="streak" cx="${x(k).toFixed(1)}" cy="${y(k).toFixed(1)}" r="11" fill="none" stroke-width="2.5"/>` : ""}<circle class="${cls}" cx="${x(k).toFixed(1)}" cy="${y(k).toFixed(1)}" r="${{ right: 7, wrong: 6, now: 8, next: 3.5 }[cls]}"/>
+        ${r && says[k] ? `<text x="${x(k).toFixed(1)}" y="${(y(k) + 26).toFixed(1)}" text-anchor="middle" style="font-size:12px;font-weight:700">${escape(says[k])}</text>` : ""}`;
     }).join("")}</svg>`;
 }
 
-/** A finished game as a plate to save and share: its score as the title, its voyage, the site's name. */
-function scorePlate(title, results, rounds, width = 640) {
-  // Drawn at the width it is shown at (at most 640px), so that its text keeps its size on a phone: the title on two
-  // lines (at its colon) where one would not fit, never under 13px.
-  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(), W = Math.max(280, Math.min(640, Math.floor(width)));
-  const font = (size) => `800 ${size}px ${css("--type")}`, cut = title.indexOf(": ") + 1;
-  const lines = measure(title, font(24)) <= W - 32 || cut < 1 ? [title] : [title.slice(0, cut), title.slice(cut + 1)];
-  const size = Math.max(13, Math.min(24, ...lines.map((l) => (24 * (W - 32)) / measure(l, font(24))))), top = 14 + size * 1.2 * lines.length, H = top + 158;
-  return el(`<div class="plate"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${escape(title)}" style="font-family:${css("--type").replace(/"/g, "'")}">
-    <rect width="${W}" height="${H}" fill="${css("--paper")}"/>${lines.map((l, i) => `<text x="16" y="${(14 + size * (1 + 1.2 * i)).toFixed(1)}" style="font-size:${size.toFixed(1)}px;font-weight:800;fill:${css("--ink")}">${escape(l)}</text>`).join("")}
-    <g transform="translate(10 ${(top + 10).toFixed(1)})">${voyageMark(results, rounds, { inline: true, width: W - 20 }).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g>
-    <text x="16" y="${H - 14}" style="font-size:12px;font-weight:700;fill:${css("--ink")}">Jejak Kata · zidan.dev/jejak-kata</text></svg></div>`);
+/** A finished game as a card to save and share, on paper in the plate's inks: the game's name over a route-coloured
+ *  rule, the score in display type, the rank, the voyage (a port per round, filled where right), and every round's
+ *  answer whole under it ("Boediono", "2018"), led by its port's mark; the site's address at its foot. One layout at two
+ *  shapes, saved at 1080x1080 ("square") and 1200x630 ("wide"), and shown on the page at the card's width (wide from
+ *  640px, else square), where no text is under 12px. */
+function scorePlate({ kicker, score, rank, results, rounds }, shape, width = 540) {
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(), type = css("--type"), wide = shape === "wide";
+  const [W, H] = wide ? [1200, 630] : [1080, 1080], pad = wide ? 56 : 72, ink = (name) => css(name);
+  // (each text no larger than its room; the sizes are such that a card shown 324px wide, on a 390px phone, keeps its text
+  // at 12px and more: only an answer too long for its column is set smaller, never over the next)
+  const fit = (text, size, room, weight = 700) => Math.min(size, (size * room) / measure(text, `${weight} ${size}px ${type}`));
+  const text = (x, y, value, size, weight, fill, extra = "") => `<text x="${x}" y="${y}" style="font-size:${size.toFixed(1)}px;font-weight:${weight}${extra}" fill="${ink(fill)}">${escape(value)}</text>`;
+  // The head: at the left of a wide card, over the rest of a square one.
+  const left = pad, head = wide ? { k: 100, s: 300, r: 362, size: 180, room: 380 } : { k: 104, s: 282, r: 352, size: 190, room: W - 2 * pad };
+  const scoreSize = fit(score, head.size, head.room, 800), rankSize = fit(rank, wide ? 44 : 56, head.room);
+  // The voyage and the answers: at the right of a wide card, under the head of a square one.
+  const [x0, x1] = wide ? [480, W - pad] : [pad, W - pad], vy = wide ? 118 : 430, r = wide ? 15 : 18, px = (k) => x0 + r + ((x1 - x0 - 2 * r) * k) / Math.max(1, rounds - 1);
+  const py = (k) => vy + (wide ? 12 : 16) * Math.sin(k * 1.3), cols = wide ? 2 : 1, rows = Math.ceil(rounds / cols), colW = (x1 - x0) / cols;
+  const top = wide ? 214 : 520, step = wide ? 78 : 48, size = wide ? 30 : 42, small = wide ? 24 : 40;
+  const port = (k, cx, cy, rr) => { const o = results[k]; return o?.ok ? `<circle cx="${cx}" cy="${cy}" r="${rr}" fill="${ink("--route")}"/>` : `<circle cx="${cx}" cy="${cy}" r="${rr - 2}" fill="${ink("--paper")}" stroke="${ink(o ? "--ink" : "--line-2")}" stroke-width="3"${o ? "" : ' stroke-dasharray="4 4"'}/>`; };
+  const answers = results.map((o, k) => {
+    const cx = x0 + colW * Math.floor(k / rows) + 14, cy = top + step * (k % rows), said = String(o.full ?? o.label ?? "");
+    return `${port(k, cx, cy - size * 0.34, 12)}${text(cx + 30, cy, `${k + 1}`, small, 700, "--ink-3")}${text(cx + 30 + small * 1.3, cy, said, fit(said, size, colW - 30 - small * 1.3 - 44), 700, o.ok ? "--ink" : "--ink-2")}`;
+  }).join("");
+  const route = [...Array(rounds)].map((_, k) => `${k ? "L" : "M"}${px(k).toFixed(1)},${py(k).toFixed(1)}`).join(""), done = results.length;
+  const sailed = [...Array(Math.max(1, done))].map((_, k) => `${k ? "L" : "M"}${px(k).toFixed(1)},${py(k).toFixed(1)}`).join("");
+  const shown_ = Math.max(280, Math.floor(width)), h = Math.round((shown_ * H) / W);
+  return el(`<div class="plate score-card"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${shown_}" height="${h}" role="img" aria-label="${escape(`${kicker}: ${score} · ${rank}`)}" style="font-family:${type.replace(/"/g, "'")};font-stretch:100%">
+    <rect width="${W}" height="${H}" fill="${ink("--paper")}"/><rect x="${left}" y="${head.k - (wide ? 52 : 62)}" width="${wide ? 56 : 72}" height="${wide ? 6 : 8}" rx="3" fill="${ink("--route")}"/>
+    ${text(left, head.k, kicker, wide ? 30 : 40, 700, "--ink-2")}${text(left, head.s, score, scoreSize, 800, "--ink", ";font-stretch:75%")}${text(left, head.r, rank, rankSize, 700, "--route")}
+    <path d="${route}" fill="none" stroke="${ink("--line-2")}" stroke-width="3" stroke-dasharray="3 9" stroke-linecap="round"/>${done > 1 ? `<path d="${sailed}" fill="none" stroke="${ink("--route")}" stroke-width="6" stroke-linecap="round"/>` : ""}
+    ${[...Array(rounds)].map((_, k) => port(k, px(k).toFixed(1), py(k).toFixed(1), r)).join("")}${answers}
+    ${text(left, H - 48, "Jejak Kata · zidan.dev/jejak-kata", wide ? 28 : 40, 700, "--ink")}</svg></div>`);
 }
 
 /** What has been dealt: a deck per kind (per bin, for "guess the number"), so that a game played again asks first what
@@ -2684,15 +2727,20 @@ function gameKeys(board, on) {
 }
 /** Where a game's end leads: one tap to play again (the control that went on), the plate saved, the link copied, and
  *  the next toy. */
-function gameEnd(box, go, { page, plate, score, share, again }) {
+function gameEnd(box, go, { page, card, score, share, again }) {
   // (how this game stands against the best so far, from what this viewer has played: nothing on a first game or where
   // storage is refused)
   const best = playedLog()[page]?.best, said = (x) => `${x[0]} / ${x[1]}`;
   if (Array.isArray(best)) box.querySelector(".rank")?.after(el(`<p class="best">${score[0] / score[1] > best[0] / best[1] ? t("best_new", said(score)) : t("best_was", said(best), said(score))}</p>`));
-  const save = el(`<button type="button">${t("quiz_save")}</button>`), copy = copier(t("copy_score"), () => share);
-  save.addEventListener("click", async () => (await plating(), savePlate(box, `jejak-kata-${page}`)));
-  const row = el(`<p class="controls"></p>`), next = NEXT_TOY[page];
-  row.append(save, copy);
+  // (the card at the box's width; saved square, 1080x1080, or wide, 1200x630: each drawn at half and saved at twice)
+  const inner = box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft), plate = scorePlate(card, inner >= 640 ? "wide" : "square", inner);
+  const saves = ["square", "wide"].map((shape) => {
+    const save = el(`<button type="button">${t(`save_${shape}`)}</button>`);
+    save.addEventListener("click", async () => { await plating(); const holder = el("<div></div>"); holder.append(scorePlate(card, shape, shape === "wide" ? 600 : 540)); savePlate(holder, `jejak-kata-${page}-${shape}`); });
+    return save;
+  });
+  const copy = copier(t("copy_score"), () => share), row = el(`<p class="controls"><span class="save-as">${t("quiz_save")}</span></p>`), next = NEXT_TOY[page];
+  row.append(...saves, copy);
   box.append(plate, row, el(`<p class="next-toy">${t("next_toy")}: <a href="${href(next)}">${t(`play_${next}`)}</a></p>`));
   go.disabled = false;
   go.textContent = t("again");
@@ -2781,12 +2829,13 @@ async function quizPage() {
   // The answer inside a sentence, in its own form: a name as a name, "naik" in lower case, a year, a newsroom, a common
   // word in quotation marks (in English with what it means: “korupsi” (corruption)).
   const told = (q, c) => (q.kind === "trend" || q.kind === "year" || q.kind === "room" || isName(c) ? label(q, c) : `“${nm(c)}”${meant(c, q.choices) ? ` (${meant(c, q.choices)})` : ""}`);
-  // Under the voyage on the plate: a short whole label or none (a year, "naik", a person's first name, a word of one part).
-  const short = (q, c) => (q.kind === "trend" || q.kind === "year" || q.kind === "room" ? label(q, c) : PEOPLE.includes(c) || Q.words[c]?.kind === "person" ? nm(c).split(" ")[0] : nm(c).includes(" ") ? "" : nm(c));
+  // Under the voyage: each port's answer whole, as a name or a word ("Jusuf Kalla", not "Jusuf"), where it has room, else
+  // none (voyageMark); on the card every answer, whole.
+  const whole_ = (q, c) => (q.kind === "trend" || q.kind === "year" || q.kind === "room" ? label(q, c) : nm(c));
   const named = (ev) => ({ ...ev, items: ev.items?.map((it) => ({ ...it, label: nm(it.label) })), series: ev.series?.map((x) => ({ ...x, label: nm(x.label) })) });
   let game = [], results = [], streak = 0, answer = null, now = 0;
   const sailed = () => {
-    log.innerHTML = voyageMark(results, game.length);
+    log.innerHTML = voyageMark(results, game.length, { width: log.clientWidth || 300 });
     tally.textContent = t("quiz_tally", results.filter((r) => r.ok).length, results.length) + (streak >= 2 ? ` · ${t("quiz_streak", streak)}` : "");
   };
   const evidence = (q) => {
@@ -2822,7 +2871,7 @@ async function quizPage() {
     const ok = answer === q.answer;
     streak = ok ? streak + 1 : 0;
     hear(ok ? "right" : "wrong");
-    results.push({ ok, label: short(q, q.answer) });
+    results.push({ ok, label: whole_(q, q.answer), full: told(q, q.answer).replace(/ \(.*\)$/, "") });
     sailed();
     box.querySelectorAll(".choices button").forEach((x) => ((x.disabled = true), x.classList.toggle("right", q.choices[+x.dataset.i] === q.answer), x.classList.toggle("chosen", x === b && !ok)));
     // (the lines for any kind; for "which year" and "who", "good memory" too when right, and for a year missed, memory
@@ -2849,7 +2898,7 @@ async function quizPage() {
     delete box.dataset.key;
     box.innerHTML = `<p class="score">${right} / ${n}</p><p class="rank" role="status">${rank}</p>`;
     gameEnd(box, go, { page: "kuis", score: [right, n], share: `${t("quiz_share", right, n)} ${whole(href("kuis"))}`, again: start,
-      plate: scorePlate(t("quiz_plate_all", rank, right, n), results, n, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft)) });
+      card: { kicker: t("play_kuis"), score: `${right} / ${n}`, rank, results, rounds: n } });
     toCard(box);
   };
   const start = (again = true) => {
@@ -2879,8 +2928,8 @@ async function guessPage() {
   // (a word in English with what it means: "tersangka (suspect)")
   const word = (w) => (language === "en" && (GLOSS[w]?.en || GAME_GLOSS[w]) ? `${w} (${GLOSS[w]?.en || GAME_GLOSS[w]})` : w);
   let rounds = [], results = [], score = 0, k = 0, lows = new Set();
-  const tops = {};  // (how often each name stood as the comparison, over the visit: the one shown less comes first)
-  const sailed = () => ((log.innerHTML = voyageMark(results, rounds.length)), (tally.textContent = `${score} / ${rounds.length * 100}`));
+  let gameNames = new Set();  // (the names this game has compared with: deal.js `compared`)
+  const sailed = () => ((log.innerHTML = voyageMark(results, rounds.length, { width: log.clientWidth || 300 })), (tally.textContent = `${score} / ${rounds.length * 100}`));
   // The scale (deal.js, STOPS and along): 0-20 in steps of 1 over two thirds of the track, 25-100 in steps of 5 over the
   // rest, its ticks where they fall; no guess until the reader sets one (a press or drag on the track, the keys, − and +).
   const TICKS = [0, 5, 10, 15, 20, 50, 100], pc = (v) => `${(100 * along(v)).toFixed(3)}%`;
@@ -2939,7 +2988,7 @@ async function guessPage() {
       track.setAttribute("aria-disabled", "true");
       const won = points(guess, q.v);
       score += won;
-      results.push({ ok: close(won), label: `+${won}` });
+      results.push({ ok: close(won), label: `+${won}`, full: `“${q.w}” +${won}` });
       hear(close(won) ? "right" : "wrong");
       sailed();
       // The answer sails from the guess to the truth along the scale, its wake in the route: how far off is drawn.
@@ -2957,14 +3006,11 @@ async function guessPage() {
       // The context: who has the most of the word (where that is the name asked, said plainly, with the next after it);
       // the least only where it adds something: not the name asked, not named already this game, and nearer the truth
       // than the most is.
-      const least = c.lo[0] !== q.name && !lows.has(c.lo[0]) && q.v - c.lo[1] < c.hi[1] - q.v;
+      const least = c.lo[0] !== q.name && !lows.has(c.lo[0]) && q.v - c.lo[1] < c.ranks[0][1] - q.v;
       if (least) lows.add(c.lo[0]);
-      // (the comparison: who has the most, or, where that name was shown less often than the next after it, the next
-      // after it, said as such, so that one name is not leaned on)
-      const second = c.next[0] !== q.name && (tops[c.next[0]] || 0) < (tops[c.hi[0]] || 0), [cn, cv] = second ? c.next : c.hi;
-      if (c.hi[0] !== q.name) tops[cn] = (tops[cn] || 0) + 1;
-      const compare = t(second ? "guess_second" : "guess_context", word(q.w), c.of, shown(cn), cv);
-      const context = [t("guess_counted", thousands(q.pages), shown(q.name)), ...(c.hi[0] === q.name ? [t("guess_top", word(q.w)), t("guess_next", c.of, shown(c.next[0]), c.next[1])] : [compare]),
+      // (the comparison, by its rank: deal.js `compared`, so that one name is not leaned on)
+      const cmp = compared(q, VISIT.guess, gameNames);
+      const context = [t("guess_counted", thousands(q.pages), shown(q.name)), ...(c.ranks[0][0] === q.name ? [t("guess_top", word(q.w))] : []), t("guess_rank", word(q.w), c.of, cmp.rank, shown(cmp.n), cmp.v),
         ...(least ? [t("guess_least", shown(c.lo[0]), c.lo[1])] : [])].join(" ");
       verdict.innerHTML = `<b>${escape(line)}</b><span class="numbers">${escape(t("guess_numbers", guess, q.v, won))}</span>
         <span class="context">${escape(context)}</span>
@@ -2978,11 +3024,12 @@ async function guessPage() {
     const most = rounds.length * 100, rank = t("said_rank")[guessRank(score, most)];
     box.innerHTML = `<p class="score">${score} / ${most}</p><p class="rank" role="status">${rank}</p><p>${t("guess_done")}</p>`;
     gameEnd(box, go, { page: "tebak", score: [score, most], share: t("guess_share", score, most, whole(href("tebak"))), again: start,
-      plate: scorePlate(`${t("play_tebak")}: ${score} / ${most} · ${rank}`, results, rounds.length, box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft)) });
+      card: { kicker: t("play_tebak"), score: `${score} / ${most}`, rank, results, rounds: rounds.length } });
     toCard(box);
   };
   const start = (again = true) => {
     rounds = guessDeal(VISIT.guess, Math.random);
+    gameNames = new Set();
     keepDealt("guess");
     results = [];
     lows = new Set();
@@ -3105,7 +3152,8 @@ async function methodDemo() {
   const [word, a, b] = DEMO, lens = await lensNamed(MAIN), first = await json(`${MAIN}/first.json`), i = lens?.index.get(word);
   const [e, path] = lens ? await Promise.all([entry(lens, i), pathOf(lens, i)]) : [];
   if (!e || !path?.route[a] || !path.route[b]) return el("<div></div>");
-  const company = (p) => e.with[p].slice(0, 3).map((j) => lens.words[j]), list = (words) => new Intl.ListFormat(language).format(words.map((w) => `“${w}”`));
+  // (a name shown as a name: "Joko Widodo", "Gubernur DKI Jakarta"; the word asked about is the token counted, in quotes)
+  const say = (w) => sayIn(lens, lens.index.get(w)), company = (p) => e.with[p].slice(0, 3).map((j) => lens.words[j]), list = (words) => new Intl.ListFormat(language).format(words.map((w) => `“${say(w)}”`));
   const port = (w) => { const k = first.names.indexOf(w); return k < 0 ? null : [first.x[k], first.y[k]]; };
   const shift = e.shift[pairIndex(lens, a, b)], [ya, yb] = [lens.periods[a], lens.periods[b]];
   const said = [t("demo_1", ya, thousands(lens.units[a]), word, percent(e.share[a])), t("demo_2", word, list(company(a))), t("demo_3", word, ya),
@@ -3126,14 +3174,14 @@ async function methodDemo() {
   const spot = (p, text, strong) => { const w = measure(text, strong ? font.replace("600", "800") : font) + 6; return B.place([[p[0] + 10, p[1] - 9], [p[0] - 10 - w, p[1] - 9], [p[0] - w / 2, p[1] - 30], [p[0] - w / 2, p[1] + 12]].map(([x, y]) => [x, y, x + w, y + 18]), text); };
   const name = (p, text, cls, from, strong) => { const k = spot(p, text, strong); return k ? `<text class="${cls}" data-from="${from}" x="${(k[0] + 3).toFixed(1)}" y="${(k[1] + 13).toFixed(1)}">${escape(text)}</text>` : ""; };
   B.reserve([pa[0] - 9, pa[1] - 9, pa[0] + 9, pa[1] + 9], [pb[0] - 9, pb[1] - 9, pb[0] + 9, pb[1] + 9], ...words.map((x) => [X(x.at) - 5, Y(x.at) - 5, X(x.at) + 5, Y(x.at) + 5])).line([pa, pb], 3);
-  const ships = [name(pa, `${word} ${ya}`, "demo-word", 3, true), name(pb, `${word} ${yb}`, "demo-word", 4, true)];
+  const ships = [name(pa, `${say(word)} ${ya}`, "demo-word", 3, true), name(pb, `${say(word)} ${yb}`, "demo-word", 4, true)];
   // The words the page shows it with (step 2) are one drawing with the chart: at step 3 each sails from the list to its
   // own port and is named there; one the first screen has no port for leaves with the page's ties.
   const listed = company(a).map((w, k) => {
-    const x = words.find((x) => x.w === w), to = x && spot([X(x.at), Y(x.at)], w), y = 164 + k * 18;
-    return `<text class="demo-near${to ? " demo-goes" : ""}" data-from="2"${to ? ` style="--dx:${(to[0] + 3 - 104).toFixed(1)}px;--dy:${(to[1] + 13 - y).toFixed(1)}px"` : ' data-until="2"'} x="104" y="${y}">${escape(w)}</text>`;
+    const x = words.find((x) => x.w === w), to = x && spot([X(x.at), Y(x.at)], say(w)), y = 164 + k * 18;
+    return `<text class="demo-near${to ? " demo-goes" : ""}" data-from="2"${to ? ` style="--dx:${(to[0] + 3 - 104).toFixed(1)}px;--dy:${(to[1] + 13 - y).toFixed(1)}px"` : ' data-until="2"'} x="104" y="${y}">${escape(say(w))}</text>`;
   });
-  const names = [...ships, ...words.filter((x) => x.from === 4).map((x) => name([X(x.at), Y(x.at)], x.w, "demo-near", x.from))];
+  const names = [...ships, ...words.filter((x) => x.from === 4).map((x) => name([X(x.at), Y(x.at)], say(x.w), "demo-near", x.from))];
   const lines = [0, 1, 2, 3, 4, 5, 6].map((k) => `<path class="demo-line${k === 2 ? " on" : ""}" d="M14 ${30 + k * 15}H${k === 2 ? 66 : 14 + 52 + ((k * 23) % 30)}"/>`).join("");
   const textX = 120;
   const svg = `<svg class="demo-figure" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${escape(said.join(" "))}">

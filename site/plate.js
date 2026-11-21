@@ -3,7 +3,7 @@
 // travels) and `strip` (rows on one scale, dots that travel from one state to the next). Nothing is redrawn
 // when the moment changes: the marks move.
 
-import { board } from "./labels.js";
+import { board, spaced } from "./labels.js";
 
 // A plate takes its inks from the page, or from the node it is drawn for (`inks`): a story's stage is the deep in both
 // schemes, and a plate on it is drawn in the night's inks on the stage itself (style.css, .stage-figure). Saved as an
@@ -65,7 +65,7 @@ function key(series, W, narrow) {
   return { marks, lines: line + 1, beside: narrow && !line && x + 130 < W - 12, end: x };
 }
 /** A legend's name beside its mark, on the lines key() broke it into. */
-const legendName = (m, top, soft) => `<text x="${m.x + 14}" y="${top + 14 + m.line * 16}" style="font-size:12px;fill:${soft}">${m.parts.map((p, i) => `<tspan x="${m.x + 14}" dy="${i ? 16 : 0}">${escape(p)}</tspan>`).join("")}</text>`;
+const legendName = (m, top, soft) => `<text x="${m.x + 14}" y="${top + 14 + m.line * 16}" style="font-size:12px;fill:${soft}">${m.parts.map((p, i) => `<tspan x="${m.x + 14}" dy="${i ? 16 : 0}">${escape(spaced(m.parts, i))}</tspan>`).join("")}</text>`;
 // A strip's rows stand this far apart where they can (a name too long for its column then takes two lines), and never
 // closer than the floor (the name then a little smaller instead); above and below them, the strip's own margins.
 const PITCH = { narrow: 26, wide: 22, floor: 18 };
@@ -86,7 +86,7 @@ function sheet(spec, width, height, body, least = 0) {
   const page = document.documentElement;
   node.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${spec.title.replace(/"/g, "")}" style="font-family:${css("--type").replace(/"/g, "'")}">
     <rect width="${W}" height="${H}" fill="${paper}"/>
-    <text class="title" y="${size + 6}" style="font-size:${size}px;font-weight:800;fill:${ink}">${lines.map((l, k) => `<tspan x="12" dy="${k ? size * 1.14 : 0}">${l}</tspan>`).join("")}</text>
+    <text class="title" y="${size + 6}" style="font-size:${size}px;font-weight:800;fill:${ink}">${lines.map((l, k) => `<tspan x="12" dy="${k ? size * 1.14 : 0}">${spaced(lines, k)}</tspan>`).join("")}</text>
     ${body({ W, H, narrow, top, ink, soft, paper, line: css("--line"), beacon: css("--beacon") })}
     <text class="note" y="${H - 23}" style="font-size:12px;fill:${soft}"></text>
     <text x="12" y="${H - 7}" style="font-size:12px;font-weight:700;fill:${ink}">${SITE}</text>
@@ -96,13 +96,13 @@ function sheet(spec, width, height, body, least = 0) {
   const note = (text) => {
     const words = text.split(" "), line = Math.floor((W - 24) / 6.3), rows = [""];
     for (const word of words) (rows.at(-1) + " " + word).length > line && rows.length < 3 ? rows.push(word) : (rows[rows.length - 1] = (rows.at(-1) + " " + word).trim());
-    node.querySelector(".note").innerHTML = rows.map((row, k) => `<tspan x="12" dy="${k ? 13 : -13 * (rows.length - 1)}">${row.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</tspan>`).join("");
+    node.querySelector(".note").innerHTML = rows.map((row, k) => `<tspan x="12" dy="${k ? 13 : -13 * (rows.length - 1)}">${spaced(rows, k).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</tspan>`).join("");
   };
   note(spec.note || "");
   if (scope !== page) drawnOn.set(node.firstElementChild, scope);
   /** The title written again (a strip's title that follows its moment), in the room the longest took. */
   const title = (text) => {
-    node.querySelector(".title").innerHTML = heading(text, width).lines.map((l, k) => `<tspan x="12" dy="${k ? size * 1.14 : 0}">${escape(l)}</tspan>`).join("");
+    node.querySelector(".title").innerHTML = heading(text, width).lines.map((l, k, all) => `<tspan x="12" dy="${k ? size * 1.14 : 0}">${escape(spaced(all, k))}</tspan>`).join("");
     node.firstElementChild.setAttribute("aria-label", text.replace(/"/g, ""));
   };
   return { node, svg: node.firstElementChild, W, H, narrow, top, note, title, hue: COLOURS.map((c) => css(c)), deep: css("--deep") };
@@ -145,7 +145,7 @@ export function plate(spec, width, height) {
   const name = (k, said) => {
     const dot = wide("● ", tag), room = R - 12 - dot, lines = [""];
     for (const word of said.split(" ")) wide((lines.at(-1) + " " + word).trim(), tag) > room && lines.at(-1) ? lines.push(word) : (lines[lines.length - 1] = (lines.at(-1) + " " + word).trim());
-    groups[k].querySelector("text").innerHTML = `<tspan fill="${hue[k % COLOURS.length]}">● </tspan>` + lines.map((l, j) => `<tspan${j ? ` x="${W - R + 9 + dot}" dy="${tag + 2}"` : ""}>${escape(l)}</tspan>`).join("");
+    groups[k].querySelector("text").innerHTML = `<tspan fill="${hue[k % COLOURS.length]}">● </tspan>` + lines.map((l, j) => `<tspan${j ? ` x="${W - R + 9 + dot}" dy="${tag + 2}"` : ""}>${escape(spaced(lines, j))}</tspan>`).join("");
     const pill = groups[k].querySelector(".beacon");
     pill.setAttribute("width", dot + Math.max(...lines.map((l) => wide(l, tag))) + 12);
     pill.setAttribute("height", (tag + 2) * lines.length + 6);
@@ -203,7 +203,7 @@ function rowName(label, y, L, size, gap, ink) {
   const cut = [...label].map((c, i) => (c === " " ? i : -1)).filter((i) => i > 0).sort((a, b) => Math.max(a, label.length - a) - Math.max(b, label.length - b))[0];
   const parts = cut && gap >= size * 1.9 ? [label.slice(0, cut), label.slice(cut + 1)] : [label];
   const small = Math.max(12, Math.min(size, (L - 14) / Math.max(...parts.map((p) => p.length)) / 0.53));
-  return `<text class="row-name" x="${L - 9}" y="${y + small * 0.35 - (parts.length - 1) * small * 0.55}" text-anchor="end" style="font-size:${small}px;font-weight:600;fill:${ink}">${parts.map((part, i) => `<tspan x="${L - 9}" dy="${i ? small * 1.1 : 0}">${part}</tspan>`).join("")}</text>`;
+  return `<text class="row-name" x="${L - 9}" y="${y + small * 0.35 - (parts.length - 1) * small * 0.55}" text-anchor="end" style="font-size:${small}px;font-weight:600;fill:${ink}">${parts.map((part, i) => `<tspan x="${L - 9}" dy="${i ? small * 1.1 : 0}">${i ? " " : ""}${part}</tspan>`).join("")}</text>`;  // (a space before a second line, which the right edge does not see)
 }
 
 /** Where a strip's title follows its moment (`title(moment)`), of its titles the one that takes the most room at
