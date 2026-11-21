@@ -6,7 +6,7 @@ import { STORIES } from "../../site/story.js";
 import { GUESS_WORDS } from "../../site/address.js";
 import { FEATURED, SHOWCASE, GLOSS } from "../../site/text.js";
 import { GAME_GLOSS, NAME_GLOSS, IN_ENGLISH } from "../../site/glossary.js";
-import { PEOPLE, BODIES, SENSITIVE, ACCUSING, LAW_ACTS, MARGIN, FAME, marker, fragment, bareSet, oneThing, isName } from "../../site/deal.js";
+import { PEOPLE, BODIES, SENSITIVE, ACCUSING, LAW_ACTS, MARGIN, FAME, marker, fragment, bareSet, oneThing, isName, inName, REPORTING } from "../../site/deal.js";
 import { OUTLETS } from "../../site/scenes.js";
 
 const DATA = new URL("../../site/data/", import.meta.url).pathname, MAIN = "id-web-news-kompas", ERA = 2;
@@ -56,7 +56,7 @@ export function quizData() {
       let w = whole(meta.words[i], p);
       if (w !== meta.words[i] && (PEOPLE.includes(w) || BODIES.includes(w))) continue;  // ("rajasa", of "hatta rajasa": a part of a name asked elsewhere)
       if (w !== meta.words[i] && !welcome(w)) w = meta.words[i];
-      if (marker(w) || fragment(w, bare) || !isEntry(w) || !known(w) || (k >= 10 && (!welcome(w) || elsewhere(w, p)))) continue;
+      if (marker(w) || REPORTING.includes(w) || fragment(w, bare) || !isEntry(w) || !known(w) || (k >= 10 && (!welcome(w) || elsewhere(w, p)))) continue;
       const at = clue.findIndex((x) => oneThing(x, w, article, gloss));
       if (at < 0) (clue.push(w), k >= 10 && filled.add(w));
       else if (w.split(" ").length > clue[at].split(" ").length && w.includes(clue[at])) clue[at] = w;  // (the whole for its part: "virus ebola" for "ebola")
@@ -74,6 +74,12 @@ export function quizData() {
     const i = index.get(w), e = of("words", i);
     if (e) words[w] = { kind: meta.kinds[i] || "word", share: e.share.map(round), ...(named.includes(w) ? {} : { clueOnly: 1 }) };
   }
+  // Two common words with something in common, the only ones "which was on more pages" sets side by side (deal.js): one
+  // among the other's eleven nearest on the first page's chart (`near`), or three of those shared ("capres" and
+  // "elektabilitas", "tagar" and "viral"; never "positif" and "anak").
+  const nearOf = (w) => (of("paths", index.get(w))?.near || []).map((j) => meta.words[j]), common = Object.keys(words).filter((w) => words[w].kind === "word" && !words[w].clueOnly);
+  const kin = [];
+  common.forEach((a, i) => common.slice(i + 1).forEach((b) => { const [x, y] = [nearOf(a), nearOf(b)]; if (x.includes(b) || y.includes(a) || x.filter((v) => y.includes(v)).length >= 3) kin.push([a, b]); }));
   const who = {};
   for (const n of [...PEOPLE, ...BODIES].filter(isEntry)) {
     const path = of("paths", index.get(n));
@@ -84,9 +90,11 @@ export function quizData() {
       // (not a word of SENSITIVE or ACCUSING: the clue says who it is, never what a court said of them; and each word
       // once, though a word may be counted as a verb and as an adjective)
       // (beside a person, not what the law does to someone either: LAW_ACTS; a body that enforces the law keeps them)
-      const fair = (list) => list.map(([j]) => meta.words[j]).filter((w) => !SENSITIVE.includes(w) && !ACCUSING.includes(w) && !(PEOPLE.includes(n) && LAW_ACTS.includes(w)) && explained(w));
-      const verbsOf = fair(verbs).slice(0, 7);
-      said[p] = [...verbsOf, ...fair(path.adjectives?.[p] || []).filter((w) => !verbsOf.includes(w)).slice(0, 4)];
+      const fair = (list) => list.map(([j]) => meta.words[j]).filter((w) => !SENSITIVE.includes(w) && !ACCUSING.includes(w) && !(PEOPLE.includes(n) && LAW_ACTS.includes(w)) && !inName(w, n) && !REPORTING.includes(w) && explained(w));
+      // (each thing once: of "mengusung" and "diusung", the first)
+      const once = (list, before = []) => list.reduce((out, w) => ([...before, ...out].some((x) => oneThing(x, w)) ? out : [...out, w]), []);
+      const verbsOf = once(fair(verbs)).slice(0, 7);
+      said[p] = [...verbsOf, ...once(fair(path.adjectives?.[p] || []), verbsOf).slice(0, 4)];
     });
     if (Object.keys(said).length) who[n] = { said };
   }
@@ -98,5 +106,5 @@ export function quizData() {
     if (at.some((i, k) => i < 0 || stick[k].pages[i][ERA] < MARGIN.roomPages) || stick.some((s, k) => !s.share[w] || s.share[w][at[k]][ERA] === null)) continue;
     rows.push([w, n, stick.map((s, k) => s.share[w][at[k]][ERA]), stick.map((s, k) => s.pages[at[k]][ERA])]);
   }
-  return { periods: meta.periods, units: meta.units, years: clues, words, who, resmi, rooms: { era: "2020–2024", rows } };
+  return { periods: meta.periods, units: meta.units, years: clues, words, kin, who, resmi, rooms: { era: "2020–2024", rows } };
 }

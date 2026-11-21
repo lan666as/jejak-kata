@@ -15,7 +15,7 @@
 // information only a hover shows.
 import { readFileSync, writeFileSync } from "node:fs";
 import { quizData, clueRules } from "./quiz-data.mjs";
-import { pools, decks, deal, guessPool, guessDecks, guessDeal, points, nearness, close, seeded, STOPS, along, stopAt, shownIn, capOf, sortOf, marker, keep, kept, guessRank, shown, isName, MARGIN, FAME, KINDS, ROUNDS, GUESS_ROUNDS, SENSITIVE, ACCUSING, LAW_ACTS, OUTLET_NAMES, POINTED, PEOPLE, BODIES, ROOM_WORDS, oneThing, fragment } from "../../site/deal.js";
+import { GUESS_DEAL, pools, decks, deal, guessPool, guessDecks, guessDeal, compared, points, nearness, close, seeded, STOPS, along, stopAt, shownIn, capOf, sortOf, marker, keep, kept, guessRank, shown, isName, MARGIN, FAME, KINDS, ROUNDS, GUESS_ROUNDS, SENSITIVE, ACCUSING, LAW_ACTS, OUTLET_NAMES, POINTED, PEOPLE, BODIES, ROOM_WORDS, oneThing, fragment, inName, NAMED, REPORTING } from "../../site/deal.js";
 import { TEXT, GLOSS } from "../../site/text.js";
 import { GAME_GLOSS, NAME_GLOSS, IN_ENGLISH, AS_NAME } from "../../site/glossary.js";
 
@@ -35,15 +35,27 @@ log("every kind can be dealt", KINDS.every((k) => pool[k].length >= 10), KINDS.f
 // beside a person, nothing the law does to someone (LAW_ACTS): Anas Urbaningrum's never "terlibat" or "menerima".
 { const { bare, article, gloss } = clueRules(), bad = [];
   for (const y of Q.years) {
-    y.clue.forEach((a, i) => { if ((W[a]?.share || []).reduce((t, v, q) => t + v * Q.units[q], 0) < FAME.clue) bad.push(`${P[y.p]}: “${a}” is on under ${FAME.clue} Kompas pages in all`); if (fragment(a, bare)) bad.push(`${P[y.p]}: “${a}” is a fragment`); y.clue.slice(i + 1).forEach((b) => oneThing(a, b, article, gloss) && bad.push(`${P[y.p]}: “${a}” and “${b}” are one thing`)); });
+    y.clue.forEach((a, i) => { if ((W[a]?.share || []).reduce((t, v, q) => t + v * Q.units[q], 0) < FAME.clue) bad.push(`${P[y.p]}: “${a}” is on under ${FAME.clue} Kompas pages in all`); if (fragment(a, bare)) bad.push(`${P[y.p]}: “${a}” is a fragment`); if (REPORTING.includes(a)) bad.push(`${P[y.p]}: “${a}” is a reporting word`); y.clue.slice(i + 1).forEach((b) => oneThing(a, b, article, gloss) && bad.push(`${P[y.p]}: “${a}” and “${b}” are one thing`)); });
   }
   for (const [n, { said }] of Object.entries(Q.who)) for (const [p, list] of Object.entries(said)) {
     if (new Set(list).size !== list.length) bad.push(`${n} ${P[p]}: a word twice`);
+    list.forEach((a, i) => list.slice(i + 1).forEach((b) => oneThing(a, b) && bad.push(`${n} ${P[p]}: “${a}” and “${b}” are one thing`)));
+    if (list.some((w) => REPORTING.includes(w))) bad.push(`${n} ${P[p]}: a reporting word`);
     const odd = list.filter((w) => SENSITIVE.includes(w) || ACCUSING.includes(w) || (PEOPLE.includes(n) && LAW_ACTS.includes(w)));
     if (odd.length) bad.push(`${n} ${P[p]}: ${odd.join(", ")}`);
   }
   const anas = Object.values(Q.who["anas urbaningrum"]?.said || {}).flat();
-  log("every clue list names each thing once, by a whole name, of words on at least " + FAME.clue + " Kompas pages in all (a body and its head, a place and its event are one thing), and no “who” list accuses", !bad.length && oneThing("menteri pendidikan nasional", "kementerian pendidikan nasional") && oneThing("stadion kanjuruhan", "tragedi kanjuruhan") && !oneThing("menteri pendidikan", "kementerian keuangan") && anas.length && !anas.some((w) => ["terlibat", "menerima", "diduga"].includes(w)), bad.slice(0, 6).join("; ") || `Anas Urbaningrum: ${[...new Set(anas)].join(", ")}`); }
+  log("every clue list names each thing once, by a whole name, of words on at least " + FAME.clue + " Kompas pages in all (a body and its head, a place and its event are one thing), and no “who” list accuses", !bad.length && oneThing("menteri pendidikan nasional", "kementerian pendidikan nasional") && oneThing("stadion kanjuruhan", "tragedi kanjuruhan") && !oneThing("menteri pendidikan", "kementerian keuangan") && oneThing("mengusung", "diusung") && oneThing("menulis", "ditulis") && oneThing("memukul", "dipukul") && !oneThing("maju", "majelis") && anas.length && !anas.some((w) => ["terlibat", "menerima", "diduga"].includes(w)), bad.slice(0, 6).join("; ") || `Anas Urbaningrum: ${[...new Set(anas)].join(", ")}`); }
+
+// A word that is part of a name, its full name or its office (NAMED) is never asked with that name or offered beside it:
+// "rakyat" beside the DPR or Basuki Hadimuljono, "korupsi" beside the KPK or Firli. Every body's entry holds the words of
+// its Wikipedia article's title.
+{ const { article } = clueRules(), bad = [];
+  for (const n of BODIES) { const title = article(n).toLowerCase().replace(/\(.*\)|\binc\./g, "").split(/[\s,]+/).filter((x) => x && x !== "dan"); if (title.join(" ") !== n && title.some((x) => !inName(x, n))) bad.push(`${n}: NAMED misses its article “${article(n)}”`); }
+  for (const q of pool.room) if (inName(q.variants[0].w, q.variants[0].n)) bad.push(q.key);
+  for (const q of pool.who) for (const v of q.variants) for (const m of [v.answer, ...v.others]) if (v.said.some((w) => inName(w, m))) bad.push(`who ${v.answer} ${P[v.p]}: a word of ${m}'s name`);
+  for (const q of guessPool(JSON.parse(readFileSync(new URL("../../site/data/id-web-eras-kompas/stick.json", import.meta.url))))) if (inName(q.w, q.name) || q.context.ranks.some(([n]) => inName(q.w, n))) bad.push(q.key);
+  log("no word is asked beside a name, full name or office it is part of (NAMED: “rakyat” and the DPR, “korupsi” and the KPK)", !bad.length && inName("rakyat", "basuki hadimuljono") && inName("korupsi", "firli") && inName("demokrat", "surya paloh") && !inName("rakyat", "jokowi") && PEOPLE.every((n) => n in NAMED), bad.slice(0, 6).join("; ")); }
 
 /** A question's margin, from the raw numbers: what is wrong with it, or "". */
 function margin(q) {
@@ -51,7 +63,8 @@ function margin(q) {
   if (q.kind === "freq" || q.kind === "resmi") {
     const p = P.indexOf(e.period), [a, b] = q.choices, [va, vb] = [W[a].share[p], W[b].share[p]];
     if (ratio(va, vb) < MARGIN.ratio) return `ratio ${ratio(va, vb).toFixed(2)}`;
-    if (q.kind === "freq" && Q.resmi.some((pair) => pair.includes(a) && pair.includes(b))) return "an official word and its loanword asked as “which is more frequent”";
+    if (q.kind === "freq" && Q.resmi.some((pair) => pair.includes(a) || pair.includes(b))) return "a word of an official word and its loanword asked as “which is more frequent” (it reads as the loanword question)";
+    if (q.kind === "freq" && Q.words[a].kind === "word" && !isName(a) && !Q.kin.some((k) => k.includes(a) && k.includes(b))) return `“${a}” and “${b}” have nothing in common (kin)`;
     if (Math.max(pages(a, p), pages(b, p)) < MARGIN.pages || Math.min(pages(a, p), pages(b, p)) < MARGIN.least) return "too few pages";
     if ((va > vb ? a : b) !== q.answer) return "answer is not the larger";
   }
@@ -196,6 +209,12 @@ log("each kind dealt at least 150 times", KINDS.every((k) => games.dealt[k] >= 1
     for (let g = 0; g < 5; g++) { const shown = new Set(deal(d, rng, P).flatMap(shownIn)); all += shown.size; shown.forEach((w) => (again += before.has(w), before.add(w))); } }
   // (1.5 in 100: a "who" offers only names that share its words, which leaves fewer names to choose from)
   log("the names and words of a visit's earlier games come back in at most 1.5 in 100 of those its next four games show", again <= (1.5 * all) / 100, `${again} of ${all}`); }
+// With no memory of the last game (storage refused, a new browser), a year's clue list still comes round with the
+// rest: over 100 games each dealt from fresh decks, no year in more than one game in five.
+{ const count = {};
+  for (let g = 0; g < 100; g++) deal(decks(pool, seeded(3000 + g)), seeded(4000 + g), P).filter((q) => q.kind === "year").forEach((q) => (count[q.key] = (count[q.key] || 0) + 1));
+  const top = Object.entries(count).sort((a, b) => b[1] - a[1]);
+  log("with no memory of the last game, no year's clue list in more than 20 of 100 games", top[0][1] <= 20, top.slice(0, 3).map(([k, c]) => `${k} ${c}`).join(", ")); }
 // Within a visit, a question of a kind smaller than the games played (the years, the official words) comes back only
 // after the whole deck: checked above. Across a visit's first game and its second, no question at all repeats:
 { const rng = seeded(9), d = decks(pool, rng), a = deal(d, rng, P).map((q) => q.key), b = deal(d, rng, P).map((q) => q.key);
@@ -203,7 +222,7 @@ log("each kind dealt at least 150 times", KINDS.every((k) => games.dealt[k] >= 1
 // Kept from page load to page load (deal.js, keep and kept, as the page keeps them in localStorage): every game on a
 // fresh page load (new decks, a new shuffle, then what was kept). Over 250 games so loaded, a question comes back only
 // once its deck is spent, and a spent kind sits out the next game wherever the other kinds can fill it; over 50 visits
-// of five games so loaded, a game's names and words come back as rarely as within one page.
+// of five games so loaded, a game's names and words come back as rarely as within one page (1.5 in 100).
 const reload = (st, seed) => kept(decks(pool, seeded(seed)), st && JSON.parse(JSON.stringify(st)));
 { let st = null, size = 0, rested = 0, spentAt = 0;
   const asked = Object.fromEntries(KINDS.map((k) => [k, []])), repeats = [];
@@ -223,7 +242,7 @@ const reload = (st, seed) => kept(decks(pool, seeded(seed)), st && JSON.parse(JS
   for (let v = 0; v < 50; v++) { let kept_ = null; const before = new Set();
     for (let g = 0; g < 5; g++) { const d = reload(kept_, 300 + 7 * v + g), shownNow = new Set(deal(d, seeded(800 + 7 * v + g), P).flatMap(shownIn)); kept_ = keep(d); all += shownNow.size; shownNow.forEach((w) => (again += before.has(w), before.add(w))); } }
   log("kept across page loads: no question again before its deck is spent, a spent kind sits out the next game where the others fill it (9 times in 10 at least), a visit's names go to the back, under 60 kB kept",
-    !repeats.length && again <= all / 100 && rested >= 0.9 * spentAt && spentAt >= 10 && size < 60000, `${repeats.slice(0, 3).join(", ") || "no early repeat"}; ${rested} of ${spentAt} spent kinds sat out; ${again} of ${all} names and words again within a visit of five; ${size} characters kept`); }
+    !repeats.length && again <= (1.5 * all) / 100 && rested >= 0.9 * spentAt && spentAt >= 10 && size < 60000, `${repeats.slice(0, 3).join(", ") || "no early repeat"}; ${rested} of ${spentAt} spent kinds sat out; ${again} of ${all} names and words again within a visit of five; ${size} characters kept`); }
 // A name does not come round in "which peaked first" again and again: 32 names make its 134 pairs (each name in up to 13), so
 // over 50 visits of five games, each loaded afresh as the page loads, a name of one game's peak questions is in another game
 // of its visit's in at most 2 in 100 of those shown.
@@ -256,13 +275,16 @@ const reload = (st, seed) => kept(decks(pool, seeded(seed)), st && JSON.parse(JS
 // Guess the number: 300 games in one visit.
 const stick = JSON.parse(readFileSync(new URL("../../site/data/id-web-eras-kompas/stick.json", import.meta.url)));
 const gpool = guessPool(stick), gbad = [];
-let constant = Array(101).fill(0), played = 0;
+let constant = Array(101).fill(0), played = 0, cmpCount = 0, cmpTally = null;
 const bins = [0, 0, 0], places = {}, sameAgain = [0, 0];
 let earlyNames = 0, deals = 0, wordAgain = 0, wordCould = 0, highAgain = 0, highDeals = 0, keyAgain = [0, 0];
 { const rng = seeded(4), d = guessDecks(gpool, rng), seen = [[], [], []], cycle = [new Set(), new Set(), new Set()], names = [0, 1, 2].map((b) => new Set(gpool.filter((q) => q.bin === b).map((q) => q.name)));
   let before = [], lastNames = new Set();
   for (let g = 0; g < 300; g++) {
-    const game = guessDeal(d, rng), topics = new Set();
+    const game = guessDeal(d, rng), topics = new Set(), cmpNames = new Set();
+    // (the comparison each round states: never one name twice in a game, nor any name in more than ~8% of rounds)
+    for (const q of game) { const c = compared(q, d, cmpNames), at = q.context.ranks.findIndex(([n]) => n === c.n); if (c.n === q.name || at + 1 !== c.rank || q.context.ranks[at][1] !== c.v) gbad.push(`game ${g}: ${q.key} compared with ${c.n} as rank ${c.rank}`); cmpCount++; }
+    if (cmpNames.size !== game.length) gbad.push(`game ${g}: a name compared with twice`);
     // (a word of the last game again in this one, where the 17 words left others free: six a game, so always)
     { const last = new Set(before), all = new Set(gpool.map((q) => q.w)); if (all.size - last.size >= GUESS_ROUNDS) { wordCould++; wordAgain += game.filter((q) => last.has(q.w)).length; } }
     game.forEach((q, i) => ((places[q.w] ||= Array(GUESS_ROUNDS).fill(0))[i]++, before[i] && (sameAgain[0] += before[i] === q.w, sameAgain[1]++)));
@@ -301,14 +323,25 @@ let earlyNames = 0, deals = 0, wordAgain = 0, wordCould = 0, highAgain = 0, high
   // (the same question, a word and a name, not again within four games: the rule on names, above, comes first, and a bin's
   // deck, where a name holds several of its cards, cannot also be dealt whole before any card comes again)
   // (in the high bin, at most 1 deal in 50: it gives way before a word of the last game would come again)
+  cmpTally = d.compared;
   const last = {};
   seen.forEach((list, b) => list.forEach(([key, g]) => { if (last[key] !== undefined && g - last[key] < 5) { if (b < 2) gbad.push(`${key} again after ${g - last[key]} games`); else keyAgain[0]++; } if (b === 2) keyAgain[1]++; last[key] = g; }));
 }
 const best = Math.max(...constant) / played, at = constant.indexOf(Math.max(...constant));
+{ const tally = [...cmpTally.entries()].sort((a, b) => b[1] - a[1]);
+  log(`no name is the stated comparison in more than ${Math.round(100 * MARGIN.compareShare) + 1}% of 1,800 rounds (once a game at most)`, tally[0][1] <= (MARGIN.compareShare + 0.01) * cmpCount,
+    tally.slice(0, 4).map(([n, c]) => `${n} ${(100 * c / cmpCount).toFixed(1)}%`).join(", ")); }
 console.log(`     guess the number: ${gpool.length} distinct questions (${["low", "middle", "high"].map((name, b) => `${gpool.filter((q) => q.bin === b).length} ${name}`).join(", ")}), ${new Set(gpool.map((q) => q.w)).size} words, ${new Set(gpool.map((q) => q.name)).size} names`);
 log(`300 guess games: six rounds, no word or name twice, every value as counted, only words with a spread across names, low, middle and high in every game (${bins.join(", ")} dealt), no word of the last game again; a name back in a low or middle bin only once 85% of the bin's names have been dealt (at most 1 deal in 100 sooner, to keep a word of the last game out), and in the high bin a name of the last game in at most 1 deal in 10, the same word and name within four games at most 1 in 50`,
   !gbad.length && bins.every((n) => n >= 280) && !wordAgain && wordCould >= 290 && earlyNames <= deals / 100 && highAgain <= highDeals / 10 && keyAgain[0] <= keyAgain[1] / 50, gbad.slice(0, 5).join("; ") || `${wordAgain} words of the last game again in ${wordCould} games; ${earlyNames} names back early in the low and middle bins; high bin: ${highAgain} of ${highDeals} a name of the last game, ${keyAgain[0]} the same question within four games`);
-log("no one fixed guess wins: the best (always guessing " + at + ") scores under 65% on average, and a guess within 2 of the truth always scores at least 80", best < 0.65 && STOPS.every((v) => v > 0 ? [-2, -1, 0, 1, 2].every((e) => points(Math.max(0, v + e), v) >= 80) : true), `${Math.round(best * 100)}%`);
+// (over the pool as a game deals it: each bin's mean times the rounds a game gives it. Over the raw pool, mostly 1s to 3s,
+// a fixed 3 must score well wherever a guess within 2 of a small number does.)
+const binMean = STOPS.map((c) => [0, 1, 2].reduce((s, b) => { const qs = gpool.filter((q) => q.bin === b); return s + GUESS_DEAL.filter((x) => x === b).length * qs.reduce((a, q) => a + points(c, q.v), 0) / qs.length; }, 0) / (GUESS_ROUNDS * 100));
+const poolBest = Math.max(...binMean), poolAt = binMean.indexOf(poolBest), large = [];
+for (let v = 7; v <= 100; v++) for (const g of [Math.ceil(0.8 * v), Math.floor(1.2 * v)]) if (points(g, v) < 80) large.push(`${g} for ${v}`);
+log("no one fixed guess wins: the best scores under 45% on average in 300 dealt games (always " + at + ") and over the pool as dealt (always " + STOPS[poolAt] + "); a guess within 2 of a number up to 6, or within a fifth of a larger one, scores at least 80; 1 or 100 for 35 scores 0",
+  best < 0.45 && poolBest < 0.45 && !large.length && [1, 2, 3, 4, 5, 6].every((v) => [-2, -1, 0, 1, 2].every((e) => points(Math.max(0, v + e), v) >= 80)) && points(1, 35) === 0 && points(100, 35) === 0,
+  `${Math.round(best * 100)}% dealt, ${Math.round(poolBest * 100)}% over the pool${large.length ? `; under 80: ${large.slice(0, 4).join(", ")}` : ""}`);
 // The order of a game is its own shuffle: a word met often stands at every place of a game, at none in more than a
 // third of its games, and the next game puts a word at the same place no more often than chance would.
 { const often = Object.entries(places).filter(([, c]) => c.reduce((a, b) => a + b, 0) >= 60), lop = often.filter(([, c]) => c.some((x) => !x) || Math.max(...c) > c.reduce((a, b) => a + b, 0) / 3);
@@ -317,14 +350,14 @@ log("no one fixed guess wins: the best (always guessing " + at + ") scores under
 // follows the points (no "close" for a guess that scored nothing).
 log("the scale gives 0-20 two thirds of the track, and every stop maps back to itself", Math.abs(along(20) - 2 / 3) < 1e-9 && along(100) === 1 && STOPS.every((v) => stopAt(along(v)) === v) && STOPS.length === 37,
   `along(20) ${along(20).toFixed(3)}, ${STOPS.length} stops`);
-log("points as given (round(100 x max(0, 1 - |guess - truth| / max(10, 1.5 x truth)))), the line after a guess follows them, the rank by the share of points",
+log("points as given (round(100 x max(0, 1 - |guess - truth| / max(10, 1.5 x min(guess, truth))))), the line after a guess follows them, the rank by the share of points",
   [[8, 3], [8, 5], [3, 3], [20, 23], [60, 30]].every(([g, v]) => { const won = points(g, v), n = nearness(won); return (won >= 90) === (n === 0) && (won < 25) === (n === 3) && close(won) === (won >= 60); })
-  && points(3, 3) === 100 && points(8, 5) === 70 && points(2, 6) === 60 && points(12, 6) === 40 && points(13, 2) === 0 && points(12, 2) === 0 && points(40, 50) === 87 && points(1, 2) === 90 && guessRank(0, 600) === 3 && guessRank(167, 600) === 3 && guessRank(180, 600) === 2 && guessRank(330, 600) === 1 && guessRank(480, 600) === 0,
+  && points(3, 3) === 100 && points(8, 5) === 70 && points(2, 6) === 60 && points(12, 6) === 40 && points(13, 2) === 0 && points(12, 2) === 0 && points(40, 50) === 83 && points(60, 50) === 87 && points(1, 2) === 90 && points(2, 1) === 90 && guessRank(0, 600) === 3 && guessRank(167, 600) === 3 && guessRank(180, 600) === 2 && guessRank(330, 600) === 1 && guessRank(480, 600) === 0,
   [[8, 5], [2, 6], [5, 1], [6, 2]].map(([g, v]) => `guess ${g}, truth ${v}: ${points(g, v)} points`).join("; "));
 
 // Every string the games use, in both languages.
-const KEYS = ["said_right", "said_right_memory", "said_right_hard", "said_close", "said_wrong", "said_wrong_memory", "said_streak", "said_near", "said_exact", "guess_second", "said_far_above", "said_far_below", "said_rank", "quiz_tier", "ask_room", "quiz_who_ask", "guess_numbers", "guess_counted", "guess_least", "guess_top", "guess_next", "guess_break", "guess_unset", "guess_less", "guess_more_one", "guess_of", "ask_freq", "ask_peak", "ask_resmi", "ask_room", "ask_trend", "trend_up", "trend_down", "trend_same",
-  "room_era", "ev_freq", "ev_peak", "ev_room", "ev_trend", "ev_year", "ev_who", "caveat", "quiz_status", "quiz_streak", "quiz_keys", "quiz_plate_all", "guess_context", "next_toy",
+const KEYS = ["said_right", "said_right_memory", "said_right_hard", "said_close", "said_wrong", "said_wrong_memory", "said_streak", "said_near", "said_exact", "guess_rank", "said_far_above", "said_far_below", "said_rank", "quiz_tier", "ask_room", "quiz_who_ask", "guess_numbers", "guess_counted", "guess_least", "guess_top", "guess_break", "guess_unset", "guess_less", "guess_more_one", "guess_of", "ask_freq", "ask_peak", "ask_resmi", "ask_room", "ask_trend", "trend_up", "trend_down", "trend_same",
+  "room_era", "ev_freq", "ev_peak", "ev_room", "ev_trend", "ev_year", "ev_who", "caveat", "quiz_status", "quiz_streak", "quiz_keys", "quiz_plate_all", "next_toy",
   "played_best", "played_once", "quiz_year_ask", "quiz_who_ask", "quiz_tally", "quiz_save", "quiz_log", "quiz_next", "quiz_share", "guess_ask", "guess_lock", "guess_score",
   "guess_more", "guess_done", "guess_rule", "try_label", "guess_share", "copy_score", "copied", "again", "next", "nav_quiz", "play_tebak", "play_kuis", "quiz_lede", "guess_lede", "guess_yours"];
 const missing = ["id", "en"].flatMap((l) => KEYS.filter((k) => TEXT[l][k] === undefined).map((k) => `${l}.${k}`));
@@ -339,7 +372,7 @@ const OWN = {
     said_near: ["Nyaris sempurna.", "Dekat.", "Lumayan, tapi meleset."],
     said_exact: ["Tepat."], said_far_above: ["Tebakanmu terlalu tinggi."],
     said_far_below: ["Tebakanmu terlalu rendah."],
-    guess_rule: ["Tepat: 100 poin. Untuk angka sampai 6, tiap selisih satu angka memotong 10 poin; untuk angka lebih besar, kurang dari itu."],
+    guess_rule: ["Tepat: 100 poin. Tiap selisih satu angka memotong 10 poin, ke atas atau ke bawah; kurang dari itu bila tebakan dan jawabannya sama-sama di atas 6."],
     guess_top: ["Tak ada nama lain yang lebih sering sehalaman dengan “X”."] },
   en: { said_right: ["Spot on.", "Right.", "Got it."], said_right_memory: ["Good memory."], said_right_hard: ["Right, and no peeking.", "Correct. Not every editor would get that."],
     said_wrong: ["No. It was X.", "Missed. The answer: X."], said_wrong_memory: ["Memory plays tricks. It was X."], said_close: ["So close. X."],
@@ -348,10 +381,10 @@ const OWN = {
     said_near: ["Almost exact.", "Close.", "Not bad, but off."],
     said_exact: ["Exact."], said_far_above: ["Your guess was too high."],
     said_far_below: ["Your guess was too low."],
-    guess_rule: ["Exact: 100 points. For a number up to 6, each step off costs 10 points; for a larger one, fewer."],
+    guess_rule: ["Exact: 100 points. Each step off costs 10 points, too high or too low; fewer when your guess and the answer are both over 6."],
     guess_top: ["No other name shares a page with “X” more often."] },
 };
-log("the rule line is true for every number: 10 a step up to 6, under 10 above, and an exact guess is said exact", [1, 2, 3, 4, 5, 6].every((v) => points(v + 1, v) === 90 && points(v + 3, v) === 70) && [12, 40, 100].every((v) => points(v + 1, v) > 90) && points(8, 7) >= 90 && points(7, 7) === 100 && TEXT.id.said_exact === "Tepat." && TEXT.en.said_exact === "Exact." && !TEXT.id.said_near.includes("Tepat.") && !TEXT.en.said_near.includes("Exact."));
+log("the rule line is true for every number: 10 a step, up or down, under 10 where both are over 6, and an exact guess is said exact", [1, 2, 3, 4, 5, 6].every((v) => points(v + 1, v) === 90 && points(v + 3, v) === 70 && points(v + 30, v) === 0) && [7, 12, 40].every((v) => points(v - 1, v) >= 90) && points(1, 35) === 0 && points(6, 20) === 0 && [12, 40, 100].every((v) => points(v + 1, v) > 90) && points(8, 7) >= 90 && points(7, 7) === 100 && TEXT.id.said_exact === "Tepat." && TEXT.en.said_exact === "Exact." && !TEXT.id.said_near.includes("Tepat.") && !TEXT.en.said_near.includes("Exact."));
 const said = (v) => [].concat(v).map((x) => (typeof x === "function" ? x("X", "X") : x));
 const off = Object.entries(OWN).flatMap(([l, keys]) => Object.entries(keys).filter(([k, list]) => JSON.stringify(said(TEXT[l][k])) !== JSON.stringify(list)).map(([k]) => `${l}.${k}`));
 log("the reactions and asks are worded as given", !off.length && TEXT.en.ask_trend("w", 1, 2) === "“w”, from 1 to 2: up, down, or about the same?" && ["Arsip berjalan", "Baru bangun tidur"].every((x) => TEXT.id.said_rank.includes(x)) && !JSON.stringify(said(TEXT.id.said_wrong)).includes("Belum") && !JSON.stringify(said(TEXT.en.said_wrong)).includes("Not yet"), off.join(", "));
@@ -399,12 +432,21 @@ for (const [w, h, touch] of SIZES) {
   }
   const end = await p.evaluate(() => ({ score: document.querySelector(".quiz .score")?.textContent, rank: document.querySelector(".quiz .rank")?.textContent, plate: !!document.querySelector(".quiz .plate svg"), go: document.querySelector(".quiz-go").textContent }));
   const saved = await Promise.all([p.waitForEvent("download", { timeout: 5000 }).then((d) => d.suggestedFilename()).catch(() => null), p.locator(".quiz .controls button").first().click()]).then(([f]) => f);
+  // The card to share: every answer whole (no first name alone), its text 12px or more as shown (an answer too long for
+  // its column aside), and saved at 1080x1080 and 1200x630 (a PNG's size is in its header).
+  { const card = await p.evaluate(() => { const svg = document.querySelector(".quiz .score-card svg"), k = svg.getBoundingClientRect().width / svg.viewBox.baseVal.width, texts = [...svg.querySelectorAll("text")];
+      return { small: texts.filter((t) => parseFloat(t.style.fontSize) * k < 11.95 && t.textContent.length < 16).map((t) => t.textContent), all: texts.map((t) => t.textContent) }; });
+    const sizes = [];
+    for (const n of [0, 1]) { await p.waitForTimeout(300); const d = await Promise.all([p.waitForEvent("download", { timeout: 10000 }), p.locator(".quiz .controls button").nth(n).click()]).then(([x]) => x).catch(() => null);
+      const head = d && readFileSync(await d.path()); sizes.push(head ? `${head.readUInt32BE(16)}x${head.readUInt32BE(20)}` : "none"); }
+    const firsts = quiz.keys.filter((k) => k?.startsWith("who:")).map((k) => shown(k.slice(4))).filter((n) => n.includes(" ") && !card.all.includes(n) && card.all.includes(n.split(" ")[0]));
+    log(`quiz at ${w}: the card to share names every answer whole, its text 12px or more on screen, saved at 1080x1080 and 1200x630`, !card.small.length && !firsts.length && sizes.join() === "1080x1080,1200x630", `${sizes.join(", ")}${card.small.length ? `; under 12px: ${card.small.join(", ")}` : ""}${firsts.length ? `; first names: ${firsts.join(", ")}` : ""}`); }
   // Every copy goes through one helper: where the clipboard is refused, the button says so and the text stands beside
   // it, selected; nothing thrown.
   { const before = errors.length;
     await p.evaluate(() => { try { Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: () => Promise.reject(new DOMException("refused", "NotAllowedError")) } }); } catch {} });
-    await p.locator(".quiz .controls button").nth(1).click(); await p.waitForTimeout(100);
-    const said = await p.evaluate(() => { const b = document.querySelectorAll(".quiz .controls button")[1], f = document.querySelector(".quiz .copy-field"); return { text: b.textContent, field: !!f && f.value.length > 10 && document.activeElement === f && f.selectionEnd - f.selectionStart === f.value.length }; });
+    await p.locator(".quiz .controls button").last().click(); await p.waitForTimeout(100);
+    const said = await p.evaluate(() => { const b = [...document.querySelectorAll(".quiz .controls button")].at(-1), f = document.querySelector(".quiz .copy-field"); return { text: b.textContent, field: !!f && f.value.length > 10 && document.activeElement === f && f.selectionEnd - f.selectionStart === f.value.length }; });
     log(`quiz at ${w}: a refused copy says so (“Tidak bisa menyalin”) and leaves the text selected to copy by hand`, said.text === "Tidak bisa menyalin" && said.field && errors.length === before, `“${said.text}”${said.field ? "" : ", no text selected beside it"}${errors.length > before ? `; ${errors.slice(before).join(" / ")}` : ""}`); }
   log(`quiz at ${w}: the first answer on screen, ${ROUNDS} rounds ${touch ? "by taps" : "by keyboard alone"}, the evidence drawn and focus on “next” each time, “next” in one place, a plate saved`,
     first > 0 && quiz.rounds === ROUNDS && quiz.figures === ROUNDS && quiz.focus === ROUNDS && quiz.places.size === 1 && end.plate && end.rank && /\.png$/.test(saved || "") && !errors.length,

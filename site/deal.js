@@ -32,6 +32,7 @@ export const MARGIN = {
   guessPages: 1500,// guess the number: the name is on at least this many pages of 2020-2024, so that "of 100" is a real hundred
   guessHits: 30,   // ... and at least this many of them hold the word (a count of 3 is not a share)
   spreadTop: 8,   // ... and the word is asked only where names differ on it: the name with the most of it has at least 8 in 100 ...
+  compareShare: 0.08,  // guess the number: one name is the round's comparison in at most 8% of a visit's rounds (and once a game)
   spreadRatio: 3,  // ... and at least three times the share of the name with the least ("janji", 1 to 5 in 100 for every name, is not a game on a 0-100 scale)
 };
 
@@ -49,6 +50,50 @@ export const BODIES = ["kpk", "dpr", "polri", "tni", "kpu", "bawaslu", "pdip", "
   "bank indonesia", "ojk", "bmkg", "bpjs kesehatan", "garuda indonesia", "mui", "muhammadiyah", "nahdlatul ulama", "fpi", "pbb", "asean", "fifa", "isis", "gojek", "tokopedia",
   "shopee", "telkom", "jasa marga", "pt kai", "badan pusat statistik", "mpr", "dpd", "bulog", "lion air", "unesco", "uni eropa", "nato", "hamas", "taliban", "google", "apple",
   "samsung", "twitter", "instagram", "youtube", "whatsapp", "mahkamah konstitusi", "kejaksaan agung", "komnas ham", "tiktok", "facebook"];
+/** What each known name is called in full and the offices it held in the years counted (Wikipedia's article title for
+ *  a body, `games.mjs` holds the two together; for a person a short hand list of offices, 2011-2024). A word that is
+ *  part of a name, its full name or its office is a naming artefact beside it, not usage: "rakyat" beside Basuki
+ *  Hadimuljono (Menteri Pekerjaan Umum dan Perumahan Rakyat) or the DPR, "korupsi" beside the KPK or its chairman,
+ *  "demokrat" beside Partai Demokrat or Surya Paloh (Nasional Demokrat). No game asks such a word with that name or
+ *  offers that name beside it (`inName`). The limit: the list holds the main offices only, and a word of an office the
+ *  list misses still counts. */
+export const NAMED = {
+  jokowi: "joko widodo presiden gubernur dki jakarta wali kota surakarta", prabowo: "prabowo subianto presiden menteri pertahanan partai gerakan indonesia raya",
+  ahok: "basuki tjahaja purnama gubernur wakil dki jakarta bupati belitung timur komisaris utama pertamina", "anies baswedan": "gubernur dki jakarta menteri pendidikan dan kebudayaan rektor universitas paramadina",
+  megawati: "megawati soekarnoputri presiden ketua umum partai demokrasi indonesia perjuangan badan pembinaan ideologi pancasila riset inovasi nasional", sby: "susilo bambang yudhoyono presiden partai demokrat",
+  "ganjar pranowo": "gubernur jawa tengah", "sri mulyani": "menteri keuangan bank dunia", luhut: "luhut binsar pandjaitan menteri koordinator bidang kemaritiman dan investasi politik hukum keamanan kepala staf kepresidenan",
+  "ridwan kamil": "gubernur jawa barat wali kota bandung", "mahfud md": "menteri koordinator bidang politik hukum dan keamanan ketua mahkamah konstitusi", "erick thohir": "menteri badan usaha milik negara ketua umum pssi",
+  "setya novanto": "ketua dewan perwakilan rakyat partai golongan karya", gibran: "gibran rakabuming raka wakil presiden wali kota surakarta", "sandiaga uno": "wakil gubernur dki jakarta menteri pariwisata dan ekonomi kreatif",
+  "airlangga hartarto": "menteri koordinator bidang perekonomian perindustrian ketua umum partai golongan karya", puan: "puan maharani ketua dewan perwakilan rakyat menteri koordinator bidang pembangunan manusia dan kebudayaan",
+  "jusuf kalla": "wakil presiden ketua umum palang merah indonesia dewan masjid", "tito karnavian": "menteri dalam negeri kepala kepolisian negara republik indonesia", "agus harimurti": "agus harimurti yudhoyono ketua umum partai demokrat menteri agraria dan tata ruang",
+  "rizieq shihab": "muhammad rizieq shihab imam besar front pembela islam", "nadiem makarim": "menteri pendidikan kebudayaan riset dan teknologi gojek", "tri rismaharini": "menteri sosial wali kota surabaya",
+  khofifah: "khofifah indar parawansa gubernur jawa timur menteri sosial muslimat nahdlatul ulama", "muhaimin iskandar": "ketua umum partai kebangkitan bangsa wakil dewan perwakilan rakyat menteri tenaga kerja dan transmigrasi",
+  "zulkifli hasan": "ketua majelis permusyawaratan rakyat umum partai amanat nasional menteri perdagangan kehutanan", firli: "firli bahuri ketua komisi pemberantasan korupsi", wiranto: "menteri koordinator bidang politik hukum dan keamanan ketua umum partai hati nurani rakyat dewan pertimbangan presiden",
+  moeldoko: "kepala staf kepresidenan panglima tentara nasional indonesia partai demokrat", "susi pudjiastuti": "menteri kelautan dan perikanan susi air", boediono: "wakil presiden gubernur bank indonesia",
+  "hatta rajasa": "menteri koordinator bidang perekonomian ketua umum partai amanat nasional", "fadli zon": "wakil ketua dewan perwakilan rakyat partai gerakan indonesia raya", "surya paloh": "ketua umum partai nasdem nasional demokrat media group",
+  "hasto kristiyanto": "sekretaris jenderal partai demokrasi indonesia perjuangan", "listyo sigit prabowo": "kepala kepolisian negara republik indonesia badan reserse kriminal", "andika perkasa": "panglima tentara nasional indonesia kepala staf angkatan darat",
+  "hadi tjahjanto": "panglima tentara nasional indonesia menteri agraria dan tata ruang koordinator bidang politik hukum keamanan", "budi gunadi sadikin": "menteri kesehatan wakil badan usaha milik negara",
+  "basuki hadimuljono": "menteri pekerjaan umum dan perumahan rakyat otorita ibu kota nusantara", soekarno: "presiden", soeharto: "presiden", "djarot saiful hidayat": "gubernur dki jakarta wali kota blitar partai demokrasi indonesia perjuangan",
+  "ferdy sambo": "kepala divisi profesi dan pengamanan kepolisian negara republik indonesia", "raffi ahmad": "utusan khusus presiden", trump: "donald trump presiden amerika serikat", biden: "joe biden presiden wakil amerika serikat",
+  putin: "vladimir putin presiden rusia", obama: "barack obama presiden amerika serikat", "kim jong un": "pemimpin korea utara", "gatot nurmantyo": "panglima tentara nasional indonesia",
+  "anas urbaningrum": "ketua umum partai demokrat", "dahlan iskan": "menteri badan usaha milik negara direktur utama perusahaan listrik negara", "bambang soesatyo": "ketua majelis permusyawaratan rakyat dewan perwakilan partai golongan karya",
+  "novel baswedan": "penyidik komisi pemberantasan korupsi", "abraham samad": "ketua komisi pemberantasan korupsi", "yasonna laoly": "menteri hukum dan hak asasi manusia", "retno marsudi": "menteri luar negeri",
+  "kaesang pangarep": "ketua umum partai solidaritas indonesia", "bobby nasution": "wali kota medan gubernur sumatera utara", "dedi mulyadi": "bupati purwakarta gubernur jawa barat dewan perwakilan rakyat",
+  "gus dur": "abdurrahman wahid presiden nahdlatul ulama", habibie: "b. j. habibie presiden",
+  twitter: "x", kpk: "komisi pemberantasan korupsi", dpr: "dewan perwakilan rakyat republik indonesia", polri: "kepolisian negara republik indonesia", tni: "tentara nasional indonesia",
+  kpu: "komisi pemilihan umum republik indonesia", bawaslu: "badan pengawas pemilihan umum", pdip: "partai demokrasi indonesia perjuangan", golkar: "partai golongan karya", gerindra: "partai gerakan indonesia raya",
+  demokrat: "partai demokrat", pks: "partai keadilan sejahtera", nasdem: "partai nasdem nasional demokrat", pkb: "partai kebangkitan bangsa", perindo: "partai persatuan indonesia", pln: "perusahaan listrik negara",
+  ojk: "otoritas jasa keuangan", bmkg: "badan meteorologi, klimatologi, dan geofisika", "bpjs kesehatan": "badan penyelenggara jaminan sosial kesehatan", mui: "majelis ulama indonesia", fpi: "front pembela islam",
+  pbb: "perserikatan bangsa-bangsa", asean: "perhimpunan bangsa-bangsa asia tenggara", isis: "negara islam irak dan syam", telkom: "telkom indonesia", "pt kai": "kereta api indonesia",
+  mpr: "majelis permusyawaratan rakyat republik indonesia", dpd: "dewan perwakilan daerah republik indonesia", bulog: "badan urusan logistik", nato: "organisasi pakta pertahanan atlantik utara",
+  "mahkamah konstitusi": "mahkamah konstitusi republik indonesia", "kejaksaan agung": "kejaksaan agung republik indonesia", "komnas ham": "komisi nasional hak asasi manusia",
+};
+const NAMED_SKIP = new Set(["dan"]), namedParts = new Map();
+/** Is `word` (any of its parts) part of the name, full name or office of `name` (NAMED)? */
+export const inName = (word, name) => {
+  if (!namedParts.has(name)) namedParts.set(name, new Set(`${name} ${NAMED[name] || ""}`.split(/[\s,]+/).filter((p) => p && !NAMED_SKIP.has(p))));
+  return String(word).split(" ").some((p) => namedParts.get(name).has(p));
+};
 /** Words that read as an accusation or a judgement when set beside a name. "Which newsroom puts W beside N" never asks
  *  about these: beside a name they are asked only as "guess the number" asks (of 100 pages naming N, how many also
  *  hold W), with its caution in sight. */
@@ -71,6 +116,17 @@ export const SAME_HEAD = [["menteri", "kementerian"], ["stadion", "tragedi"], ["
  *  every source's names), or of three letters or fewer ("ruf", "iii"); never a name or abbreviation the games know. */
 export const bareSet = (sources) => new Set(sources.flatMap((list) => list.filter(([w, kind, article]) => !w.includes(" ") && (kind === "person" || ((kind || "other") === "other" && String(article).toLowerCase() === w))).map(([w]) => w)));
 export const fragment = (w, bare) => !PEOPLE.includes(w) && !BODIES.includes(w) && !isAbbr(w) && !w.includes(" ") && (w.length <= 3 || bare.has(w) || PARTS.includes(w));
+/** meN- and what it stands for at the root's start: "menge-" (a root of one syllable), "meng-" (a vowel, k-), "meny-"
+ *  (s-), "mem-" (b-, p-), "men-" (d-, t-), "me-" (l-, m-, n-, r-, w-, y-). */
+const MEN = { menge: [""], meng: ["", "k"], meny: ["s"], mem: ["", "p"], men: ["", "t"], me: [""] };
+/** Reporting words and a page's furniture ("baca juga", "kutip"): they say how the news is written, not what it was about,
+ *  so they are never a clue to a year or a name. */
+export const REPORTING = ["baca", "kutip", "dikutip", "mengutip", "simak", "klik", "dilansir", "melansir", "menyatakan", "mengatakan", "menyampaikan", "menegaskan", "menyebut", "disebut",
+  "menjelaskan", "mengungkapkan", "menuturkan", "dikabarkan", "mengaku"];
+/** ... with a page's own furniture (links, bylines, its sections) and a shop's (categories, delivery): what a source's pages
+ *  are made of, not what they were about. The explorers' lists put these last (app.js, `known`). */
+export const FURNITURE = [...REPORTING, "editor", "link", "kanal", "penulisan", "tertulisnya", "selengkapnya", "ucapnya", "imbuhnya", "imbuh", "berujar", "katanya", "ungkap",
+  "keterangannya", "menambahkan", "kategori", "perlengkapan", "kurir", "produk", "diskon", "promo", "ongkir", "belanja", "keranjang", "pengiriman"];
 /** Two entries of a list that name one thing (a list gives each thing once): the same word; one a part of the other
  *  ("ebola", "virus ebola"); both leading to one Wikipedia article ("foke", "fauzi bowo"), or one's article the other
  *  ("blsm", "bantuan langsung sementara masyarakat"); one made of the first letters of the other's parts ("psbb", "prokes"); one the other's meaning in
@@ -89,7 +145,9 @@ export function oneThing(a, b, article = () => "", gloss = () => "") {
   const said = (x, y) => { const g = String(gloss(x) || "").toLowerCase(); return g && (g === y || g.startsWith(y + " ") || g.endsWith(" " + y)); };
   if (said(a, b) || said(b, a)) return true;
   // (one word in two of its forms: "vaksin", "vaksinasi", "divaksin", "divaksinasi")
-  const forms = (x) => { const out = new Set([x]); for (const y of [x, ...["di", "ter", "ber"].filter((p) => x.startsWith(p)).map((p) => x.slice(p.length))]) { out.add(y); for (const e of ["isasi", "asi", "kan", "an", "i"]) if (y.endsWith(e)) out.add(y.slice(0, -e.length)); } return [...out].filter((y) => y.length >= 4); };
+  // (and the active of a passive, "mengusung" and "diusung": meN- takes the root's first sound, so "menulis" is "tulis")
+  const roots = (x) => [x, ...["di", "ter", "ber"].filter((p) => x.startsWith(p)).map((p) => x.slice(p.length)), ...Object.entries(MEN).filter(([p]) => x.startsWith(p)).flatMap(([p, heads]) => heads.map((h) => h + x.slice(p.length)))];
+  const forms = (x) => { const out = new Set([x]); for (const y of roots(x)) { out.add(y); for (const e of ["isasi", "asi", "kan", "an", "i"]) if (y.endsWith(e)) out.add(y.slice(0, -e.length)); } return [...out].filter((y) => y.length >= 4); };
   const fa = new Set(pa.length === 1 ? forms(a) : []);
   return pb.length === 1 && forms(b).some((y) => fa.has(y));
 }
@@ -135,9 +193,9 @@ export const capOf = (kind) => CAP[kind] ?? 2;
 /** Guess the number: six rounds over low, middle and high true values, so that no one guess always pays. */
 export const GUESS_ROUNDS = 6;
 export const GUESS_BINS = [[1, 4], [5, 12], [13, 100]];  // most true values are small (half are 1 or 2 in 100): the bins are cut where the data has enough of each
-/** ... and how many of each a game deals: two low, one middle, three high. Each step off costs 10 points for a small
- *  number, so a game of mostly small values would pay one fixed small guess (5 would average 73%): with three high
- *  values no fixed guess averages 65% (games.mjs). */
+/** ... and how many of each a game deals: two low, one middle, three high. Each step off costs 10 points near a small
+ *  number, so a game of mostly small values would pay one fixed small guess: with three high values no fixed guess
+ *  averages 45% (games.mjs). */
 export const GUESS_DEAL = [2, 2, 2, 1, 0, 0];
 
 /**
@@ -239,7 +297,7 @@ export function pools(Q) {
   const out = Object.fromEntries(KINDS.map((k) => [k, []]));
   const ratio = (a, b) => Math.max(a, b) / Math.min(a, b);
   const at = (d, rest) => ({ d: +d.toFixed(3), tier: tierOf(d), ...rest });
-  const resmi = new Set(Q.resmi.map((pair) => [...pair].sort().join("|")));
+  const kin = new Set((Q.kin || []).flatMap(([a, b]) => [`${a}|${b}`, `${b}|${a}`])), loans = new Set(Q.resmi.flat());
 
   // Which year, from its ten most characteristic words (highlights.json's peaks), less those that name the year by
   // themselves (`marker`); asked only where those words together stand highest in that year (the evidence shows it),
@@ -265,7 +323,7 @@ export function pools(Q) {
     const variants = Object.entries(Q.who[n].said).map(([p, said]) => ({ p: +p, said })).filter(({ p, said }) => said.length >= 5 && W[n] && pages(n, p) >= MARGIN.whoPages)
       .map(({ p, said }) => {
         const shared = (m) => (Q.who[m].said[p] || []).filter((x) => said.includes(x)).length;
-        const news = who.filter((m) => m !== n && Q.who[m].said[p] && W[m] && pages(m, p) >= MARGIN.whoPages && shared(m) <= Math.floor(MARGIN.whoShared * said.length + 1e-9) && shared(m) >= MARGIN.whoLeast);
+        const news = who.filter((m) => m !== n && Q.who[m].said[p] && W[m] && pages(m, p) >= MARGIN.whoPages && shared(m) <= Math.floor(MARGIN.whoShared * said.length + 1e-9) && shared(m) >= MARGIN.whoLeast && !said.some((w) => inName(w, m)));
         const same = news.filter((m) => sortOf(m) === sortOf(n)), others = same.length >= 3 || PEOPLE.includes(n) ? same : news.filter((m) => BODIES.includes(m));
         // (its difficulty is rated again when its choices are drawn, by the least known of them: finish)
         return at(DIFFICULTY.rated(DIFFICULTY.who(pages(n, p)), fames([n])), { p, said, others, near: others.filter((m) => shared(m) >= 2), answer: n, m: DIFFICULTY.who(pages(n, p)), fame: Object.fromEntries([n, ...others].map((m) => [m, fame(m)])),
@@ -275,11 +333,13 @@ export function pools(Q) {
   }
 
   // Which is more frequent in year Y, A or B: only pairs that trade places (each leads clearly in some year), so that
-  // the year matters, and of the same sort (two people, two bodies, two words); not a pair of an official word and its
-  // loanword (that is the question "resmi", asked once a game).
+  // the year matters, and of the same sort (two people of their kind, two bodies of theirs, or two words with something
+  // in common: `kin` in quiz.json, one near the other on the first page's chart or sharing three of their nearest); never
+  // a word of an official word and its loanword ("daring", "netizen": a pair with one of them reads as the question
+  // "resmi", asked once a game, and so made it twice).
   for (let i = 0; i < words.length; i++) for (let j = i + 1; j < words.length; j++) {
     const [a, b] = [words[i], words[j]];
-    if (group(a) !== group(b) || (group(a) !== "word" && sortOf(a) !== sortOf(b)) || resmi.has([a, b].sort().join("|"))) continue;
+    if (group(a) !== group(b) || (group(a) === "word" ? !kin.has(`${a}|${b}`) : sortOf(a) !== sortOf(b)) || loans.has(a) || loans.has(b)) continue;
     const variants = P.map((_, p) => p).filter((p) => Math.max(pages(a, p), pages(b, p)) >= MARGIN.pages && Math.min(pages(a, p), pages(b, p)) >= MARGIN.least && ratio(W[a].share[p], W[b].share[p]) >= MARGIN.ratio)
       .map((p) => { const r = ratio(W[a].share[p], W[b].share[p]), win = W[a].share[p] > W[b].share[p] ? a : b;
         return at(DIFFICULTY.rated(DIFFICULTY.ratio(r), fames([a, b])), { p, choices: [a, b], answer: win, ev: { type: "marks", period: P[p], items: [a, b].map((w) => ({ label: w, v: W[w].share[p] })) } }); });
@@ -323,7 +383,7 @@ export function pools(Q) {
   // Which newsroom most often puts W beside N, 2020-2024: only a word of ROOM_WORDS, and a count in every newsroom
   // (MARGIN.roomHits pages holding the word beside the name), so that no newsroom stands at nothing.
   for (const [w, n, v, pg] of Q.rooms.rows) {
-    if (!ROOM_WORDS.includes(w) || SENSITIVE.includes(w) || !(PEOPLE.includes(n) || BODIES.includes(n)) || pg.some((x) => x < MARGIN.roomPages)) continue;
+    if (!ROOM_WORDS.includes(w) || SENSITIVE.includes(w) || inName(w, n) || !(PEOPLE.includes(n) || BODIES.includes(n)) || pg.some((x) => x < MARGIN.roomPages)) continue;
     const order = v.map((x, k) => k).sort((x, y) => v[y] - v[x]), [top, second] = order, hits = v.map((x, k) => (x * pg[k]) / 1000);
     if (hits[top] < MARGIN.pages || hits.some((h) => h < MARGIN.roomHits) || v[top] < MARGIN.ratio * v[second]) continue;
     out.room.push({ key: `room:${w}|${n}`, topics: [w, n], answer: OUTLET_NAMES[top], variants: [at(DIFFICULTY.rated(DIFFICULTY.ratio(v[top] / v[second]), [W[n] ? fame(n) : pg[0] / 5]), { choices: OUTLET_NAMES, answer: OUTLET_NAMES[top], w, n,
@@ -438,7 +498,7 @@ export class Deck {
  *  (`seen`) and how many games were dealt. */
 export const decks = (pool, rng) => {
   const d = Object.fromEntries(KINDS.filter((k) => pool[k].length).map((k) => [k, new Deck(pool[k], rng)]));
-  return Object.defineProperties(d, { seen: { value: new Map() }, games: { value: 0, writable: true } });
+  return Object.defineProperties(d, { compared: { value: new Map() }, seen: { value: new Map() }, games: { value: 0, writable: true } });
 };
 /** A version of the questions (a hash of every key): what was kept under another version is let go. */
 export const version = (lists) => {
@@ -494,6 +554,10 @@ export function deal(d, rng, P) {
   const kinds = open, order = rhythm(kinds, rng), used = new Set(), game = [], count = {};
   const age = (w) => (d.seen.has(w) ? n - d.seen.get(w) : Infinity);  // games since a name or word was last shown
   const LEVELS = [Infinity, 4, 2, 1];
+  // (in a visit's first game, a kind with fewer than four questions of a mark, as "which year" has two hard ones, is not
+  // asked at that mark while another kind can be: else every game with no memory of the last, storage refused or a new
+  // browser, would ask one of those two: 2015 in 8 of 18 such games. Later games deal the deck in turn.)
+  const thin = (kind, at) => [...d[kind].fresh, ...d[kind].dealt].filter((g) => g.tiers.includes(at) || g.tiers.includes(null)).length < 4;
   // (the hard rounds dealt first: few kinds have hard questions, and they need names still free; the easy ones last)
   for (const k of [...TIERS.keys()].sort((a, b) => TIERS[b] - TIERS[a] || a - b)) {
     const tier = TIERS[k];
@@ -506,7 +570,7 @@ export function deal(d, rng, P) {
       // (its own tier first, then the next; only a tier that leaves the game an order of rising marks with no kind
       // twice running)
       for (const off of [0, 1, 2]) for (const level of LEVELS) for (const kind of which) for (const at of [tier - off, tier + off].filter((x, i, l) => x >= 0 && x <= 2 && l.indexOf(x) === i)) {
-        if (q || !ordered([...game, { kind, tier: at, d: 0 }])) continue;
+        if (q || (n === 1 && !spent && level === Infinity && thin(kind, at)) || !ordered([...game, { kind, tier: at, d: 0 }])) continue;
         const welcome = (w) => !used.has(w) && age(w) >= level;
         const g = spent === "early" ? d[kind].early((g) => g.topics.every(welcome)) : d[kind].take((g) => g.topics.every(welcome), at, true);
         if (!g) continue;
@@ -548,12 +612,12 @@ export function ordered(game) {
 // ---- guess the number ----------------------------------------------------------------------------------------------
 /** The questions of "guess the number", from Kompas's stick.json in 2020-2024: every word with a spread across names
  *  (MARGIN.spreadTop, spreadRatio) with every known name that is on enough pages, its true value (of 100 pages) and a
- *  line of context: who has the most, the next after it, and the least of it. */
+ *  line of context: the six names with the most of it, in order, and the one with the least. */
 export function guessPool(s, era = 2) {
   const names = s.names.map((n, i) => i).filter((i) => (PEOPLE.includes(s.names[i]) || BODIES.includes(s.names[i])) && s.pages[i][era] >= MARGIN.guessPages);
   const out = [];
   for (const w of s.words.filter((w) => POINTED.includes(w))) {
-    const known = names.filter((i) => s.share[w][i][era] !== null && (s.share[w][i][era] * s.pages[i][era]) / 1000 >= MARGIN.guessHits);
+    const known = names.filter((i) => s.share[w][i][era] !== null && (s.share[w][i][era] * s.pages[i][era]) / 1000 >= MARGIN.guessHits && !inName(w, s.names[i]));
     if (known.length < 3) continue;
     const by = [...known].sort((a, b) => s.share[w][b][era] - s.share[w][a][era]), [hi, lo] = [by[0], by.at(-1)];
     if (s.share[w][hi][era] / 10 < MARGIN.spreadTop || s.share[w][hi][era] < MARGIN.spreadRatio * s.share[w][lo][era]) continue;  // (a word with no spread across names)
@@ -561,7 +625,7 @@ export function guessPool(s, era = 2) {
       const v = Math.round(s.share[w][i][era] / 10);
       if (v < 1) continue;
       out.push({ key: `${w}|${s.names[i]}`, topics: [w, s.names[i]], w, name: s.names[i], v, pages: s.pages[i][era], tiers: [null],
-        bin: GUESS_BINS.findIndex(([a, b]) => v >= a && v <= b), context: { of: known.length, hi: [s.names[hi], Math.round(s.share[w][hi][era] / 10)], next: [s.names[by[1]], Math.round(s.share[w][by[1]][era] / 10)], lo: [s.names[lo], Math.round(s.share[w][lo][era] / 10)] } });
+        bin: GUESS_BINS.findIndex(([a, b]) => v >= a && v <= b), context: { of: known.length, ranks: by.slice(0, 6).map((k) => [s.names[k], Math.round(s.share[w][k][era] / 10)]), lo: [s.names[lo], Math.round(s.share[w][lo][era] / 10)] } });
     }
   }
   return out;
@@ -571,7 +635,7 @@ export function guessPool(s, era = 2) {
  *  them all (`named`). */
 export const guessDecks = (pool, rng) => {
   const d = GUESS_BINS.map((_, b) => new Deck(pool.filter((q) => q.bin === b), rng));
-  return Object.defineProperties(d, { seen: { value: new Map() }, games: { value: 0, writable: true }, named: { value: GUESS_BINS.map(() => new Set()) },
+  return Object.defineProperties(d, { compared: { value: new Map() }, seen: { value: new Map() }, games: { value: 0, writable: true }, named: { value: GUESS_BINS.map(() => new Set()) },
     names: { value: GUESS_BINS.map((_, b) => new Set(pool.filter((q) => q.bin === b).map((q) => q.name))) } });
 };
 /** One game of six: three high values, one middle and two low (GUESS_DEAL), no word and no name
@@ -617,15 +681,30 @@ export function guessDeal(d, rng) {
   for (const q of game) q.topics.forEach((t) => d.seen.set(t, n));
   return shuffle(game, rng);
 }
+/** The name a round of "guess the number" compares with, and its rank: of the names with the most of the word (less
+ *  the name asked), the first of the next three that this game has not compared with and that keeps within MARGIN.compareShare
+ *  of the visit's comparisons (`d.compared`), else of those this game has not used (down to the sixth) the one compared
+ *  least; said by its rank,
+ *  "paling sering", "kedua", "ketiga", so that one name (the head of the KPK beside every word of a case) is not leaned on. */
+export function compared(q, d, game) {
+  const tally = d.compared, total = [...tally.values()].reduce((a, b) => a + b, 0), times = (n) => tally.get(n) || 0;
+  const options = q.context.ranks.map(([n, v], i) => ({ n, v, rank: i + 1 })).filter((o) => o.n !== q.name), fresh = options.filter((o) => !game.has(o.n));
+  const pick = fresh.slice(0, 3).find((o) => times(o.n) + 1 <= Math.max(1, MARGIN.compareShare * (total + 1))) || [...(fresh.length ? fresh : options)].sort((a, b) => times(a.n) - times(b.n) || a.rank - b.rank)[0];
+  tally.set(pick.n, times(pick.n) + 1);
+  game.add(pick.n);
+  return pick;
+}
 /** The scale a guess is set on: 0 to 20 in steps of 1 over two thirds of the track (most true values are small), 20
  *  to 100 in steps of 5 over the rest. One mapping for the track, its ticks, the keys and the marks of the answer. */
 export const STOPS = [...Array(21).keys(), ...Array.from({ length: 16 }, (_, k) => 25 + 5 * k)];
 export const SPLIT = 2 / 3;
 export const along = (v) => (v <= 20 ? (v / 20) * SPLIT : SPLIT + ((v - 20) / 80) * (1 - SPLIT));
 export const stopAt = (f) => { const v = f <= SPLIT ? (f / SPLIT) * 20 : 20 + ((f - SPLIT) / (1 - SPLIT)) * 80; return STOPS.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a)); };
-/** Points for a guess: 100 for the truth, and each step off costs 10 for a small number, less for a large one:
- *  round(100 x max(0, 1 - |guess - truth| / max(10, 1.5 x truth))). A guess within 2 always scores at least 80. */
-export const points = (guess, truth) => Math.round(100 * Math.max(0, 1 - Math.abs(guess - truth) / Math.max(10, 1.5 * truth)));
+/** Points for a guess: 100 for the truth, and each step off costs 10, less where both the guess and the truth are over 6:
+ *  round(100 x max(0, 1 - |guess - truth| / max(10, 1.5 x min(guess, truth)))). Read from the smaller of the two, so a
+ *  guess far too low costs as a guess far too high does (1 or 100 for 35: 0). A guess within 2 of a number up to 6, or
+ *  within a fifth of a larger one, scores at least 80; no one fixed guess averages 45% (games.mjs). */
+export const points = (guess, truth) => Math.round(100 * Math.max(0, 1 - Math.abs(guess - truth) / Math.max(10, 1.5 * Math.min(guess, truth))));
 /** The line said after a guess follows its points: 90 or more, 60 or more, 25 or more, less. "Right" (a filled port):
  *  60 or more. */
 export const nearness = (won) => (won >= 90 ? 0 : won >= 60 ? 1 : won >= 25 ? 2 : 3);
