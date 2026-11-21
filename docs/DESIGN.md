@@ -78,9 +78,11 @@ story's passages are positions, not animations (native scroll, CSS scroll-driven
 them, nothing where it has not). `prefers-reduced-motion` turns travel into a cut, holds every sea as one still frame,
 removes the dive and the passages, and shows titles and figures in place.
 
-What answers a page turn, once: the old page lifts away (`--d-turn`) and the new one surfaces (`--d-leg`) while the
-header stays (View Transitions where the browser has them); the title is carried over from the old title, or from the
-card that was chosen (a story card's title becomes the cover's title); the page's own entrances wait until the turn
+What answers a page turn, once: a tide. The header stays and the new page comes in over the old one from the foot of the
+screen up, behind a wave's edge, the tide line's, in one `--d-turn` (View Transitions where the browser has them, a
+mask on the new page's picture; elsewhere, and with reduced motion, the new page is simply there); the title is carried
+over from the old title, or from the card that was chosen (a story card's title becomes the cover's title), in the same
+time; the page's own entrances wait until the turn
 is done, then play. Arriving at a page without a turn (the first page of a visit), its title rises word by word
 (letter by letter on a word's own page) and the kicker, lede and notes surface after it. What answers the scroll: a figure draws
 itself in once as it first comes near the screen (lines along their length, then areas and points; bars grow from
@@ -99,7 +101,10 @@ it.
   sheet on `--deep` with the five links set in display type, the search field, the sound toggle with its name, and the
   language switch. The current page is marked in `--route`. Inside a story a 2px route-coloured line along the
   header's lower edge shows how far through the story one is.
-- **Buttons**: primary (route fill, on-route text), secondary (hairline, ink), quiet (text only). Height 44px on touch.
+- **Buttons**: primary (route fill, on-route text), secondary (hairline, ink), quiet (text only). Height 44px on touch:
+  every control (chips, source tabs, the "Kata"/"Nama" switch, a race's ×) takes `--control`, 40px with a mouse and
+  `--tap` (44px) on a touch screen, and a mark drawn smaller (a stage's 24px share mark, a name in the circle) has a 44px
+  target around it; a link inside running text is exempt (`fit.mjs` walks a touch phone for it).
   Chips are pills. A row of chips or tabs that scrolls sideways on a phone starts at its first, shows a shadow at the
   edge beyond which more lies (`edged` in app.js), and brings the pressed one into view by the least scroll that leaves
   a whole chip at its start; a word's source chips in sight (the main three and the one pressed) wrap onto a second
@@ -131,7 +136,9 @@ it.
   stage itself in the night's inks (the dark scheme's values, `.stage-figure` in style.css), and saved as an image on
   paper in the page's inks. Its scale runs from 0 in round steps (1, 2, 2.5 or 5 times a power of ten, at most five)
   to the step at or past the largest value; where the values are a part of a base year, the 100% line is drawn stronger. Title is a sentence with the number in it,
-  broken into lines by its measured width (never cut), a size smaller on the narrowest plates (under 330px: a phone of
+  broken into lines by its measured width (never cut; every text broken into lines, on a plate or a card, keeps a space
+  at each break, so that copied or read aloud it is "how many", not "howmany": `spaced` in labels.js; a range of years
+  takes a dash wherever it is shown, a pair of periods too: scenes.js `dash`), a size smaller on the narrowest plates (under 330px: a phone of
   320 to 360) so that a long finding leaves its rows the room. A
   title is read beside what the plate shows at every step: it names only that moment, or one the plate shows at every
   step (a line plate's periods; a strip's first moment, which stays on it as hollow rings, named in its legend:
@@ -265,9 +272,12 @@ A story is a voyage in three parts.
    line's name and value too long for the column wrap onto a second line, a row's name onto two. Under each sticky stage lies a run of invisible beats, one per step,
    that the scroll snaps to; the scroll position chooses the step.
 3. **Landing**, on the chart (its paper covers the sea, which ends at the tide line above it): "What this data cannot
-   say" as a bordered panel, its paragraphs (the story's own, word for word) a list, each led in bold by its own first
-   words (the lead it has, else its first sentence where that is 12 words or fewer), the tools (save image, share, copy
-   link, check for yourself), how to cite the story (folded: a line and BibTeX, each to copy), and the next story as a
+   say" as a bordered panel, how many points under its heading ("9 hal" / "9 points"), its paragraphs (the story's own,
+   word for word, every one in sight: nothing folded) a list that scans, each point its lead in bold (the lead it has,
+   else its first sentence) with the rest of it directly under, a size quieter (`--t-small`, `--ink-2`), the tools (save image, share, copy
+   link, check for yourself: the words as the site shows them, a name as a name, and the raw numbers, each link named by
+   what it holds, "angka mentahnya: Di samping siapa?", "…: yang kami baca satu per satu", its file only in its
+   address), how to cite the story (folded: a line and BibTeX, each to copy), and the next story as a
    card, its top on the panel's top, staying beside the panel while it is read (from 900px).
 
 Every caption stays in the document, in its beat, for screen readers and find-in-page; the visible caption is an
@@ -316,7 +326,11 @@ language or a resize returns to what was shown.
 ## Pages
 
 - **Home**: hero on the deep, full height: the map of words as a night sea with one route sailed (below); headline
-  in display type; one field ("Ketik kata", whole in its field at 320px; the button beside it says it sails) and a few chips, their label above them from 900px (on a
+  in display type, 3:1 or more against the brightest of the sea behind it at every size (`hero.mjs` measures it from a
+  screenshot with its letters made transparent): from 900px on the sea's shade at the left, on a phone, where it reaches
+  into the lit sky, on the caption's shade (`--deep` at 88%, as a story's caption); from 900px the text column is
+  36rem from the content's edge, and from 1600px 46rem with the headline at 15ch, so that on a large screen it is two
+  lines beside the sea, not a word a line; one field ("Ketik kata", whole in its field at 320px; the button beside it says it sails) and a few chips, their label above them from 900px (on a
   phone a row that scrolls and fades at its right edge, about 30px of the next chip peeking out under the fade). What the reader needs in the first ten seconds is on the
   sea: a legend of three glyphs (a light and its height, a route and its ports, a light ringed: "Klik atau ketuk sebuah
 cahaya: katanya berlayar") in its sky, on a phone two (the route is named by its own note, so the ringed light takes
@@ -347,7 +361,9 @@ phone has none: there they are left out, `sky` in app.js, never on the headline)
   neighbours takes the whole band, in the night's inks: the route with its years along it (each port clear of the last
   one named), fitted to the route and the islands near it, to the band's width and the screen's height; an island far out hangs on a dotted spur from the route's last port, its arrow pointing to where
   it lies; a legend in plain words ("its closest company in 2011", ringed; "in 2024", filled), and a column beside it from
-  900px (under it on a phone): the year the ship is at, its closest company that year, and the two lists. A name that
+  900px (under it on a phone): the year the ship is at, its closest company that year, and the two lists, under them one
+line on what "closest" is (the words whose company on the page was most like this word's that year) and, where a ringed
+year has fewer than 500 pages of it (`FEW_PAGES`), that an odd neighbour may be chance ("Sony" beside "hati-hati"). A name that
   finds no clear spot on the plate is left out; the column names them all. Under it the player and a **year rail**: the years, each a stop, pressed and drawn
   along to scrub the route. Below the tide line the lens chips, then the figure tabs and the figure (on a 1440x900
   screen the figure begins on the first screen), then what the lens is, and what to do next as three cards (its
@@ -363,7 +379,9 @@ phone has none: there they are left out, `sky` in app.js, never on the headline)
   under it, the buttons in a row at its top.
   Without WebGL2 the flat chart on paper.
 - **Findings**: each list is the counting's own ranking, shown by a stated rule, never picked: of the pairs, only
-  those whose lines cross clearly (the rising word starts below the falling one and ends at least twice as common:
+  those of one sort (two names or two words, each recognisable as the explorers' lists hold it: not furniture, not
+  English by its ending; "HTC" and "suksesor" are not one taking the other's place), each shown as the site shows it (a
+  name as a name: "Biden", "ChatGPT"), and of those only those whose lines cross clearly (the rising word starts below the falling one and ends at least twice as common:
   a drift of topic, where both words live on, does not pass), the top six as figures (both lines on one scale, each
   word named by its line and clear of both, on the one board (`labels.js`), the year they cross marked), drawn at the size they are shown: the first leading across
   the page, large, the year they cross named; the next five under it, smaller (rows of three from 900px, a shorter last row as wide as the others), by how many
@@ -402,7 +420,10 @@ phone has none: there they are left out, `sky` in app.js, never on the headline)
   under the table of "Menempel", for its first name: the portrait of each name links on to three newsrooms). A name
   in the circle is a pill with a 44px target. Every name is shown as a name, everywhere an explorer, a game, a card or a
   tip shows it, through the one function (`shown` in deal.js, kind "name" where the page knows it shows a name; the
-  word page's and the portrait's titles, a word's company lists, its route plate's names and a race's chips too):
+  word page's and the portrait's titles, a word's company lists, its route plate's names and a race's chips too; the
+findings' pairs and their small charts, the method's demo, a story's "Periksa sendiri" and the plain pages the deploy
+writes for each word, `pages.mjs`; a brand as it writes itself, "ChatGPT", "HTC"; a word quoted as the token counted,
+“jokowi”, stays as counted):
   "Fauzi Bowo", "Tripoli", "WNI" (the seas' own names on the canvas stay as counted); a roman numeral ("III") is not a name and is left out of a
   list of names. `games.mjs` fails on an explorer without such links, with one that is not as the rest, a row whose link
   is narrower than the row or under 44px on a touch screen, one-line rows of one list of different heights, a second
@@ -429,8 +450,13 @@ phone has none: there they are left out, `sky` in app.js, never on the headline)
   part whose article does not name it by itself ("christian" linked to "Kekristenan", "yulius" to "Paus Yulius";
   a place or a body may be one word of its article's title, "pemalang" of "Kabupaten Pemalang"; never a page of many of
   that name, "Ahmad (disambiguasi)"), and in an Indonesian source a word the
-  first page's source does not count or that ends as English does ("peny", "constant", "product", "gross", "trade")
-  come after the rest. A table fits its width or says
+  first page's source does not count or that ends as English does ("peny", "constant", "product", "gross", "trade",
+  and a short list whose ending does not tell: "market", "food", "retail", "open"), and a source's furniture (deal.js
+  `FURNITURE`: the reporting words the games leave out, "kutip", "menyatakan"; a page's links and bylines, "editor",
+  "link", "imbuhnya"; a shop's categories, "kategori", "kurir") come after the rest. It opens on the source, of the three in sight
+  (a fourth pressed chip would wrap the row and push the list past a phone's first screen), whose latest pair of
+  periods has the most such recognised words that other sources flag too (agreement, again: today the web's news,
+  2023 to 2024, led by "pasangan", "formulir", "penjaringan"), not on the books' catalogue pages. A table fits its width or says
   where it goes on: the tide table on a phone sets each name on a line of its own over its row, the years sharing the
   whole width, never a column cut at the screen's edge. Where a figure tells something on hover, a tap tells it too.
   A game shows every word through one function (`shown` in deal.js), in its rounds, its evidence, its plates and the
@@ -451,10 +477,13 @@ phone has none: there they are left out, `sky` in app.js, never on the headline)
   come into it in place: the card does not grow and the page does not scroll), the voyage, the tally, the control and
   the keys at the right; nothing under the board but the footer. Keys: 1-4 choose, Enter goes on; after an answer
   focus is on that control, after "next" on the new question. A wrong answer is marked by a dashed edge and a cross, the right one filled with a tick,
-  never by colour alone. At the end the score as a plate to save as an image, its rank in a line, how it stands against this viewer's best so
+  never by colour alone. At the end the score as a card to share (on paper in the plate's inks: the game's name over a route rule, the score in
+  display type, the rank, the voyage, and every round's answer whole under it, led by its port's mark), saved square
+  (1080x1080) or wide (1200x630), shown on the page at the card's width (wide from 640px) with no text under 12px, its rank in a line, how it stands against this viewer's best so
   far ("Skor terbaikmu 7 / 10. Kali ini 6 / 10.", or "Skor terbaik baru: 8 / 10."; nothing on a first game), one press to play
-  again, and the toy that follows from it. Under the plate's voyage each port's answer is a short whole label (a
-  year, "naik", a person's first name, a word of one part) where it has room, else none: never a cut word.
+  again, and the toy that follows from it. Under the voyage beside the round each port's answer is a whole label (a
+  year, "naik", a name in full, "Jusuf Kalla") where it has room at 12px, else none: never a cut word nor a bare first
+  name; the card names them all.
   **The quiz** ("Kuis") is one game of ten rounds dealt by `site/deal.js` from `site/data/quiz.json` (gathered from the
   data by `node tests/site/games.mjs write`): seven kinds of question (which year, from its ten most characteristic
   words, less any that names the year by itself, a number or a pairing of two names, `marker`; who, from the words that
@@ -465,12 +494,24 @@ phone has none: there they are left out, `sky` in app.js, never on the headline)
   (`oneThing` and `fragment` in deal.js, the list gathered in `tests/site/quiz-data.mjs`): no word twice; of a word and
   a part of it ("ebola", "virus ebola") the whole; of two names of one Wikipedia article ("foke", "fauzi bowo"), of an
   abbreviation and the words it is made of ("psbb", "prokes"), of a term and its meaning in English ("pengampunan
-  pajak", "tax amnesty"), of two forms of a word ("vaksin", "divaksin") the first; of a body and its head, or a place and its event, with the rest the same (`SAME_HEAD`: "menteri pendidikan nasional", "kementerian pendidikan nasional"; "stadion kanjuruhan", "tragedi kanjuruhan"); no bare first name or fragment (the
-  filter the lists use: "uno", "mario", "salihin", or a part of a term the data does not count whole, `PARTS`: "gugus").
+  pajak", "tax amnesty"), of two forms of a word ("vaksin", "divaksin") the first; of an active and its passive ("mengusung", "diusung": meN- takes the root's first sound, `MEN`); of a body and its head, or a place and its event, with the rest the same (`SAME_HEAD`: "menteri pendidikan nasional", "kementerian pendidikan nasional"; "stadion kanjuruhan", "tragedi kanjuruhan"); no bare first name or fragment (the
+  filter the lists use: "uno", "mario", "salihin", or a part of a term the data does not count whole, `PARTS`: "gugus");
+  no reporting word or page furniture (`REPORTING`: "kutip", "baca", "menyatakan": how the news is written, not what it
+  was about). No word is asked beside a name, or offers a name, whose name, full name or office it is part of (`NAMED`
+  in deal.js, `inName`: a body's full name as its Wikipedia article's title, which `games.mjs` holds it to, and a short
+  hand list of each person's offices 2011–2024): "rakyat" beside the DPR or Basuki Hadimuljono (Menteri Pekerjaan Umum
+  dan Perumahan Rakyat), "korupsi" beside the KPK or its chairman, "demokrat" beside Surya Paloh (Nasional Demokrat); the
+  limit is the list, which holds the main offices only.
   Each word of a year's clue is on at least `FAME.clue` (150) Kompas pages in all, 2011-2024 (below that it is a name only that month's reporter knew: "cikeusik", "adang daradjatun", "sirte"; a year left with fewer than eight such words is not asked, as 2011).
   A word of one part that mostly comes inside one longer name that year is given whole ("akil" as "akil mochtar"); a
   word taken from past the first ten only where the games can say it in English and no other year has it. Every kind once where it can, none more than twice, the loanword
-  question and the newsroom question once at most (`CAP`). Each question's difficulty is read from the data in one
+  question and the newsroom question once at most (`CAP`); "which was on more pages" never asks a word of an official
+  word and its loanword (it read as the loanword question, and so made it twice), and sets two common words side by
+  side only where they have something in common (`kin` in quiz.json: one among the other's eleven nearest on the first
+  page's chart, or three of those shared: "capres" and "elektabilitas", never "positif" and "anak"). In a visit's first
+  game (and so in every game where storage is refused) a kind with fewer than four questions of a mark is not asked at
+  that mark while another kind can be: "which year" has two hard years, and asked hard each time with no memory it
+  showed one of them in 8 of 18 games (`games.mjs`: no year in more than 20 of 100 such games). Each question's difficulty is read from the data in one
   place (`DIFFICULTY` in deal.js) and shown in the round's line as three marks and a word ("mudah", "sedang", "sulit"):
   a comparison by the ratio of the larger share to the next, hard from the margin to 2, middling to 4, easy from 4 (which year is read the same way, by how many times its words stand above the nearest year within three: a list four times above its neighbours is not "sulit"; so
   no question marked "sulit" compares shares more than twice apart); "about the same" middling to hard; who by the pages
@@ -533,15 +574,20 @@ phone has none: there they are left out, `sky` in app.js, never on the headline)
   20-100 stretch hatched darker, and over it, where it fits, what it steps by ("tiap 5" / "in fives"). No guess is set
   for the reader: until one is, the readout's place between − and + holds the invitation ("Geser, ketuk, ..."), never a
   dash, and the lock waits, set by a press or a drag on the track (the nearest stop), the arrow keys (a stop; Page keys
-  five), or − and + (44px). Points: round(100 x max(0, 1 - |guess - truth| / max(10, 1.5 x truth))): 100 for the
-  truth, and each step off costs 10 for a number up to 6, less for a larger one (a guess within 2 always scores at least
-  80; no one fixed guess averages 65%), as the rule says inside the card under the question until the first guess is
-  locked. The answer is not simply shown: its mark sails (`--d-leg`) from the reader's guess to the truth
+  five), or − and + (44px). Points: round(100 x max(0, 1 - |guess - truth| / max(10, 1.5 x min(guess, truth)))):
+  100 for the truth, and each step off costs 10, less where both the guess and the truth are over 6; read from the
+  smaller of the two, so that a guess far too low costs as one far too high (1 or 100 for 35: 0; the old rule paid a
+  third for 1, and a fixed 1 beat careful guesses). A guess within 2 of a number up to 6, or within a fifth of a larger
+  one, scores at least 80; no one fixed guess averages 45%, in 300 dealt games or over the pool as a game deals it
+  (`games.mjs`). The rule says so inside the card under the question until the first guess is locked. The answer is not simply shown: its mark sails (`--d-leg`) from the reader's guess to the truth
   along the scale, drawing its wake in the route, so how far off the guess was is a distance one sees travelled (a cut
   with reduced motion); then, each on its own line, a line that follows the points (90 or more, 60 or more, 25 or
   more, less; an exact guess said so, "Tepat."; a far miss said by its direction, "Tebakanmu terlalu tinggi." or "Tebakanmu terlalu rendah.",
-  never what the number is or what the reader remembered), the numbers (the guess, the truth, the points), the context (pages counted; who has
-  the most of that word, or, where that name was the comparison less often than the next after it this visit, the next, said as second most (`guess_second`), so that one name is not leaned on; where the most is the name asked, so said plainly with the next after it; the least only where
+  never what the number is or what the reader remembered), the numbers (the guess, the truth, the points), the context (pages counted; a name with
+  more of that word, said by its rank, "paling sering", "kedua", "ketiga" (`compared` in deal.js): of the three with the
+  most (less the name asked) the first this game has not named and that keeps within 8% of the visit's comparisons
+  (`MARGIN.compareShare`), so that one name, the KPK's chairman beside every word of a case, is not leaned on; never one
+  name twice in a game; where the most is the name asked, so said plainly first; the caution beside every word of the law; the least only where
   it adds something: not the name asked, not named already this game, and nearer the truth than the most) and the link
   on. A round of 60 points or more is a filled port; the rank at the end by the share of the points (80%
   and more, 55%, 30%, less).
