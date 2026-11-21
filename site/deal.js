@@ -173,7 +173,7 @@ const CONSONANTS = /^[bcdfghjklmnpqrstvwxz]{2,}$/;
 export const isAbbr = (part) => ABBR.has(part) || CONSONANTS.test(part);
 /** A roman numeral of two letters or more ("ii", "iii", "xiv"), shown in upper case: a part of a name, not a name. */
 export const ROMAN = /^(?=[ivx]{2})x{0,3}(ix|iv|v?i{0,3})$/;
-const SPELT = { tiktok: "TikTok", youtube: "YouTube", whatsapp: "WhatsApp", nasdem: "NasDem", polri: "Polri" };
+const SPELT = { tiktok: "TikTok", youtube: "YouTube", whatsapp: "WhatsApp", nasdem: "NasDem", polri: "Polri", chatgpt: "ChatGPT", openai: "OpenAI", iphone: "iPhone", ipad: "iPad", ios: "iOS", linkedin: "LinkedIn", playstation: "PlayStation", blackberry: "BlackBerry", gopay: "GoPay", gojek: "Gojek", ebay: "eBay" };
 /** (`kind` as the data gives it, or "name" where the page knows it shows a name: a list of names, a table of people) */
 export const isName = (word, kind) => PEOPLE.includes(word) || BODIES.includes(word) || ["person", "organisation", "place", "name"].includes(kind) || word in AS_NAME;
 export const shown = (word, kind) => {
