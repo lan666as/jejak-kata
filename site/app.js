@@ -2163,7 +2163,7 @@ async function storySea(holder, stages, parts) {
   // The words are looked up on the first screen of the chart; then the lens and the whole chart follow, and the step is
   // lit again with every word the lens has: from 900px the whole chart, on a phone the first screen and, from the rest,
   // only the story's own words (it stays cheap, and every step's words are there).
-  let lens = null, k = 0, at = "", now = null, full = 0;
+  let lens = null, k = 0, at = "", now = null, full = 0, flights = 0;
   const named = new Map(first.words.map((id, k) => [id, first.names[k]])), idOf = (w) => (lens ? lens.index.get(w) : first.words[first.names.indexOf(w)]);
   const ids = (list) => [...new Set(list.map(idOf).filter((id) => id !== undefined && sea.has(id)))];  // (only what the sea carries)
   const nameOf = (id) => (lens ? lens.words[id] : named.get(id));
@@ -2198,6 +2198,7 @@ async function storySea(holder, stages, parts) {
     const label = `${scene}/${j}`;
     now = [scene, j];
     if (label === at) return;
+    const flight = ++flights;  // (this flight: one the lens's coming flies again, to the same step, supersedes it)
     at = label;
     k = scene;
     // What the step brings forward (seaWords: the rows it names, the word its plate is named after, its caption's
@@ -2225,7 +2226,7 @@ async function storySea(holder, stages, parts) {
     delete keyed.dataset.at;
     // (landed: once the glide is over and a frame has been drawn where it ended)
     const landed = (ms) => setTimeout(function wait() {
-      if (at !== label) return;
+      if (at !== label || flight !== flights) return;
       if (sea.state().gliding) return void setTimeout(wait, 60);
       const named = new Set(sea.labels().names.map((n) => n.text));
       // (a band that names none of the step's own words is dropped rather than name others)
