@@ -67,8 +67,11 @@ export async function company(word) {
   if (known.length < 2) return null;
   const names = (p) => e.with[p].slice(0, 3).map((j) => meta.words[j]), [first, last] = [known[0], known.at(-1)];
   const shifts = e.shift.filter((s) => s !== null);
-  return { first: meta.periods[first], last: meta.periods[last], early: names(first), late: names(last), shift: shifts.length ? Math.max(...shifts) : null, flag: meta.flag };
+  // (and what the word's page says first, scenes.js `told`: the company new beside it, and its share then and now)
+  const r = told(e), said = { ...r, early: r.early.map((j) => meta.words[j]), late: r.late.map((j) => meta.words[j]), a: meta.periods[r.a], b: meta.periods[r.b] };
+  return { first: meta.periods[first], last: meta.periods[last], early: names(first), late: names(last), shift: shifts.length ? Math.max(...shifts) : null, flag: meta.flag, told: said };
 }
+const pct = (share, lang) => (share * 100).toLocaleString(lang, { maximumSignificantDigits: 2 }) + "%";  // (as app.js `percent`)
 const list = (lang, words, quote = (w) => `“${w}”`) => new Intl.ListFormat(lang, { type: "conjunction" }).format(words.map(quote));
 
 // ---- the words with a page of their own ----------------------------------------------------------------------------
@@ -145,8 +148,8 @@ export function content(parts, lang, facts) {
     const c = facts.company[arg];
     // (a name as a name; a word, the token counted, in quotes)
     const linked = (list_) => list(lang, list_, (w) => (named.names.has(w) ? a(["kata", w], lang, say(w)) : `“${a(["kata", w], lang, say(w))}”`));
-    body = `<article><h1>${say(arg)}</h1><p>${T.desc_word(arg)}</p>${c ? `<p>${T.word_company(arg, c.first, linked(c.early), c.last, linked(c.late))}</p>` : ""}
-      ${c?.shift != null ? `<p>${T.word_shift(c.shift.toLocaleString(lang, { maximumFractionDigits: 1 }), c.shift >= c.flag)}</p>` : ""}
+    body = `<article><h1>${say(arg)}</h1><p>${T.desc_word(arg)}</p>${c ? `<p>${T.told(named.names.has(arg) ? say(arg) : `“${say(arg)}”`, c.told.a, linked(c.told.early), c.told.b, linked(c.told.late), c.told.same, false)} ${T.told_pages(named.names.has(arg), pct(c.told.to, lang), c.told.b, c.told.to / c.told.from, pct(c.told.from, lang), c.told.a, false)}</p>` : ""}
+      ${c?.shift != null ? `<p>${T.word_shift(c.shift.toLocaleString(lang, { maximumFractionDigits: 1 }).replace(/^-/, "−").replace(/^-/, "−"), c.shift >= c.flag)}</p>` : ""}
       <h2>${T.word_more}</h2>${words(SHOWCASE.filter((w) => w !== arg))}</article>`;
   } else if (page === "cerita") body = `<h1>${T.nav_stories}</h1><p>${T.stories_lede}</p>${storyList(STORIES)}`;
   else if (page === "main") body = `<h1>${T.nav_play}</h1><p>${T.play_lede}</p>${games}`;

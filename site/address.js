@@ -12,7 +12,7 @@ import { PAGED } from "./words.js";
 export const PAGES = ["cerita", "kata", "potret", "peta", "balap", "main", "kuis", "tebak", "menempel", "pasang", "redaksi", "lingkaran", "tahun", "temuan", "bergeser", "entitas", "metode"];
 /** Other names a page is reached by, as the menu calls it ("Mainan", "Cara"): each leads to its page, whose address
  *  stays its own (the app writes it in the address bar; the generated page names it as canonical). */
-export const ALIASES = { mainan: "main", cara: "metode" };
+export const ALIASES = { mainan: "main", permainan: "main", games: "main", play: "main", cara: "metode" };
 /** The words the first page shows. */
 export const WORDS = [...new Set([...SHOWCASE, ...FEATURED])];
 /** The names the play pages ask about, and the words "guess the number" asks about. */
@@ -47,8 +47,10 @@ export function routeOf(relative) {
   const [path, fragment = ""] = relative.split("#"), split = (s) => s.split("/").filter(Boolean).map(decodeURIComponent);
   const parts = split(path.split("?")[0]), more = fragment.startsWith("/") ? split(fragment) : [];
   const language = parts[0] === "en" ? (parts.shift(), "en") : parts.length ? "id" : null;
-  if (ALIASES[parts[0]]) parts[0] = ALIASES[parts[0]];
-  return { language, parts: PAGES.includes(more[0]) ? more : [...parts, ...more] };
+  // (an alias in the path or after "#/": "#/mainan", "en/#/play")
+  const route = PAGES.includes(ALIASES[more[0]] || more[0]) ? more : [...parts, ...more];
+  if (ALIASES[route[0]]) route[0] = ALIASES[route[0]];
+  return { language, parts: route };
 }
 
 /** Text cut to at most `most` characters: at the end of a sentence if one ends late enough (at `least` or later), else

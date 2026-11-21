@@ -173,4 +173,25 @@ for (const width of only === "figures" ? [] : [1440, 390]) {
   await page.close();
 }
 for (const width of [390, 1440]) await stories(width);
+// ... and while the figure moves, on phones of every common width: a line's names whose order changes between two steps
+// never pass over one another on the way ("mengkritik", "oposisi", "kabinet" at Prabowo's 2019, 390 wide), sampled as
+// the marks travel after each step.
+{ const wrong = [];
+  for (const width of [320, 360, 390, 412]) {
+    const page = await browser.newPage({ viewport: { width, height: 844 }, hasTouch: true, isMobile: true });
+    for (const [slug, k] of [["prabowo", 0], ["yang-hilang", 2]]) {
+      await page.goto(`${base}#/cerita/${slug}`); await page.waitForSelector(`#scene-${k} .stage .plate svg`, { timeout: 30000 }).catch(() => {});
+      const n = STORIES.find((s) => s.slug === slug).scenes[k].steps.length;
+      for (let j = 1; j <= n; j++) {
+        await stage(page, k, j);
+        for (const ms of [120, 300, 600]) {
+          await page.waitForTimeout(ms === 120 ? 120 : ms === 300 ? 180 : 300);
+          const s = await page.evaluate(figureLook, k);
+          s.wrong?.filter((w) => w.includes('" on "')).forEach((w) => wrong.push(`${slug} step ${j} @${width}px +${ms}ms: ${w}`));
+        }
+      }
+    }
+    await page.close();
+  }
+  log("a line's names never pass over each other as a phone's figure moves (320, 360, 390, 412 wide)", !wrong.length, wrong.slice(0, 4).join("; ") || "none, sampled three times a step"); }
 await done(failures);

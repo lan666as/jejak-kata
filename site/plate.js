@@ -20,6 +20,9 @@ const SITE = "Jejak Kata · zidan.dev/jejak-kata";
 /** What a step does not name stays as context: its text at GHOST (4.5:1 on a story's panel), its marks at GHOST × FAINT. */
 const GHOST = 0.55, FAINT = 0.64;
 const MOVE = "transition:transform var(--d-leg) var(--sail) calc(var(--k, 0) * 45ms),opacity var(--d-turn) var(--sail)";
+/** A line's name and value do not travel: each takes its new place at once, clear of the others (labels.js), and
+ *  surfaces there; travelling, names whose order changed would pass over each other on the way. */
+const TURN = "transition:opacity var(--d-turn) var(--sail)";
 const percent = (v) => (v * 100).toLocaleString(document.documentElement.lang, { maximumSignificantDigits: 2 }) + "%";
 const points = (v) => (v * 100).toLocaleString(document.documentElement.lang, { maximumSignificantDigits: v < 0.0095 ? 1 : 2 });  // percentage points
 const at = (node, x, y) => (node.style.transform = `translate(${x}px,${y}px)`);
@@ -139,7 +142,7 @@ export function plate(spec, width, height) {
       const band = !s.off ? [] : s.values.reduce((acc, v, i) => (v === null ? acc.push([]) : acc.at(-1).push(i), acc), [[]]).filter((r) => r.length > 1)
         .map((r) => [...r.map((i) => `${x(i)},${y(s.values[i] + s.off[i])}`), ...r.reverse().map((i) => `${x(i)},${y(Math.max(0, s.values[i] - s.off[i]))}`)].join(" "));
       return `<g class="series" style="--k:${k};transition:opacity var(--d-turn) var(--sail)">${band.map((b) => `<polygon class="band" points="${b}" fill="${colour}" opacity="0.16"/>`).join("")}${runs.map((r) => `<polyline class="draw" pathLength="1" points="${r.join(" ")}" fill="none" stroke="${colour}" stroke-width="${narrow ? 2.5 : 3}" stroke-linejoin="round" stroke-linecap="round"/>`).join("")}
-        <circle r="${narrow ? 5.5 : 6.5}" fill="${colour}" stroke="${paper}" stroke-width="2" style="${MOVE}"/><rect class="beacon" x="${W - R + 3}" rx="4" fill="${beacon}" opacity="0" style="${MOVE}"/><text x="${W - R + 9}" style="font-size:${tag}px;font-weight:700;fill:${ink};${MOVE}"></text></g>`;
+        <circle r="${narrow ? 5.5 : 6.5}" fill="${colour}" stroke="${paper}" stroke-width="2" style="${MOVE}"/><rect class="beacon" x="${W - R + 3}" rx="4" fill="${beacon}" opacity="0" style="${TURN}"/><text x="${W - R + 9}" style="font-size:${tag}px;font-weight:700;fill:${ink};${TURN}"></text></g>`;
     }).join("")}`;
   });
   const marker = made.svg.querySelector(".marker"), groups = [...made.svg.querySelectorAll(".series")], { W, hue } = made, inked = css("--ink");
@@ -183,9 +186,11 @@ export function plate(spec, width, height) {
       dot.style.opacity = row.known ? (ghost ? FAINT : 1) : 0;
       if (row.known) at(dot, x(i), y(row.v));
       text.style.opacity = row.at === null ? 0 : "";
+      const moved = text.style.transform && text.style.transform !== `translate(0px,${(row.at ?? T) + 4}px)`;
       at(text, 0, (row.at ?? T) + 4);
       // The number the caption names stands on the beacon: amber is the one number a figure wants you to see.
       at(pill, 0, (row.at ?? T) + 4);
+      if (moved && row.at !== null && !matchMedia("(prefers-reduced-motion: reduce)").matches) text.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: 320, delay: 45 * k, fill: "backwards", easing: "cubic-bezier(.45,.05,.25,1)" });
       pill.setAttribute("opacity", +(named && row.at !== null));
       text.style.fill = named ? made.deep : inked;
     });

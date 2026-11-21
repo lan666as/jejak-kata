@@ -12,7 +12,7 @@ import { address, routeOf, named, canonical, EMBED, PAGES, PLAY, CARDS, QUIZ_NAM
 import { board, measure, spaced } from "./labels.js";
 import { MARGIN, bareSet, fragment, pools, decks, deal, guessPool, guessDecks, guessDeal, compared, points, close, nearness, rank as rankOf, guessRank, shown, isAbbr, marker, ROMAN, isName as nameLike, keep, kept as keptDecks, version, BODIES, PEOPLE, STOPS, along, stopAt, CAVEAT, FURNITURE } from "./deal.js";
 import { GAME_GLOSS, NAME_GLOSS } from "./glossary.js";
-import { figureOf, focused, lensFrom, sceneWords, seaWords, stepAt, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
+import { figureOf, focused, lensFrom, told, sceneWords, seaWords, stepAt, FELL, OUTLETS, OUTLET, PUBLISHER, said as saidIn, dash } from "./scenes.js";
 
 // The plates (plate.js) are fetched only by the pages that draw them (a story, two play pages): the first page, read
 // cold on a phone, does without them. `plating()` resolves once these names are there.
@@ -312,6 +312,12 @@ function tabs(labels, show, first = 0, style = "tabs") {
   };
   buttons.forEach((b, i) => b.addEventListener("click", () => press(i)));
   press(first);
+  /** One more button, after the rest (in `into`, a row of its own): what comes later (a word's sources past the three). */
+  list.add = (label, into = list) => {
+    const li = el(`<li><button type="button" aria-pressed="false">${label}</button></li>`), i = buttons.push(li.firstElementChild) - 1;
+    li.firstElementChild.addEventListener("click", () => press(i));
+    into.append(li);
+  };
   return list;
 }
 
@@ -353,13 +359,16 @@ function switcher(labels, content, first = 0, style = "tabs", fold = null) {
   // pressed one always seen; the rest, under "Atur", scroll sideways with their edge cue)
   if (fold) list.classList.add("wrap");
   box.append(list);
+  let rest = null;
   if (fold) {
-    const rest = el(`<ul class="${style}"></ul>`);
+    rest = el(`<ul class="${style}"></ul>`);
     [...list.children].forEach((li, i) => !fold.includes(i) && i !== first && rest.append(li));
     more.lastElementChild.prepend(rest);
     box.append(more);
   }
   box.append(holder);
+  box.add = (label) => list.add(label, rest || list);
+  box.more = more;
   return box;
 }
 /** "Atur": what a toy lets one change beyond its first choice (a source, a period, a kind), folded under one control on
@@ -1122,8 +1131,20 @@ const explained = (figure, about, start, fold = false) => {
 };
 
 /** A word in one lens: its path among its neighbours, its route on the chart, its company, the numbers, and for a name what is said of it. */
+/** What happened to a word in a lens, said first on its page in plain words (scenes.js `told`): the company it had in
+ *  its first period and what was new beside it in its last, a name as a name and a word in quotes; then how often it
+ *  was there, now against then. Where the lens has too little of it, it says so. Never why. */
+const tell = (lens, e) => {
+  const say = (i) => (kindIn(lens, i) ? escape(sayIn(lens, i)) : `“${escape(sayIn(lens, i))}”`), list = (ids) => new Intl.ListFormat(language, { type: "conjunction" }).format(ids.map(say));
+  const r = told(e), abstracts = lens.lens === "id-abstracts", P = lens.periods;
+  if (r.a === undefined) return t("told_thin", say(e.word), r.only === null ? null : P[r.only]);
+  return `${t("told", say(e.word), P[r.a], list(r.early), P[r.b], list(r.late), r.same, abstracts)} ${t("told_pages", !!kindIn(lens, e.word), percent(r.to), P[r.b], r.to / r.from, percent(r.from), P[r.a], abstracts)}`;
+};
+
 async function lensSection(lens, e) {
   const word = lens.words[e.word];
+  const said_ = view.querySelector(".page-head .word-told");
+  if (said_) said_.innerHTML = tell(lens, e);
   const section = el(`<section class="lens-section"><p class="sub lens-about">${lensText(lens).about}</p>
     ${lens.sensitivity ? `<details class="about"><summary>${t("tests_title")}</summary><p class="sub">${t("sensitivity", lens.sensitivity, percent)}</p></details>` : ""}</section>`);
   const path = await pathOf(lens, e.word);
@@ -1151,7 +1172,9 @@ async function lensSection(lens, e) {
 /** One lens at a time: a tab per lens, labelled with what `label(lens)` returns, showing `section(lens, more)`; the
  *  main three in sight, the rest under "Atur", where `more` (its body) also takes the section's own choices. */
 async function perLens(found, label, section, first = 0) {
-  view.append(switcher(await Promise.all(found.map(label)), (i, more) => section(found[i], more.lastElementChild), first, "chips", mainOf(found)));
+  const box = switcher(await Promise.all(found.map(label)), (i, more) => section(found[i], more.lastElementChild), first, "chips", mainOf(found));
+  view.append(box);
+  return box;
 }
 
 /** A field that offers the words of a lens as one types; `chosen(word)` gets the one picked. `lens` may still be on
@@ -1212,8 +1235,15 @@ const wordSea = (lens, word) => !lens ? {} : {
 };
 
 async function wordPage(word, opened) {
-  const all = await allLenses();
-  const found = all.filter((lens) => lens.isEntry(lens.index.get(word)));
+  // The three sources in sight first (and one asked for by the address); the others, whose chips stand under "Atur",
+  // only once "Atur" is open (from 900px it is: once the page is up), so that a phone loads three of ten. A word none
+  // of the three has waits for all.
+  const names = await json("lenses.json"), has = (lens) => !!lens?.isEntry(lens.index.get(word)), early = names.filter((n) => MAIN_LENSES.includes(n) || n === opened);
+  // (a source in sight that did not come fails the page, which says so and tries again: awaited)
+  const sure = (lenses) => (lenses.some((lens) => !lens) ? Promise.reject(new Error("a source did not come")) : lenses);
+  let all = await sure(await Promise.all(early.map(lensNamed))), found = all.filter(has);
+  if (!found.length) (all = await sure(await allLenses())), (found = all.filter(has));
+  const later = names.filter((n) => !all.some((lens) => lens.lens === n));
   const named = found.find((lens) => lens.articles.has(lens.index.get(word)));
   const kind = named && named.kind(named.index.get(word));
   // What the head says about the word besides its name: that it is a name, and what it names; a note of our own.
@@ -1227,6 +1257,11 @@ async function wordPage(word, opened) {
   }
   if (NOTES[word]) notes += `<p class="note">${NOTES[word][language]}</p>`;
   // What the word is, in one line, where a reader may not know (text.js, GLOSS).
+  // ... and first of all, what happened to it (`tell`, in the source shown; written again when another is chosen)
+  const entries = new Map(await Promise.all(found.map(async (lens) => [lens, await entryOf(lens, word)])));
+  // Open on the lens of the first page when the word is there: one publisher, year by year.
+  const most = Math.max(0, found.findIndex((lens) => lens.lens === (opened || MAIN)));
+  if (found.length) notes = `<p class="word-told" aria-live="polite">${tell(found[most], entries.get(found[most]))}</p>` + notes;
   if (gloss(word)) notes = `<p class="gloss">${escape(gloss(word))}</p>` + notes;
   view.classList.add("word");
   view.replaceChildren(pageHead(escape(named ? shown(word, "name") : word), { kicker: named ? `<span class="dot ${kind}"></span>${t("name")}${kind === "other" ? "" : ` · ${t("kind_one_" + kind)}`}` : t("word"), cls: "word-title",
@@ -1235,19 +1270,38 @@ async function wordPage(word, opened) {
     const h1 = view.querySelector(".page-head h1");
     h1.removeAttribute("aria-label");
     h1.textContent = t("word_missing", word);
-    return view.append(el(`<section class="empty"><p>${t(all.some((lens) => lens.index.has(word)) ? "is_name" : "not_found")}</p><p>${t("word_missing_next")}</p>
-      <ul class="words">${FEATURED.map((w) => `<li>${link(w)}</li>`).join("")}</ul></section>`));
+    // What may have been meant: the words of any source that are what was typed with its hyphens as spaces, one of its
+    // parts, or begin with it or a part ("anies-baswedan": "anies baswedan", "anies"), the most frequent first; the
+    // stories that name any of them; and the search field, focused, to try again.
+    const q = word.replace(/[-_+]+/g, " ").replace(/\s+/g, " ").trim().toLowerCase(), parts = q.split(" ").filter((p) => p.length > 2);
+    const fits = (w) => w === q || w.startsWith(q) || parts.some((p) => w === p || w.startsWith(p + " "));
+    const near = [...new Set([...all].sort((a, b) => (b.lens === MAIN) - (a.lens === MAIN)).flatMap((lens) => [...lens.index].filter(([w, i]) => lens.isEntry(i) && fits(w)).slice(0, 12).map(([w]) => w)))].slice(0, 8);
+    const kindNear = (w) => kindOf(all.find((lens) => lens.isEntry(lens.index.get(w))), w);
+    const told_ = (await import("./story.js")).STORIES.filter((story) => story.scenes.some((part) => sceneWords(part).some((w) => w === q || near.includes(w))));
+    const box = el(`<section class="empty"><p>${t(all.some((lens) => lens.index.has(word)) ? "is_name" : "not_found")}</p>
+      ${near.length ? `<p>${t("word_near")}</p><ul class="words">${near.map((w) => `<li>${link(w, kindNear(w))}</li>`).join("")}</ul>` : ""}
+      ${told_.length ? `<p>${t("word_stories")}</p><ul class="words">${told_.map((story) => `<li><a href="${href("cerita", story.slug)}">${story[language].title}</a></li>`).join("")}</ul>` : ""}
+      <p>${t("word_missing_next")}</p><div class="find"></div><ul class="words">${FEATURED.map((w) => `<li>${link(w)}</li>`).join("")}</ul></section>`);
+    const field = suggest(all.find((lens) => lens.lens === MAIN) || all[0], t("search"), t("open_word"), (w) => visit(href("kata", w)));
+    field.querySelector("input").value = q;
+    box.querySelector(".find").replaceWith(field);
+    view.append(box);
+    return field.querySelector("input").focus({ preventScroll: true });
   }
 
-  const entries = new Map(await Promise.all(found.map(async (lens) => [lens, await entryOf(lens, word)])));
-  // Open on the lens of the first page when the word is there: one publisher, year by year.
-  const most = Math.max(0, found.findIndex((lens) => lens.lens === (opened || MAIN)));
-  await perLens(
-    found,
-    (lens) => `${lensText(lens).short || lensText(lens).title} <b>${Number.isFinite(largest(entries.get(lens).shift)) ? number(largest(entries.get(lens).shift)) : "–"}</b>`,
-    (lens) => lensSection(lens, entries.get(lens)),
-    most,
-  );
+  // Each source's chip: its name, how far the word's company shifted there (its largest shift), and whether that stands out.
+  const chip = (lens) => { const top = largest(entries.get(lens).shift), n = Number.isFinite(top) ? top : null; return t("chip_shift", lensText(lens).short || lensText(lens).title, n === null ? null : number(n), n >= lens.flag); };
+  const box = await perLens(found, chip, (lens) => lensSection(lens, entries.get(lens)), most);
+  // The other sources, as "Atur" opens (open from 900px: as soon as the page is up).
+  const more = async () => {
+    if (!later.length) return;
+    const lenses = (await Promise.all(later.splice(0).map(lensNamed))).filter(has);
+    for (const lens of lenses) entries.set(lens, await entryOf(lens, word));
+    if (!box.isConnected) return;
+    for (const lens of lenses) (found.push(lens), box.add(chip(lens)));
+  };
+  if (box.more.open) requestAnimationFrame(() => setTimeout(more));
+  else box.more.addEventListener("toggle", more, { once: true });
   const lens = found[most];
   // What the number on each source's chip is (largest(), of the entry's shifts), said once, under the chips.
   // (one plain sentence; how to read it, folded)
@@ -2125,7 +2179,9 @@ async function storySea(holder, stages, parts) {
     const want = new Set(parts.flatMap((part) => [...sceneWords(part), ...part.steps.flatMap((step) => seaWords(part, step))]).map((w) => l.index.get(w))), past = whole.words.flatMap((id, k) => (k >= first.words.length && want.has(id) ? [k] : []));
     return Object.fromEntries(["words", "x", "y", "moved"].map((key) => [key, [...first[key], ...past.map((k) => whole[key][k])]]));
   };
-  Promise.all([lensNamed(MAIN), json(`${MAIN}/chart.json`)]).then(([l, whole]) => ((lens = l), sea.more(wide ? whole : own(l, whole)), (at = ""), now && to(...now))).catch(() => {});
+  // (the lens and the whole chart, a megabyte, only once a stage is reached: a reader who reads the cover and goes does not fetch them)
+  let fuller = null;
+  const fill = () => fuller ||= Promise.all([lensNamed(MAIN), json(`${MAIN}/chart.json`)]).then(([l, whole]) => ((lens = l), sea.more(wide ? whole : own(l, whole)), (at = ""), now && to(...now))).catch(() => {});
   const paths = new Map(), route = (id) => paths.get(id) || paths.set(id, json(`${MAIN}/paths/${Math.floor(id / BUCKET)}.json`).then((list) => list.find((p) => p.word === id)?.route || []).catch(() => [])).get(id);
   /** The open water of a stage as it now stands, [top, right, bottom, left] in pixels of the sea: under the caption
    *  (and beside the plate from 900px), at least a narrow band above the controls (a caption longer than that is shaded
@@ -2138,6 +2194,7 @@ async function storySea(holder, stages, parts) {
     return wide ? [top, box.right - r(stage).right + 32, bottom, plate.right - box.left + 32] : [top, 0, bottom, 0];
   };
   const to = async (scene, j, entering = false) => {
+    fill();
     const label = `${scene}/${j}`;
     now = [scene, j];
     if (label === at) return;

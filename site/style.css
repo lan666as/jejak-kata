@@ -376,10 +376,10 @@ input[type="range"] { accent-color: var(--route); min-height: var(--tap); margin
 .new::before { content: "+"; color: var(--route); margin-right: var(--s1); }
 .gone::before { content: "−"; margin-right: var(--s1); }
 .words .new a, .words .gone a { margin-left: 0; padding-left: 0; }
-@media (pointer: coarse) { .words li { min-height: var(--tap); } }
+@media (pointer: coarse), (max-width: 599px) { .words li { min-height: var(--tap); } }
 /* On a touch screen every control is a thumb's 44px: the chips, the source tabs, the "Kata"/"Nama" switch, a race's ×
    (`fit.mjs` holds it); a stage's 24px share mark keeps its size and takes a 44px target around it. */
-@media (pointer: coarse) { :root { --control: var(--tap); --chip: var(--tap); } ul.switch { padding: 0; } .share.step > summary { position: relative; } .share.step > summary::before { content: ""; position: absolute; inset: -10px -6px; } }
+@media (pointer: coarse), (max-width: 599px) { :root { --control: var(--tap); --chip: var(--tap); } ul.switch { padding: 0; } .share.step > summary { position: relative; } .share.step > summary::before { content: ""; position: absolute; inset: -10px -6px; } }
 .turnover span { display: block; } .turnover .new { font-weight: 600; } .turnover .gone { color: var(--ink-3); }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--other); flex: none; }
 .person { background: var(--person) !important; } .organisation { background: var(--organisation) !important; } .place { background: var(--place) !important; }
@@ -550,7 +550,7 @@ svg text { fill: var(--ink-2); font: 12px var(--type); }
   font-size: clamp(.75rem, 2.1vw, .9375rem); background: var(--chart-2); border: var(--hair) solid var(--line-2); color: var(--ink); text-decoration: none; cursor: pointer;
   transform: translate(-50%, -50%) translate(var(--x), var(--y)); transition: transform var(--d-leg) var(--sail), opacity var(--d-turn) var(--sail); }
 .orbit a:hover { border-color: var(--ink); z-index: 3; }
-@media (pointer: coarse) { .orbit a::before { content: ""; position: absolute; inset: -11px -2px; } }  /* (a name in the circle: a target 44px tall for a thumb, the pill as drawn) */
+@media (pointer: coarse), (max-width: 599px) { .orbit a::before { content: ""; position: absolute; inset: -11px -2px; } }  /* (a name in the circle: a target 44px tall for a thumb, the pill as drawn) */
 .orbit a.like { border-style: dashed; color: var(--ink-2); }
 .orbit a.new { background: var(--route-soft); border-color: var(--route); font-weight: 600; }
 .orbit a.out { opacity: 0; transform: translate(-50%, -50%) translate(calc(var(--x) * 1.5), calc(var(--y) * 1.5)); }
@@ -611,12 +611,21 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .deep-band .about summary, .deep-band .sub { color: var(--on-deep-2); }
 /* a word's page is one stage on its first screen: its head runs on into the deep under the source chips and the
    figure tabs, and on into the route's band; where the figure chosen is on paper, the tide line comes under the tabs */
-.word > .page-head { margin-bottom: 0; padding-bottom: var(--s4); }
-.word > .page-head > .tide-line { display: none; }
-.word > div > :is(.chips, .chips-note), .word .lens-section > div > .tabs, .word .ashore { background: var(--deep); box-shadow: 0 0 0 100vmax var(--deep); clip-path: inset(0 -100vmax);
+.word > .page-head { margin-bottom: 0; padding-bottom: calc(var(--s4) + var(--tide-h)); }
+/* (its sea ends on the tide line as every head's does; the water under the wave is the deep that runs on) */
+.word > .page-head > .tide-line .tide-paper { fill: var(--deep); }
+.word > div > :is(.chips, .chips-note, .options), .word .lens-section > div > .tabs, .word .ashore { background: var(--deep); box-shadow: 0 0 0 100vmax var(--deep); clip-path: inset(-1px -100vmax);  /* (each 1px over the next: no seam between them) */
   --chart: var(--deep); --chart-2: var(--deep); --ink: var(--on-deep); --ink-2: var(--on-deep-2); --ink-3: var(--on-deep-2); --line: var(--line-deep); --line-2: var(--line-deep-2); --route: var(--route-on-deep); --focus: var(--route-on-deep); }
 .word > div > .chips { margin-block: 0; padding-block: var(--s2) var(--s4); }
 .word > div > .chips-note { margin-block: 0; padding-bottom: var(--s2); }
+.word > div > .options { margin-block: 0; padding-bottom: var(--s3); }
+.word > div > .options > summary { background: var(--deep-2); border-color: var(--line-deep-2); color: var(--on-deep); }
+.word .chips.wrap li { flex: 0 1 auto; min-width: 0; max-width: 100%; }
+.word .chips button { flex-wrap: wrap; justify-content: flex-start; align-items: baseline; padding-top: calc(var(--s1) + 5px); row-gap: 0; padding-block: var(--s1); white-space: normal; text-align: left; }  /* (a long source's name, its shift and its word go onto a second line inside the chip, never past the screen) */
+.word .chips small { font-size: var(--t-meta); font-weight: 600; color: var(--ink-3); }
+.word .chips [aria-pressed="true"] small { color: inherit; opacity: .8; }
+/* what happened to the word, said first: a lede in plain words */
+.head-notes .word-told { margin: var(--s3) 0 0; font-size: var(--t-lede); line-height: var(--l-lede); color: var(--on-deep); }
 .chips-note > .sub { margin: 0; } .chips-note .about { margin: 0; } .word .chips-note .about summary { color: var(--on-deep); }
 .word .lens-section > div > .tabs { margin-block: 0; padding-block: var(--s2) 0; }
 .word .lens-section .deep-band { margin-top: 0; padding-top: var(--s5); }
@@ -689,7 +698,7 @@ text.route-year { font: 700 12px var(--type); fill: var(--route); paint-order: s
 .poster ol { margin: 0; padding: 0; list-style: none; font-size: var(--t-small); line-height: 1.35; }
 .poster a.row-link, .poster a.row-link:is(:hover, :focus-visible) .row-name { color: inherit; }
 .poster a.row-link { min-height: 0; }
-@media (pointer: coarse) { .poster { aspect-ratio: auto; min-height: 420px; } .poster a.row-link { min-height: var(--tap); } }  /* (each word a row a thumb finds: the poster as tall as they need) */
+@media (pointer: coarse), (max-width: 599px) { .poster { aspect-ratio: auto; min-height: 420px; } .poster a.row-link { min-height: var(--tap); } }  /* (each word a row a thumb finds: the poster as tall as they need) */
 
 /* plates (plate.js): a figure on paper that can stand alone as an image */
 .plate svg { display: block; max-width: 100%; height: auto; overflow: hidden; border: var(--hair) solid var(--line); border-radius: var(--r2); }
@@ -1080,18 +1089,22 @@ html.voyaging .masthead::after { content: ""; position: absolute; left: 0; right
 .limits h2 { margin: 0; }
 .limits-count { margin: var(--s1) 0 var(--s4); font-size: var(--t-meta); line-height: var(--l-meta); color: var(--ink-3); }
 /* what the data cannot say: a list, a paragraph of the story's own an item, led by its own first words in bold */
-.limits-list { margin: 0; padding: 0; list-style: none; }
-.limits-list li { padding: var(--s4) 0 var(--s4) var(--s5); border-top: var(--hair) solid var(--line); line-height: 1.65; position: relative; }
-.limits-list li::before { content: ""; position: absolute; left: 0; top: calc(var(--s4) + .55em); width: var(--s2); height: var(--rule); background: var(--route); }
+/* (each point numbered, so that a reader knows where they are in "9 batasan"; a tight rhythm, every word in sight) */
+.limits-list { margin: 0; padding: 0; list-style: none; counter-reset: limit; }
+.limits-list li { counter-increment: limit; padding: var(--s3) 0 var(--s3) var(--s6); border-top: var(--hair) solid var(--line); line-height: var(--l-body); position: relative; break-inside: avoid; }
+.limits-list li::before { content: counter(limit); position: absolute; left: 0; top: var(--s3); min-width: var(--s5); font: 800 var(--t-small)/var(--l-body) var(--type); font-stretch: 80%; color: var(--route); font-variant-numeric: tabular-nums; }
 .limits-list li > b:first-child { display: block; color: var(--ink); line-height: var(--l-body); }
-.limits-list li > .rest { display: block; margin-top: var(--s2); font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }  /* (the rest of a point under its lead: quieter, never folded) */
-.limits-list li { overflow-wrap: anywhere; }  /* (a long word in large type breaks rather than run past the screen) */
+.limits-list li > .rest { display: block; margin-top: var(--s1); font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }  /* (the rest of a point under its lead: quieter, never folded) */
+.limits-list li { overflow-wrap: anywhere; }
+@media (max-width: 599px) { .limits { padding: var(--s4) var(--s4) var(--s3); } .limits-list li { padding-left: var(--s5); } }  /* (a phone gives the text the width) */  /* (a long word in large type breaks rather than run past the screen) */
 .next-story { max-width: calc(var(--measure) + 2 * var(--s6)); margin-top: var(--s7); padding: var(--s5) var(--s6) var(--s6); gap: var(--s3); }
 @media (min-width: 900px) {
   .landing { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); column-gap: var(--s7); align-items: start; }
   .landing > :not(.next-story) { grid-column: 1; }
-  /* the next story stands beside the panel, its top on the panel's top, and stays beside it while the panel is read */
-  .landing .next-story { grid-column: 2; grid-row: 1 / span 3; margin-top: 0; position: sticky; top: calc(var(--head, var(--head-h)) + var(--s5)); }
+  /* the panel across the page, its points in two columns (each whole in one); the next story beside what follows it */
+  .landing > .limits { grid-column: 1 / -1; max-width: none; }
+  .limits-list { columns: 2; column-gap: var(--s7); }
+  .landing .next-story { grid-column: 2; grid-row: 2 / span 3; margin-top: var(--s6); position: sticky; top: calc(var(--head, var(--head-h)) + var(--s5)); }
 }
 .next-story .kicker { margin: 0; }
 .next-story .card-title { font-size: var(--t-h2); line-height: var(--l-h2); font-weight: 800; font-stretch: 75%; }
@@ -1325,12 +1338,12 @@ a.row-link { display: flex; align-items: center; justify-content: space-between;
 a.row-link:hover, a.row-link:focus-visible { color: var(--ink); text-decoration: none; }
 a.row-link:hover .row-name, a.row-link:focus-visible .row-name { color: var(--link); text-decoration: underline; text-decoration-thickness: 2px; }
 a.row-link .row-name { min-width: 0; }
-@media (pointer: coarse) { a.row-link { min-height: var(--tap); } }
+@media (pointer: coarse), (max-width: 599px) { a.row-link { min-height: var(--tap); } }
 /* (in a table, the row's name a link whose target covers the row: its numbers too) */
 tr.row-tr { position: relative; }
 tr.row-tr a.to-word::before { content: ""; position: absolute; inset: 0; }
 tr.row-tr:is(:hover, :focus-within) a.to-word { color: var(--link); text-decoration: underline; text-decoration-thickness: 2px; }
-@media (pointer: coarse) { tr.row-tr > td { height: var(--tap); padding-block: 0; } .tide th .row-link { min-height: var(--tap); } }
+@media (pointer: coarse), (max-width: 599px) { tr.row-tr > td { height: var(--tap); padding-block: 0; } .tide th .row-link { min-height: var(--tap); } }
 @media (hover: none) {
   a.to-word:not(svg a, .row-link)::after, a.row-link .row-name::after { content: "\203A" / ""; margin-left: .3em; font-weight: 700; color: var(--ink-3); }
   .poster a.to-word::after { color: inherit; opacity: .7; }
@@ -1378,7 +1391,7 @@ tr.row-tr:is(:hover, :focus-within) a.to-word { color: var(--link); text-decorat
 /* states: nothing found, nothing loaded, an address that leads nowhere */
 .empty { max-width: calc(var(--measure) + 2 * var(--s6)); margin: var(--s6) 0; padding: var(--s5) var(--s6); background: var(--chart-2); border: var(--hair) solid var(--line-2); border-radius: var(--r2); }
 .empty h1 { font-size: var(--t-h2); line-height: var(--l-h2); margin: var(--s2) 0 var(--s3); }
-.empty .words { margin-bottom: 0; }
+.empty .words { margin-bottom: 0; } .empty .words + p { margin-top: var(--s5); } .empty .suggest { margin-block: var(--s3); }
 .offers .none, #suggestions .none { padding: var(--s3); font-size: var(--t-small); line-height: var(--l-small); color: var(--ink-2); }
 @media (max-width: 899.98px) { #suggestions .none { color: var(--on-deep-2); } }
 /* an address that leads nowhere: a head of the deep like every other page's, as tall as the screen allows, the night

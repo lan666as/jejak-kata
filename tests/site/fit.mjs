@@ -376,12 +376,13 @@ const jobs = [...STORY_SIZES.map((size) => () => stories(size)), ...LONG_SIZES.m
 await Promise.all([0, 1].map(async () => { while (jobs.length) await jobs.shift()(); }));
 // On a touch phone every control is 44px tall, or has a 44px target around it (a ::before): the chips, the source tabs,
 // the "Kata"/"Nama" switch, a race's ×, the circle's names, a stage's share mark. A link inside running text is exempt.
-{ const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, reducedMotion: "reduce" }), page = await ctx.newPage();
+// (and at a phone's width with a mouse, as a narrowed desktop window is: the rows of a race, the links that are rows)
+for (const touch of [true, false]) { const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: touch, isMobile: touch, reducedMotion: "reduce" }), page = await ctx.newPage();
   for (const path of ["", "bergeser", "balap", "lingkaran", "menempel", "pasang", "tahun", "kata/korupsi", "kuis", "tebak", "temuan", "cerita/oknum"]) {
     await page.goto(`${base}#/${path}`); await page.waitForTimeout(2000);
     await page.evaluate(() => document.querySelectorAll("details.options").forEach((d) => (d.open = true)));
     looks++;
-    report(`touch targets on /${path} at 390`, await page.evaluate(() => [...document.querySelectorAll("button, a[role=button], summary, select, input:not([type=hidden]), .chips a, .switch a, .orbit a")].filter((n) => {
+    report(`touch targets on /${path} at 390${touch ? "" : " with a mouse"}`, await page.evaluate(() => [...document.querySelectorAll("button, a[role=button], summary, select, input:not([type=hidden]), .chips a, .switch a, .orbit a, a.row-link")].filter((n) => {
       const r = n.getBoundingClientRect(), b = getComputedStyle(n, "::before");
       if (!r.width || !r.height || getComputedStyle(n).visibility === "hidden" || (n.tagName === "A" && !n.matches("[role=button]") && n.closest("p"))) return false;
       return Math.max(r.height, b.content !== "none" && b.position === "absolute" ? r.height - parseFloat(b.top) - parseFloat(b.bottom) : 0) < 43.5;
