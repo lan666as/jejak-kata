@@ -2249,7 +2249,9 @@ async function storySea(holder, stages, parts) {
       view(water(stage, true), LEG);
       landed(LEG + FLIGHT * 1.4);
       // Then the card comes back over the sea, and the sea glides into the water the stage leaves open.
-      return setTimeout(() => (stage.classList.remove("sea-full"), (full = 0), at === label && requestAnimationFrame(() => view(water(stage), FLIGHT))), LEG);
+      // (a flight the lens's coming has superseded is flown again from here, with the lens's words: its own second look
+      // would light the first screen's words only, after the newer flight's key was written)
+      return setTimeout(() => (stage.classList.remove("sea-full"), (full = 0), at === label && (flight === flights ? requestAnimationFrame(() => view(water(stage), FLIGHT)) : ((at = ""), to(scene, j)))), LEG);
     }
     landed(still() ? FLIGHT / 2 : FLIGHT * 1.4);
     if (!still() || !sea.state().routes && !sea.state().lit) return view(water(stage), FLIGHT);
